@@ -1,0 +1,66 @@
+{
+    "extends": "expo/tsconfig.base",
+    "compilerOptions": {
+        "strict": true,
+        "baseUrl": ".",
+        "paths": {
+            "@/api/*": [
+                "./app/src/api/*"
+            ],
+            "@/components/*": [
+                "./components/*",
+                "./app/src/components/*"
+            ],
+            "@/hooks/*": [
+                "./hooks/*",
+                "./app/src/hooks/*"
+            ],
+            "@/lib/*": [
+                "./lib/*",
+                "./app/src/lib/*"
+            ],
+            "@/stores/*": [
+                "./stores/*",
+                "./app/src/stores/*"
+            ],
+            "@/utils/*": [
+                "./utils/*",
+                "./app/src/utils/*"
+            ],
+            "@/types/*": [
+                "./types/*",
+                "./app/src/types/*"
+            ],
+            "@styles/*": [
+                "./styles/*",
+                "./app/src/styles/*"
+            ],
+            "@/assets/*": [
+                "./assets/*",
+                "./app/src/assets/*"
+            ],
+            "@/config/*": [
+                "./config/*",
+                "./app/src/config/*"
+            ],
+            "@constants/*": [
+                "./constants/*",
+                "./app/src/constants/*"
+            ],
+            "@/contexts/*": [
+                "./contexts/*",
+                "./app/src/contexts/*"
+            ],
+            "@/*": [
+                "./*",
+                "./app/src/*"
+            ]
+        }
+    },
+    "include": [
+        "**/*.ts",
+        "**/*.tsx",
+        ".expo/types/**/*.ts",
+        "expo-env.d.ts"
+    ]
+}
