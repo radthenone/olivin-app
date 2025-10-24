@@ -11,3 +11,6 @@ wheels/
 .history
 /.history
 .vscode
+
+# ignore frontend
+frontend/
