@@ -1,0 +1,9 @@
+# Ustaw końce linii jako LF dla określonych rozszerzeń
+*.scss text eol=lf
+*.html text eol=lf
+*.ts text eol=lf
+*.js text eol=lf
+*.py text eol=lf
+
+# Wymuś konwersję końców linii do LF niezależnie od platformy
+* text=auto

@@ -1,0 +1,163 @@
+networks:
+    olivin-network:
+        name: olivin-network
+        external: true
+
+volumes:
+    olivin-data:
+        name: olivin-data
+    olivin-media:
+        name: olivin-media
+    olivin-node_modules:
+        name: olivin-node_modules
+
+x-django: &django
+    build:
+        dockerfile: docker/backend/Dockerfile
+        context: .
+    stdin_open: true
+    tty: true
+    volumes:
+        - ./backend/src:/app/src:z
+    depends_on:
+        olivin-postgres:
+            condition: service_healthy
+        olivin-redis:
+            condition: service_healthy
+        olivin-minio:
+            condition: service_healthy
+    networks:
+        - olivin-network
+
+x-celery: &celery
+    <<: *django
+    depends_on:
+        olivin-redis:
+            condition: service_healthy
+        olivin-postgres:
+            condition: service_healthy
+    stdin_open: true
+    tty: true
+    volumes:
+        - ./backend/src:/app/src:z
+    networks:
+        - olivin-network
+    entrypoint: ["/celery/celery-entrypoint.sh"]
+
+services:
+    olivin-postgres:
+        container_name: olivin-postgres
+        image: postgres:16
+        ports:
+            - 5434:5432
+        volumes:
+            - olivin-data:/var/lib/postgresql/data
+        env_file:
+            - ./.envs/dev/postgres.env
+        networks:
+            - olivin-network
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres -d olivin_db"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 30s
+        profiles: ["dev", "backend", "full", "local"]
+
+    olivin-redis:
+        container_name: olivin-redis
+        image: redis:latest
+        ports:
+            - 6379:6379
+        networks:
+            - olivin-network
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
+        profiles: ["dev", "backend", "full", "local"]
+
+    olivin-minio:
+        container_name: olivin-minio
+        image: minio/minio:latest
+        ports:
+            - 9000:9000
+            - 9001:9001
+        volumes:
+            - olivin-media:/data
+        env_file:
+            - ./.envs/dev/minio.env
+        networks:
+            - olivin-network
+        restart: unless-stopped
+        command: server /data --console-address ":9001"
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 30s
+        profiles: ["dev", "backend", "full", "local"]
+
+    olivin-mailhog:
+        container_name: olivin-mailhog
+        image: mailhog/mailhog
+        ports:
+            - "1025:1025"
+            - "8025:8025"
+        networks:
+            - olivin-network
+        profiles: ["dev", "backend", "full", "local"]
+
+    olivin-django:
+        <<: *django
+        container_name: olivin-django
+        env_file:
+            - ./.envs/dev/django.env
+        ports:
+            - 8020:8000
+        working_dir: /app/src
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 120s
+        profiles: ["dev", "backend", "full"]
+
+    olivin-celery-worker:
+        <<: *celery
+        container_name: olivin-celery-worker
+        env_file:
+            - ./.envs/dev/django.env
+        working_dir: /app/src
+        command: bash -c "/celery/worker.sh"
+        restart: unless-stopped
+        profiles: ["dev", "backend", "full", "celery"]
+
+    olivin-celery-beat:
+        <<: *celery
+        container_name: olivin-celery-beat
+        env_file:
+            - ./.envs/dev/django.env
+        working_dir: /app/src
+        command: bash -c "/celery/beat.sh"
+        restart: unless-stopped
+        profiles: ["dev", "backend", "full", "celery"]
+
+    olivin-celery-flower:
+        <<: *celery
+        container_name: olivin-celery-flower
+        env_file:
+            - ./.envs/dev/django.env
+        working_dir: /app/src
+        ports:
+            - "5555:5555"
+        command: bash -c "/celery/flower.sh"
+        restart: unless-stopped
+        profiles: ["dev", "backend", "full", "celery"]

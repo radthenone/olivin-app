@@ -1,0 +1,6 @@
+.history
+.history/*
+.envs
+.envs/*
+.env
+.vscode
