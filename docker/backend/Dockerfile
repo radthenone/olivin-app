@@ -19,7 +19,7 @@ ENV UV_COMPILE_BYTECODE=1 \
 COPY backend/pyproject.toml backend/uv.lock ./
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-install-project
+    uv sync --locked --no-install-project --all-extras
 
 COPY backend/src/ /app/src/
 
@@ -32,7 +32,7 @@ COPY docker/scripts/backend/celery/* /celery/
 COPY docker/scripts/backend/wait_for/ /wait-for/
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-editable
+    uv sync --locked --no-editable --all-extras
 
 # Make all scripts executable
 RUN sed -i 's/\r$//g' /celery/*.sh && chmod +x /celery/*.sh && \

@@ -1,0 +1,29 @@
+{
+    "name": "@pack/logger",
+    "version": "0.1.0",
+    "description": "Universal logging package for Pack App",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "watch": "tsc --watch",
+        "clean": "rm -rf dist"
+    },
+    "keywords": [
+        "logging",
+        "logger",
+        "pack"
+    ],
+    "author": "Example User",
+    "license": "MIT",
+    "devDependencies": {
+        "typescript": "^5.9.2"
+    },
+    "peerDependencies": {
+        "axios": ">=1.0.0"
+    },
+    "files": [
+        "dist",
+        "README.md"
+    ]
+}

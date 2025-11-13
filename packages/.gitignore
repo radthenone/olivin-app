@@ -1,0 +1,45 @@
+# Frontend paczki (TypeScript/React Native)
+**/frontend/dist
+**/frontend/node_modules
+**/frontend/.next
+**/frontend/.expo
+**/frontend/.expo-shared
+
+# Backend paczki (Python)
+**/backend/build
+**/backend/dist
+**/backend/wheels
+**/backend/*.egg-info
+**/backend/**/*.egg-info
+**/backend/.venv
+**/backend/.history
+**/backend/.vscode
+**/backend/logs
+**/backend/__pycache__
+**/backend/**/__pycache__
+**/backend/*.pyc
+**/backend/**/*.pyc
+
+# Python cache i build artifacts
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+**/*.so
+**/.Python
+
+# Virtual environments
+**/.venv/
+**/venv/
+**/ENV/
+**/env/
+
+# IDE
+**/.vscode/
+**/.idea/
+**/*.swp
+**/*.swo
+**/*~
+
+# OS
+**/.DS_Store
+**/Thumbs.db

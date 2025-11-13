@@ -25,18 +25,15 @@ try:
         password="${POSTGRES_PASSWORD}"
     )
     conn.close()
-    print("✅ Database is ready!")
     sys.exit(0)
-except OperationalError as e:
-    sys.stderr.write(f"❌ Database not ready: {e}\n")
+except OperationalError:
     sys.exit(1)
-except Exception as e:
-    sys.stderr.write(f"❌ Database error: {e}\n")
+except Exception:
     sys.exit(1)
 END
 }
 
-echo "🔍 Waiting for PostgreSQL at ${POSTGRES_HOST}:${POSTGRES_PORT}..."
+echo "⏳ Waiting for PostgreSQL..."
 start_time=$(date +%s)
 
 until db_ready; do
@@ -48,8 +45,7 @@ until db_ready; do
         exit 1
     fi
 
-    echo "⏳ Waiting for database... (${elapsed_time}s/${TIMEOUT}s)"
     sleep 1
 done
 
-echo "🎉 Database is ready!"
+echo "✅ PostgreSQL ready"

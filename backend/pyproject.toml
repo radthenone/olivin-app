@@ -29,12 +29,13 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "redis>=6.4.0",
     "stripe>=13.0.1",
+    "rich>=14.2.0",
+    "pack-logger",
 ]
 
 # uv add <package> --optional dev
 [project.optional-dependencies]
 dev = [
-    "rich>=14.2.0",
     "ruff>=0.14.1",
 ]
 
@@ -119,3 +120,6 @@ docstring-code-format = false
 # This only has an effect when the `docstring-code-format` setting is
 # enabled.
 docstring-code-line-length = "dynamic"
+
+[tool.uv.sources]
+pack-logger = { path = "../packages/pack-logger/backend", editable = true }

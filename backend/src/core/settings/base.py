@@ -17,7 +17,8 @@ SECRET_KEY = str(os.environ.get("DJANGO_SECRET_KEY", "secret_key"))
 DEBUG = bool(os.environ.get("DJANGO_DEBUG", 1))
 
 ALLOWED_HOSTS = list(
-    str(os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")).split(",")
+# Allow Android emulator host
+    str(os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost,10.0.2.2")).split(",")
 )
 
 CORS_ALLOWED_ORIGINS = [

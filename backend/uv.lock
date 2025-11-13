@@ -41,17 +41,18 @@ dependencies = [
     { name = "djangorestframework-camel-case" },
     { name = "djangorestframework-simplejwt" },
     { name = "flower" },
+    { name = "pack-logger" },
     { name = "pillow" },
     { name = "psycopg2", marker = "sys_platform == 'linux'" },
     { name = "psycopg2-binary", marker = "sys_platform == 'win32'" },
     { name = "python-dotenv" },
     { name = "redis" },
+    { name = "rich" },
     { name = "stripe" },
 ]
 
 [package.optional-dependencies]
 dev = [
-    { name = "rich" },
     { name = "ruff" },
 ]
 
@@ -71,12 +72,13 @@ requires-dist = [
     { name = "djangorestframework-camel-case", specifier = ">=1.4.2" },
     { name = "djangorestframework-simplejwt", specifier = ">=5.3.0" },
     { name = "flower", specifier = ">=2.0.1" },
+    { name = "pack-logger", editable = "../packages/pack-logger/backend" },
     { name = "pillow", specifier = ">=12.0.0" },
     { name = "psycopg2", marker = "sys_platform == 'linux'", specifier = ">=2.9.10" },
     { name = "psycopg2-binary", marker = "sys_platform == 'win32'", specifier = ">=2.9.10" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "redis", specifier = ">=6.4.0" },
-    { name = "rich", marker = "extra == 'dev'", specifier = ">=14.2.0" },
+    { name = "rich", specifier = ">=14.2.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.14.1" },
     { name = "stripe", specifier = ">=13.0.1" },
 ]
@@ -494,6 +496,20 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d6/54/cfe61301667036ec958cb99bd3efefba235e65cdeb9c84d24a8293ba1d90/mdurl-0.1.2.tar.gz", hash = "sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba", size = 8729 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8", size = 9979 },
+]
+
+[[package]]
+name = "pack-logger"
+version = "0.1.0"
+source = { editable = "../packages/pack-logger/backend" }
+dependencies = [
+    { name = "rich" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "django", marker = "extra == 'django'", specifier = ">=5.0.0" },
+    { name = "rich", specifier = ">=14.0.0" },
 ]
 
 [[package]]

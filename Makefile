@@ -1,4 +1,4 @@
-.PHONY: help backend celery web ios android full clean
+SHELL:=/bin/bash
 
 help:
 	@echo "Available commands:"
@@ -14,14 +14,11 @@ backend:
 celery:
 	docker-compose --profile celery up
 
-web:
-	cd frontend && npm run web
-
-ios:
-	cd frontend && npm run ios
-
 android:
-	cd frontend && npm run android
+	cd frontend && npm run start:android
+
+web:
+	cd frontend && npm run start:web
 
 full:
 	docker-compose --profile full up
@@ -32,3 +29,22 @@ build:
 clean:
 	docker-compose down -v
 	docker system prune -f
+
+dev:
+	@echo "Starting App"
+	@docker-compose --profile backend up -d
+	@sleep 5
+	@cd frontend && npm run start:dev
+
+dev-backend:
+	@echo "Starting Backend"
+	@docker-compose --profile backend up -d
+
+dev-frontend:
+	@echo "Starting Frontend"
+	@cd frontend && npm run start:dev
+
+stop-dev:
+	@echo "Stopping App"
+	@docker-compose --profile backend down
+	@pkill -f "npx expo start" || true

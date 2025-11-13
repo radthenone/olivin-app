@@ -1,6 +1,49 @@
+# IDE i edytory
 .history
 .history/*
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Environment variables
 .envs
 .envs/*
 .env
-.vscode
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Python (ogólne dla całego projektu)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Node.js (ogólne dla całego projektu)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Build outputs
+*.egg-info/
+dist/
+build/
+*.tsbuildinfo
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/

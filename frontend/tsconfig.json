@@ -4,62 +4,55 @@
         "strict": true,
         "baseUrl": ".",
         "paths": {
-            "@/api/*": [
-                "./app/src/api/*"
+            "@api/*": [
+                "./api/*"
             ],
-            "@/components/*": [
-                "./components/*",
-                "./app/src/components/*"
+            "@modules/*": [
+                "./modules/*"
             ],
-            "@/hooks/*": [
-                "./hooks/*",
-                "./app/src/hooks/*"
+            "@components/*": [
+                "./components/*"
             ],
-            "@/lib/*": [
-                "./lib/*",
-                "./app/src/lib/*"
+            "@hooks/*": [
+                "./hooks/*"
             ],
-            "@/stores/*": [
-                "./stores/*",
-                "./app/src/stores/*"
+            "@lib/*": [
+                "./lib/*"
             ],
-            "@/utils/*": [
-                "./utils/*",
-                "./app/src/utils/*"
+            "@utils/*": [
+                "./utils/*"
             ],
-            "@/types/*": [
-                "./types/*",
-                "./app/src/types/*"
+            "@types/*": [
+                "./types/*"
             ],
             "@styles/*": [
-                "./styles/*",
-                "./app/src/styles/*"
+                "./styles/*"
             ],
-            "@/assets/*": [
-                "./assets/*",
-                "./app/src/assets/*"
+            "@assets/*": [
+                "./assets/*"
             ],
-            "@/config/*": [
-                "./config/*",
-                "./app/src/config/*"
+            "@config/*": [
+                "./config/*"
             ],
             "@constants/*": [
-                "./constants/*",
-                "./app/src/constants/*"
+                "./constants/*"
             ],
-            "@/contexts/*": [
-                "./contexts/*",
-                "./app/src/contexts/*"
+            "@contexts/*": [
+                "./contexts/*"
             ],
-            "@/*": [
-                "./*",
-                "./app/src/*"
-            ]
         }
     },
     "include": [
         "**/*.ts",
         "**/*.tsx",
+        "**/*.web.ts",
+        "**/*.web.tsx",
+        "**/*.android.ts",
+        "**/*.android.tsx",
+        "**/*.ios.ts",
+        "**/*.ios.tsx",
+        "**/*.native.ts",
+        "**/*.native.tsx",
         ".expo/types/**/*.ts",
         "expo-env.d.ts"
     ]
