@@ -1,5 +1,7 @@
 import os
 
+from pack_logger import configure_logging
+
 """
 Development settings for Olivin project.
 """
@@ -21,52 +23,4 @@ ALLOWED_HOSTS = [
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Logging
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'console': {
-            'class': 'rich.logging.RichHandler',
-            'rich_tracebacks': True,
-            'show_path': False,
-            'markup': False,
-        },
-        'file': {
-            'class': 'logging.FileHandler',
-            'filename': 'logs/django.log',
-            'formatter': 'verbose',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'DEBUG',
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'django.request': {
-            'handlers': ['console', 'file'],
-            'level': 'ERROR',
-            'propagate': False,
-        },
-        'django.server': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'apps': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-    },
-}
+LOGGING = configure_logging(debug=DEBUG, app_name='olivin')

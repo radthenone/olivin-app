@@ -6,7 +6,8 @@ These settings are common to all environments.
 
 import os
 from datetime import timedelta
-from core.paths import SRC_DIR, BASE_DIR, PROJECT_DIR, load_valid_envs
+
+from core.paths import BASE_DIR, PROJECT_DIR, SRC_DIR, load_valid_envs
 
 load_valid_envs()
 

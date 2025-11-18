@@ -2,11 +2,16 @@
 Django middleware dla automatycznego logowania API z pełnymi danymi developerskimi.
 Obsługuje case conversion (camelCase ↔ snake_case).
 """
-import time
+from __future__ import annotations
+
 import json
-from typing import Optional, Dict, Any
-from django.utils.deprecation import MiddlewareMixin
+import os
+import time
+from typing import Any, Dict, Optional, Union
+
 from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.utils.deprecation import MiddlewareMixin
+
 from .logger import log
 
 
@@ -23,14 +28,44 @@ class ApiLoggingMiddleware(MiddlewareMixin):
     - Czas wykonania
     """
 
-    EXCLUDED_PATHS = ['/admin/', '/static/', '/media/', '/favicon.ico', '/api/health/']
-    SENSITIVE_HEADERS = {'authorization', 'cookie', 'x-csrftoken', 'x-api-key', 'session'}
-    SENSITIVE_BODY_FIELDS = {'password', 'token', 'secret', 'api_key', 'access_token',
-                            'refresh_token', 'card_number', 'cvv', 'ssn'}
+    # Domyślne wykluczone ścieżki
+    DEFAULT_EXCLUDED_PATHS: list[str] = [
+        '/admin/',
+        '/static/',
+        '/media/',
+        '/favicon.ico',
+        '/api/health/'
+    ]
+
+    SENSITIVE_HEADERS: set[str] = {'authorization', 'cookie', 'x-csrftoken', 'x-api-key', 'session'}
+    SENSITIVE_BODY_FIELDS: set[str] = {
+        'password', 'token', 'secret', 'api_key', 'access_token',
+        'refresh_token', 'card_number', 'cvv', 'ssn'
+    }
+
+    def __init__(self, get_response=None):
+        """
+        Inicjalizacja middleware z obsługą zmiennej środowiskowej PACK_LOGGER_EXCLUDED_PATHS.
+
+        Zmienna środowiskowa powinna być w formacie: /admin/,/static/,/media/
+        """
+        super().__init__(get_response)
+
+        # Pobierz wykluczone ścieżki z zmiennej środowiskowej lub użyj domyślnych
+        excluded_env = os.environ.get('PACK_LOGGER_EXCLUDED_PATHS', '').strip()
+        if excluded_env:
+            # Parsuj ścieżki oddzielone przecinkami
+            self.excluded_paths = [
+                path.strip()
+                for path in excluded_env.split(',')
+                if path.strip()
+            ]
+        else:
+            self.excluded_paths = self.DEFAULT_EXCLUDED_PATHS
 
     def should_log(self, path: str) -> bool:
         """Sprawdza czy ścieżka powinna być logowana."""
-        return not any(path.startswith(excluded) for excluded in self.EXCLUDED_PATHS)
+        return not any(path.startswith(excluded) for excluded in self.excluded_paths)
 
     def mask_sensitive_headers(self, headers: Dict[str, str]) -> Dict[str, str]:
         """Maskuje wrażliwe nagłówki."""
@@ -43,7 +78,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
                 masked[key] = value
         return masked
 
-    def mask_sensitive_body(self, data: Any) -> Any:
+    def mask_sensitive_body(self, data: Any) -> Union[Dict[str, Any], list[Any], Any]:
         """Maskuje wrażliwe pola w body."""
         if not isinstance(data, dict):
             return data
@@ -162,7 +197,7 @@ class ApiLoggingMiddleware(MiddlewareMixin):
 
         return headers
 
-    def get_response_body(self, response: HttpResponse) -> Optional[Any]:
+    def get_response_body(self, response: HttpResponse) -> Optional[Union[Dict[str, Any], list[Any], str]]:
         """
         Pobiera body z response.
         Django REST Framework camel-case renderer już przekonwertował snake_case → camelCase.

@@ -24,3 +24,6 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["pack_logger*"]
+
+[tool.setuptools.package-data]
+pack_logger = ["py.typed"]

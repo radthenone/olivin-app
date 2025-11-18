@@ -11,6 +11,9 @@ setup(
     name="pack-logger",
     version="0.1.0",
     packages=find_packages(),
+    package_data={
+        "pack_logger": ["py.typed"],
+    },
     install_requires=[
         "rich>=14.0.0",
     ],

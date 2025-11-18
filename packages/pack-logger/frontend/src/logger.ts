@@ -27,10 +27,13 @@ export interface ApiResponseData {
 export class PackLogger {
     private isDev: boolean;
     private appName: string;
+    private isWeb: boolean;
 
     constructor(appName: string = "pack", isDev: boolean = true) {
         this.appName = appName;
         this.isDev = isDev;
+        // Wykryj czy jesteśmy w przeglądarce (web) czy w terminalu (native)
+        this.isWeb = typeof window !== "undefined" && typeof document !== "undefined";
     }
 
     /**
@@ -48,6 +51,27 @@ export class PackLogger {
     }
 
     /**
+     * Zwraca kolory ANSI dla terminala
+     */
+    private getAnsiColor(level: LogLevel): string {
+        const colors = {
+            debug: "\x1b[90m", // gray
+            info: "\x1b[34m", // blue
+            warn: "\x1b[33m", // yellow
+            error: "\x1b[31m", // red
+            success: "\x1b[32m", // green
+        };
+        return colors[level] || "";
+    }
+
+    /**
+     * Reset koloru ANSI
+     */
+    private getAnsiReset(): string {
+        return "\x1b[0m";
+    }
+
+    /**
      * Główna metoda logowania
      */
     private log(level: LogLevel, message: string, data?: LogData) {
@@ -62,20 +86,40 @@ export class PackLogger {
             success: "#10B981",
         }[level];
 
-        console.group(`%c[${time}] [${this.appName}] ${message}`, `color: ${color}; font-weight: bold;`);
+        if (this.isWeb) {
+            // Przeglądarka - użyj CSS styling
+            console.group(`%c[${time}] [${this.appName}] ${message}`, `color: ${color}; font-weight: bold;`);
 
-        if (data && Object.keys(data).length > 0) {
-            console.log("%cData:", "color: #9CA3AF; font-weight: bold;");
-            Object.entries(data).forEach(([key, value]) => {
-                if (typeof value === "object") {
-                    console.log(`  ${key}:`, JSON.stringify(value, null, 2));
-                } else {
-                    console.log(`  ${key}:`, value);
-                }
-            });
+            if (data && Object.keys(data).length > 0) {
+                console.log("%cData:", "color: #9CA3AF; font-weight: bold;");
+                Object.entries(data).forEach(([key, value]) => {
+                    if (typeof value === "object" && value !== null) {
+                        console.log(`  ${key}:`, value);
+                    } else {
+                        console.log(`  ${key}:`, value);
+                    }
+                });
+            }
+
+            console.groupEnd();
+        } else {
+            // Terminal/Native - użyj ANSI colors
+            const ansiColor = this.getAnsiColor(level);
+            const reset = this.getAnsiReset();
+
+            console.log(`${ansiColor}[${time}] [${this.appName}] ${message}${reset}`);
+
+            if (data && Object.keys(data).length > 0) {
+                console.log(`  Data:`);
+                Object.entries(data).forEach(([key, value]) => {
+                    if (typeof value === "object" && value !== null) {
+                        console.log(`    ${key}:`, value);
+                    } else {
+                        console.log(`    ${key}:`, value);
+                    }
+                });
+            }
         }
-
-        console.groupEnd();
     }
 
     debug(message: string, data?: LogData) {

@@ -10,6 +10,7 @@ import { useTheme } from "../config/theme";
 import { platformStyles, webOnly, nativeOnly } from "../styles";
 import apiClient from "../api/client";
 import { API_CONFIG } from "../config/api";
+import { log } from "@pack/logger";
 
 interface HealthStatus {
   status: string;
@@ -26,17 +27,22 @@ export default function HealthScreen() {
 
   const fetchHealth = async () => {
     try {
-      console.log(
-        `[Health] Fetching from: ${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.HEALTH}`
-      );
+      log.info("Fetching health status", {
+        endpoint: `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.HEALTH}`,
+      });
+
       const response = await apiClient.get<HealthStatus>(
         API_CONFIG.ENDPOINTS.HEALTH
       );
-      // console.log(`[Health] Response received:`, response.data);
+
       setHealthStatus(response.data);
+
+      log.success("Health status fetched successfully", {
+        status: response.data.status,
+        services: Object.keys(response.data.services),
+      });
     } catch (error: any) {
-      console.error("Error fetching health status:", error);
-      console.error("Error details:", {
+      log.error("Failed to fetch health status", {
         message: error.message,
         code: error.code,
         response: error.response?.data,
@@ -64,10 +70,12 @@ export default function HealthScreen() {
   };
 
   useEffect(() => {
+    log.debug("Health screen mounted");
     fetchHealth();
   }, []);
 
   const onRefresh = () => {
+    log.debug("Refreshing health status");
     setRefreshing(true);
     fetchHealth();
   };
@@ -138,7 +146,7 @@ export default function HealthScreen() {
         </Text>
         {healthStatus?.services &&
           Object.entries(healthStatus.services).map(([service, status]) => {
-            // console.log(`[Health] Service: ${service}, Status: ${status}`);
+            log.info("Service status", { service: service, status: status });
             return (
               <View
                 key={service}

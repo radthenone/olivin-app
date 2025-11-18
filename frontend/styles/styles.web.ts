@@ -20,7 +20,9 @@ export const webStyles = StyleSheet.create({
     userSelect: 'none',
   },
   input: {
-    outline: 'none',
+    outlineWidth: 0,
+    outlineStyle: 'none',
+    outlineColor: 'transparent',
   },
   link: {
     cursor: 'pointer',

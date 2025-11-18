@@ -1,0 +1,11 @@
+# Ignoruj katalogi packages (oprócz pack-logger/frontend który jest używany)
+../packages/**
+!../packages/pack-logger/frontend
+
+# Ignoruj backend
+../backend/**
+
+# Ignoruj inne katalogi projektu
+../.git/**
+../.vscode/**
+

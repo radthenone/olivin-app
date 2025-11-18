@@ -19,6 +19,7 @@ x-django: &django
     tty: true
     volumes:
         - ./backend/src:/app/src:z
+        - ./packages:/app/packages:z
     depends_on:
         olivin-postgres:
             condition: service_healthy
@@ -40,6 +41,7 @@ x-celery: &celery
     tty: true
     volumes:
         - ./backend/src:/app/src:z
+        - ./packages:/app/packages:z
     networks:
         - olivin-network
     entrypoint: ["/celery/celery-entrypoint.sh"]

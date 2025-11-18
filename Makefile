@@ -11,6 +11,9 @@ help:
 backend:
 	docker-compose --profile backend up
 
+backend-logs:
+	docker compose logs -f olivin-django
+
 celery:
 	docker-compose --profile celery up
 

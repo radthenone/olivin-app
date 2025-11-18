@@ -16,10 +16,21 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_SYSTEM_PYTHON=1
 
+# Kopiuj paczki lokalne PRZED pyproject.toml
+COPY packages/ /app/packages/
+
 COPY backend/pyproject.toml backend/uv.lock ./
 
+RUN sed -i 's|"../packages/pack-logger/backend"|"packages/pack-logger/backend"|g' pyproject.toml && \
+    echo "Updated pyproject.toml:" && \
+    grep pack-logger pyproject.toml || (echo "ERROR: pack-logger not found in pyproject.toml" && exit 1)
+
+# Zaktualizuj uv.lock po zmianie ścieżki w pyproject.toml
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-install-project --all-extras
+    uv lock
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --no-install-project --all-extras
 
 COPY backend/src/ /app/src/
 
