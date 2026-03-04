@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
+
+tasks:
+    migrate:
+        desc: Run migrations (task db:migrate)
+        cmds:
+            - docker exec -it olivin-django python manage.py migrate
+
+    migrations:make:
+        desc: Make migrations for specific app (task db:migrations:make -- accounts)
+        cmds:
+            - docker exec -it olivin-django python manage.py makemigrations {{.CLI_ARGS}}
+
+    migrations:merge:
+        desc: Merge migrations for specific app (task db:migrations:merge -- accounts)
+        cmds:
+            - docker exec -it olivin-django python manage.py makemigrations --merge {{.CLI_ARGS}}
+
+    migrations:squash:
+        desc: Squash migrations for specific app (task db:migrations:squash -- accounts 0001 0005)
+        cmds:
+            - docker exec -it olivin-django python manage.py squashmigrations {{.CLI_ARGS}}
+
+    migrations:show:
+        desc: Show migrations for specific app (task db:migrations:show -- accounts)
+        cmds:
+            - docker exec -it olivin-django python manage.py showmigrations {{.CLI_ARGS}}
+
+    migrations:rollback:
+        desc: Rollback migration to specific version (task db:migrations:rollback -- accounts 0001)
+        cmds:
+            - docker exec -it olivin-django python manage.py migrate {{.CLI_ARGS}}
+
+    migrations:empty:
+        desc: Create empty migration for specific app (task db:migrations:empty -- accounts)
+        cmds:
+            - docker exec -it olivin-django python manage.py makemigrations --empty {{.CLI_ARGS}}
+
+    migrations:reset:
+        desc: Reset migrations for specific app (task db:migrations:reset -- accounts)
+        cmds:
+            - bash -c "find backend/src/apps/{{.CLI_ARGS}}/migrations -type f -name '*.py' ! -name '__init__.py' | xargs rm -f"
+            - docker exec -it olivin-django python manage.py makemigrations {{.CLI_ARGS}}
+            - docker exec -it olivin-django python manage.py migrate {{.CLI_ARGS}}
+
+    migrations:clean:
+        desc: Delete all migrations except __init__.py (task db:migrations:clean -- accounts)
+        cmds:
+            - bash -c "find backend/src/apps/{{.CLI_ARGS}}/migrations -type f -name '*.py' ! -name '__init__.py' | xargs rm -f"

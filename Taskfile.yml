@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+# when add args to command always use -- before CLI_ARGS to prevent Taskfile from parsing them as task arguments
+
+version: "3"
+
+env:
+    ENV: .envs
+
+set: [errexit, pipefail, nounset]
+
+vars:
+    AVD_NAME: S23
+
+dotenv:
+    - ".env"
+    - "{{.ENV}}/dev/django.env"
+    - "{{.ENV}}/dev/postgres.env"
+    - "{{.ENV}}/dev/minio.env"
+    - "{{.ENV}}/dev/expo.env"
+
+includes:
+    emulator: ./taskfiles/emulators.yml
+    backend: ./taskfiles/backend.yml
+    frontend: ./taskfiles/frontend.yml
+    db: ./taskfiles/db.yml
+    shell: ./taskfiles/shell.yml
+    packages: ./taskfiles/packages.yml
+
+tasks:
+    default:
+        desc: All tasks
+        cmds:
+            - task --list

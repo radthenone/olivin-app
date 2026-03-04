@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
+
+tasks:
+    run:
+        desc: Open Django shell
+        cmds:
+            - docker exec -it olivin-django python manage.py shell
+
+    run:plus:
+        desc: Open Django shell_plus with auto-imports
+        cmds:
+            - docker exec -it olivin-django python manage.py shell_plus

@@ -1,22 +1,30 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  RefreshControl,
-} from "react-native";
-import { useEffect, useState } from "react";
-import { useTheme } from "../config/theme";
-import { platformStyles, webOnly, nativeOnly } from "../styles";
-import apiClient from "../api/client";
-import { API_CONFIG } from "../config/api";
+import React, { useEffect, useState } from "react";
+import { View, Text, ScrollView, RefreshControl } from "react-native";
+import { cn, ps } from "lib";
+import { useTheme } from "../src/core/theme/theme";
+import apiClient from "src/core/api/client";
 import { log } from "@pack/logger";
+import { ENDPOINTS } from "src/core/api/endpoints";
+import { HealthStatus } from "src/core/api/api.types";
 
-interface HealthStatus {
-  status: string;
-  services: {
-    [key: string]: string;
-  };
+async function fetchHealth(): Promise<HealthStatus> {
+  try {
+    const response = await apiClient.get<HealthStatus>(ENDPOINTS.HEALTH);
+    log.info("Health status fetched successfully", { data: response.data });
+    return response.data;
+  } catch (error: any) {
+    const errorMessage =
+      error.response?.data?.message ||
+      error.message ||
+      "Unable to fetch health status";
+
+    log.error(errorMessage, { error });
+
+    return {
+      status: "error",
+      services: { api: errorMessage },
+    };
+  }
 }
 
 export default function HealthScreen() {
@@ -27,31 +35,10 @@ export default function HealthScreen() {
 
   const fetchHealth = async () => {
     try {
-      log.info("Fetching health status", {
-        endpoint: `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.HEALTH}`,
-      });
-
-      const response = await apiClient.get<HealthStatus>(
-        API_CONFIG.ENDPOINTS.HEALTH
-      );
-
+      log.info("Fetching health status", { endpoint: ENDPOINTS.HEALTH });
+      const response = await apiClient.get<HealthStatus>(ENDPOINTS.HEALTH);
       setHealthStatus(response.data);
-
-      log.success("Health status fetched successfully", {
-        status: response.data.status,
-        services: Object.keys(response.data.services),
-      });
     } catch (error: any) {
-      log.error("Failed to fetch health status", {
-        message: error.message,
-        code: error.code,
-        response: error.response?.data,
-        status: error.response?.status,
-        url: error.config?.url,
-        baseURL: error.config?.baseURL,
-      });
-
-      // Pokaż bardziej szczegółowy błąd
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -59,9 +46,7 @@ export default function HealthScreen() {
 
       setHealthStatus({
         status: "error",
-        services: {
-          api: errorMessage,
-        },
+        services: { api: errorMessage },
       });
     } finally {
       setLoading(false);
@@ -70,32 +55,31 @@ export default function HealthScreen() {
   };
 
   useEffect(() => {
-    log.debug("Health screen mounted");
     fetchHealth();
   }, []);
 
   const onRefresh = () => {
-    log.debug("Refreshing health status");
     setRefreshing(true);
     fetchHealth();
   };
 
   const getStatusColor = (status: string) => {
-    if (status.includes("healthy")) {
-      return theme.colors.success;
-    }
-    if (status.includes("unhealthy") || status.includes("error")) {
+    if (status.includes("healthy")) return theme.colors.success;
+    if (status.includes("unhealthy") || status.includes("error"))
       return theme.colors.error;
-    }
     return theme.colors.warning;
   };
 
   if (loading) {
     return (
       <View
-        style={[styles.container, { backgroundColor: theme.colors.background }]}
+        className={cn("flex-1", ps({ web: "p-5", native: "p-4" }))}
+        style={{ backgroundColor: theme.colors.background }}
       >
-        <Text style={[styles.loadingText, { color: theme.colors.text }]}>
+        <Text
+          className="text-base text-center mt-8"
+          style={{ color: theme.colors.text }}
+        >
           Loading health status...
         </Text>
       </View>
@@ -104,187 +88,96 @@ export default function HealthScreen() {
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-      contentContainerStyle={styles.contentContainer}
+      className={cn("flex-1", ps({ web: "p-5", native: "p-4" }))}
+      style={{ backgroundColor: theme.colors.background }}
+      contentContainerClassName="pb-8"
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
+      {/* Header */}
       <View
-        style={[
-          styles.header,
-          webOnly({ maxWidth: 800, marginHorizontal: "auto" }),
-        ]}
+        className={cn(
+          "mb-6 items-center",
+          ps({
+            web: "max-w-[800px] mx-auto px-5",
+            native: "px-0",
+          }),
+        )}
       >
-        <Text style={[styles.title, { color: theme.colors.text }]}>
+        <Text
+          className={cn(
+            "font-bold mb-4",
+            ps({ web: "text-4xl", native: "text-3xl" }),
+          )}
+          style={{ color: theme.colors.text }}
+        >
           Health Status
         </Text>
+
         <View
-          style={[
-            styles.statusBadge,
-            {
-              backgroundColor: getStatusColor(
-                healthStatus?.status || "unknown"
-              ),
-            },
-          ]}
+          className="px-4 py-2 rounded-full"
+          style={{
+            backgroundColor: getStatusColor(healthStatus?.status || "unknown"),
+          }}
         >
-          <Text style={styles.statusText}>
+          <Text className="text-white font-bold text-sm">
             {healthStatus?.status.toUpperCase() || "UNKNOWN"}
           </Text>
         </View>
       </View>
 
-      <View
-        style={[
-          styles.servicesContainer,
-          webOnly({ maxWidth: 800, marginHorizontal: "auto" }),
-        ]}
-      >
-        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+      {/* Services */}
+      <View className={cn("w-full", ps({ web: "max-w-[800px] mx-auto" }))}>
+        <Text
+          className="text-xl font-semibold mb-4"
+          style={{ color: theme.colors.text }}
+        >
           Services
         </Text>
+
         {healthStatus?.services &&
-          Object.entries(healthStatus.services).map(([service, status]) => {
-            log.info("Service status", { service: service, status: status });
-            return (
-              <View
-                key={service}
-                style={[
-                  styles.serviceCard,
-                  platformStyles.card,
-                  { backgroundColor: theme.colors.card },
-                ]}
-              >
-                <View style={styles.serviceHeader}>
-                  <Text
-                    style={[styles.serviceName, { color: theme.colors.text }]}
-                  >
-                    {service.charAt(0).toUpperCase() + service.slice(1)}
-                  </Text>
-                  <View
-                    style={[
-                      styles.serviceStatusBadge,
-                      {
-                        backgroundColor: getStatusColor(status),
-                      },
-                    ]}
-                  >
-                    <Text style={styles.serviceStatusText}>
-                      {status.includes("healthy") ? "✓" : "✗"}
-                    </Text>
-                  </View>
-                </View>
+          Object.entries(healthStatus.services).map(([service, status]) => (
+            <View
+              key={service}
+              className={cn(
+                ps({
+                  web: "p-5 mb-4 rounded-xl",
+                  native: "p-4 mb-3 rounded-lg",
+                }),
+              )}
+              style={{ backgroundColor: theme.colors.card }}
+            >
+              <View className="flex-row justify-between items-center mb-2">
                 <Text
-                  style={[styles.serviceStatus, { color: theme.colors.text }]}
+                  className={cn(
+                    "font-semibold",
+                    ps({ web: "text-xl", native: "text-lg" }),
+                  )}
+                  style={{ color: theme.colors.text }}
                 >
-                  {status}
+                  {service.charAt(0).toUpperCase() + service.slice(1)}
                 </Text>
+
+                <View
+                  className="w-6 h-6 rounded-full items-center justify-center"
+                  style={{ backgroundColor: getStatusColor(status) }}
+                >
+                  <Text className="text-white text-xs font-bold">
+                    {status.includes("healthy") ? "✓" : "✗"}
+                  </Text>
+                </View>
               </View>
-            );
-          })}
+
+              <Text
+                className="text-sm opacity-80"
+                style={{ color: theme.colors.text }}
+              >
+                {status}
+              </Text>
+            </View>
+          ))}
       </View>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    ...webOnly({
-      padding: 20,
-    }),
-    ...nativeOnly({
-      padding: 16,
-    }),
-  },
-  contentContainer: {
-    paddingBottom: 32,
-  },
-  header: {
-    marginBottom: 24,
-    alignItems: "center",
-    ...webOnly({
-      paddingHorizontal: 20,
-    }),
-    ...nativeOnly({
-      paddingHorizontal: 0,
-    }),
-  },
-  title: {
-    ...webOnly({
-      fontSize: 36,
-    }),
-    ...nativeOnly({
-      fontSize: 28,
-    }),
-    fontWeight: "bold",
-    marginBottom: 16,
-  },
-  statusBadge: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  statusText: {
-    color: "#FFFFFF",
-    fontWeight: "bold",
-    fontSize: 14,
-  },
-  servicesContainer: {
-    width: "100%",
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 16,
-  },
-  serviceCard: {
-    ...webOnly({
-      padding: 20,
-      marginBottom: 16,
-      borderRadius: 12,
-    }),
-    ...nativeOnly({
-      padding: 16,
-      marginBottom: 12,
-      borderRadius: 8,
-    }),
-  },
-  serviceHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  serviceName: {
-    ...webOnly({
-      fontSize: 20,
-    }),
-    ...nativeOnly({
-      fontSize: 18,
-    }),
-    fontWeight: "600",
-  },
-  serviceStatusBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  serviceStatusText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  serviceStatus: {
-    fontSize: 14,
-    opacity: 0.8,
-  },
-  loadingText: {
-    fontSize: 16,
-    textAlign: "center",
-    marginTop: 32,
-  },
-});

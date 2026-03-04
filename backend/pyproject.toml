@@ -12,7 +12,7 @@ dependencies = [
     "boto3>=1.40.56",
     "celery>=5.5.3",
     "django>=5.2.7",
-    "django-allauth>=65.12.1",
+    "django-allauth[headless,mfa]>=65.12.1",
     "django-celery-beat>=2.7.0",
     "django-celery-results>=2.6.0",
     "django-cors-headers>=4.9.0",
@@ -30,7 +30,13 @@ dependencies = [
     "redis>=6.4.0",
     "stripe>=13.0.1",
     "rich>=14.2.0",
-    "pack-logger",
+    "pack-logger[django]",
+    "drf-spectacular>=0.29.0",
+    "django-stubs[compatible-mypy]>=5.2.9",
+    "django-countries>=8.2.0",
+    "django-phonenumber-field>=8.4.0",
+    "phonenumbers>=9.0.25",
+    "django-extensions>=4.1",
 ]
 
 # uv add <package> --optional dev
@@ -121,5 +127,33 @@ docstring-code-format = false
 # enabled.
 docstring-code-line-length = "dynamic"
 
+[tool.uv]
+link-mode = "copy"
+
 [tool.uv.sources]
-pack-logger = { path = "../packages/pack-logger/backend", editable = true }
+pack-logger = { git = "https://github.com/radthenone/pack-logger.git", tag = "v0.1.1", subdirectory = "backend" }
+
+[tool.pyrefly]
+include = ["src"]
+
+exclude = [
+    "**/__pycache__",
+    "**/migrations",
+    "**/node_modules",
+    ".venv",
+    "venv",
+    "build",
+    "dist",
+]
+
+python_version = "3.12"
+
+[tool.mypy]
+plugins = ["mypy_django_plugin.main"]
+
+[tool.django-stubs]
+django_settings_module = "core.settings"
+
+[[tool.mypy.overrides]]
+module = ["apps.*.models.*", "apps.models.*"]
+ignore_errors = true

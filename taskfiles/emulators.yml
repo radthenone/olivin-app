@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
+
+vars:
+    AVD_NAME: S23
+
+tasks:
+    emulator:
+        desc: Run Android Emulator
+        cmds:
+            - bash -lc './scripts/run-emulator.sh {{.AVD_NAME}}'

@@ -1,8 +1,22 @@
+const nativewind = require("nativewind/preset");
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-    content: ["./app/**/*.{js,jsx,ts,tsx}", "./src/**/*.{js,jsx,ts,tsx}", "./components/**/*.{js,jsx,ts,tsx}"],
-    theme: {
-        extend: {},
+  content: [
+    "./styles/global.css",
+    "./app/**/*.{js,jsx,ts,tsx}",
+    "./src/**/*.{js,jsx,ts,tsx}",
+  ],
+  presets: [nativewind],
+  theme: {
+    screens: {
+      sm: "640px",
+      md: "768px",
+      lg: "1024px",
+      xl: "1280px",
+      "2xl": "1536px",
     },
-    plugins: [],
+    extend: {},
+  },
+  plugins: [],
 };

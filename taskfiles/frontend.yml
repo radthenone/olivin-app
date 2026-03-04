@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
+
+tasks:
+    run:
+        desc: Run Expo app
+        dir: frontend
+        interactive: true
+        cmds:
+            - bun run lan

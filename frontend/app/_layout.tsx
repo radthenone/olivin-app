@@ -1,37 +1,48 @@
-import { ThemeProvider } from "@react-navigation/native";
+//import { ThemeProvider } from "@react-navigation/native";
+import "../styles/global.css";
 import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import "react-native-reanimated";
-import { useTheme } from "../config/theme";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { Platform, View } from "react-native";
+import { queryClient } from "@lib/queryClient";
+//import { StatusBar } from "expo-status-bar";
+//import { useTheme } from "../src/core/theme/theme";
+import {
+  SafeAreaProvider,
+  initialWindowMetrics,
+} from "react-native-safe-area-context";
+import { platformRender } from "@lib";
+import { SafeView } from "@ui";
 
-export const unstable_settings = {
-  anchor: "(tabs)",
-};
-
-export default function RootLayout() {
-  const theme = useTheme();
+export default function AppLayout() {
+  const stack = (
+    <Stack initialRouteName="index">
+      <Stack.Screen
+        name="index"
+        options={{ title: "index", headerShown: false }}
+      />
+      {/* <Stack.Screen
+        name="health"
+        options={{ title: "Health", headerShown: false }}
+      /> */}
+      <Stack.Screen
+        name="+not-found"
+        options={{ title: "Not Found", headerShown: false }}
+      />
+      {/* <Stack.Screen name="(shop)" options={{ headerShown: false }} />
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} /> */}
+    </Stack>
+  );
 
   return (
-    <ThemeProvider value={theme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="health"
-          options={{
-            title: "Health Status",
-            headerShown: true,
-          }}
-        />
-        <Stack.Screen
-          name="logs"
-          options={{
-            title: "Application Logs",
-            headerShown: true,
-          }}
-        />
-      </Stack>
-      <StatusBar style={theme.dark ? "light" : "dark"} />
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      {platformRender({
+        web: <>{stack}</>,
+        native: (
+          <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+            <SafeView>{stack}</SafeView>
+          </SafeAreaProvider>
+        ),
+      })}
+    </QueryClientProvider>
   );
 }

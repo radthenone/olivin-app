@@ -48,3 +48,10 @@ logs/
 *.temp
 .cache/
 pyrightconfig.json
+.cursor/
+
+# Local settings
+backend/src/core/settings/local.py
+
+# Taskfile cache ignore
+.task/

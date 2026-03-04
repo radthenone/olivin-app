@@ -1,42 +1,20 @@
-import { View, Text, StyleSheet } from "react-native";
+import { Text } from "react-native";
 import { Link } from "expo-router";
+import { Web, Native } from "@lib";
 
 export default function NotFoundScreen() {
-    return (
-        <View style={styles.container}>
-            <Text style={styles.title}>404</Text>
-            <Text style={styles.subtitle}>Page not found</Text>
-            <Link href="/" style={styles.link}>
-                <Text style={styles.linkText}>Go to Home</Text>
-            </Link>
-        </View>
-    );
+  return (
+    <>
+      <Web>
+        <title>404</title>
+        <h1>404 - Page Not Found</h1>
+        <p>Sorry, the page you are looking for does not exist.</p>
+      </Web>
+      <Native>
+        <Text>404</Text>
+        <Text>Page not found</Text>
+      </Native>
+      <Link href="/">Go to Home</Link>
+    </>
+  );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 20,
-    },
-    title: {
-        fontSize: 48,
-        fontWeight: "bold",
-        marginBottom: 10,
-        color: "#000",
-    },
-    subtitle: {
-        fontSize: 18,
-        marginBottom: 20,
-        color: "#666",
-    },
-    link: {
-        padding: 10,
-    },
-    linkText: {
-        fontSize: 16,
-        color: "#007AFF",
-        textDecorationLine: "underline",
-    },
-});

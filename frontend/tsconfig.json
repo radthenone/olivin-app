@@ -1,59 +1,77 @@
 {
-    "extends": "expo/tsconfig.base",
-    "compilerOptions": {
-        "strict": true,
-        "baseUrl": ".",
-        "paths": {
-            "@api/*": [
-                "./api/*"
-            ],
-            "@modules/*": [
-                "./modules/*"
-            ],
-            "@components/*": [
-                "./components/*"
-            ],
-            "@hooks/*": [
-                "./hooks/*"
-            ],
-            "@lib/*": [
-                "./lib/*"
-            ],
-            "@utils/*": [
-                "./utils/*"
-            ],
-            "@types/*": [
-                "./types/*"
-            ],
-            "@styles/*": [
-                "./styles/*"
-            ],
-            "@assets/*": [
-                "./assets/*"
-            ],
-            "@config/*": [
-                "./config/*"
-            ],
-            "@constants/*": [
-                "./constants/*"
-            ],
-            "@contexts/*": [
-                "./contexts/*"
-            ],
-        }
-    },
-    "include": [
-        "**/*.ts",
-        "**/*.tsx",
-        "**/*.web.ts",
-        "**/*.web.tsx",
-        "**/*.android.ts",
-        "**/*.android.tsx",
-        "**/*.ios.ts",
-        "**/*.ios.tsx",
-        "**/*.native.ts",
-        "**/*.native.tsx",
-        ".expo/types/**/*.ts",
-        "expo-env.d.ts"
-    ]
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "moduleResolution": "bundler",
+    "moduleSuffixes": [".native", ".web", ""],
+    "baseUrl": ".",
+    "paths": {
+      "@app": [
+        "./app"
+      ],
+      "@app/*": [
+        "./app/*"
+      ],
+      "@assets/": [
+        "./assets"
+      ],
+      "@assets/*": [
+        "./assets/*"
+      ],
+      "@lib": [
+        "lib"
+      ],
+      "@lib/*": [
+        "lib/*"
+      ],
+      "@styles": [
+        "styles"
+      ],
+      "@styles/*": [
+        "styles/*"
+      ],
+      "@core": [
+        "./src/core/"
+      ],
+      "@core/*": [
+        "./src/core/*"
+      ],
+      "@api": [
+        "./src/core/api/"
+      ],
+      "@api/*": [
+        "./src/core/api/*"
+      ],
+      "@features": [
+        "./src/features/"
+      ],
+      "@features/*": [
+        "./src/features/*"
+      ],
+      "@ui": [
+        "./src/ui/"
+      ],
+      "@ui/*": [
+        "./src/ui/*"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.web.ts",
+    "**/*.web.tsx",
+    "**/*.android.ts",
+    "**/*.android.tsx",
+    "**/*.ios.ts",
+    "**/*.ios.tsx",
+    "**/*.native.ts",
+    "**/*.native.tsx",
+    "nativewind-env.d.ts"
+  ],
+  "exclude": [
+    "../packages/**/frontend/node_modules/**",
+    "../packages/**/frontend/dist/**",
+    "node_modules"
+  ]
 }

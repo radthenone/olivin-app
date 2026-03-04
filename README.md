@@ -1,3 +1,39 @@
+# Olivin Shop
+
+## Instalacja developerska
+
+### 1. Wymagania wstępne
+
+Przed rozpoczęciem zainstaluj:
+
+- **Java 17+** — [adoptium.net](https://adoptium.net)
+- **Android SDK cmdline-tools** — [command-tools](https://developer.android.com/studio#command-tools)
+  Pobierz "Command line tools only" → wypakuj do `~/Android/Sdk/cmdline-tools/latest/`
+- **Android SDK manager** - [sdkmanager](developer.android.com/tools/sdkmanager)
+
+```bash
+# Zainstaluj narzędzia
+sdkmanager --install "platform-tools" "emulator" "system-images;android-34;google_apis;x86_64"
+```
+
+```bash
+export ANDROID_HOME="$HOME/AppData/Local/Android/Sdk"
+export PATH="$ANDROID_HOME/emulator:$PATH"
+export PATH="$ANDROID_HOME/platform-tools:$PATH"
+export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+```
+
+```bash
+# Utwórz AVD
+echo "Tworzę AVD S23..."
+avdmanager create avd \
+    --name "S23" \
+    --package "system-images;android-34;google_apis;x86_64" \
+    --force
+```
+
+#### DO USUNIECIA PONIZEJ
+
 project-root/
 ├── app/ # Expo Router
 │ ├── \_layout.tsx # Root z providers + Zustand hydration
