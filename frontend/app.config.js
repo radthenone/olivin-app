@@ -1,16 +1,4 @@
-import { config } from "dotenv";
-import path from "path";
-
-const loadEnv = () => {
-  const envPath = path.resolve(__dirname, "../.env");
-  const expoEnvPath = path.resolve(__dirname, "../.envs/dev/expo.env");
-
-  if (expoEnvPath && require("fs").existsSync(expoEnvPath)) {
-    config({ path: expoEnvPath, override: true });
-  }
-
-  config({ path: envPath, override: true });
-};
+const { loadEnv } = require("./load-env");
 
 loadEnv();
 
@@ -20,7 +8,7 @@ const getAppVersion = () => {
 
 export default {
   expo: {
-    name: process.env.EXPO_PUBLIC_APP_NAME || "frontend",
+    name: process.env.EXPO_PUBLIC_BACKEND_URL || "frontend",
     slug: "frontend",
     version: getAppVersion(),
     orientation: "portrait",

@@ -9,3 +9,9 @@ tasks:
         interactive: true
         cmds:
             - bun run lan
+    rebuild:
+        desc: Rebuild Expo app
+        dir: frontend
+        interactive: true
+        cmds:
+            - bun run free-cache

@@ -15,6 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+from allauth.headless.spec.views import OpenAPIHTMLView
 from debug_toolbar.toolbar import debug_toolbar_urls
 from django.conf import settings
 from django.contrib import admin
@@ -46,5 +47,12 @@ if settings.DEBUG:
             "api/redoc/",
             SpectacularRedocView.as_view(url_name="schema"),
             name="redoc",
+        ),
+        path(
+        "_allauth/docs/",
+        OpenAPIHTMLView.as_view(
+            template_name="headless/spec/swagger_cdn.html"
+        ),
+        name="allauth-swagger",
         ),
     ] + debug_toolbar_urls()

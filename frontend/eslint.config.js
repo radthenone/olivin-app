@@ -13,6 +13,9 @@ module.exports = defineConfig([
       "metro.config.js",
       "babel.config.js",
       "app.config.js",
+      "orval.config.js",
+      "eslint.config.js",
+      "load-env.js",
     ],
   },
   {

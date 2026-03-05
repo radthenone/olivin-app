@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
+
+tasks:
+    generate:
+        desc: Orval API client generation
+        dir: frontend
+        cmds:
+            - bun run api:generate
+    watch:
+        desc: Ovral API client generation in watch mode
+        dir: frontend
+        interactive: true
+        cmds:
+            - bun run api:generate:watch

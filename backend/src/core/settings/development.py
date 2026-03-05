@@ -60,7 +60,7 @@ REST_FRAMEWORK = {
 MIDDLEWARE = BASE_MIDDLEWARE + DEVELOPMENT_MIDDLEWARE
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "My Project API",
+    "TITLE": "olivin-app",
     "DESCRIPTION": "API documentation",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
@@ -68,7 +68,7 @@ SPECTACULAR_SETTINGS = {
     "POSTPROCESSING_HOOKS": [
         "drf_spectacular.hooks.postprocess_schema_enums",
         "drf_spectacular.contrib.djangorestframework_camel_case.camelize_serializer_fields",
-        "core.utils.allauth_schema_hook.inject_allauth_schema",
+        #"core.utils.allauth_schema_hook.inject_allauth_schema",
     ],
 }
 

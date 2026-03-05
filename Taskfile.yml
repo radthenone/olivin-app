@@ -25,6 +25,7 @@ includes:
     db: ./taskfiles/db.yml
     shell: ./taskfiles/shell.yml
     packages: ./taskfiles/packages.yml
+    ovral: ./taskfiles/ovral.yml
 
 tasks:
     default:
