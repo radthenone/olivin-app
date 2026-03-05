@@ -1,14 +1,15 @@
 from rest_framework import status, viewsets
-from rest_framework.decorators import action, permission_classes
+from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.accounts.models import Profile, RoleChoices
-from apps.accounts.schema import change_role_schema
+from apps.accounts.schema import profile_schema
 from apps.accounts.serializers import ProfileSerializer
 
 
+@profile_schema
 class ProfileViewSet(viewsets.ModelViewSet):
     """
     A viewset for viewing and editing profile instances.
@@ -22,6 +23,7 @@ class ProfileViewSet(viewsets.ModelViewSet):
     - destroy:        DELETE /api/v1/profiles/{id}/
     - change_role:    PATCH /api/v1/profiles/{id}/change-role/
     """
+
     permission_classes = [IsAuthenticated]
     serializer_class = ProfileSerializer
 
@@ -31,8 +33,12 @@ class ProfileViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-    @change_role_schema
-    @action(detail=True, methods=['patch'], url_path='change-role', permission_classes=[IsAuthenticated])
+    @action(
+        detail=True,
+        methods=["patch"],
+        url_path="change-role",
+        permission_classes=[IsAuthenticated],
+    )
     def change_role(self, request, pk=None):
         profile = self.get_object()
         if profile.role == RoleChoices.CUSTOMER:

@@ -1,4 +1,4 @@
-from .address_schema import set_default_schema
-from .profile_schema import change_role_schema
+from .address_schema import address_schema
+from .profile_schema import profile_schema
 
-__all__ = ["change_role_schema", "set_default_schema"]
+__all__ = ["profile_schema", "address_schema"]

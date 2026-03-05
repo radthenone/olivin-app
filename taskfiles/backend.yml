@@ -6,7 +6,7 @@ tasks:
     run:
         desc: Run Django app and microservices
         cmds:
-            - docker-compose --profile backend up
+            - docker-compose --profile backend up -d
 
     build:
         desc: Build Django app and microservices

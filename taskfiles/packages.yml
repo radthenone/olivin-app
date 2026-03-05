@@ -8,21 +8,39 @@ tasks:
         dir: frontend
         cmds:
             - bun add {{.CLI_ARGS}}
-
+    frontend:add:development:
+        desc: Add frontend dev package (task app:frontend:add:development -- <package>)
+        dir: frontend
+        cmds:
+            - bun add -d {{.CLI_ARGS}}
     frontend:remove:
         desc: Remove frontend package (task app:frontend:remove -- <package>)
         dir: frontend
         cmds:
             - bun remove {{.CLI_ARGS}}
+    frontend:sync:
+        desc: Sync frontend packages (task app:frontend:sync)
+        dir: frontend
+        cmds:
+            - bun install
 
     backend:add:
         desc: Add backend package (task app:backend:add -- <package>)
         dir: backend
         cmds:
             - uv add {{.CLI_ARGS}}
-
+    backend:add:development:
+        desc: Add backend dev package (task app:backend:add:development -- <package>)
+        dir: backend
+        cmds:
+            - uv add {{.CLI_ARGS}} --optional dev
     backend:remove:
         desc: Remove backend package (task app:backend:remove -- <package>)
         dir: backend
         cmds:
             - uv remove {{.CLI_ARGS}}
+    backend:sync:
+        desc: Sync backend packages (task app:backend:sync)
+        dir: backend
+        cmds:
+            - uv sync
