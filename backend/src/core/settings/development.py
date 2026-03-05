@@ -2,8 +2,11 @@ import os
 
 from pack_logger import configure_logging
 
-from core.settings.components.apps import (APPLICATION_APPS, DJANGO_APPS,
-                                           THIRD_PARTY_APPS)
+from core.settings.components.apps import (
+    APPLICATION_APPS,
+    DJANGO_APPS,
+    THIRD_PARTY_APPS,
+)
 from core.settings.components.auth import REST_FRAMEWORK
 from core.settings.components.middleware import MIDDLEWARE as BASE_MIDDLEWARE
 
@@ -34,7 +37,12 @@ PACK_LOGGER_EXCLUDED_PATHS = [
     "/api/schema/",
     "/api/schema/redoc/",
     "/api/docs/",
+    "/api/redoc/",
     "/_allauth/openapi.json",
+    "/_allauth/docs/",
+    "/_allauth/redoc/",
+    "/silk/",
+    "/silk/*",
 ]
 
 DEVELOPMENT_APPS = [
@@ -68,12 +76,12 @@ SPECTACULAR_SETTINGS = {
     "POSTPROCESSING_HOOKS": [
         "drf_spectacular.hooks.postprocess_schema_enums",
         "drf_spectacular.contrib.djangorestframework_camel_case.camelize_serializer_fields",
-        #"core.utils.allauth_schema_hook.inject_allauth_schema",
+        # "core.utils.allauth_schema_hook.inject_allauth_schema",
     ],
 }
 
 HEADLESS_SERVE_SPECIFICATION = True
-HEADLESS_SPECIFICATION_TEMPLATE_NAME = "headless/spec/swagger_cdn.html"
+
 
 def silky_intercept_func(request):
     return not any(request.path.startswith(path) for path in PACK_LOGGER_EXCLUDED_PATHS)

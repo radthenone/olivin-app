@@ -36,10 +36,10 @@
       "@core/*": [
         "./src/core/*"
       ],
-      "@api": [
+      "@http": [
         "./src/core/api/"
       ],
-      "@api/*": [
+      "@http/*": [
         "./src/core/api/*"
       ],
       "@features": [
@@ -54,6 +54,12 @@
       "@ui/*": [
         "./src/ui/*"
       ],
+      "@api": [
+        "./src/api/"
+      ],
+      "@api/*": [
+        "./src/api/*"
+       ]
     }
   },
   "include": [

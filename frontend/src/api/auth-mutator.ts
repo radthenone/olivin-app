@@ -1,4 +1,4 @@
-import apiClient from "@api/client";
+import apiClient from "@http/client";
 import type { AxiosRequestConfig, AxiosResponse } from "axios";
 
 export const authInstance = <T>(config: AxiosRequestConfig): Promise<T> => {

@@ -15,15 +15,17 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-from allauth.headless.spec.views import OpenAPIHTMLView
 from debug_toolbar.toolbar import debug_toolbar_urls
 from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
-from drf_spectacular.views import (SpectacularAPIView, SpectacularRedocView,
-                                   SpectacularSwaggerView)
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
 
-from core.utils import HealthCheckView
+from core.utils import AllauthRedocView, AllauthSwaggerView, HealthCheckView
 
 urlpatterns = [
     # Admin
@@ -49,10 +51,14 @@ if settings.DEBUG:
             name="redoc",
         ),
         path(
-        "_allauth/docs/",
-        OpenAPIHTMLView.as_view(
-            template_name="headless/spec/swagger_cdn.html"
+            "_allauth/docs/",
+            AllauthSwaggerView.as_view(),
+            name="allauth-swagger",
         ),
-        name="allauth-swagger",
+        path(
+            "_allauth/redoc/",
+            AllauthRedocView.as_view(),
+            name="allauth-redoc",
         ),
+        path("silk/", include("silk.urls", namespace="silk")),
     ] + debug_toolbar_urls()

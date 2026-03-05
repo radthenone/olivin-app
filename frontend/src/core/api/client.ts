@@ -1,6 +1,6 @@
-import { CONFIG } from "src/core/env";
+import { CONFIG } from "@core/env";
 import axios, { AxiosInstance } from "axios";
-import { interceptorManager } from "@api/InterceptorManager";
+import { interceptorManager } from "@http/InterceptorManager";
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: CONFIG.BASE_URL,

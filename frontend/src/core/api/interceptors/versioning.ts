@@ -1,5 +1,5 @@
 import { AxiosInstance, InternalAxiosRequestConfig } from "axios";
-import { CONFIG } from "src/core/env";
+import { CONFIG } from "@core/env";
 
 export function setupVersioningInterceptor(apiClient: AxiosInstance): number {
   return apiClient.interceptors.request.use(

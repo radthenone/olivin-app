@@ -1,4 +1,4 @@
-import { CONFIG } from "src/core/env";
+import { CONFIG } from "@core/env";
 
 export const ENDPOINTS = {
   AUTH: {

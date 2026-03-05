@@ -1,4 +1,3 @@
-import { CONFIG } from "src/core/env";
 import { log } from "@pack/logger";
 import {
   InternalAxiosRequestConfig as Request,

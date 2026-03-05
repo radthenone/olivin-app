@@ -23,14 +23,32 @@ export function setupAuthInterceptor(apiClient: AxiosInstance): {
   );
 
   const response = apiClient.interceptors.response.use(
-    (res) => res,
-    async (error) => {
-      if (error.response?.status === 401) {
-        if (isNative) {
-          await SecureStore.deleteItemAsync("sessionToken");
+    async (res) => {
+      if (isNative) {
+        const sessionToken = res.data?.meta?.sessionToken;
+        if (sessionToken) {
+          await SecureStore.setItemAsync("sessionToken", sessionToken);
         }
-        // TODO: navigate to login
       }
+      return res;
+    },
+    async (error) => {
+      const status = error.response?.status;
+
+      if (isNative) {
+        // 401 - brak autoryzacji
+        if (status === 401) {
+          await SecureStore.deleteItemAsync("sessionToken");
+          // TODO: navigate to login
+        }
+
+        // ✅ 410 Gone - sesja wygasła, wyczyść token
+        if (status === 410) {
+          await SecureStore.deleteItemAsync("sessionToken");
+          // TODO: navigate to login, show "session expired" message
+        }
+      }
+
       return Promise.reject(error);
     },
   );
