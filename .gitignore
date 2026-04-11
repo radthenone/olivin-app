@@ -55,3 +55,7 @@ backend/src/core/settings/local.py
 
 # Taskfile cache ignore
 .task/
+
+# bruno space
+bruno
+bruno/*
