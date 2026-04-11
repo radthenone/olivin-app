@@ -26,6 +26,7 @@ includes:
     shell: ./taskfiles/shell.yml
     packages: ./taskfiles/packages.yml
     ovral: ./taskfiles/ovral.yml
+    test: ./taskfiles/test.yml
 
 tasks:
     default:

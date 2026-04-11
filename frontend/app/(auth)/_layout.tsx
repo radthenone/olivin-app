@@ -1,0 +1,17 @@
+/**
+ * (auth)/_layout.tsx
+ * Layout dla grupy ekranów niezalogowanych — prosty Stack bez nagłówka.
+ */
+import { Stack } from "expo-router";
+
+export default function AuthLayout() {
+  return (
+    <Stack>
+      <Stack.Screen name="login" options={{ headerShown: false }} />
+      <Stack.Screen name="register" options={{ headerShown: false }} />
+      <Stack.Screen name="verify-email" options={{ headerShown: false }} />
+      <Stack.Screen name="mfa" options={{ headerShown: false }} />
+      <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
+    </Stack>
+  );
+}

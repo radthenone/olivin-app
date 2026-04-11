@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
+
+tasks:
+    backend-build:
+        desc: Zbuduj obraz backendu dla środowiska testowego
+        cmds:
+            - docker-compose -f docker-compose.yml -f docker-compose.test.yml --profile test build olivin-django-test
+
+    backend:
+        desc: Uruchom wszystkie testy backendu wraz z generowaniem pokrycia (default command z compose)
+        cmds:
+            - docker-compose -f docker-compose.yml -f docker-compose.test.yml --profile test run --rm olivin-django-test
+
+    backend-cmd:
+        desc: |
+            Uruchom wybraną komendę testów / wybrane testy (np. task test:backend-cmd -- src/apps/users/tests)
+        cmds:
+            - docker-compose -f docker-compose.yml -f docker-compose.test.yml --profile test run --rm olivin-django-test pytest {{.CLI_ARGS}}
+
+    backend-watch:
+        desc: Uruchamia testy w trybie nasłuchiwania (pytest-watch). Samoczynnie uruchamia testy po każdej zmianie pliku, działa szybko dzięki --reuse-db.
+        cmds:
+            - docker-compose -f docker-compose.yml -f docker-compose.test.yml --profile test run --rm olivin-django-test ptw --clear --runner "pytest -q --reuse-db" src/
+
+    backend-down:
+        desc: Resetuje i trwale czyści kontenery środowiska testowego (przydatne m.in. dla odświeżenia bazy)
+        cmds:
+            - docker-compose -f docker-compose.yml -f docker-compose.test.yml --profile test down -v

@@ -1,6 +1,6 @@
 import { CONFIG } from "@core/env";
 
-export const ENDPOINTS = {
+export const ENDPOINTS = Object.freeze({
   AUTH: {
     LOGIN: `/_allauth/${CONFIG.CLIENT}/v1/auth/login/`,
     LOGOUT: `/_allauth/${CONFIG.CLIENT}/v1/auth/logout/`,
@@ -33,4 +33,4 @@ export const ENDPOINTS = {
   // },
   HEALTH: "/health/",
   LOGS: "/logs/",
-} as const;
+});

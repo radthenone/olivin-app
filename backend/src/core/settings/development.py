@@ -2,11 +2,8 @@ import os
 
 from pack_logger import configure_logging
 
-from core.settings.components.apps import (
-    APPLICATION_APPS,
-    DJANGO_APPS,
-    THIRD_PARTY_APPS,
-)
+from core.settings.components.apps import (APPLICATION_APPS, DJANGO_APPS,
+                                           THIRD_PARTY_APPS)
 from core.settings.components.auth import REST_FRAMEWORK
 from core.settings.components.middleware import MIDDLEWARE as BASE_MIDDLEWARE
 
@@ -32,6 +29,7 @@ LOGGING = configure_logging(debug=DEBUG, app_name="olivin")
 PACK_LOGGER_EXCLUDED_PATHS = [
     "/admin/",
     "/favicon.ico",
+    "/csrf/",
     "/health/",
     "/api/health/",
     "/api/schema/",
@@ -76,7 +74,6 @@ SPECTACULAR_SETTINGS = {
     "POSTPROCESSING_HOOKS": [
         "drf_spectacular.hooks.postprocess_schema_enums",
         "drf_spectacular.contrib.djangorestframework_camel_case.camelize_serializer_fields",
-        # "core.utils.allauth_schema_hook.inject_allauth_schema",
     ],
 }
 

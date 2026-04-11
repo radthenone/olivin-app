@@ -25,20 +25,27 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 
-from core.utils import AllauthRedocView, AllauthSwaggerView, HealthCheckView
+from core.utils import (
+    AllauthRedocView,
+    AllauthSwaggerView,
+    CsrfViewSet,
+    HealthCheckView,
+)
 
 urlpatterns = [
     # Admin
     path("admin/", admin.site.urls),
     path("health/", HealthCheckView.as_view(), name="health_check"),
-    # Headless API
-    path("_allauth/", include("allauth.headless.urls")),
     # API
-    path("accounts/", include("apps.accounts.urls")),
+    path("customers/", include("apps.accounts.urls")),
+    # Headless API
+    path("accounts/", include("allauth.urls")),
+    path("_allauth/", include("allauth.headless.urls")),
 ]
 
 if settings.DEBUG:
     urlpatterns += [
+        path("csrf/", include("core.utils.auth.csrf_urls")),
         path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
         path(
             "api/docs/",

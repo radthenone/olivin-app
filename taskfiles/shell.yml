@@ -10,5 +10,6 @@ tasks:
 
     run:plus:
         desc: Open Django shell_plus with auto-imports
+        interactive: true
         cmds:
-            - docker exec -it olivin-django python manage.py shell_plus
+            - bash -lc './scripts/django-shell-plus.sh'

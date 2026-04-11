@@ -1,0 +1,46 @@
+services:
+    olivin-postgres-test:
+        container_name: olivin-postgres-test
+        image: postgres:16
+        profiles: ["test"]
+        tmpfs:
+            - /var/lib/postgresql/data
+        env_file:
+            - ./.envs/dev/postgres.env
+        restart: "no"
+        networks:
+            - olivin-network
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres -d olivin_db"]
+            interval: 3s
+            timeout: 5s
+            retries: 5
+            start_period: 5s
+
+    olivin-django-test:
+        profiles: ["test"]
+        build:
+            context: .
+            dockerfile: docker/backend/Dockerfile
+            target: test
+        depends_on:
+            olivin-postgres-test:
+                condition: service_healthy
+            olivin-redis:
+                condition: service_healthy
+            olivin-minio:
+                condition: service_healthy
+        env_file:
+            - ./.envs/dev/django.env
+        environment:
+            POSTGRES_HOST: olivin-postgres-test
+            POSTGRES_PORT: 5432
+            DJANGO_ENVIRONMENT: test
+            DJANGO_DEBUG: "0"
+        working_dir: /app/src
+        volumes:
+            - ./backend/src:/app/src
+            - ./backend/pyproject.toml:/app/pyproject.toml:ro
+        command: pytest -q --cov=. --cov-report=xml --cov-report=html --cov-fail-under=60
+        networks:
+            - olivin-network

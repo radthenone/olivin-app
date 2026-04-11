@@ -15,6 +15,7 @@ x-django: &django
     build:
         dockerfile: docker/backend/Dockerfile
         context: .
+        target: dev
     stdin_open: true
     tty: true
     volumes:
@@ -79,7 +80,7 @@ services:
             timeout: 5s
             retries: 5
             start_period: 10s
-        profiles: ["dev", "backend", "full", "local"]
+        profiles: ["dev", "backend", "full", "local", "test"]
 
     olivin-minio:
         container_name: olivin-minio
@@ -101,7 +102,7 @@ services:
             timeout: 5s
             retries: 5
             start_period: 30s
-        profiles: ["dev", "backend", "full", "local"]
+        profiles: ["dev", "backend", "full", "local", "test"]
 
     olivin-mailhog:
         container_name: olivin-mailhog

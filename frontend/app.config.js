@@ -68,6 +68,8 @@ export default {
       appVersion: getAppVersion(),
       webUrl: process.env.EXPO_PUBLIC_BACKEND_URL || "127.0.0.1:8020",
       androidUrl: process.env.EXPO_PUBLIC_EMULATOR_URL || "10.0.2.2:8020",
+      sessionTokenKey:
+        process.env.EXPO_SESSION_TOKEN_KEY || "auth.sessionToken",
     },
   },
 };

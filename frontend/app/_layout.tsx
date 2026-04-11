@@ -1,35 +1,33 @@
-//import { ThemeProvider } from "@react-navigation/native";
+/**
+ * Root layout — inicjalizuje sesję i redirektuje na właściwy ekran.
+ * useSessionInit() sprawdza stan sesji JEDNORAZOWO przy starcie.
+ */
 import "../styles/global.css";
-import { Stack } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Platform, View } from "react-native";
+import { useEffect } from "react";
 import { queryClient } from "@lib/queryClient";
-//import { StatusBar } from "expo-status-bar";
-//import { useTheme } from "../src/core/theme/theme";
 import {
   SafeAreaProvider,
   initialWindowMetrics,
 } from "react-native-safe-area-context";
 import { platformRender } from "@lib";
 import { SafeView } from "@ui";
+import { useSessionInit, useAuth } from "@features/auth";
 
 export default function AppLayout() {
+  useSessionInit();
+  useAuthGuard();
+
   const stack = (
     <Stack initialRouteName="index">
-      <Stack.Screen
-        name="index"
-        options={{ title: "index", headerShown: false }}
-      />
-      {/* <Stack.Screen
-        name="health"
-        options={{ title: "Health", headerShown: false }}
-      /> */}
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack.Screen name="(app)" options={{ headerShown: false }} />
       <Stack.Screen
         name="+not-found"
         options={{ title: "Not Found", headerShown: false }}
       />
-      {/* <Stack.Screen name="(shop)" options={{ headerShown: false }} />
-      <Stack.Screen name="(auth)" options={{ headerShown: false }} /> */}
     </Stack>
   );
 
@@ -45,4 +43,48 @@ export default function AppLayout() {
       })}
     </QueryClientProvider>
   );
+}
+
+/**
+ * Guard nawigacji — na podstawie `session.meta.is_authenticated` oraz flows
+ * przenosi użytkownika do właściwej grupy routów.
+ */
+function useAuthGuard() {
+  const router = useRouter();
+  const segments = useSegments();
+  const rootSegment = segments[0];
+  const {
+    session,
+    isSessionChecked,
+    isAuthenticated,
+    isPendingMfa,
+    isPendingVerification,
+  } = useAuth();
+
+  useEffect(() => {
+    if (!isSessionChecked) return; // czekamy na sprawdzenie sesji
+
+    const inAuth = rootSegment === "(auth)";
+    const inApp = rootSegment === "(app)";
+
+    if (isPendingMfa && !inAuth) {
+      router.replace("/(auth)/mfa");
+    } else if (isPendingVerification && !inAuth) {
+      router.replace("/(auth)/verify-email");
+    } else if (isAuthenticated && inAuth) {
+      router.replace("/(app)/home");
+    } else if (!isAuthenticated && inApp) {
+      router.replace("/(auth)/login");
+    } else if (!isAuthenticated && !inAuth) {
+      router.replace("/(auth)/login");
+    }
+  }, [
+    router,
+    rootSegment,
+    isSessionChecked,
+    isAuthenticated,
+    isPendingMfa,
+    isPendingVerification,
+    session,
+  ]);
 }

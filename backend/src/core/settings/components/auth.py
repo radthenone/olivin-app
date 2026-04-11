@@ -5,6 +5,13 @@ Authentication and authorization configuration.
 import os
 from datetime import timedelta
 
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
+AUTH_USER_MODEL = "accounts.CustomUser"
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -39,5 +46,3 @@ REST_FRAMEWORK = {
     "ALLOWED_VERSIONS": tuple(os.environ.get("EXPO_PUBLIC_VERSIONS", "v1").split(",")),
 }
 
-# SESSION
-ALLAUTH_HEADLESS_BACKEND = "session"

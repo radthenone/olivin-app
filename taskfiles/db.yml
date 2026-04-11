@@ -49,3 +49,8 @@ tasks:
         desc: Delete all migrations except __init__.py (task db:migrations:clean -- <app-name>)
         cmds:
             - bash -c "find backend/src/apps/{{.CLI_ARGS}}/migrations -type f -name '*.py' ! -name '__init__.py' | xargs rm -f"
+
+    clean:volumes:
+        desc: Delete all volumes
+        cmds:
+            - docker compose --profile backend --profile local down; docker volume rm olivin-data olivin-media

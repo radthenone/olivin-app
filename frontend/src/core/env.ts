@@ -40,10 +40,14 @@ export const TIMEOUT = 10000;
 
 const CLIENT = Platform.OS === "web" ? "browser" : "app";
 
+const SESSION_TOKEN_KEY =
+  Constants.expoConfig?.extra?.sessionTokenKey || "auth.sessionToken";
+
 export const CONFIG = {
   BASE_URL,
   VERSION,
   TIMEOUT,
   IS_DEV: getApiDev(),
   CLIENT,
+  SESSION_TOKEN_KEY,
 } as const;

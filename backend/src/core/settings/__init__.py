@@ -16,6 +16,8 @@ base_settings = [
     "components/celery.py",
     "components/email.py",
     "components/security.py",
+    "components/session.py",
+    "components/allauth/__init__.py",
     "base.py",
 ]
 

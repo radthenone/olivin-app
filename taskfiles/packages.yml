@@ -43,4 +43,4 @@ tasks:
         desc: Sync backend packages (task app:backend:sync)
         dir: backend
         cmds:
-            - uv sync
+            - uv sync --extra dev

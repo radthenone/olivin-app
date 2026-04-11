@@ -1,10 +1,16 @@
 """
 Email configuration.
 """
+
 import os
 
 # Email configuration
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+# Backend używany TYLKO w workerze (żeby nie zrobić pętli)
+ACTUAL_EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+
 EMAIL_HOST = str(os.environ.get("EMAIL_HOST", "localhost"))
 EMAIL_PORT = int(os.environ.get("EMAIL_PORT", 1025))
 EMAIL_HOST_USER = str(os.environ.get("EMAIL_HOST_USER", ""))
