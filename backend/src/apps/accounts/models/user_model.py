@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 
-from accounts.managers import CustomUserManager
+from apps.accounts.managers import CustomUserManager
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):

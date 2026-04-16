@@ -70,7 +70,7 @@ services:
         container_name: olivin-redis
         image: redis:latest
         ports:
-            - 6379:6379
+            - "${REDIS_PORT}:6379"
         networks:
             - olivin-network
         restart: unless-stopped
@@ -86,8 +86,8 @@ services:
         container_name: olivin-minio
         image: minio/minio:latest
         ports:
-            - 9000:9000
-            - 9001:9001
+            - "${MINIO_SERVER_PORT}:9000"
+            - "${MINIO_CONSOLE_PORT}:9001"
         volumes:
             - olivin-media:/data
         env_file:
@@ -97,7 +97,7 @@ services:
         restart: unless-stopped
         command: server /data --console-address ":9001"
         healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+            test: ["CMD", "curl", "-f", "${MINIO_HEALTHCHECK_URL}"]
             interval: 10s
             timeout: 5s
             retries: 5
@@ -118,13 +118,19 @@ services:
         <<: *django
         container_name: olivin-django
         env_file:
-            - ./.envs/dev/django.env
+            - ./.envs/dev/backend/django.env
+            - ./.envs/dev/backend/db.env
+            - ./.envs/dev/backend/cache_broker.env
+            - ./.envs/dev/backend/broker.env
+            - ./.envs/dev/backend/s3.env
+            - ./.envs/dev/backend/email.env
+            - ./.envs/dev/backend/authorization.env
         ports:
-            - 8020:8000
+            - "${DJANGO_PORT}:8000"
         working_dir: /app/src
         restart: unless-stopped
         healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+            test: ["CMD", "curl", "-f", "${DJANGO_HEALTHCHECK_URL}"]
             interval: 30s
             timeout: 10s
             retries: 3
@@ -135,7 +141,8 @@ services:
         <<: *celery
         container_name: olivin-celery-worker
         env_file:
-            - ./.envs/dev/django.env
+            - ./.envs/dev/backend/db.env
+            - ./.envs/dev/backend/broker.env
         working_dir: /app/src
         command: bash -c "/celery/worker.sh"
         restart: unless-stopped
@@ -145,7 +152,8 @@ services:
         <<: *celery
         container_name: olivin-celery-beat
         env_file:
-            - ./.envs/dev/django.env
+            - ./.envs/dev/backend/db.env
+            - ./.envs/dev/backend/broker.env
         working_dir: /app/src
         command: bash -c "/celery/beat.sh"
         restart: unless-stopped
@@ -155,10 +163,11 @@ services:
         <<: *celery
         container_name: olivin-celery-flower
         env_file:
-            - ./.envs/dev/django.env
+            - ./.envs/dev/backend/db.env
+            - ./.envs/dev/backend/broker.env
         working_dir: /app/src
         ports:
-            - "5555:5555"
+            - "${FLOWER_PORT}:5555"
         command: bash -c "/celery/flower.sh"
         restart: unless-stopped
         profiles: ["dev", "backend", "full", "celery"]

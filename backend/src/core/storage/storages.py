@@ -1,27 +1,42 @@
-from datetime import timedelta
+import os
 
 from django.conf import settings
-from PIL import Image
 from storages.backends.s3boto3 import S3Boto3Storage
 
 
 class DefaultStorage(S3Boto3Storage):
-    endpoint_url = settings.AWS_S3_ENDPOINT_URL
     bucket_name = ""
-    custom_domain = settings.AWS_S3_CUSTOM_DOMAIN.rstrip("/")
 
-    @property
-    def custom_domain_with_bucket(self):
-        domain = self.custom_domain
-        bucket = self.bucket_name.strip("/")
-        return f"{domain}/{bucket}/"
+    @classmethod
+    def _get_endpoint_url(cls) -> str:
+        return getattr(
+            settings,
+            "AWS_S3_ENDPOINT_URL",
+            os.environ.get("AWS_S3_ENDPOINT_URL", "http://minio:9000"),
+        )
+
+    @classmethod
+    def _get_custom_domain(cls) -> str:
+        return getattr(
+            settings,
+            "AWS_S3_CUSTOM_DOMAIN",
+            os.environ.get("AWS_S3_CUSTOM_DOMAIN", "localhost:9000"),
+        ).rstrip("/")
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        if settings.USE_AWS:
-            self.custom_domain = f"{self.custom_domain}/"
+        self.endpoint_url = self._get_endpoint_url()
+        domain = self._get_custom_domain()
+        use_aws = getattr(
+            settings,
+            "USE_AWS",
+            os.environ.get("USE_AWS", "False").lower() == "true",
+        )
+        if use_aws:
+            self.custom_domain = f"{domain}/"
         else:
-            self.custom_domain = self.custom_domain_with_bucket
+            bucket = self.bucket_name.strip("/")
+            self.custom_domain = f"{domain}/{bucket}/"
+        super().__init__(**kwargs)
 
 
 class PublicStorage(DefaultStorage):
@@ -34,19 +49,6 @@ class PublicStorage(DefaultStorage):
     @property
     def querystring_auth(self):
         return False
-
-
-class PublicStorageExpire(DefaultStorage):
-    default_acl = "public-read"
-    file_overwrite = True
-    secure_urls = False
-    use_ssl = False
-    url_protocol = "http:"
-    querystring_expire = timedelta(minutes=10).total_seconds()
-
-    @property
-    def querystring_auth(self):
-        return True
 
 
 class PrivateStorage(DefaultStorage):
@@ -62,8 +64,15 @@ class PrivateStorage(DefaultStorage):
 
 
 class StaticStorage(PublicStorage):
-    bucket_name = settings.AWS_STORAGE_BUCKET_NAME
     location = ""
+
+    def __init__(self, **kwargs):
+        self.bucket_name = getattr(
+            settings,
+            "AWS_STORAGE_BUCKET_NAME",
+            os.environ.get("AWS_STORAGE_BUCKET_NAME", "static"),
+        )
+        super().__init__(**kwargs)
 
 
 class ProfileStorage(PublicStorage):
@@ -81,6 +90,7 @@ class PublicMediaStorage(PublicStorage):
     Storage dla publicznych plików multimedialnych.
     Używane jako domyślne storage dla uploadowanych plików.
     """
+
     bucket_name = "media"
     location = ""
 
@@ -90,5 +100,6 @@ class PrivateMediaStorage(PrivateStorage):
     Storage dla prywatnych plików multimedialnych.
     Używane dla plików wymagających autoryzacji.
     """
+
     bucket_name = "private-media"
     location = ""

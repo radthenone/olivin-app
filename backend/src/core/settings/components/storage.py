@@ -4,6 +4,7 @@ Storage configuration for Olivin project.
 This module handles static and media file storage configuration.
 Supports both local file storage and S3/MinIO storage.
 """
+
 import os
 from pathlib import Path
 
@@ -38,7 +39,9 @@ if USE_AWS:
     AWS_ACCESS_KEY_ID = str(os.environ.get("AWS_ACCESS_KEY_ID", "minioadmin"))
     AWS_SECRET_ACCESS_KEY = str(os.environ.get("AWS_SECRET_ACCESS_KEY", "minioadmin"))
     AWS_S3_REGION_NAME = str(os.environ.get("AWS_S3_REGION_NAME", "us-east-1"))
-    AWS_S3_ENDPOINT_URL = str(os.environ.get("AWS_S3_ENDPOINT_URL", "http://minio:9000"))
+    AWS_S3_ENDPOINT_URL = str(
+        os.environ.get("AWS_S3_ENDPOINT_URL", "http://minio:9000")
+    )
     AWS_S3_CUSTOM_DOMAIN = str(os.environ.get("AWS_S3_CUSTOM_DOMAIN", "localhost:9000"))
     AWS_STORAGE_BUCKET_NAME = str(os.environ.get("AWS_STORAGE_BUCKET_NAME", "static"))
 
@@ -52,12 +55,19 @@ if USE_AWS:
 else:
     # Local file storage (default for development)
     STORAGES = {
-        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+        },
         "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     }
 
     # MinIO settings for bucket initialization only
     AWS_ACCESS_KEY_ID = str(os.environ.get("AWS_ACCESS_KEY_ID", "minioadmin"))
     AWS_SECRET_ACCESS_KEY = str(os.environ.get("AWS_SECRET_ACCESS_KEY", "minioadmin"))
-    AWS_S3_ENDPOINT_URL = str(os.environ.get("AWS_S3_ENDPOINT_URL", "http://minio:9000"))
+    AWS_S3_REGION_NAME = str(os.environ.get("AWS_S3_REGION_NAME", "us-east-1"))
+    AWS_S3_ENDPOINT_URL = str(
+        os.environ.get("AWS_S3_ENDPOINT_URL", "http://minio:9000")
+    )
+    AWS_S3_CUSTOM_DOMAIN = str(os.environ.get("AWS_S3_CUSTOM_DOMAIN", "localhost:9000"))
     AWS_STORAGE_BUCKET_NAME = str(os.environ.get("AWS_STORAGE_BUCKET_NAME", "static"))
+
