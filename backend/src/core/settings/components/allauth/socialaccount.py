@@ -4,14 +4,16 @@ import os
 SOCIALACCOUNT_USER_MODEL_USERNAME_FIELD = "username"
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
-SOCIALACCOUNT_ADAPTER = "core.services.allauth.social_adapter.EmailOnlySocialAccountAdapter"
+SOCIALACCOUNT_ADAPTER = (
+    "core.services.allauth.social_adapter.EmailOnlySocialAccountAdapter"
+)
 
 SOCIALACCOUNT_PROVIDERS = {
     "google": {
         "APP": {
             "client_id": os.environ.get("GOOGLE_OAUTH_CLIENT_ID", ""),
             "secret": os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET", ""),
-            "key": ""
+            "key": "",
         },
         "SCOPE": [
             "profile",
@@ -20,25 +22,18 @@ SOCIALACCOUNT_PROVIDERS = {
         "AUTH_PARAMS": {
             "access_type": "online",
         },
-        # Należy sprawdzić weryfikację e-mail z Google, od rzucania fałszywych spamowych
         "EMAIL_AUTHENTICATION": True,
     },
     "facebook": {
         "APP": {
-            "client_id": "TUTAJ_WPISZ_SWOJ_FACEBOOK_APP_ID",
-            "secret": "TUTAJ_WPISZ_SWOJ_FACEBOOK_SECRET",
-            "key": ""
+            "client_id": os.environ.get("FACEBOOK_OAUTH_CLIENT_ID", ""),
+            "secret": os.environ.get("FACEBOOK_OAUTH_CLIENT_SECRET", ""),
+            "key": "",
         },
         "METHOD": "oauth2",
         "SCOPE": ["email", "public_profile"],
-        "FIELDS": [
-            "id",
-            "email",
-            "name",
-            "first_name",
-            "last_name",
-        ],
+        "FIELDS": ["id", "email", "name", "first_name", "last_name"],
         "EXCHANGE_TOKEN": True,
         "VERIFIED_EMAIL": True,
-    }
+    },
 }

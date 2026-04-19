@@ -1,6 +1,7 @@
 from allauth.account.internal.emailkit import valid_email_or_none
 from allauth.account.utils import user_email, user_field
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+from allauth.socialaccount.models import SocialLogin
 
 
 class EmailOnlySocialAccountAdapter(DefaultSocialAccountAdapter):
@@ -27,3 +28,12 @@ class EmailOnlySocialAccountAdapter(DefaultSocialAccountAdapter):
         user_field(user, "last_name", last_name or name_parts[2])
         return user
 
+    def is_open_for_signup(self, request, sociallogin: SocialLogin) -> bool:
+        """
+        Blokuje rejestrację gdy Facebook (lub inny provider) nie zwrócił emaila.
+        Użytkownik musi mieć email powiązany z kontem Facebook.
+        """
+        email = sociallogin.account.extra_data.get("email")
+        if not email:
+            return False
+        return super().is_open_for_signup(request, sociallogin)
