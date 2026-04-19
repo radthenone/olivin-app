@@ -141,8 +141,13 @@ services:
         <<: *celery
         container_name: olivin-celery-worker
         env_file:
+            - ./.envs/dev/backend/django.env
             - ./.envs/dev/backend/db.env
+            - ./.envs/dev/backend/cache_broker.env
             - ./.envs/dev/backend/broker.env
+            - ./.envs/dev/backend/s3.env
+            - ./.envs/dev/backend/email.env
+            - ./.envs/dev/backend/authorization.env
         working_dir: /app/src
         command: bash -c "/celery/worker.sh"
         restart: unless-stopped
@@ -152,8 +157,13 @@ services:
         <<: *celery
         container_name: olivin-celery-beat
         env_file:
+            - ./.envs/dev/backend/django.env
             - ./.envs/dev/backend/db.env
+            - ./.envs/dev/backend/cache_broker.env
             - ./.envs/dev/backend/broker.env
+            - ./.envs/dev/backend/s3.env
+            - ./.envs/dev/backend/email.env
+            - ./.envs/dev/backend/authorization.env
         working_dir: /app/src
         command: bash -c "/celery/beat.sh"
         restart: unless-stopped
@@ -163,8 +173,13 @@ services:
         <<: *celery
         container_name: olivin-celery-flower
         env_file:
+            - ./.envs/dev/backend/django.env
             - ./.envs/dev/backend/db.env
+            - ./.envs/dev/backend/cache_broker.env
             - ./.envs/dev/backend/broker.env
+            - ./.envs/dev/backend/s3.env
+            - ./.envs/dev/backend/email.env
+            - ./.envs/dev/backend/authorization.env
         working_dir: /app/src
         ports:
             - "${FLOWER_PORT}:5555"
