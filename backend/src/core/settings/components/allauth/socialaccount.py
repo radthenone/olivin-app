@@ -4,9 +4,7 @@ import os
 SOCIALACCOUNT_USER_MODEL_USERNAME_FIELD = "username"
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
-SOCIALACCOUNT_ADAPTER = (
-    "core.services.allauth.social_adapter.EmailOnlySocialAccountAdapter"
-)
+SOCIALACCOUNT_ADAPTER = "core.services.allauth.social_adapter.SocialAccountAdapter"
 
 SOCIALACCOUNT_PROVIDERS = {
     "google": {

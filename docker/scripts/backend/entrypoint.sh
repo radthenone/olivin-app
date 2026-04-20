@@ -33,7 +33,6 @@ if [ "${DJANGO_ENVIRONMENT:-development}" = "development" ]; then
 fi
 
 if [ $# -eq 0 ]; then
-    echo "🎉 Starting Django server..."
     exec /scripts/runserver.sh
 else
     exec "$@"

@@ -24,3 +24,9 @@ class AsyncAccountAdapter(DefaultAccountAdapter):
         if username is None:
             return None
         return super().clean_username(username, shallow)
+
+    def populate_username(self, request, user):
+        if hasattr(user, "username") and user.username is None:
+            pass
+        else:
+            super().populate_username(request, user)
