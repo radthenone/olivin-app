@@ -2,6 +2,8 @@
 Testing settings for Olivin project.
 """
 
+import os
+
 # --- Database: SQLite in-memory, bez migracji ---
 DATABASES = {
     "default": {
@@ -43,17 +45,20 @@ CELERY_BROKER_URL = "memory://"
 CELERY_RESULT_BACKEND = "cache+memory://"
 
 # --- Storage ---
-# Włączamy moto-s3 zastępując in-memory w razie testowania boto3/s3
-# DEFAULT_FILE_STORAGE nie trzeba zmieniać, s3 mock łapie requestsy,
-# ale żeby testować dokładnie logikę MinIO w testach lepiej dać S3Boto3Storage
+# Dla testów integracyjnych korzystamy z realnej konfiguracji z env/compose.
+# Dla testów lokalnych bez infrastruktury zachowujemy bezpieczne fallbacki.
 DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
-AWS_ACCESS_KEY_ID = "testing"
-AWS_SECRET_ACCESS_KEY = "testing"
-AWS_STORAGE_BUCKET_NAME = "test-bucket"
-AWS_S3_ENDPOINT_URL = None  # Usuwamy endpoint Minio lokalnego dla testów moto
-AWS_S3_REGION_NAME = "us-east-1"
-AWS_S3_USE_SSL = False
+# Pozwól nadpisać wartości przez env (docker-compose.test.yml). Domyślnie
+# fallback do "testing"/"test-bucket" dla testów jednostkowych.
+AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", "testing")
+AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", "testing")
+AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME") or (
+    os.environ.get("S3_BUCKETS_NAMES", "").split(",")[0].strip() or "test-bucket"
+)
+AWS_S3_ENDPOINT_URL = os.environ.get("AWS_S3_ENDPOINT_URL")
+AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "us-east-1")
+AWS_S3_USE_SSL = os.environ.get("AWS_S3_USE_SSL", "False").lower() == "true"
 
 # --- DRF ---
 REST_FRAMEWORK = {

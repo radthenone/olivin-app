@@ -44,12 +44,12 @@ def test_health_check_database_unhealthy(mock_cursor, client):
     assert response.data["services"]["redis"] == "healthy"
 
 
-@patch("core.utils.health.views.boto3.client")
-def test_health_check_s3_unhealthy(mock_boto3, client):
+@patch("core.utils.health.views.S3BucketManager")
+def test_health_check_s3_unhealthy(mock_bucket_manager, client):
     """
     Tutaj mockujemy awarię środowiska MinIO/AWS S3 wywalając import klasy klienta SDK.
     """
-    mock_boto3.side_effect = Exception("Storage is down!")
+    mock_bucket_manager.side_effect = Exception("Storage is down!")
 
     url = reverse("health_check")
     response = client.get(url, secure=True)
