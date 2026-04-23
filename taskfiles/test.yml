@@ -14,10 +14,21 @@ tasks:
             - docker-compose -f docker-compose.yml -f docker-compose.test.yml --profile test run --rm olivin-django-test
 
     backend-local:
-        desc: Szybkie testy in-memory bez używania kontenerów Dockera (za pomocą uv) z fakeredis i moto
+        desc: Szybkie testy in-memory bez używania kontenerów Dockera (za pomocą uv). Uruchamia domyślnie wszystko poza integracyjnymi.
         dir: backend
         cmds:
-            - uv run pytest src/ -m "not integration"
+            - uv run pytest src/ -m "not integration" {{.CLI_ARGS}}
+
+    backend-local-unit:
+        desc: Szybkie testy in-memory - tylko testy jednostkowe
+        dir: backend
+        cmds:
+            - uv run pytest src/ -m "unit" {{.CLI_ARGS}}
+
+    backend-integration:
+        desc: Testy integracyjne uruchamiane w odizolowanym kontenerze Dockerowym z prawdziwymi usługami (Postgres, Redis, MinIO)
+        cmds:
+            - docker-compose -f docker-compose.yml -f docker-compose.test.yml --profile test run --rm olivin-django-test pytest -m "integration" {{.CLI_ARGS}}
 
     backend-watch-local:
         desc: Tryb watch dla testów in-memory (pomija integracyjne)

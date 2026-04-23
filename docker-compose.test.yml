@@ -31,7 +31,13 @@ services:
             olivin-minio:
                 condition: service_healthy
         env_file:
-            - ./.envs/dev/django.env
+            - ./.envs/dev/backend/django.env
+            - ./.envs/dev/backend/db.env
+            - ./.envs/dev/backend/cache_broker.env
+            - ./.envs/dev/backend/broker.env
+            - ./.envs/dev/backend/s3.env
+            - ./.envs/dev/backend/email.env
+            - ./.envs/dev/backend/authorization.env
         environment:
             POSTGRES_HOST: olivin-postgres-test
             POSTGRES_PORT: 5432

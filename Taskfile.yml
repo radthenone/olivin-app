@@ -13,7 +13,13 @@ vars:
 
 dotenv:
     - ".env"
-    - "{{.ENV}}/dev/django.env"
+    - "{{.ENV}}/dev/backend/django.env"
+    - "{{.ENV}}/dev/backend/db.env"
+    - "{{.ENV}}/dev/backend/cache_broker.env"
+    - "{{.ENV}}/dev/backend/broker.env"
+    - "{{.ENV}}/dev/backend/s3.env"
+    - "{{.ENV}}/dev/backend/email.env"
+    - "{{.ENV}}/dev/backend/authorization.env"
     - "{{.ENV}}/dev/postgres.env"
     - "{{.ENV}}/dev/minio.env"
     - "{{.ENV}}/dev/expo.env"

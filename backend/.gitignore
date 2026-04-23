@@ -16,3 +16,10 @@ logs/*
 
 # ignore frontend
 frontend/
+
+#coverage
+.coverage
+.coverage.*
+coverage/
+htmlcov/
+coverage.xml

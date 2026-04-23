@@ -4,8 +4,7 @@ import pytest
 from django.urls import reverse
 from rest_framework import status
 
-# Globalny mark, by zezwolić wszystkim testom w tym pliku na kontakt z naszą testową bazą danych PostgreSQL (tą z tmpfs)
-pytestmark = pytest.mark.django_db
+pytestmark = [pytest.mark.django_db, pytest.mark.integration]
 
 
 def test_health_check_integration(client):
