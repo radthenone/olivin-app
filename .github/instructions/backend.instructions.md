@@ -46,6 +46,25 @@ Najważniejsze obszary struktury:
 - Uwzględnij wpływ na `backend/src/schema.yaml`.
 - Uwzględnij wpływ na frontend i generowane klienty lub typy.
 
+## Komendy — Taskfile i bash
+
+- Jeśli potrzebujesz wywołać komendę przejżyj folder `taskfile` z komendami i Taskfile.yml, komendy zawsze wywołuj bashowe
+
+### Docker Compose — kontenery backendu
+
+| Nazwa kontenera        | Rola                             | Profile                                   |
+| ---------------------- | -------------------------------- | ----------------------------------------- |
+| `olivin-postgres`      | PostgreSQL 16 (port `5434:5432`) | `dev`, `backend`, `full`, `local`         |
+| `olivin-redis`         | Cache / broker Celery            | `dev`, `backend`, `full`, `local`, `test` |
+| `olivin-minio`         | S3-compatible storage            | `dev`, `backend`, `full`, `local`, `test` |
+| `olivin-mailhog`       | Lokalny SMTP                     | `dev`, `backend`, `full`, `local`         |
+| `olivin-django`        | Serwer Django / DRF              | `dev`, `backend`, `full`                  |
+| `olivin-celery-worker` | Celery worker                    | `dev`, `backend`, `full`, `celery`        |
+| `olivin-celery-beat`   | Celery beat                      | `dev`, `backend`, `full`, `celery`        |
+| `olivin-celery-flower` | Flower UI                        | `dev`, `backend`, `full`, `celery`        |
+
+- Reszta kontenerów znajduje się w `docker-compose.yml`
+
 ## Oczekiwany styl odpowiedzi
 
 1. Krótka diagnoza.

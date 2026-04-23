@@ -89,6 +89,61 @@ Potwierdzone biblioteki i podejścia:
 - `pytest`,
 - `ruff`.
 
+## Komendy i środowisko uruchomieniowe
+
+### Taskfile — obowiązkowy punkt wejścia do poleceń
+
+Projekt używa [Taskfile](https://taskfile.dev/) jako głównego interfejsu do poleceń deweloperskich.
+Główny plik: `Taskfile.yml` w root repo — importuje moduły z `taskfiles/`.
+
+**Zasada:** jeśli potrzebujesz zaproponować komendę (migracja, test, shell, build, paczki), najpierw sprawdź czy istnieje gotowy task. Preferuj `task <namespace>:<nazwa>` zamiast bezpośrednich wywołań.
+
+Dostępne namespace'y i przykłady:
+
+| Namespace | Plik | Przykładowe taski |
+|-----------|------|-------------------|
+| `backend` | `taskfiles/backend.yml` | `task backend:run`, `task backend:build`, `task backend:logs`, `task backend:clean-docker` |
+| `db` | `taskfiles/db.yml` | `task db:migrate`, `task db:migrations:make -- <app>`, `task db:migrations:rollback -- <app> <nr>`, `task db:clean:volumes` |
+| `test` | `taskfiles/test.yml` | `task test:backend`, `task test:backend-cmd -- <ścieżka>`, `task test:backend-watch`, `task test:backend-build`, `task test:backend-down` |
+| `shell` | `taskfiles/shell.yml` | `task shell:run`, `task shell:run:plus` |
+| `frontend` | `taskfiles/frontend.yml` | `task frontend:run`, `task frontend:rebuild` |
+| `packages` | `taskfiles/packages.yml` | `task packages:backend:add -- <pkg>`, `task packages:frontend:add -- <pkg>` |
+| `ovral` | `taskfiles/ovral.yml` | `task ovral:generate`, `task ovral:watch` |
+| `emulator` | `taskfiles/emulators.yml` | `task emulator:run` |
+
+**Ważne:** Gdy task przyjmuje argumenty, przekazuj je po `--` zgodnie z konwencją Taskfile, np. `task db:migrations:make -- accounts`.
+
+### Shell — bash, nie PowerShell
+
+Wszystkie komendy shellowe w tym projekcie zakładają **bash**. Skrypty w `scripts/`, komendy w taskfilach i entrypointy kontenerów pisane są w bash.
+
+- Używaj składni bash: `&&`, `||`, `$()`, `find ... | xargs`, itp.
+- Nie proponuj składni PowerShell ani cmd.exe.
+- Jeśli musisz uruchomić bash w środowisku Windows, używaj WSL lub Git Bash.
+
+### Docker Compose — kontenery projektu
+
+Plik: `docker-compose.yml` (dev), `docker-compose.test.yml` (testy).
+
+Kontenery zdefiniowane w `docker-compose.yml`:
+
+| Nazwa kontenera | Obraz | Rola | Profile |
+|-----------------|-------|------|---------|
+| `olivin-postgres` | `postgres:16` | Baza danych PostgreSQL (port `5434:5432`) | `dev`, `backend`, `full`, `local` |
+| `olivin-redis` | `redis:latest` | Cache i broker Celery | `dev`, `backend`, `full`, `local`, `test` |
+| `olivin-minio` | `minio/minio:latest` | Obiektowy storage S3-compatible | `dev`, `backend`, `full`, `local`, `test` |
+| `olivin-mailhog` | `mailhog/mailhog` | Lokalny SMTP do testowania maili | `dev`, `backend`, `full`, `local` |
+| `olivin-django` | custom (Dockerfile) | Serwer Django / DRF | `dev`, `backend`, `full` |
+| `olivin-celery-worker` | custom (Dockerfile) | Celery worker | `dev`, `backend`, `full`, `celery` |
+| `olivin-celery-beat` | custom (Dockerfile) | Celery beat (scheduler) | `dev`, `backend`, `full`, `celery` |
+| `olivin-celery-flower` | custom (Dockerfile) | Flower — UI monitora Celery | `dev`, `backend`, `full`, `celery` |
+
+Wszystkie kontenery działają w sieci `olivin-network` (zewnętrzna sieć Docker).
+Volumeny: `olivin-data` (PostgreSQL), `olivin-media` (MinIO).
+
+**Aby exec-ować komendę w kontenerze Django:** `docker exec -it olivin-django <komenda>`
+Albo przez odpowiedni task, np. `task db:migrate`.
+
 ## Zasady architektoniczne
 
 ### Zasady ogólne
@@ -145,4 +200,7 @@ W praktyce:
 - dla bugfixów najpierw ustal objaw, potem przyczynę źródłową, potem minimalną poprawkę,
 - dla feature najpierw ustal miejsce w architekturze, potem zakres zmian FE/BE/API,
 - dla refaktoru najpierw nazwij problem jakościowy, potem zaproponuj najmniejszy sensowny refaktor,
-- nie uruchamiaj ciężkiego procesu planowania dla drobnej poprawki, jeśli lokalna diagnoza wystarcza.
+- nie uruchamiaj ciężkiego procesu planowania dla drobnej poprawki, jeśli lokalna diagnoza wystarcza,
+- gdy proponujesz komendę do wykonania, **zawsze najpierw sprawdź Taskfile** — jeśli istnieje odpowiedni task, użyj go zamiast surowego docker/bash,
+- komendy shellowe pisz w **bash**, nie w PowerShell,
+- gdy odwołujesz się do kontenera lub serwisu, używaj nazw z sekcji Docker Compose powyżej.

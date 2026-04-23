@@ -6,13 +6,14 @@ readme = "README.md"
 requires-python = ">=3.12.10"
 
 # uv add <package>
+# uv add <package> --optional test
 # uv sync --all-extras
 # uv lock
 dependencies = [
     "boto3>=1.40.56",
     "celery>=5.5.3",
-    "django>=5.2.7",
-    "django-allauth[headless,headless-spec,mfa]>=65.12.1",
+    "django>=5.2.11",
+    "django-allauth[headless,headless-spec,mfa]>=65.16.1",
     "django-celery-beat>=2.7.0",
     "django-celery-results>=2.6.0",
     "django-cors-headers>=4.9.0",
@@ -21,12 +22,12 @@ dependencies = [
     "django-storages>=1.14.6",
     "djangorestframework>=3.16.1",
     "djangorestframework-camel-case>=1.4.2",
-    "djangorestframework-simplejwt>=5.3.0",
+    "djangorestframework-simplejwt>=5.4.0",
     "flower>=2.0.1",
-    "pillow>=12.0.0",
+    "pillow>=12.0.1",
     "psycopg2>=2.9.10 ; sys_platform == 'linux'",
     "psycopg2-binary>=2.9.10 ; sys_platform == 'win32'",
-    "python-dotenv>=1.1.1",
+    "python-dotenv>=1.1.2",
     "redis>=6.4.0",
     "stripe>=13.0.1",
     "rich>=14.2.0",
@@ -36,7 +37,7 @@ dependencies = [
     "phonenumbers>=9.0.25",
     "fido2>=2.1.1",
     "google-auth",
-    "requests",
+    "requests>=2.32.3",
 ]
 
 # uv add <package> --optional dev
@@ -53,10 +54,13 @@ dev = [
 test = [
     "factory-boy>=3.3.3",
     "faker>=40.13.0",
+    "fakeredis>=2.35.1",
     "freezegun>=1.5.5",
+    "moto[s3]>=5.1.22",
     "pytest>=9.0.3",
     "pytest-cov>=7.1.0",
     "pytest-django>=4.12.0",
+    "pytest-env>=1.5.1",
     "pytest-randomly>=4.0.1",
     "pytest-watch>=4.2.0",
     "pytest-xdist>=3.8.0",
@@ -179,6 +183,48 @@ ignore_errors = true
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "core.settings"
 pythonpath = ["src"]
-testpaths = ["src"]
-python_files = ["test_*.py", "*_test.py", "tests.py"]
-addopts = "-q --disable-warnings --reuse-db"
+testpaths = ["src/tests"]
+
+python_files = [
+    "tests.py",
+    "test_*.py",
+    "*_tests.py",
+]
+
+python_classes = [
+    "Test*",
+]
+
+python_functions = [
+    "test_*",
+]
+
+addopts = """
+  -v
+  --tb=short
+  --strict-markers
+  --no-header
+  --no-migrations
+  --cov=apps
+  --cov=core
+  --cov-report=term-missing
+  --cov-report=lcov:coverage/lcov.info
+  --cov-report=html:coverage/html
+"""
+
+# Test environment variable to distinguish test settings in Django
+env = [
+    "DJANGO_ENVIRONMENT=testing",
+]
+
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore:.*U.*mode is deprecated:DeprecationWarning",
+]
+
+markers = [
+    "unit: szybkie testy jednostkowe",
+    "integration: testy integracyjne wymagające żywych usług",
+    "slow: wolniejsze testy",
+]

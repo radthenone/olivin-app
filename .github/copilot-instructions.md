@@ -83,6 +83,39 @@ W praktyce:
 - Uważaj na wydajność zapytań ORM.
 - Jeśli zmieniasz API, sprawdź wpływ na schema i frontendowy klient.
 
+## Komendy — Taskfile i bash
+
+Gdy proponujesz komendę do wykonania, **zawsze najpierw sprawdź Taskfile** w root repo.
+Preferuj `task <namespace>:<nazwa>` zamiast surowych wywołań docker/bash.
+
+Dostępne namespace'y:
+
+- `backend` — build, run, logs, clean-docker,
+- `db` — migracje (migrate, make, rollback, reset, clean),
+- `test` — backend, backend-cmd, backend-watch, backend-down,
+- `shell` — Django shell (run, run:plus),
+- `frontend` — run, rebuild,
+- `packages` — dodawanie/usuwanie paczek frontend i backend,
+- `ovral` — generowanie klientów API,
+- `emulator` — Android emulator.
+
+Argumenty do tasków przekazuj po `--`, np. `task db:migrations:make -- accounts`.
+
+Komendy shellowe pisz w składni **bash** (nie PowerShell).
+
+### Kontenery Docker Compose
+
+| Kontener | Rola | Profile |
+|----------|------|---------|
+| `olivin-postgres` | PostgreSQL 16 | `dev`, `backend`, `full`, `local` |
+| `olivin-redis` | Cache / broker | `dev`, `backend`, `full`, `local`, `test` |
+| `olivin-minio` | S3 storage | `dev`, `backend`, `full`, `local`, `test` |
+| `olivin-mailhog` | Lokalny SMTP | `dev`, `backend`, `full`, `local` |
+| `olivin-django` | Django / DRF | `dev`, `backend`, `full` |
+| `olivin-celery-worker` | Celery worker | `dev`, `backend`, `full`, `celery` |
+| `olivin-celery-beat` | Celery beat | `dev`, `backend`, `full`, `celery` |
+| `olivin-celery-flower` | Flower UI | `dev`, `backend`, `full`, `celery` |
+
 ## Styl odpowiedzi
 
 Jeśli analizujesz kod lub architekturę:

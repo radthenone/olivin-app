@@ -13,6 +13,18 @@ tasks:
         cmds:
             - docker-compose -f docker-compose.yml -f docker-compose.test.yml --profile test run --rm olivin-django-test
 
+    backend-local:
+        desc: Szybkie testy in-memory bez używania kontenerów Dockera (za pomocą uv) z fakeredis i moto
+        dir: backend
+        cmds:
+            - uv run pytest src/ -m "not integration"
+
+    backend-watch-local:
+        desc: Tryb watch dla testów in-memory (pomija integracyjne)
+        dir: backend
+        cmds:
+            - uv run ptw --clear --runner "pytest -q --reuse-db -m 'not integration'" src/
+
     backend-cmd:
         desc: |
             Uruchom wybraną komendę testów / wybrane testy (np. task test:backend-cmd -- src/apps/users/tests)

@@ -22,7 +22,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
 
-    objects = CustomUserManager()
+    objects: CustomUserManager = CustomUserManager()
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

@@ -8,8 +8,8 @@ Supports both local file storage and S3/MinIO storage.
 import os
 from pathlib import Path
 
-# Base paths
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+from core.paths import BASE_DIR
+
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_ROOT = BASE_DIR / "mediafiles"
 
@@ -70,4 +70,3 @@ else:
     )
     AWS_S3_CUSTOM_DOMAIN = str(os.environ.get("AWS_S3_CUSTOM_DOMAIN", "localhost:9000"))
     AWS_STORAGE_BUCKET_NAME = str(os.environ.get("AWS_STORAGE_BUCKET_NAME", "static"))
-
