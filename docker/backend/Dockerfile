@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
     redis-tools \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -37,6 +38,7 @@ COPY backend/src/ /app/src/
 
 COPY docker/scripts/backend/entrypoint.sh /scripts/entrypoint.sh
 COPY docker/scripts/backend/runserver.sh /scripts/runserver.sh
+COPY docker/scripts/backend/backup.sh /scripts/backup.sh
 COPY docker/scripts/backend/check_superuser.sh /scripts/check_superuser.sh
 COPY docker/scripts/backend/init-minio.sh /scripts/init-minio.sh
 

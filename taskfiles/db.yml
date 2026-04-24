@@ -50,6 +50,33 @@ tasks:
         cmds:
             - bash -c "find backend/src/apps/{{.CLI_ARGS}}/migrations -type f -name '*.py' ! -name '__init__.py' | xargs rm -f"
 
+    backup:
+        desc: Create a database backup (task db:backup)
+        vars:
+            BACKUP_DIR: backups
+            BACKUP_FILE: "{{.BACKUP_DIR}}/olivindb_{{now | date \"20060102_150405\"}}.dump"
+        cmds:
+            - mkdir -p {{.BACKUP_DIR}}
+            - docker exec -t olivin-postgres pg_dump -U postgres -d olivin_db -Fc -f /tmp/olivindb.dump
+            - docker cp olivin-postgres:/tmp/olivindb.dump {{.BACKUP_FILE}}
+            - docker exec -t olivin-postgres rm -f /tmp/olivindb.dump
+            - echo "✅ Backup saved to {{.BACKUP_FILE}}"
+
+    restore:
+        desc: Restore database from a backup file (task db:restore -- backups/file.dump)
+        cmds:
+            - |
+                if [ -z "{{.CLI_ARGS}}" ]; then
+                    echo "❌ Error: Please provide a backup file path, e.g., task db:restore -- backups/olivindb_xyz.dump";
+                    exit 1;
+                fi
+            - docker cp {{.CLI_ARGS}} olivin-postgres:/tmp/restore.dump
+            - docker exec -t olivin-postgres dropdb -U postgres olivin_db --if-exists
+            - docker exec -t olivin-postgres createdb -U postgres olivin_db
+            - docker exec -t olivin-postgres pg_restore -U postgres -d olivin_db -Fc /tmp/restore.dump
+            - docker exec -t olivin-postgres rm -f /tmp/restore.dump
+            - echo "✅ Database restored from {{.CLI_ARGS}}"
+
     clean:volumes:
         desc: Delete all volumes
         cmds:

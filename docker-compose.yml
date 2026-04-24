@@ -20,6 +20,7 @@ x-django: &django
     tty: true
     volumes:
         - ./backend/src:/app/src:z
+        - ./backups:/app/backups:z
     depends_on:
         olivin-postgres:
             condition: service_healthy
