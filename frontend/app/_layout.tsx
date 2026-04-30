@@ -1,6 +1,6 @@
 /**
- * Root layout — inicjalizuje sesję i redirektuje na właściwy ekran.
- * useSessionInit() sprawdza stan sesji JEDNORAZOWO przy starcie.
+ * Root layout — inicjalizuje providery i redirektuje na właściwy ekran.
+ * Stan sesji pochodzi z TanStack Query przez endpoint allauth session.
  */
 import "../styles/global.css";
 import { Stack, useRouter, useSegments } from "expo-router";
@@ -13,10 +13,17 @@ import {
 } from "react-native-safe-area-context";
 import { platformRender } from "@lib";
 import { SafeView } from "@ui";
-import { useSessionInit, useAuth } from "@features/auth";
+import { useAuth } from "@features/auth";
 
 export default function AppLayout() {
-  useSessionInit();
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppNavigator />
+    </QueryClientProvider>
+  );
+}
+
+function AppNavigator() {
   useAuthGuard();
 
   const stack = (
@@ -32,7 +39,7 @@ export default function AppLayout() {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <>
       {platformRender({
         web: <>{stack}</>,
         native: (
@@ -41,7 +48,7 @@ export default function AppLayout() {
           </SafeAreaProvider>
         ),
       })}
-    </QueryClientProvider>
+    </>
   );
 }
 
@@ -64,8 +71,14 @@ function useAuthGuard() {
   useEffect(() => {
     if (!isSessionChecked) return; // czekamy na sprawdzenie sesji
 
-    const inAuth = rootSegment === "(auth)";
-    const inApp = rootSegment === "(app)";
+    const inAuth =
+      rootSegment === "(auth)" ||
+      rootSegment === "login" ||
+      rootSegment === "register" ||
+      rootSegment === "verify-email" ||
+      rootSegment === "mfa" ||
+      rootSegment === "forgot-password";
+    const inApp = rootSegment === "(app)" || rootSegment === "home";
 
     if (isPendingMfa && !inAuth) {
       router.replace("/(auth)/mfa");

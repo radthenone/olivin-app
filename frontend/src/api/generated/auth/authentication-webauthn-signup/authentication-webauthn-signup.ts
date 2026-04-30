@@ -244,14 +244,14 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  AuthenticatedByPasswordResponse,
+  AddWebAuthnAuthenticatorBody,
+  AuthenticatedResponse,
   AuthenticationResponse,
   ConflictResponse,
   ErrorResponse,
-  PasswordResetInfoResponse,
-  RequestPasswordBody,
-  ResetPasswordBody,
-  StatusOKResponse
+  ForbiddenResponse,
+  PasskeySignupBody,
+  WebAuthnRequestOptionsResponseResponse
 } from '../schemas';
 
 import { authInstance } from '../../../auth-mutator';
@@ -261,73 +261,69 @@ import type { ErrorType , BodyType } from '../../../auth-mutator';
 
 
 /**
- * Initiates the password reset procedure. Depending on whether or not
-`ACCOUNT_PASSWORD_RESET_BY_CODE_ENABLED` is `True`, the procedure is
-either stateless or stateful.
+ * You initiate the passkey signup flow by inputting (`POST`) the required properties (e.g. email)
+similar to the regular account signup, except that the `password` is to be left out.
+The user will then be required to verify the email address, after which WebAuthn credential
+creation options can be retrieved (`GET`) and used to actually complete (`PUT`) the flow.
 
-In case codes are used, it is stateful, and a new
-`password_reset_by_code` flow is started. In this case, on a successful
-password reset request, you will receive a 401 indicating the pending
-status of this flow.
-
-In case password reset is configured to use (stateless) links, you will
-receive a 200 on a successful password reset request.
-
- * @summary Request password
+ * @summary Initiate the passkey signup flow
  */
-export type postAllauthClientV1AuthPasswordRequestResponse200 = {
-  data: StatusOKResponse
-  status: 200
-}
-
-export type postAllauthClientV1AuthPasswordRequestResponse400 = {
+export type postAllauthClientV1AuthWebauthnSignupResponse400 = {
   data: ErrorResponse
   status: 400
 }
 
-export type postAllauthClientV1AuthPasswordRequestResponse401 = {
+export type postAllauthClientV1AuthWebauthnSignupResponse401 = {
   data: AuthenticationResponse
   status: 401
 }
 
-export type postAllauthClientV1AuthPasswordRequestResponseSuccess = (postAllauthClientV1AuthPasswordRequestResponse200) & {
-  headers: Headers;
-};
-export type postAllauthClientV1AuthPasswordRequestResponseError = (postAllauthClientV1AuthPasswordRequestResponse400 | postAllauthClientV1AuthPasswordRequestResponse401) & {
-  headers: Headers;
-};
-
-export type postAllauthClientV1AuthPasswordRequestResponse = (postAllauthClientV1AuthPasswordRequestResponseSuccess | postAllauthClientV1AuthPasswordRequestResponseError)
-
-export const getPostAllauthClientV1AuthPasswordRequestUrl = (client: 'app' | 'browser',) => {
-
-
-  
-
-  return `/_allauth/${client}/v1/auth/password/request`
+export type postAllauthClientV1AuthWebauthnSignupResponse403 = {
+  data: ForbiddenResponse
+  status: 403
 }
 
-export const postAllauthClientV1AuthPasswordRequest = async (client: 'app' | 'browser',
-    requestPasswordBody: RequestPasswordBody, options?: RequestInit): Promise<postAllauthClientV1AuthPasswordRequestResponse> => {
+export type postAllauthClientV1AuthWebauthnSignupResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+;
+export type postAllauthClientV1AuthWebauthnSignupResponseError = (postAllauthClientV1AuthWebauthnSignupResponse400 | postAllauthClientV1AuthWebauthnSignupResponse401 | postAllauthClientV1AuthWebauthnSignupResponse403 | postAllauthClientV1AuthWebauthnSignupResponse409) & {
+  headers: Headers;
+};
+
+export type postAllauthClientV1AuthWebauthnSignupResponse = (postAllauthClientV1AuthWebauthnSignupResponseError)
+
+export const getPostAllauthClientV1AuthWebauthnSignupUrl = (client: 'app' | 'browser',) => {
+
+
   
-  return authInstance<postAllauthClientV1AuthPasswordRequestResponse>(getPostAllauthClientV1AuthPasswordRequestUrl(client),
+
+  return `/_allauth/${client}/v1/auth/webauthn/signup`
+}
+
+export const postAllauthClientV1AuthWebauthnSignup = async (client: 'app' | 'browser',
+    passkeySignupBody: PasskeySignupBody, options?: RequestInit): Promise<postAllauthClientV1AuthWebauthnSignupResponse> => {
+  
+  return authInstance<postAllauthClientV1AuthWebauthnSignupResponse>(getPostAllauthClientV1AuthWebauthnSignupUrl(client),
   {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      requestPasswordBody,)
+      passkeySignupBody,)
   }
 );}
   
 
 
 
-export const getPostAllauthClientV1AuthPasswordRequestMutationOptions = <TError = ErrorType<ErrorResponse | AuthenticationResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAllauthClientV1AuthPasswordRequest>>, TError,{client: 'app' | 'browser';data: BodyType<RequestPasswordBody>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof postAllauthClientV1AuthPasswordRequest>>, TError,{client: 'app' | 'browser';data: BodyType<RequestPasswordBody>}, TContext> => {
+export const getPostAllauthClientV1AuthWebauthnSignupMutationOptions = <TError = ErrorType<ErrorResponse | AuthenticationResponse | ForbiddenResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAllauthClientV1AuthWebauthnSignup>>, TError,{client: 'app' | 'browser';data: BodyType<PasskeySignupBody>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof postAllauthClientV1AuthWebauthnSignup>>, TError,{client: 'app' | 'browser';data: BodyType<PasskeySignupBody>}, TContext> => {
 
-const mutationKey = ['postAllauthClientV1AuthPasswordRequest'];
+const mutationKey = ['postAllauthClientV1AuthWebauthnSignup'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -337,10 +333,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAllauthClientV1AuthPasswordRequest>>, {client: 'app' | 'browser';data: BodyType<RequestPasswordBody>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAllauthClientV1AuthWebauthnSignup>>, {client: 'app' | 'browser';data: BodyType<PasskeySignupBody>}> = (props) => {
           const {client,data} = props ?? {};
 
-          return  postAllauthClientV1AuthPasswordRequest(client,data,)
+          return  postAllauthClientV1AuthWebauthnSignup(client,data,)
         }
 
 
@@ -350,68 +346,59 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PostAllauthClientV1AuthPasswordRequestMutationResult = NonNullable<Awaited<ReturnType<typeof postAllauthClientV1AuthPasswordRequest>>>
-    export type PostAllauthClientV1AuthPasswordRequestMutationBody = BodyType<RequestPasswordBody>
-    export type PostAllauthClientV1AuthPasswordRequestMutationError = ErrorType<ErrorResponse | AuthenticationResponse>
+    export type PostAllauthClientV1AuthWebauthnSignupMutationResult = NonNullable<Awaited<ReturnType<typeof postAllauthClientV1AuthWebauthnSignup>>>
+    export type PostAllauthClientV1AuthWebauthnSignupMutationBody = BodyType<PasskeySignupBody>
+    export type PostAllauthClientV1AuthWebauthnSignupMutationError = ErrorType<ErrorResponse | AuthenticationResponse | ForbiddenResponse | ConflictResponse>
 
     /**
- * @summary Request password
+ * @summary Initiate the passkey signup flow
  */
-export const usePostAllauthClientV1AuthPasswordRequest = <TError = ErrorType<ErrorResponse | AuthenticationResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAllauthClientV1AuthPasswordRequest>>, TError,{client: 'app' | 'browser';data: BodyType<RequestPasswordBody>}, TContext>, }
+export const usePostAllauthClientV1AuthWebauthnSignup = <TError = ErrorType<ErrorResponse | AuthenticationResponse | ForbiddenResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAllauthClientV1AuthWebauthnSignup>>, TError,{client: 'app' | 'browser';data: BodyType<PasskeySignupBody>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof postAllauthClientV1AuthPasswordRequest>>,
+        Awaited<ReturnType<typeof postAllauthClientV1AuthWebauthnSignup>>,
         TError,
-        {client: 'app' | 'browser';data: BodyType<RequestPasswordBody>},
+        {client: 'app' | 'browser';data: BodyType<PasskeySignupBody>},
         TContext
       > => {
-      return useMutation(getPostAllauthClientV1AuthPasswordRequestMutationOptions(options), queryClient);
+      return useMutation(getPostAllauthClientV1AuthWebauthnSignupMutationOptions(options), queryClient);
     }
     /**
- * Used to obtain information on and validate a password reset key.  The
-key passed is either the key encoded in the password reset URL that the
-user has received per email, or, the password reset code in case of
-`ACCOUNT_PASSWORD_RESET_BY_CODE_ENABLED`. Note that in case of a code,
-the number of requests you can make is limited (by
-`ACCOUNT_PASSWORD_RESET_BY_CODE_MAX_ATTEMPTS`).
+ * Returns the WebAuthn credential request options, that can be
+processed using `parseRequestOptionsFromJSON()` on the frontend.
 
- * @summary Get password reset information
+ * @summary Get passkey credential request options
  */
-export type getAllauthClientV1AuthPasswordResetResponse200 = {
-  data: PasswordResetInfoResponse
+export type getAllauthClientV1AuthWebauthnSignupResponse200 = {
+  data: WebAuthnRequestOptionsResponseResponse
   status: 200
 }
 
-export type getAllauthClientV1AuthPasswordResetResponse400 = {
-  data: ErrorResponse
-  status: 400
-}
-
-export type getAllauthClientV1AuthPasswordResetResponse409 = {
+export type getAllauthClientV1AuthWebauthnSignupResponse409 = {
   data: ConflictResponse
   status: 409
 }
 
-export type getAllauthClientV1AuthPasswordResetResponseSuccess = (getAllauthClientV1AuthPasswordResetResponse200) & {
+export type getAllauthClientV1AuthWebauthnSignupResponseSuccess = (getAllauthClientV1AuthWebauthnSignupResponse200) & {
   headers: Headers;
 };
-export type getAllauthClientV1AuthPasswordResetResponseError = (getAllauthClientV1AuthPasswordResetResponse400 | getAllauthClientV1AuthPasswordResetResponse409) & {
+export type getAllauthClientV1AuthWebauthnSignupResponseError = (getAllauthClientV1AuthWebauthnSignupResponse409) & {
   headers: Headers;
 };
 
-export type getAllauthClientV1AuthPasswordResetResponse = (getAllauthClientV1AuthPasswordResetResponseSuccess | getAllauthClientV1AuthPasswordResetResponseError)
+export type getAllauthClientV1AuthWebauthnSignupResponse = (getAllauthClientV1AuthWebauthnSignupResponseSuccess | getAllauthClientV1AuthWebauthnSignupResponseError)
 
-export const getGetAllauthClientV1AuthPasswordResetUrl = (client: 'app' | 'browser',) => {
+export const getGetAllauthClientV1AuthWebauthnSignupUrl = (client: 'app' | 'browser',) => {
 
 
   
 
-  return `/_allauth/${client}/v1/auth/password/reset`
+  return `/_allauth/${client}/v1/auth/webauthn/signup`
 }
 
-export const getAllauthClientV1AuthPasswordReset = async (client: 'app' | 'browser', options?: RequestInit): Promise<getAllauthClientV1AuthPasswordResetResponse> => {
+export const getAllauthClientV1AuthWebauthnSignup = async (client: 'app' | 'browser', options?: RequestInit): Promise<getAllauthClientV1AuthWebauthnSignupResponse> => {
   
-  return authInstance<getAllauthClientV1AuthPasswordResetResponse>(getGetAllauthClientV1AuthPasswordResetUrl(client),
+  return authInstance<getAllauthClientV1AuthWebauthnSignupResponse>(getGetAllauthClientV1AuthWebauthnSignupUrl(client),
   {      
     ...options,
     method: 'GET'
@@ -424,69 +411,69 @@ export const getAllauthClientV1AuthPasswordReset = async (client: 'app' | 'brows
 
 
 
-export const getGetAllauthClientV1AuthPasswordResetQueryKey = (client: 'app' | 'browser',) => {
+export const getGetAllauthClientV1AuthWebauthnSignupQueryKey = (client: 'app' | 'browser',) => {
     return [
-    `/_allauth/${client}/v1/auth/password/reset`
+    `/_allauth/${client}/v1/auth/webauthn/signup`
     ] as const;
     }
 
     
-export const getGetAllauthClientV1AuthPasswordResetQueryOptions = <TData = Awaited<ReturnType<typeof getAllauthClientV1AuthPasswordReset>>, TError = ErrorType<ErrorResponse | ConflictResponse>>(client: 'app' | 'browser', options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllauthClientV1AuthPasswordReset>>, TError, TData>>, }
+export const getGetAllauthClientV1AuthWebauthnSignupQueryOptions = <TData = Awaited<ReturnType<typeof getAllauthClientV1AuthWebauthnSignup>>, TError = ErrorType<ConflictResponse>>(client: 'app' | 'browser', options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllauthClientV1AuthWebauthnSignup>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetAllauthClientV1AuthPasswordResetQueryKey(client);
+  const queryKey =  queryOptions?.queryKey ?? getGetAllauthClientV1AuthWebauthnSignupQueryKey(client);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AuthPasswordReset>>> = ({ signal }) => getAllauthClientV1AuthPasswordReset(client, { signal });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AuthWebauthnSignup>>> = ({ signal }) => getAllauthClientV1AuthWebauthnSignup(client, { signal });
 
       
 
       
 
-   return  { queryKey, queryFn, enabled: !!(client), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAllauthClientV1AuthPasswordReset>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: !!(client), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAllauthClientV1AuthWebauthnSignup>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type GetAllauthClientV1AuthPasswordResetQueryResult = NonNullable<Awaited<ReturnType<typeof getAllauthClientV1AuthPasswordReset>>>
-export type GetAllauthClientV1AuthPasswordResetQueryError = ErrorType<ErrorResponse | ConflictResponse>
+export type GetAllauthClientV1AuthWebauthnSignupQueryResult = NonNullable<Awaited<ReturnType<typeof getAllauthClientV1AuthWebauthnSignup>>>
+export type GetAllauthClientV1AuthWebauthnSignupQueryError = ErrorType<ConflictResponse>
 
 
-export function useGetAllauthClientV1AuthPasswordReset<TData = Awaited<ReturnType<typeof getAllauthClientV1AuthPasswordReset>>, TError = ErrorType<ErrorResponse | ConflictResponse>>(
- client: 'app' | 'browser', options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllauthClientV1AuthPasswordReset>>, TError, TData>> & Pick<
+export function useGetAllauthClientV1AuthWebauthnSignup<TData = Awaited<ReturnType<typeof getAllauthClientV1AuthWebauthnSignup>>, TError = ErrorType<ConflictResponse>>(
+ client: 'app' | 'browser', options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllauthClientV1AuthWebauthnSignup>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getAllauthClientV1AuthPasswordReset>>,
+          Awaited<ReturnType<typeof getAllauthClientV1AuthWebauthnSignup>>,
           TError,
-          Awaited<ReturnType<typeof getAllauthClientV1AuthPasswordReset>>
+          Awaited<ReturnType<typeof getAllauthClientV1AuthWebauthnSignup>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetAllauthClientV1AuthPasswordReset<TData = Awaited<ReturnType<typeof getAllauthClientV1AuthPasswordReset>>, TError = ErrorType<ErrorResponse | ConflictResponse>>(
- client: 'app' | 'browser', options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllauthClientV1AuthPasswordReset>>, TError, TData>> & Pick<
+export function useGetAllauthClientV1AuthWebauthnSignup<TData = Awaited<ReturnType<typeof getAllauthClientV1AuthWebauthnSignup>>, TError = ErrorType<ConflictResponse>>(
+ client: 'app' | 'browser', options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllauthClientV1AuthWebauthnSignup>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof getAllauthClientV1AuthPasswordReset>>,
+          Awaited<ReturnType<typeof getAllauthClientV1AuthWebauthnSignup>>,
           TError,
-          Awaited<ReturnType<typeof getAllauthClientV1AuthPasswordReset>>
+          Awaited<ReturnType<typeof getAllauthClientV1AuthWebauthnSignup>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetAllauthClientV1AuthPasswordReset<TData = Awaited<ReturnType<typeof getAllauthClientV1AuthPasswordReset>>, TError = ErrorType<ErrorResponse | ConflictResponse>>(
- client: 'app' | 'browser', options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllauthClientV1AuthPasswordReset>>, TError, TData>>, }
+export function useGetAllauthClientV1AuthWebauthnSignup<TData = Awaited<ReturnType<typeof getAllauthClientV1AuthWebauthnSignup>>, TError = ErrorType<ConflictResponse>>(
+ client: 'app' | 'browser', options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllauthClientV1AuthWebauthnSignup>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
- * @summary Get password reset information
+ * @summary Get passkey credential request options
  */
 
-export function useGetAllauthClientV1AuthPasswordReset<TData = Awaited<ReturnType<typeof getAllauthClientV1AuthPasswordReset>>, TError = ErrorType<ErrorResponse | ConflictResponse>>(
- client: 'app' | 'browser', options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllauthClientV1AuthPasswordReset>>, TError, TData>>, }
+export function useGetAllauthClientV1AuthWebauthnSignup<TData = Awaited<ReturnType<typeof getAllauthClientV1AuthWebauthnSignup>>, TError = ErrorType<ConflictResponse>>(
+ client: 'app' | 'browser', options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAllauthClientV1AuthWebauthnSignup>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getGetAllauthClientV1AuthPasswordResetQueryOptions(client,options)
+  const queryOptions = getGetAllauthClientV1AuthWebauthnSignupQueryOptions(client,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -497,73 +484,68 @@ export function useGetAllauthClientV1AuthPasswordReset<TData = Awaited<ReturnTyp
 
 
 /**
- * Perform the password reset, by handing over the password reset key and
-the new password. After successfully completing the password reset, the
-user is either logged in (in case `ACCOUNT_LOGIN_ON_PASSWORD_RESET` is
-`True`), or, the user will need to proceed to the login page.  In case
-of the former, a `200` status code is returned, in case of the latter a
-401.
+ * Complete the passkey signup flow by handing over the WebAuthn credential.
 
- * @summary Reset password
+ * @summary Complete the passkey signup flow
  */
-export type postAllauthClientV1AuthPasswordResetResponse200 = {
-  data: AuthenticatedByPasswordResponse
+export type putAllauthClientV1AuthWebauthnSignupResponse200 = {
+  data: AuthenticatedResponse
   status: 200
 }
 
-export type postAllauthClientV1AuthPasswordResetResponse400 = {
+export type putAllauthClientV1AuthWebauthnSignupResponse400 = {
   data: ErrorResponse
   status: 400
 }
 
-export type postAllauthClientV1AuthPasswordResetResponse401 = {
+export type putAllauthClientV1AuthWebauthnSignupResponse401 = {
   data: AuthenticationResponse
   status: 401
 }
 
-export type postAllauthClientV1AuthPasswordResetResponse409 = {
+export type putAllauthClientV1AuthWebauthnSignupResponse409 = {
   data: ConflictResponse
   status: 409
 }
 
-export type postAllauthClientV1AuthPasswordResetResponseSuccess = (postAllauthClientV1AuthPasswordResetResponse200) & {
+export type putAllauthClientV1AuthWebauthnSignupResponseSuccess = (putAllauthClientV1AuthWebauthnSignupResponse200) & {
   headers: Headers;
 };
-export type postAllauthClientV1AuthPasswordResetResponseError = (postAllauthClientV1AuthPasswordResetResponse400 | postAllauthClientV1AuthPasswordResetResponse401 | postAllauthClientV1AuthPasswordResetResponse409) & {
+export type putAllauthClientV1AuthWebauthnSignupResponseError = (putAllauthClientV1AuthWebauthnSignupResponse400 | putAllauthClientV1AuthWebauthnSignupResponse401 | putAllauthClientV1AuthWebauthnSignupResponse409) & {
   headers: Headers;
 };
 
-export type postAllauthClientV1AuthPasswordResetResponse = (postAllauthClientV1AuthPasswordResetResponseSuccess | postAllauthClientV1AuthPasswordResetResponseError)
+export type putAllauthClientV1AuthWebauthnSignupResponse = (putAllauthClientV1AuthWebauthnSignupResponseSuccess | putAllauthClientV1AuthWebauthnSignupResponseError)
 
-export const getPostAllauthClientV1AuthPasswordResetUrl = (client: 'app' | 'browser',) => {
+export const getPutAllauthClientV1AuthWebauthnSignupUrl = (client: 'app' | 'browser',) => {
 
 
   
 
-  return `/_allauth/${client}/v1/auth/password/reset`
+  return `/_allauth/${client}/v1/auth/webauthn/signup`
 }
 
-export const postAllauthClientV1AuthPasswordReset = async (client: 'app' | 'browser',
-    resetPasswordBody: ResetPasswordBody, options?: RequestInit): Promise<postAllauthClientV1AuthPasswordResetResponse> => {
+export const putAllauthClientV1AuthWebauthnSignup = async (client: 'app' | 'browser',
+    addWebAuthnAuthenticatorBody: AddWebAuthnAuthenticatorBody, options?: RequestInit): Promise<putAllauthClientV1AuthWebauthnSignupResponse> => {
   
-  return authInstance<postAllauthClientV1AuthPasswordResetResponse>(getPostAllauthClientV1AuthPasswordResetUrl(client),
+  return authInstance<putAllauthClientV1AuthWebauthnSignupResponse>(getPutAllauthClientV1AuthWebauthnSignupUrl(client),
   {      
     ...options,
-    method: 'POST',
+    method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      resetPasswordBody,)
+      addWebAuthnAuthenticatorBody,)
   }
 );}
   
 
 
 
-export const getPostAllauthClientV1AuthPasswordResetMutationOptions = <TError = ErrorType<ErrorResponse | AuthenticationResponse | ConflictResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAllauthClientV1AuthPasswordReset>>, TError,{client: 'app' | 'browser';data: BodyType<ResetPasswordBody>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof postAllauthClientV1AuthPasswordReset>>, TError,{client: 'app' | 'browser';data: BodyType<ResetPasswordBody>}, TContext> => {
+export const getPutAllauthClientV1AuthWebauthnSignupMutationOptions = <TError = ErrorType<ErrorResponse | AuthenticationResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putAllauthClientV1AuthWebauthnSignup>>, TError,{client: 'app' | 'browser';data: BodyType<AddWebAuthnAuthenticatorBody>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof putAllauthClientV1AuthWebauthnSignup>>, TError,{client: 'app' | 'browser';data: BodyType<AddWebAuthnAuthenticatorBody>}, TContext> => {
 
-const mutationKey = ['postAllauthClientV1AuthPasswordReset'];
+const mutationKey = ['putAllauthClientV1AuthWebauthnSignup'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -573,10 +555,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAllauthClientV1AuthPasswordReset>>, {client: 'app' | 'browser';data: BodyType<ResetPasswordBody>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putAllauthClientV1AuthWebauthnSignup>>, {client: 'app' | 'browser';data: BodyType<AddWebAuthnAuthenticatorBody>}> = (props) => {
           const {client,data} = props ?? {};
 
-          return  postAllauthClientV1AuthPasswordReset(client,data,)
+          return  putAllauthClientV1AuthWebauthnSignup(client,data,)
         }
 
 
@@ -586,21 +568,21 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PostAllauthClientV1AuthPasswordResetMutationResult = NonNullable<Awaited<ReturnType<typeof postAllauthClientV1AuthPasswordReset>>>
-    export type PostAllauthClientV1AuthPasswordResetMutationBody = BodyType<ResetPasswordBody>
-    export type PostAllauthClientV1AuthPasswordResetMutationError = ErrorType<ErrorResponse | AuthenticationResponse | ConflictResponse>
+    export type PutAllauthClientV1AuthWebauthnSignupMutationResult = NonNullable<Awaited<ReturnType<typeof putAllauthClientV1AuthWebauthnSignup>>>
+    export type PutAllauthClientV1AuthWebauthnSignupMutationBody = BodyType<AddWebAuthnAuthenticatorBody>
+    export type PutAllauthClientV1AuthWebauthnSignupMutationError = ErrorType<ErrorResponse | AuthenticationResponse | ConflictResponse>
 
     /**
- * @summary Reset password
+ * @summary Complete the passkey signup flow
  */
-export const usePostAllauthClientV1AuthPasswordReset = <TError = ErrorType<ErrorResponse | AuthenticationResponse | ConflictResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAllauthClientV1AuthPasswordReset>>, TError,{client: 'app' | 'browser';data: BodyType<ResetPasswordBody>}, TContext>, }
+export const usePutAllauthClientV1AuthWebauthnSignup = <TError = ErrorType<ErrorResponse | AuthenticationResponse | ConflictResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putAllauthClientV1AuthWebauthnSignup>>, TError,{client: 'app' | 'browser';data: BodyType<AddWebAuthnAuthenticatorBody>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof postAllauthClientV1AuthPasswordReset>>,
+        Awaited<ReturnType<typeof putAllauthClientV1AuthWebauthnSignup>>,
         TError,
-        {client: 'app' | 'browser';data: BodyType<ResetPasswordBody>},
+        {client: 'app' | 'browser';data: BodyType<AddWebAuthnAuthenticatorBody>},
         TContext
       > => {
-      return useMutation(getPostAllauthClientV1AuthPasswordResetMutationOptions(options), queryClient);
+      return useMutation(getPutAllauthClientV1AuthWebauthnSignupMutationOptions(options), queryClient);
     }
     

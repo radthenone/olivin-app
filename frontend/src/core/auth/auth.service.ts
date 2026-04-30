@@ -31,8 +31,8 @@ import type {
   VerifyEmailBody,
   ReauthenticateBody,
 } from "@api/generated/auth/schemas";
-import { accountsProfileCreate } from "@api/generated/apps/profiles/profiles";
-import { accountsAddressesCreate } from "@api/generated/apps/addresses/addresses";
+import { customersProfileCreate } from "@api/generated/apps/profiles/profiles";
+import { customersAddressesCreate } from "@api/generated/apps/addresses/addresses";
 import { authStorage } from "./auth.storage";
 import type {
   AllauthClient,
@@ -57,11 +57,33 @@ async function persistSessionToken(meta: unknown): Promise<void> {
   }
 }
 
+function unwrapApiResponse(response: unknown): unknown {
+  if (
+    response &&
+    typeof response === "object" &&
+    "data" in response &&
+    "status" in response &&
+    "headers" in response
+  ) {
+    return (response as any).data;
+  }
+
+  return response;
+}
+
 async function normalizeAuthResponse<T>(
   promise: Promise<T>,
 ): Promise<AuthSessionResponse | null> {
   try {
-    const res = await promise;
+    const rawResponse = await promise;
+    const status = (rawResponse as any)?.status;
+    const res = unwrapApiResponse(rawResponse);
+
+    if (status === 410) {
+      await authStorage.removeSessionToken();
+      return null;
+    }
+
     await persistSessionToken((res as any)?.meta);
     return res as any;
   } catch (error) {
@@ -145,7 +167,7 @@ export async function register(
 
   if (profile && hasValues(profile)) {
     forks.push(
-      accountsProfileCreate({
+      customersProfileCreate({
         firstName: profile.firstName,
         lastName: profile.lastName,
         dateOfBirth: profile.dateOfBirth,
@@ -158,7 +180,7 @@ export async function register(
 
   if (address && hasValues(address)) {
     forks.push(
-      accountsAddressesCreate({
+      customersAddressesCreate({
         street: address.street,
         street2: address.street2,
         city: address.city,

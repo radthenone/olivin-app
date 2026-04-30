@@ -269,24 +269,43 @@ manner.
 
  * @summary Provider redirect
  */
-export const postAllauthBrowserV1AuthProviderRedirect = (
-    providerRedirectBody: BodyType<ProviderRedirectBody>,
- signal?: AbortSignal
-) => {
-      
-      const formUrlEncoded = new URLSearchParams();
+export type postAllauthBrowserV1AuthProviderRedirectResponse302 = {
+  data: void
+  status: 302
+}
+
+;
+export type postAllauthBrowserV1AuthProviderRedirectResponseError = (postAllauthBrowserV1AuthProviderRedirectResponse302) & {
+  headers: Headers;
+};
+
+export type postAllauthBrowserV1AuthProviderRedirectResponse = (postAllauthBrowserV1AuthProviderRedirectResponseError)
+
+export const getPostAllauthBrowserV1AuthProviderRedirectUrl = () => {
+
+
+  
+
+  return `/_allauth/browser/v1/auth/provider/redirect`
+}
+
+export const postAllauthBrowserV1AuthProviderRedirect = async (providerRedirectBody: ProviderRedirectBody, options?: RequestInit): Promise<postAllauthBrowserV1AuthProviderRedirectResponse> => {
+    const formUrlEncoded = new URLSearchParams();
 formUrlEncoded.append(`provider`, providerRedirectBody.provider);
 formUrlEncoded.append(`callback_url`, providerRedirectBody.callback_url);
 formUrlEncoded.append(`process`, providerRedirectBody.process);
 
-      return authInstance<unknown>(
-      {url: `/_allauth/browser/v1/auth/provider/redirect`, method: 'POST',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded', },
-       data: formUrlEncoded, signal
-    },
-      );
-    }
+  return authInstance<postAllauthBrowserV1AuthProviderRedirectResponse>(getPostAllauthBrowserV1AuthProviderRedirectUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...options?.headers },
+    body: 
+      formUrlEncoded,
+  }
+);}
   
+
 
 
 export const getPostAllauthBrowserV1AuthProviderRedirectMutationOptions = <TError = ErrorType<void>,
@@ -343,21 +362,57 @@ via this endpoint to authenticate on the server.
 
  * @summary Provider token
  */
-export const postAllauthClientV1AuthProviderToken = (
-    client: 'app' | 'browser',
-    providerTokenBody: BodyType<ProviderTokenBody>,
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<AuthenticatedResponse>(
-      {url: `/_allauth/${client}/v1/auth/provider/token`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: providerTokenBody, signal
-    },
-      );
-    }
+export type postAllauthClientV1AuthProviderTokenResponse200 = {
+  data: AuthenticatedResponse
+  status: 200
+}
+
+export type postAllauthClientV1AuthProviderTokenResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postAllauthClientV1AuthProviderTokenResponse401 = {
+  data: AuthenticationResponse
+  status: 401
+}
+
+export type postAllauthClientV1AuthProviderTokenResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type postAllauthClientV1AuthProviderTokenResponseSuccess = (postAllauthClientV1AuthProviderTokenResponse200) & {
+  headers: Headers;
+};
+export type postAllauthClientV1AuthProviderTokenResponseError = (postAllauthClientV1AuthProviderTokenResponse400 | postAllauthClientV1AuthProviderTokenResponse401 | postAllauthClientV1AuthProviderTokenResponse403) & {
+  headers: Headers;
+};
+
+export type postAllauthClientV1AuthProviderTokenResponse = (postAllauthClientV1AuthProviderTokenResponseSuccess | postAllauthClientV1AuthProviderTokenResponseError)
+
+export const getPostAllauthClientV1AuthProviderTokenUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/auth/provider/token`
+}
+
+export const postAllauthClientV1AuthProviderToken = async (client: 'app' | 'browser',
+    providerTokenBody: ProviderTokenBody, options?: RequestInit): Promise<postAllauthClientV1AuthProviderTokenResponse> => {
+  
+  return authInstance<postAllauthClientV1AuthProviderTokenResponse>(getPostAllauthClientV1AuthProviderTokenUrl(client),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      providerTokenBody,)
+  }
+);}
+  
+
 
 
 export const getPostAllauthClientV1AuthProviderTokenMutationOptions = <TError = ErrorType<ErrorResponse | AuthenticationResponse | ForbiddenResponse>,
@@ -414,18 +469,45 @@ can be retrieved via this endpoint.
 
  * @summary Provider signup information
  */
-export const getAllauthClientV1AuthProviderSignup = (
-    client: 'app' | 'browser',
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<ProviderSignupResponse>(
-      {url: `/_allauth/${client}/v1/auth/provider/signup`, method: 'GET', signal
-    },
-      );
-    }
+export type getAllauthClientV1AuthProviderSignupResponse200 = {
+  data: ProviderSignupResponse
+  status: 200
+}
+
+export type getAllauthClientV1AuthProviderSignupResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type getAllauthClientV1AuthProviderSignupResponseSuccess = (getAllauthClientV1AuthProviderSignupResponse200) & {
+  headers: Headers;
+};
+export type getAllauthClientV1AuthProviderSignupResponseError = (getAllauthClientV1AuthProviderSignupResponse409) & {
+  headers: Headers;
+};
+
+export type getAllauthClientV1AuthProviderSignupResponse = (getAllauthClientV1AuthProviderSignupResponseSuccess | getAllauthClientV1AuthProviderSignupResponseError)
+
+export const getGetAllauthClientV1AuthProviderSignupUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/auth/provider/signup`
+}
+
+export const getAllauthClientV1AuthProviderSignup = async (client: 'app' | 'browser', options?: RequestInit): Promise<getAllauthClientV1AuthProviderSignupResponse> => {
+  
+  return authInstance<getAllauthClientV1AuthProviderSignupResponse>(getGetAllauthClientV1AuthProviderSignupUrl(client),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+  
+
 
 
 
@@ -445,7 +527,7 @@ const {query: queryOptions} = options ?? {};
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AuthProviderSignup>>> = ({ signal }) => getAllauthClientV1AuthProviderSignup(client, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AuthProviderSignup>>> = ({ signal }) => getAllauthClientV1AuthProviderSignup(client, { signal });
 
       
 
@@ -509,21 +591,62 @@ the missing data before the user is fully signed up and authenticated.
 
  * @summary Provider signup
  */
-export const postAllauthClientV1AuthProviderSignup = (
-    client: 'app' | 'browser',
-    providerSignupBody: BodyType<ProviderSignupBody>,
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<AuthenticatedResponse>(
-      {url: `/_allauth/${client}/v1/auth/provider/signup`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: providerSignupBody, signal
-    },
-      );
-    }
+export type postAllauthClientV1AuthProviderSignupResponse200 = {
+  data: AuthenticatedResponse
+  status: 200
+}
+
+export type postAllauthClientV1AuthProviderSignupResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postAllauthClientV1AuthProviderSignupResponse401 = {
+  data: AuthenticationResponse
+  status: 401
+}
+
+export type postAllauthClientV1AuthProviderSignupResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type postAllauthClientV1AuthProviderSignupResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type postAllauthClientV1AuthProviderSignupResponseSuccess = (postAllauthClientV1AuthProviderSignupResponse200) & {
+  headers: Headers;
+};
+export type postAllauthClientV1AuthProviderSignupResponseError = (postAllauthClientV1AuthProviderSignupResponse400 | postAllauthClientV1AuthProviderSignupResponse401 | postAllauthClientV1AuthProviderSignupResponse403 | postAllauthClientV1AuthProviderSignupResponse409) & {
+  headers: Headers;
+};
+
+export type postAllauthClientV1AuthProviderSignupResponse = (postAllauthClientV1AuthProviderSignupResponseSuccess | postAllauthClientV1AuthProviderSignupResponseError)
+
+export const getPostAllauthClientV1AuthProviderSignupUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/auth/provider/signup`
+}
+
+export const postAllauthClientV1AuthProviderSignup = async (client: 'app' | 'browser',
+    providerSignupBody: ProviderSignupBody, options?: RequestInit): Promise<postAllauthClientV1AuthProviderSignupResponse> => {
+  
+  return authInstance<postAllauthClientV1AuthProviderSignupResponse>(getPostAllauthClientV1AuthProviderSignupUrl(client),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      providerSignupBody,)
+  }
+);}
+  
+
 
 
 export const getPostAllauthClientV1AuthProviderSignupMutationOptions = <TError = ErrorType<ErrorResponse | AuthenticationResponse | ForbiddenResponse | ConflictResponse>,

@@ -74,81 +74,101 @@ Actions:
 - destroy:        DELETE /api/v1/addresses/{id}/
 - set_default:    PATCH /api/v1/addresses/{id}/set-default/
  */
-export const accountsAddressesList = (
+export type customersAddressesListResponse200 = {
+  data: Address[]
+  status: 200
+}
+
+export type customersAddressesListResponseSuccess = (customersAddressesListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type customersAddressesListResponse = (customersAddressesListResponseSuccess)
+
+export const getCustomersAddressesListUrl = () => {
+
+
+  
+
+  return `/customers/addresses/`
+}
+
+export const customersAddressesList = async ( options?: RequestInit): Promise<customersAddressesListResponse> => {
+  
+  return appInstance<customersAddressesListResponse>(getCustomersAddressesListUrl(),
+  {      
+    ...options,
+    method: 'GET'
     
- signal?: AbortSignal
-) => {
-      
-      
-      return appInstance<Address[]>(
-      {url: `/accounts/addresses/`, method: 'GET', signal
-    },
-      );
-    }
+    
+  }
+);}
   
 
 
 
-export const getAccountsAddressesListQueryKey = () => {
+
+export const getCustomersAddressesListQueryKey = () => {
     return [
-    `/accounts/addresses/`
+    `/customers/addresses/`
     ] as const;
     }
 
     
-export const getAccountsAddressesListQueryOptions = <TData = Awaited<ReturnType<typeof accountsAddressesList>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsAddressesList>>, TError, TData>>, }
+export const getCustomersAddressesListQueryOptions = <TData = Awaited<ReturnType<typeof customersAddressesList>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getAccountsAddressesListQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getCustomersAddressesListQueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof accountsAddressesList>>> = ({ signal }) => accountsAddressesList(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof customersAddressesList>>> = ({ signal }) => customersAddressesList({ signal });
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof accountsAddressesList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof customersAddressesList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type AccountsAddressesListQueryResult = NonNullable<Awaited<ReturnType<typeof accountsAddressesList>>>
-export type AccountsAddressesListQueryError = ErrorType<unknown>
+export type CustomersAddressesListQueryResult = NonNullable<Awaited<ReturnType<typeof customersAddressesList>>>
+export type CustomersAddressesListQueryError = ErrorType<unknown>
 
 
-export function useAccountsAddressesList<TData = Awaited<ReturnType<typeof accountsAddressesList>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsAddressesList>>, TError, TData>> & Pick<
+export function useCustomersAddressesList<TData = Awaited<ReturnType<typeof customersAddressesList>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof accountsAddressesList>>,
+          Awaited<ReturnType<typeof customersAddressesList>>,
           TError,
-          Awaited<ReturnType<typeof accountsAddressesList>>
+          Awaited<ReturnType<typeof customersAddressesList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useAccountsAddressesList<TData = Awaited<ReturnType<typeof accountsAddressesList>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsAddressesList>>, TError, TData>> & Pick<
+export function useCustomersAddressesList<TData = Awaited<ReturnType<typeof customersAddressesList>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof accountsAddressesList>>,
+          Awaited<ReturnType<typeof customersAddressesList>>,
           TError,
-          Awaited<ReturnType<typeof accountsAddressesList>>
+          Awaited<ReturnType<typeof customersAddressesList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useAccountsAddressesList<TData = Awaited<ReturnType<typeof accountsAddressesList>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsAddressesList>>, TError, TData>>, }
+export function useCustomersAddressesList<TData = Awaited<ReturnType<typeof customersAddressesList>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useAccountsAddressesList<TData = Awaited<ReturnType<typeof accountsAddressesList>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsAddressesList>>, TError, TData>>, }
+export function useCustomersAddressesList<TData = Awaited<ReturnType<typeof customersAddressesList>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getAccountsAddressesListQueryOptions(options)
+  const queryOptions = getCustomersAddressesListQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -170,27 +190,46 @@ Actions:
 - destroy:        DELETE /api/v1/addresses/{id}/
 - set_default:    PATCH /api/v1/addresses/{id}/set-default/
  */
-export const accountsAddressesCreate = (
-    address: BodyType<NonReadonly<Address>>,
- signal?: AbortSignal
-) => {
-      
-      
-      return appInstance<Address>(
-      {url: `/accounts/addresses/`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: address, signal
-    },
-      );
-    }
+export type customersAddressesCreateResponse201 = {
+  data: Address
+  status: 201
+}
+
+export type customersAddressesCreateResponseSuccess = (customersAddressesCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type customersAddressesCreateResponse = (customersAddressesCreateResponseSuccess)
+
+export const getCustomersAddressesCreateUrl = () => {
+
+
+  
+
+  return `/customers/addresses/`
+}
+
+export const customersAddressesCreate = async (address: NonReadonly<Address>, options?: RequestInit): Promise<customersAddressesCreateResponse> => {
+  
+  return appInstance<customersAddressesCreateResponse>(getCustomersAddressesCreateUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      address,)
+  }
+);}
   
 
 
-export const getAccountsAddressesCreateMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsAddressesCreate>>, TError,{data: BodyType<NonReadonly<Address>>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof accountsAddressesCreate>>, TError,{data: BodyType<NonReadonly<Address>>}, TContext> => {
 
-const mutationKey = ['accountsAddressesCreate'];
+export const getCustomersAddressesCreateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersAddressesCreate>>, TError,{data: BodyType<NonReadonly<Address>>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof customersAddressesCreate>>, TError,{data: BodyType<NonReadonly<Address>>}, TContext> => {
+
+const mutationKey = ['customersAddressesCreate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -200,10 +239,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof accountsAddressesCreate>>, {data: BodyType<NonReadonly<Address>>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof customersAddressesCreate>>, {data: BodyType<NonReadonly<Address>>}> = (props) => {
           const {data} = props ?? {};
 
-          return  accountsAddressesCreate(data,)
+          return  customersAddressesCreate(data,)
         }
 
 
@@ -213,19 +252,19 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type AccountsAddressesCreateMutationResult = NonNullable<Awaited<ReturnType<typeof accountsAddressesCreate>>>
-    export type AccountsAddressesCreateMutationBody = BodyType<NonReadonly<Address>>
-    export type AccountsAddressesCreateMutationError = ErrorType<unknown>
+    export type CustomersAddressesCreateMutationResult = NonNullable<Awaited<ReturnType<typeof customersAddressesCreate>>>
+    export type CustomersAddressesCreateMutationBody = BodyType<NonReadonly<Address>>
+    export type CustomersAddressesCreateMutationError = ErrorType<unknown>
 
-    export const useAccountsAddressesCreate = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsAddressesCreate>>, TError,{data: BodyType<NonReadonly<Address>>}, TContext>, }
+    export const useCustomersAddressesCreate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersAddressesCreate>>, TError,{data: BodyType<NonReadonly<Address>>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof accountsAddressesCreate>>,
+        Awaited<ReturnType<typeof customersAddressesCreate>>,
         TError,
         {data: BodyType<NonReadonly<Address>>},
         TContext
       > => {
-      return useMutation(getAccountsAddressesCreateMutationOptions(options), queryClient);
+      return useMutation(getCustomersAddressesCreateMutationOptions(options), queryClient);
     }
     /**
  * A viewset for viewing and editing address instances.
@@ -239,81 +278,101 @@ Actions:
 - destroy:        DELETE /api/v1/addresses/{id}/
 - set_default:    PATCH /api/v1/addresses/{id}/set-default/
  */
-export const accountsAddressesRetrieve = (
-    id: string,
- signal?: AbortSignal
-) => {
-      
-      
-      return appInstance<Address>(
-      {url: `/accounts/addresses/${id}/`, method: 'GET', signal
-    },
-      );
-    }
+export type customersAddressesRetrieveResponse200 = {
+  data: Address
+  status: 200
+}
+
+export type customersAddressesRetrieveResponseSuccess = (customersAddressesRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type customersAddressesRetrieveResponse = (customersAddressesRetrieveResponseSuccess)
+
+export const getCustomersAddressesRetrieveUrl = (id: string,) => {
+
+
+  
+
+  return `/customers/addresses/${id}/`
+}
+
+export const customersAddressesRetrieve = async (id: string, options?: RequestInit): Promise<customersAddressesRetrieveResponse> => {
+  
+  return appInstance<customersAddressesRetrieveResponse>(getCustomersAddressesRetrieveUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
   
 
 
 
-export const getAccountsAddressesRetrieveQueryKey = (id: string,) => {
+
+export const getCustomersAddressesRetrieveQueryKey = (id: string,) => {
     return [
-    `/accounts/addresses/${id}/`
+    `/customers/addresses/${id}/`
     ] as const;
     }
 
     
-export const getAccountsAddressesRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof accountsAddressesRetrieve>>, TError = ErrorType<unknown>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsAddressesRetrieve>>, TError, TData>>, }
+export const getCustomersAddressesRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof customersAddressesRetrieve>>, TError = ErrorType<unknown>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesRetrieve>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getAccountsAddressesRetrieveQueryKey(id);
+  const queryKey =  queryOptions?.queryKey ?? getCustomersAddressesRetrieveQueryKey(id);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof accountsAddressesRetrieve>>> = ({ signal }) => accountsAddressesRetrieve(id, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof customersAddressesRetrieve>>> = ({ signal }) => customersAddressesRetrieve(id, { signal });
 
       
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof accountsAddressesRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof customersAddressesRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type AccountsAddressesRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof accountsAddressesRetrieve>>>
-export type AccountsAddressesRetrieveQueryError = ErrorType<unknown>
+export type CustomersAddressesRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof customersAddressesRetrieve>>>
+export type CustomersAddressesRetrieveQueryError = ErrorType<unknown>
 
 
-export function useAccountsAddressesRetrieve<TData = Awaited<ReturnType<typeof accountsAddressesRetrieve>>, TError = ErrorType<unknown>>(
- id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsAddressesRetrieve>>, TError, TData>> & Pick<
+export function useCustomersAddressesRetrieve<TData = Awaited<ReturnType<typeof customersAddressesRetrieve>>, TError = ErrorType<unknown>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesRetrieve>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof accountsAddressesRetrieve>>,
+          Awaited<ReturnType<typeof customersAddressesRetrieve>>,
           TError,
-          Awaited<ReturnType<typeof accountsAddressesRetrieve>>
+          Awaited<ReturnType<typeof customersAddressesRetrieve>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useAccountsAddressesRetrieve<TData = Awaited<ReturnType<typeof accountsAddressesRetrieve>>, TError = ErrorType<unknown>>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsAddressesRetrieve>>, TError, TData>> & Pick<
+export function useCustomersAddressesRetrieve<TData = Awaited<ReturnType<typeof customersAddressesRetrieve>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesRetrieve>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof accountsAddressesRetrieve>>,
+          Awaited<ReturnType<typeof customersAddressesRetrieve>>,
           TError,
-          Awaited<ReturnType<typeof accountsAddressesRetrieve>>
+          Awaited<ReturnType<typeof customersAddressesRetrieve>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useAccountsAddressesRetrieve<TData = Awaited<ReturnType<typeof accountsAddressesRetrieve>>, TError = ErrorType<unknown>>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsAddressesRetrieve>>, TError, TData>>, }
+export function useCustomersAddressesRetrieve<TData = Awaited<ReturnType<typeof customersAddressesRetrieve>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesRetrieve>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useAccountsAddressesRetrieve<TData = Awaited<ReturnType<typeof accountsAddressesRetrieve>>, TError = ErrorType<unknown>>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsAddressesRetrieve>>, TError, TData>>, }
+export function useCustomersAddressesRetrieve<TData = Awaited<ReturnType<typeof customersAddressesRetrieve>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesRetrieve>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getAccountsAddressesRetrieveQueryOptions(id,options)
+  const queryOptions = getCustomersAddressesRetrieveQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -335,28 +394,47 @@ Actions:
 - destroy:        DELETE /api/v1/addresses/{id}/
 - set_default:    PATCH /api/v1/addresses/{id}/set-default/
  */
-export const accountsAddressesUpdate = (
-    id: string,
-    address: BodyType<NonReadonly<Address>>,
- signal?: AbortSignal
-) => {
-      
-      
-      return appInstance<Address>(
-      {url: `/accounts/addresses/${id}/`, method: 'PUT',
-      headers: {'Content-Type': 'application/json', },
-      data: address, signal
-    },
-      );
-    }
+export type customersAddressesUpdateResponse200 = {
+  data: Address
+  status: 200
+}
+
+export type customersAddressesUpdateResponseSuccess = (customersAddressesUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type customersAddressesUpdateResponse = (customersAddressesUpdateResponseSuccess)
+
+export const getCustomersAddressesUpdateUrl = (id: string,) => {
+
+
+  
+
+  return `/customers/addresses/${id}/`
+}
+
+export const customersAddressesUpdate = async (id: string,
+    address: NonReadonly<Address>, options?: RequestInit): Promise<customersAddressesUpdateResponse> => {
+  
+  return appInstance<customersAddressesUpdateResponse>(getCustomersAddressesUpdateUrl(id),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      address,)
+  }
+);}
   
 
 
-export const getAccountsAddressesUpdateMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsAddressesUpdate>>, TError,{id: string;data: BodyType<NonReadonly<Address>>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof accountsAddressesUpdate>>, TError,{id: string;data: BodyType<NonReadonly<Address>>}, TContext> => {
 
-const mutationKey = ['accountsAddressesUpdate'];
+export const getCustomersAddressesUpdateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersAddressesUpdate>>, TError,{id: string;data: BodyType<NonReadonly<Address>>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof customersAddressesUpdate>>, TError,{id: string;data: BodyType<NonReadonly<Address>>}, TContext> => {
+
+const mutationKey = ['customersAddressesUpdate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -366,10 +444,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof accountsAddressesUpdate>>, {id: string;data: BodyType<NonReadonly<Address>>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof customersAddressesUpdate>>, {id: string;data: BodyType<NonReadonly<Address>>}> = (props) => {
           const {id,data} = props ?? {};
 
-          return  accountsAddressesUpdate(id,data,)
+          return  customersAddressesUpdate(id,data,)
         }
 
 
@@ -379,19 +457,19 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type AccountsAddressesUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof accountsAddressesUpdate>>>
-    export type AccountsAddressesUpdateMutationBody = BodyType<NonReadonly<Address>>
-    export type AccountsAddressesUpdateMutationError = ErrorType<unknown>
+    export type CustomersAddressesUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof customersAddressesUpdate>>>
+    export type CustomersAddressesUpdateMutationBody = BodyType<NonReadonly<Address>>
+    export type CustomersAddressesUpdateMutationError = ErrorType<unknown>
 
-    export const useAccountsAddressesUpdate = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsAddressesUpdate>>, TError,{id: string;data: BodyType<NonReadonly<Address>>}, TContext>, }
+    export const useCustomersAddressesUpdate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersAddressesUpdate>>, TError,{id: string;data: BodyType<NonReadonly<Address>>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof accountsAddressesUpdate>>,
+        Awaited<ReturnType<typeof customersAddressesUpdate>>,
         TError,
         {id: string;data: BodyType<NonReadonly<Address>>},
         TContext
       > => {
-      return useMutation(getAccountsAddressesUpdateMutationOptions(options), queryClient);
+      return useMutation(getCustomersAddressesUpdateMutationOptions(options), queryClient);
     }
     /**
  * A viewset for viewing and editing address instances.
@@ -405,28 +483,47 @@ Actions:
 - destroy:        DELETE /api/v1/addresses/{id}/
 - set_default:    PATCH /api/v1/addresses/{id}/set-default/
  */
-export const accountsAddressesPartialUpdate = (
-    id: string,
-    patchedAddress: BodyType<NonReadonly<PatchedAddress>>,
- signal?: AbortSignal
-) => {
-      
-      
-      return appInstance<Address>(
-      {url: `/accounts/addresses/${id}/`, method: 'PATCH',
-      headers: {'Content-Type': 'application/json', },
-      data: patchedAddress, signal
-    },
-      );
-    }
+export type customersAddressesPartialUpdateResponse200 = {
+  data: Address
+  status: 200
+}
+
+export type customersAddressesPartialUpdateResponseSuccess = (customersAddressesPartialUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type customersAddressesPartialUpdateResponse = (customersAddressesPartialUpdateResponseSuccess)
+
+export const getCustomersAddressesPartialUpdateUrl = (id: string,) => {
+
+
+  
+
+  return `/customers/addresses/${id}/`
+}
+
+export const customersAddressesPartialUpdate = async (id: string,
+    patchedAddress: NonReadonly<PatchedAddress>, options?: RequestInit): Promise<customersAddressesPartialUpdateResponse> => {
+  
+  return appInstance<customersAddressesPartialUpdateResponse>(getCustomersAddressesPartialUpdateUrl(id),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      patchedAddress,)
+  }
+);}
   
 
 
-export const getAccountsAddressesPartialUpdateMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsAddressesPartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedAddress>>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof accountsAddressesPartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedAddress>>}, TContext> => {
 
-const mutationKey = ['accountsAddressesPartialUpdate'];
+export const getCustomersAddressesPartialUpdateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersAddressesPartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedAddress>>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof customersAddressesPartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedAddress>>}, TContext> => {
+
+const mutationKey = ['customersAddressesPartialUpdate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -436,10 +533,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof accountsAddressesPartialUpdate>>, {id: string;data: BodyType<NonReadonly<PatchedAddress>>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof customersAddressesPartialUpdate>>, {id: string;data: BodyType<NonReadonly<PatchedAddress>>}> = (props) => {
           const {id,data} = props ?? {};
 
-          return  accountsAddressesPartialUpdate(id,data,)
+          return  customersAddressesPartialUpdate(id,data,)
         }
 
 
@@ -449,19 +546,19 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type AccountsAddressesPartialUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof accountsAddressesPartialUpdate>>>
-    export type AccountsAddressesPartialUpdateMutationBody = BodyType<NonReadonly<PatchedAddress>>
-    export type AccountsAddressesPartialUpdateMutationError = ErrorType<unknown>
+    export type CustomersAddressesPartialUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof customersAddressesPartialUpdate>>>
+    export type CustomersAddressesPartialUpdateMutationBody = BodyType<NonReadonly<PatchedAddress>>
+    export type CustomersAddressesPartialUpdateMutationError = ErrorType<unknown>
 
-    export const useAccountsAddressesPartialUpdate = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsAddressesPartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedAddress>>}, TContext>, }
+    export const useCustomersAddressesPartialUpdate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersAddressesPartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedAddress>>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof accountsAddressesPartialUpdate>>,
+        Awaited<ReturnType<typeof customersAddressesPartialUpdate>>,
         TError,
         {id: string;data: BodyType<NonReadonly<PatchedAddress>>},
         TContext
       > => {
-      return useMutation(getAccountsAddressesPartialUpdateMutationOptions(options), queryClient);
+      return useMutation(getCustomersAddressesPartialUpdateMutationOptions(options), queryClient);
     }
     /**
  * A viewset for viewing and editing address instances.
@@ -475,25 +572,45 @@ Actions:
 - destroy:        DELETE /api/v1/addresses/{id}/
 - set_default:    PATCH /api/v1/addresses/{id}/set-default/
  */
-export const accountsAddressesDestroy = (
-    id: string,
- signal?: AbortSignal
-) => {
-      
-      
-      return appInstance<void>(
-      {url: `/accounts/addresses/${id}/`, method: 'DELETE', signal
-    },
-      );
-    }
+export type customersAddressesDestroyResponse204 = {
+  data: void
+  status: 204
+}
+
+export type customersAddressesDestroyResponseSuccess = (customersAddressesDestroyResponse204) & {
+  headers: Headers;
+};
+;
+
+export type customersAddressesDestroyResponse = (customersAddressesDestroyResponseSuccess)
+
+export const getCustomersAddressesDestroyUrl = (id: string,) => {
+
+
+  
+
+  return `/customers/addresses/${id}/`
+}
+
+export const customersAddressesDestroy = async (id: string, options?: RequestInit): Promise<customersAddressesDestroyResponse> => {
+  
+  return appInstance<customersAddressesDestroyResponse>(getCustomersAddressesDestroyUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
   
 
 
-export const getAccountsAddressesDestroyMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsAddressesDestroy>>, TError,{id: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof accountsAddressesDestroy>>, TError,{id: string}, TContext> => {
 
-const mutationKey = ['accountsAddressesDestroy'];
+export const getCustomersAddressesDestroyMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersAddressesDestroy>>, TError,{id: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof customersAddressesDestroy>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['customersAddressesDestroy'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -503,10 +620,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof accountsAddressesDestroy>>, {id: string}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof customersAddressesDestroy>>, {id: string}> = (props) => {
           const {id} = props ?? {};
 
-          return  accountsAddressesDestroy(id,)
+          return  customersAddressesDestroy(id,)
         }
 
 
@@ -516,46 +633,82 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type AccountsAddressesDestroyMutationResult = NonNullable<Awaited<ReturnType<typeof accountsAddressesDestroy>>>
+    export type CustomersAddressesDestroyMutationResult = NonNullable<Awaited<ReturnType<typeof customersAddressesDestroy>>>
     
-    export type AccountsAddressesDestroyMutationError = ErrorType<unknown>
+    export type CustomersAddressesDestroyMutationError = ErrorType<unknown>
 
-    export const useAccountsAddressesDestroy = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsAddressesDestroy>>, TError,{id: string}, TContext>, }
+    export const useCustomersAddressesDestroy = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersAddressesDestroy>>, TError,{id: string}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof accountsAddressesDestroy>>,
+        Awaited<ReturnType<typeof customersAddressesDestroy>>,
         TError,
         {id: string},
         TContext
       > => {
-      return useMutation(getAccountsAddressesDestroyMutationOptions(options), queryClient);
+      return useMutation(getCustomersAddressesDestroyMutationOptions(options), queryClient);
     }
     /**
  * Sets the address as the default address for the authenticated user.
  * @summary Set Default Address
  */
-export const accountsAddressesSetDefaultPartialUpdate = (
-    id: string,
-    patchedAddress: BodyType<NonReadonly<PatchedAddress>>,
- signal?: AbortSignal
-) => {
-      
-      
-      return appInstance<Address>(
-      {url: `/accounts/addresses/${id}/set-default/`, method: 'PATCH',
-      headers: {'Content-Type': 'application/json', },
-      data: patchedAddress, signal
-    },
-      );
-    }
+export type customersAddressesSetDefaultPartialUpdateResponse200 = {
+  data: Address
+  status: 200
+}
+
+export type customersAddressesSetDefaultPartialUpdateResponse400 = {
+  data: void
+  status: 400
+}
+
+export type customersAddressesSetDefaultPartialUpdateResponse403 = {
+  data: void
+  status: 403
+}
+
+export type customersAddressesSetDefaultPartialUpdateResponse404 = {
+  data: void
+  status: 404
+}
+
+export type customersAddressesSetDefaultPartialUpdateResponseSuccess = (customersAddressesSetDefaultPartialUpdateResponse200) & {
+  headers: Headers;
+};
+export type customersAddressesSetDefaultPartialUpdateResponseError = (customersAddressesSetDefaultPartialUpdateResponse400 | customersAddressesSetDefaultPartialUpdateResponse403 | customersAddressesSetDefaultPartialUpdateResponse404) & {
+  headers: Headers;
+};
+
+export type customersAddressesSetDefaultPartialUpdateResponse = (customersAddressesSetDefaultPartialUpdateResponseSuccess | customersAddressesSetDefaultPartialUpdateResponseError)
+
+export const getCustomersAddressesSetDefaultPartialUpdateUrl = (id: string,) => {
+
+
+  
+
+  return `/customers/addresses/${id}/set-default/`
+}
+
+export const customersAddressesSetDefaultPartialUpdate = async (id: string,
+    patchedAddress: NonReadonly<PatchedAddress>, options?: RequestInit): Promise<customersAddressesSetDefaultPartialUpdateResponse> => {
+  
+  return appInstance<customersAddressesSetDefaultPartialUpdateResponse>(getCustomersAddressesSetDefaultPartialUpdateUrl(id),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      patchedAddress,)
+  }
+);}
   
 
 
-export const getAccountsAddressesSetDefaultPartialUpdateMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsAddressesSetDefaultPartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedAddress>>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof accountsAddressesSetDefaultPartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedAddress>>}, TContext> => {
 
-const mutationKey = ['accountsAddressesSetDefaultPartialUpdate'];
+export const getCustomersAddressesSetDefaultPartialUpdateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersAddressesSetDefaultPartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedAddress>>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof customersAddressesSetDefaultPartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedAddress>>}, TContext> => {
+
+const mutationKey = ['customersAddressesSetDefaultPartialUpdate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -565,10 +718,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof accountsAddressesSetDefaultPartialUpdate>>, {id: string;data: BodyType<NonReadonly<PatchedAddress>>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof customersAddressesSetDefaultPartialUpdate>>, {id: string;data: BodyType<NonReadonly<PatchedAddress>>}> = (props) => {
           const {id,data} = props ?? {};
 
-          return  accountsAddressesSetDefaultPartialUpdate(id,data,)
+          return  customersAddressesSetDefaultPartialUpdate(id,data,)
         }
 
 
@@ -578,21 +731,21 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type AccountsAddressesSetDefaultPartialUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof accountsAddressesSetDefaultPartialUpdate>>>
-    export type AccountsAddressesSetDefaultPartialUpdateMutationBody = BodyType<NonReadonly<PatchedAddress>>
-    export type AccountsAddressesSetDefaultPartialUpdateMutationError = ErrorType<void>
+    export type CustomersAddressesSetDefaultPartialUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof customersAddressesSetDefaultPartialUpdate>>>
+    export type CustomersAddressesSetDefaultPartialUpdateMutationBody = BodyType<NonReadonly<PatchedAddress>>
+    export type CustomersAddressesSetDefaultPartialUpdateMutationError = ErrorType<void>
 
     /**
  * @summary Set Default Address
  */
-export const useAccountsAddressesSetDefaultPartialUpdate = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsAddressesSetDefaultPartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedAddress>>}, TContext>, }
+export const useCustomersAddressesSetDefaultPartialUpdate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersAddressesSetDefaultPartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedAddress>>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof accountsAddressesSetDefaultPartialUpdate>>,
+        Awaited<ReturnType<typeof customersAddressesSetDefaultPartialUpdate>>,
         TError,
         {id: string;data: BodyType<NonReadonly<PatchedAddress>>},
         TContext
       > => {
-      return useMutation(getAccountsAddressesSetDefaultPartialUpdateMutationOptions(options), queryClient);
+      return useMutation(getCustomersAddressesSetDefaultPartialUpdateMutationOptions(options), queryClient);
     }
     

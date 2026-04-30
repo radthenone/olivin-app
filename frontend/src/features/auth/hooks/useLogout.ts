@@ -2,10 +2,12 @@
  * useLogout.ts
  *
  * Hook do wylogowania użytkownika.
- * Po wylogowaniu resetuje store i nawiguje do ekranu logowania.
+ * Po wylogowaniu czyści session query; nawigacją zajmuje się guard.
  */
 import { useState } from "react";
-import { authService, useAuthStore } from "@core/auth";
+import { useQueryClient } from "@tanstack/react-query";
+import { authService } from "@core/auth";
+import { sessionQueryKey } from "./useSession";
 
 export interface UseLogoutResult {
   logout: () => Promise<void>;
@@ -13,7 +15,7 @@ export interface UseLogoutResult {
 }
 
 export function useLogout(): UseLogoutResult {
-  const { resetSession } = useAuthStore();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
 
   const logout = async () => {
@@ -24,7 +26,8 @@ export function useLogout(): UseLogoutResult {
     } catch {
       // Ignoruj błędy sieciowe — wylogowanie lokalne jest zawsze wykonywane
     } finally {
-      resetSession();
+      queryClient.setQueryData(sessionQueryKey, null);
+      await queryClient.invalidateQueries({ queryKey: sessionQueryKey });
       setIsLoading(false);
     }
   };

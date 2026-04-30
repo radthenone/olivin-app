@@ -259,18 +259,38 @@ time of your application.
 
  * @summary Get configuration
  */
-export const getAllauthClientV1Config = (
-    client: 'app' | 'browser',
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<ConfigurationResponse>(
-      {url: `/_allauth/${client}/v1/config`, method: 'GET', signal
-    },
-      );
-    }
+export type getAllauthClientV1ConfigResponse200 = {
+  data: ConfigurationResponse
+  status: 200
+}
+
+export type getAllauthClientV1ConfigResponseSuccess = (getAllauthClientV1ConfigResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getAllauthClientV1ConfigResponse = (getAllauthClientV1ConfigResponseSuccess)
+
+export const getGetAllauthClientV1ConfigUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/config`
+}
+
+export const getAllauthClientV1Config = async (client: 'app' | 'browser', options?: RequestInit): Promise<getAllauthClientV1ConfigResponse> => {
+  
+  return authInstance<getAllauthClientV1ConfigResponse>(getGetAllauthClientV1ConfigUrl(client),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+  
+
 
 
 
@@ -290,7 +310,7 @@ const {query: queryOptions} = options ?? {};
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1Config>>> = ({ signal }) => getAllauthClientV1Config(client, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1Config>>> = ({ signal }) => getAllauthClientV1Config(client, { signal });
 
       
 

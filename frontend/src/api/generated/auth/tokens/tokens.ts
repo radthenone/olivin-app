@@ -253,20 +253,46 @@ a new refresh token is returned as well.
  * @summary Refresh the access token
 
  */
-export const postAllauthAppV1TokensRefresh = (
-    refreshTokenBody: BodyType<RefreshTokenBody>,
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<RefreshTokenResponse>(
-      {url: `/_allauth/app/v1/tokens/refresh`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: refreshTokenBody, signal
-    },
-      );
-    }
+export type postAllauthAppV1TokensRefreshResponse200 = {
+  data: RefreshTokenResponse
+  status: 200
+}
+
+export type postAllauthAppV1TokensRefreshResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postAllauthAppV1TokensRefreshResponseSuccess = (postAllauthAppV1TokensRefreshResponse200) & {
+  headers: Headers;
+};
+export type postAllauthAppV1TokensRefreshResponseError = (postAllauthAppV1TokensRefreshResponse400) & {
+  headers: Headers;
+};
+
+export type postAllauthAppV1TokensRefreshResponse = (postAllauthAppV1TokensRefreshResponseSuccess | postAllauthAppV1TokensRefreshResponseError)
+
+export const getPostAllauthAppV1TokensRefreshUrl = () => {
+
+
   
+
+  return `/_allauth/app/v1/tokens/refresh`
+}
+
+export const postAllauthAppV1TokensRefresh = async (refreshTokenBody: RefreshTokenBody, options?: RequestInit): Promise<postAllauthAppV1TokensRefreshResponse> => {
+  
+  return authInstance<postAllauthAppV1TokensRefreshResponse>(getPostAllauthAppV1TokensRefreshUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      refreshTokenBody,)
+  }
+);}
+  
+
 
 
 export const getPostAllauthAppV1TokensRefreshMutationOptions = <TError = ErrorType<ErrorResponse>,

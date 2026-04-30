@@ -310,8 +310,7 @@ export const PostAllauthClientV1AuthSignupParams = zod.object({
 })
 
 export const PostAllauthClientV1AuthSignupBody = zod.object({
-  "email": zod.string().optional().describe('The email address.\n'),
-  "username": zod.string().describe('The username.\n')
+  "email": zod.string().describe('The email address.\n')
 }).and(zod.object({
   "password": zod.string().describe('The password.\n')
 }))

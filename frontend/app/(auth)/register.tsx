@@ -41,7 +41,7 @@ export default function RegisterScreen() {
   const [street, setStreet] = useState("");
   const [city, setCity] = useState("");
   const [postalCode, setPostalCode] = useState("");
-  const [country, setCountry] = useState("PL");
+  const country = "PL";
 
   // ─── Krok 1: walidacja i przejście do kroku 2 ─────────────────────────────
   const handleNextStep = () => {
@@ -125,7 +125,10 @@ export default function RegisterScreen() {
             <FormField
               label="E-mail *"
               value={email}
-              onChangeText={(t) => { setEmail(t); clearError(); }}
+              onChangeText={(t) => {
+                setEmail(t);
+                clearError();
+              }}
               placeholder="jan@example.com"
               keyboardType="email-address"
               autoCapitalize="none"
@@ -134,7 +137,10 @@ export default function RegisterScreen() {
             <FormField
               label="Hasło *"
               value={password}
-              onChangeText={(t) => { setPassword(t); setPasswordError(null); }}
+              onChangeText={(t) => {
+                setPassword(t);
+                setPasswordError(null);
+              }}
               placeholder="min. 8 znaków"
               secureTextEntry
               autoComplete="new-password"
@@ -143,7 +149,10 @@ export default function RegisterScreen() {
             <FormField
               label="Powtórz hasło *"
               value={passwordConfirm}
-              onChangeText={(t) => { setPasswordConfirm(t); setPasswordError(null); }}
+              onChangeText={(t) => {
+                setPasswordConfirm(t);
+                setPasswordError(null);
+              }}
               placeholder="••••••••"
               secureTextEntry
               autoComplete="new-password"
@@ -153,7 +162,9 @@ export default function RegisterScreen() {
               className="bg-blue-600 rounded-xl py-4 items-center mt-2 active:bg-blue-700"
               onPress={handleNextStep}
             >
-              <Text className="text-white font-semibold text-base">Dalej →</Text>
+              <Text className="text-white font-semibold text-base">
+                Dalej →
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -212,7 +223,7 @@ export default function RegisterScreen() {
                   value={city}
                   onChangeText={setCity}
                   placeholder="Warszawa"
-                  autoComplete="address-level2"
+                  autoComplete="off"
                 />
               </View>
               <View className="w-28">
@@ -259,7 +270,9 @@ export default function RegisterScreen() {
           <View className="flex-row justify-center mt-8">
             <Text className="text-gray-500 text-sm">Masz już konto? </Text>
             <Link href="/(auth)/login">
-              <Text className="text-blue-600 font-medium text-sm">Zaloguj się</Text>
+              <Text className="text-blue-600 font-medium text-sm">
+                Zaloguj się
+              </Text>
             </Link>
           </View>
         )}
@@ -300,9 +313,7 @@ function FormField({
         editable={editable}
         {...inputProps}
       />
-      {error && (
-        <Text className="text-red-500 text-xs mt-1">{error}</Text>
-      )}
+      {error && <Text className="text-red-500 text-xs mt-1">{error}</Text>}
     </View>
   );
 }

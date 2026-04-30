@@ -281,6 +281,7 @@ export * from './flow';
 export * from './flowId';
 export * from './forbiddenResponse';
 export * from './forbiddenResponseStatus';
+export * from './getAllauthClientV1AccountAuthenticatorsWebauthnParams';
 export * from './login';
 export * from './loginBody';
 export * from './loginWebAuthnBody';

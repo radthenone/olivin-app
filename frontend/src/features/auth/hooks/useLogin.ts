@@ -2,11 +2,13 @@
  * useLogin.ts
  *
  * Hook do logowania użytkownika.
- * Używa authService.login + aktualizuje authStore.
+ * Używa authService.login + odświeża session query.
  */
 import { useState } from "react";
-import { authService, useAuthStore } from "@core/auth";
+import { useQueryClient } from "@tanstack/react-query";
+import { authService } from "@core/auth";
 import type { LoginCredentials } from "@core/auth";
+import { sessionQueryKey } from "./useSession";
 
 export interface UseLoginResult {
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -16,7 +18,7 @@ export interface UseLoginResult {
 }
 
 export function useLogin(): UseLoginResult {
-  const { setSession } = useAuthStore();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,11 +32,12 @@ export function useLogin(): UseLoginResult {
         password: credentials.password,
       });
 
-      setSession(session);
+      queryClient.setQueryData(sessionQueryKey, session);
+      await queryClient.invalidateQueries({ queryKey: sessionQueryKey });
     } catch (err: unknown) {
       const message = extractErrorMessage(err);
       setError(message);
-      setSession(null);
+      queryClient.setQueryData(sessionQueryKey, null);
     } finally {
       setIsLoading(false);
     }

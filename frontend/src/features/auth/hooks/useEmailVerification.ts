@@ -4,7 +4,9 @@
  * Hook do weryfikacji adresu e-mail po rejestracji lub logowaniu.
  */
 import { useState } from "react";
-import { authService, useAuthStore } from "@core/auth";
+import { useQueryClient } from "@tanstack/react-query";
+import { authService } from "@core/auth";
+import { sessionQueryKey } from "./useSession";
 
 export interface UseEmailVerificationResult {
   verifyEmail: (key: string) => Promise<void>;
@@ -16,7 +18,7 @@ export interface UseEmailVerificationResult {
 }
 
 export function useEmailVerification(): UseEmailVerificationResult {
-  const { setSession } = useAuthStore();
+  const queryClient = useQueryClient();
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +29,8 @@ export function useEmailVerification(): UseEmailVerificationResult {
 
     try {
       const session = await authService.verifyEmail({ key });
-      setSession(session);
+      queryClient.setQueryData(sessionQueryKey, session);
+      await queryClient.invalidateQueries({ queryKey: sessionQueryKey });
     } catch (err: unknown) {
       setError(extractError(err, "Nieprawidłowy kod weryfikacyjny."));
     } finally {

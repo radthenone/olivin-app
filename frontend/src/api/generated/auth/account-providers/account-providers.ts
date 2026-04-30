@@ -258,18 +258,38 @@ import type { ErrorType , BodyType } from '../../../auth-mutator';
 /**
  * @summary List the connected third-party provider accounts
  */
-export const getAllauthClientV1AccountProviders = (
-    client: 'app' | 'browser',
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<ProviderAccountsResponse>(
-      {url: `/_allauth/${client}/v1/account/providers`, method: 'GET', signal
-    },
-      );
-    }
+export type getAllauthClientV1AccountProvidersResponse200 = {
+  data: ProviderAccountsResponse
+  status: 200
+}
+
+export type getAllauthClientV1AccountProvidersResponseSuccess = (getAllauthClientV1AccountProvidersResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getAllauthClientV1AccountProvidersResponse = (getAllauthClientV1AccountProvidersResponseSuccess)
+
+export const getGetAllauthClientV1AccountProvidersUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/account/providers`
+}
+
+export const getAllauthClientV1AccountProviders = async (client: 'app' | 'browser', options?: RequestInit): Promise<getAllauthClientV1AccountProvidersResponse> => {
+  
+  return authInstance<getAllauthClientV1AccountProvidersResponse>(getGetAllauthClientV1AccountProvidersUrl(client),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+  
+
 
 
 
@@ -289,7 +309,7 @@ const {query: queryOptions} = options ?? {};
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AccountProviders>>> = ({ signal }) => getAllauthClientV1AccountProviders(client, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AccountProviders>>> = ({ signal }) => getAllauthClientV1AccountProviders(client, { signal });
 
       
 
@@ -354,21 +374,47 @@ set up yet.
  * @summary Disconnect a third-party provider account
 
  */
-export const deleteAllauthClientV1AccountProviders = (
-    client: 'app' | 'browser',
-    providerAccountBody: BodyType<ProviderAccountBody>,
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<ProviderAccountsResponse>(
-      {url: `/_allauth/${client}/v1/account/providers`, method: 'DELETE',
-      headers: {'Content-Type': 'application/json', },
-      data: providerAccountBody, signal
-    },
-      );
-    }
+export type deleteAllauthClientV1AccountProvidersResponse200 = {
+  data: ProviderAccountsResponse
+  status: 200
+}
+
+export type deleteAllauthClientV1AccountProvidersResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type deleteAllauthClientV1AccountProvidersResponseSuccess = (deleteAllauthClientV1AccountProvidersResponse200) & {
+  headers: Headers;
+};
+export type deleteAllauthClientV1AccountProvidersResponseError = (deleteAllauthClientV1AccountProvidersResponse400) & {
+  headers: Headers;
+};
+
+export type deleteAllauthClientV1AccountProvidersResponse = (deleteAllauthClientV1AccountProvidersResponseSuccess | deleteAllauthClientV1AccountProvidersResponseError)
+
+export const getDeleteAllauthClientV1AccountProvidersUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/account/providers`
+}
+
+export const deleteAllauthClientV1AccountProviders = async (client: 'app' | 'browser',
+    providerAccountBody: ProviderAccountBody, options?: RequestInit): Promise<deleteAllauthClientV1AccountProvidersResponse> => {
+  
+  return authInstance<deleteAllauthClientV1AccountProvidersResponse>(getDeleteAllauthClientV1AccountProvidersUrl(client),
+  {      
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      providerAccountBody,)
+  }
+);}
+  
+
 
 
 export const getDeleteAllauthClientV1AccountProvidersMutationOptions = <TError = ErrorType<ErrorResponse>,

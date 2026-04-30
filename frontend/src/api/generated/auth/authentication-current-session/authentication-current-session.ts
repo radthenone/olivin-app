@@ -263,18 +263,50 @@ session.
  * @summary Get authentication status
 
  */
-export const getAllauthClientV1AuthSession = (
-    client: 'app' | 'browser',
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<AuthenticatedResponse>(
-      {url: `/_allauth/${client}/v1/auth/session`, method: 'GET', signal
-    },
-      );
-    }
+export type getAllauthClientV1AuthSessionResponse200 = {
+  data: AuthenticatedResponse
+  status: 200
+}
+
+export type getAllauthClientV1AuthSessionResponse401 = {
+  data: AuthenticationResponse
+  status: 401
+}
+
+export type getAllauthClientV1AuthSessionResponse410 = {
+  data: SessionGoneResponse
+  status: 410
+}
+
+export type getAllauthClientV1AuthSessionResponseSuccess = (getAllauthClientV1AuthSessionResponse200) & {
+  headers: Headers;
+};
+export type getAllauthClientV1AuthSessionResponseError = (getAllauthClientV1AuthSessionResponse401 | getAllauthClientV1AuthSessionResponse410) & {
+  headers: Headers;
+};
+
+export type getAllauthClientV1AuthSessionResponse = (getAllauthClientV1AuthSessionResponseSuccess | getAllauthClientV1AuthSessionResponseError)
+
+export const getGetAllauthClientV1AuthSessionUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/auth/session`
+}
+
+export const getAllauthClientV1AuthSession = async (client: 'app' | 'browser', options?: RequestInit): Promise<getAllauthClientV1AuthSessionResponse> => {
+  
+  return authInstance<getAllauthClientV1AuthSessionResponse>(getGetAllauthClientV1AuthSessionUrl(client),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+  
+
 
 
 
@@ -294,7 +326,7 @@ const {query: queryOptions} = options ?? {};
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AuthSession>>> = ({ signal }) => getAllauthClientV1AuthSession(client, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AuthSession>>> = ({ signal }) => getAllauthClientV1AuthSession(client, { signal });
 
       
 
@@ -356,18 +388,38 @@ export function useGetAllauthClientV1AuthSession<TData = Awaited<ReturnType<type
 
  * @summary Logout
  */
-export const deleteAllauthClientV1AuthSession = (
-    client: 'app' | 'browser',
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<unknown>(
-      {url: `/_allauth/${client}/v1/auth/session`, method: 'DELETE', signal
-    },
-      );
-    }
+export type deleteAllauthClientV1AuthSessionResponse401 = {
+  data: UnauthenticatedResponse
+  status: 401
+}
+
+;
+export type deleteAllauthClientV1AuthSessionResponseError = (deleteAllauthClientV1AuthSessionResponse401) & {
+  headers: Headers;
+};
+
+export type deleteAllauthClientV1AuthSessionResponse = (deleteAllauthClientV1AuthSessionResponseError)
+
+export const getDeleteAllauthClientV1AuthSessionUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/auth/session`
+}
+
+export const deleteAllauthClientV1AuthSession = async (client: 'app' | 'browser', options?: RequestInit): Promise<deleteAllauthClientV1AuthSessionResponse> => {
+  
+  return authInstance<deleteAllauthClientV1AuthSessionResponse>(getDeleteAllauthClientV1AuthSessionUrl(client),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+  
+
 
 
 export const getDeleteAllauthClientV1AuthSessionMutationOptions = <TError = ErrorType<UnauthenticatedResponse>,

@@ -228,34 +228,48 @@ import * as zod from 'zod';
 
 
 /**
- * Authenticates with a third-party provider using provider tokens received
-by other means. For example, in case of a mobile app, the authentication
-flow runs completely on the device itself, without any interaction with
-the API. Then, when the (device) authentication completes and the mobile
-app receives an access and/or ID token, it can hand over these tokens
-via this endpoint to authenticate on the server.
+ * Returns the WebAuthn credential request options, that can be
+processed using `parseRequestOptionsFromJSON()` on the frontend.
 
- * @summary Provider token
+ * @summary Get WebAuthn credential request options for 2FA
  */
-export const PostAllauthClientV1AuthProviderTokenParams = zod.object({
+export const GetAllauthClientV1AuthWebauthnAuthenticateParams = zod.object({
   "client": zod.enum(['app', 'browser']).describe('The type of client accessing the API.')
 })
 
-export const PostAllauthClientV1AuthProviderTokenHeader = zod.object({
+export const GetAllauthClientV1AuthWebauthnAuthenticateHeader = zod.object({
   "X-Session-Token": zod.string().optional().describe('Session token. Only needed when `client` is equal to `app`.\n')
 })
 
-export const PostAllauthClientV1AuthProviderTokenBody = zod.object({
-  "provider": zod.string().describe('The provider ID.\n'),
-  "process": zod.enum(['login', 'connect']).describe('The process to be executed when the user successfully\nauthenticates. When set to `login`, the user will be logged into the\naccount to which the provider account is connected, or if no such\naccount exists, a signup will occur. If set to `connect`, the provider\naccount will be connected to the list of provider accounts for the\ncurrently authenticated user.\n'),
-  "token": zod.object({
-  "client_id": zod.string().describe('The client ID (in case of OAuth2 or OpenID Connect based providers)\n'),
-  "id_token": zod.string().optional().describe('The ID token.\n'),
-  "access_token": zod.string().optional().describe('The access token.\n')
-}).describe('The token.\n')
+export const GetAllauthClientV1AuthWebauthnAuthenticateResponse = zod.object({
+  "status": zod.literal(200),
+  "data": zod.object({
+  "request_options": zod.looseObject({
+
+})
+})
 })
 
-export const PostAllauthClientV1AuthProviderTokenResponse = zod.object({
+/**
+ * Perform Two-Factor Authentication using a WebAuthn credential.
+
+ * @summary Perform 2FA using WebAuthn
+ */
+export const PostAllauthClientV1AuthWebauthnAuthenticateParams = zod.object({
+  "client": zod.enum(['app', 'browser']).describe('The type of client accessing the API.')
+})
+
+export const PostAllauthClientV1AuthWebauthnAuthenticateHeader = zod.object({
+  "X-Session-Token": zod.string().optional().describe('Session token. Only needed when `client` is equal to `app`.\n')
+})
+
+export const PostAllauthClientV1AuthWebauthnAuthenticateBody = zod.object({
+  "credential": zod.looseObject({
+
+})
+})
+
+export const PostAllauthClientV1AuthWebauthnAuthenticateResponse = zod.object({
   "status": zod.literal(200),
   "data": zod.object({
   "user": zod.object({
@@ -307,65 +321,144 @@ export const PostAllauthClientV1AuthProviderTokenResponse = zod.object({
 })
 
 /**
- * If, while signing up using a third-party provider account, there is
-insufficient information received from the provider to automatically
-complete the signup process, an additional step is needed to complete
-the missing data before the user is fully signed up and authenticated.
-The information available so far, such as the pending provider account,
-can be retrieved via this endpoint.
+ * Returns the WebAuthn credential request options, that can be
+processed using `parseRequestOptionsFromJSON()` on the frontend.
 
- * @summary Provider signup information
+ * @summary Get WebAuthn credential request options for reauthentication
  */
-export const GetAllauthClientV1AuthProviderSignupParams = zod.object({
+export const GetAllauthClientV1AuthWebauthnReauthenticateParams = zod.object({
   "client": zod.enum(['app', 'browser']).describe('The type of client accessing the API.')
 })
 
-export const GetAllauthClientV1AuthProviderSignupResponse = zod.object({
+export const GetAllauthClientV1AuthWebauthnReauthenticateHeader = zod.object({
+  "X-Session-Token": zod.string().optional().describe('Session token. Only needed when `client` is equal to `app`.\n')
+})
+
+export const GetAllauthClientV1AuthWebauthnReauthenticateResponse = zod.object({
   "status": zod.literal(200),
   "data": zod.object({
-  "email": zod.array(zod.object({
-  "email": zod.string().describe('The email address.\n'),
-  "primary": zod.boolean(),
-  "verified": zod.boolean()
-})),
-  "account": zod.object({
-  "uid": zod.string().describe('The provider specific account ID.\n'),
-  "display": zod.string().describe('A name derived from the third-party provider account data.\n'),
-  "provider": zod.object({
-  "id": zod.string().describe('The provider ID.\n'),
-  "name": zod.string().describe('The name of the provider.\n'),
-  "client_id": zod.string().optional().describe('The client ID (in case of OAuth2 or OpenID Connect based providers)\n'),
-  "openid_configuration_url": zod.string().optional().describe('The OIDC discovery or well-known URL (in case of OAuth2 or OpenID Connect based providers)\n'),
-  "flows": zod.array(zod.enum(['provider_redirect', 'provider_token'])).describe('The authentication flows the provider integration supports.\n')
+  "request_options": zod.looseObject({
+
 })
-}),
+})
+})
+
+/**
+ * Reauthenticate the user using a WebAuthn credential.
+
+ * @summary Reauthenticate using WebAuthn
+ */
+export const PostAllauthClientV1AuthWebauthnReauthenticateParams = zod.object({
+  "client": zod.enum(['app', 'browser']).describe('The type of client accessing the API.')
+})
+
+export const PostAllauthClientV1AuthWebauthnReauthenticateHeader = zod.object({
+  "X-Session-Token": zod.string().optional().describe('Session token. Only needed when `client` is equal to `app`.\n')
+})
+
+export const PostAllauthClientV1AuthWebauthnReauthenticateBody = zod.object({
+  "credential": zod.looseObject({
+
+})
+})
+
+export const PostAllauthClientV1AuthWebauthnReauthenticateResponse = zod.object({
+  "status": zod.literal(200),
+  "data": zod.object({
   "user": zod.object({
   "id": zod.number().optional().describe('The user ID.'),
   "display": zod.string().describe('The display name for the user.'),
   "email": zod.string().optional().describe('The email address.'),
   "has_usable_password": zod.boolean().describe('Whether or not the account has a password set.'),
   "username": zod.string().describe('The username.')
+}),
+  "methods": zod.array(zod.union([zod.object({
+  "method": zod.enum(['password']),
+  "at": zod.number().describe('An epoch based timestamp (trivial to parse using: `new Date(value)\*1000`)\n'),
+  "email": zod.string().optional().describe('The email address.\n'),
+  "username": zod.string().optional().describe('The username.\n')
+}),zod.object({
+  "method": zod.enum(['password_reset']),
+  "at": zod.number().describe('An epoch based timestamp (trivial to parse using: `new Date(value)\*1000`)\n'),
+  "email": zod.string().describe('The email address.\n')
+}),zod.object({
+  "method": zod.enum(['code']),
+  "at": zod.number().describe('An epoch based timestamp (trivial to parse using: `new Date(value)\*1000`)\n'),
+  "email": zod.string().describe('The email address.\n')
+}),zod.object({
+  "method": zod.enum(['code']),
+  "at": zod.number().describe('An epoch based timestamp (trivial to parse using: `new Date(value)\*1000`)\n'),
+  "phone": zod.string().describe('The phone number.\n')
+}),zod.object({
+  "method": zod.enum(['password']),
+  "at": zod.number().describe('An epoch based timestamp (trivial to parse using: `new Date(value)\*1000`)\n'),
+  "reauthenticated": zod.literal(true)
+}),zod.object({
+  "method": zod.enum(['socialaccount']),
+  "at": zod.number().describe('An epoch based timestamp (trivial to parse using: `new Date(value)\*1000`)\n'),
+  "provider": zod.string().describe('The provider ID.\n'),
+  "uid": zod.string().describe('The provider specific account ID.\n')
+}),zod.object({
+  "method": zod.enum(['mfa']),
+  "at": zod.number().describe('An epoch based timestamp (trivial to parse using: `new Date(value)\*1000`)\n'),
+  "type": zod.enum(['recovery_codes', 'totp', 'webauthn']).describe('The type of authenticator.\n'),
+  "reauthenticated": zod.boolean().optional()
+})])).describe('A list of methods used to authenticate.\n')
+}),
+  "meta": zod.object({
+  "session_token": zod.string().optional().describe('The session token (`app` clients only).\n'),
+  "access_token": zod.string().optional().describe('The access token (`app` clients only).\n')
+}).and(zod.object({
+  "is_authenticated": zod.boolean()
+}).describe('Metadata available in an authentication related response.\n'))
+})
+
+/**
+ * Returns the WebAuthn credential request options, that can be
+processed using `parseRequestOptionsFromJSON()` on the frontend.
+
+ * @summary Get WebAuthn credential request options for login
+ */
+export const GetAllauthClientV1AuthWebauthnLoginParams = zod.object({
+  "client": zod.enum(['app', 'browser']).describe('The type of client accessing the API.')
+})
+
+export const GetAllauthClientV1AuthWebauthnLoginHeader = zod.object({
+  "X-Session-Token": zod.string().optional().describe('Session token. Only needed when `client` is equal to `app`.\n')
+})
+
+export const GetAllauthClientV1AuthWebauthnLoginResponse = zod.object({
+  "status": zod.literal(200),
+  "data": zod.object({
+  "request_options": zod.looseObject({
+
 })
 })
 })
 
 /**
- * If, while signing up using a third-party provider account, there is
-insufficient information received from the provider to automatically
-complete the signup process, an additional step is needed to complete
-the missing data before the user is fully signed up and authenticated.
+ * Login using a WebAuthn credential (Passkey). Both 200 and 401 can be
+expected after a successful request.  The 401 can, for example, occur
+when the credential passed was valid, but the email attached to the
+account still requires verification.
 
- * @summary Provider signup
+ * @summary Login using WebAuthn
  */
-export const PostAllauthClientV1AuthProviderSignupParams = zod.object({
+export const PostAllauthClientV1AuthWebauthnLoginParams = zod.object({
   "client": zod.enum(['app', 'browser']).describe('The type of client accessing the API.')
 })
 
-export const PostAllauthClientV1AuthProviderSignupBody = zod.object({
-  "email": zod.string().describe('The email address.\n')
+export const PostAllauthClientV1AuthWebauthnLoginHeader = zod.object({
+  "X-Session-Token": zod.string().optional().describe('Session token. Only needed when `client` is equal to `app`.\n')
 })
 
-export const PostAllauthClientV1AuthProviderSignupResponse = zod.object({
+export const PostAllauthClientV1AuthWebauthnLoginBody = zod.object({
+  "credential": zod.looseObject({
+
+})
+})
+
+export const PostAllauthClientV1AuthWebauthnLoginResponse = zod.object({
   "status": zod.literal(200),
   "data": zod.object({
   "user": zod.object({

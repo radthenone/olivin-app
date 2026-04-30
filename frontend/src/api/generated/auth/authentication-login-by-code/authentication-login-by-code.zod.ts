@@ -228,6 +228,21 @@ import * as zod from 'zod';
 
 
 /**
+ * Request a "special" login code that is sent to the user by email.
+
+ * @summary Request login code
+ */
+export const PostAllauthClientV1AuthCodeRequestParams = zod.object({
+  "client": zod.enum(['app', 'browser']).describe('The type of client accessing the API.')
+})
+
+export const PostAllauthClientV1AuthCodeRequestBody = zod.union([zod.object({
+  "phone": zod.string().describe('The phone number.\n')
+}),zod.object({
+  "email": zod.string().describe('The email address.\n')
+})])
+
+/**
  * Use this endpoint to pass along the received "special" login code.
 
  * @summary Confirm login code

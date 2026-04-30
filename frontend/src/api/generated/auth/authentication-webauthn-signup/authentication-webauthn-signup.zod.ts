@@ -224,221 +224,120 @@ return authenticator names as follows:
     }
  * OpenAPI spec version: 1
  */
-import {
-  useMutation
-} from '@tanstack/react-query';
-import type {
-  MutationFunction,
-  QueryClient,
-  UseMutationOptions,
-  UseMutationResult
-} from '@tanstack/react-query';
-
-import type {
-  AuthenticatedByCodeResponse,
-  AuthenticationResponse,
-  ConfirmLoginCodeBody,
-  ConflictResponse,
-  ErrorResponse,
-  RequestLoginCodeBody
-} from '../schemas';
-
-import { authInstance } from '../../../auth-mutator';
-import type { ErrorType , BodyType } from '../../../auth-mutator';
-
-
+import * as zod from 'zod';
 
 
 /**
- * Request a "special" login code that is sent to the user by email.
+ * You initiate the passkey signup flow by inputting (`POST`) the required properties (e.g. email)
+similar to the regular account signup, except that the `password` is to be left out.
+The user will then be required to verify the email address, after which WebAuthn credential
+creation options can be retrieved (`GET`) and used to actually complete (`PUT`) the flow.
 
- * @summary Request login code
+ * @summary Initiate the passkey signup flow
  */
-export type postAllauthClientV1AuthCodeRequestResponse400 = {
-  data: ErrorResponse
-  status: 400
-}
+export const PostAllauthClientV1AuthWebauthnSignupParams = zod.object({
+  "client": zod.enum(['app', 'browser']).describe('The type of client accessing the API.')
+})
 
-export type postAllauthClientV1AuthCodeRequestResponse401 = {
-  data: AuthenticationResponse
-  status: 401
-}
+export const PostAllauthClientV1AuthWebauthnSignupHeader = zod.object({
+  "X-Session-Token": zod.string().optional().describe('Session token. Only needed when `client` is equal to `app`.\n')
+})
 
-;
-export type postAllauthClientV1AuthCodeRequestResponseError = (postAllauthClientV1AuthCodeRequestResponse400 | postAllauthClientV1AuthCodeRequestResponse401) & {
-  headers: Headers;
-};
+export const PostAllauthClientV1AuthWebauthnSignupBody = zod.object({
+  "email": zod.string().describe('The email address.\n')
+})
 
-export type postAllauthClientV1AuthCodeRequestResponse = (postAllauthClientV1AuthCodeRequestResponseError)
+/**
+ * Returns the WebAuthn credential request options, that can be
+processed using `parseRequestOptionsFromJSON()` on the frontend.
 
-export const getPostAllauthClientV1AuthCodeRequestUrl = (client: 'app' | 'browser',) => {
-
-
-  
-
-  return `/_allauth/${client}/v1/auth/code/request`
-}
-
-export const postAllauthClientV1AuthCodeRequest = async (client: 'app' | 'browser',
-    requestLoginCodeBody: RequestLoginCodeBody, options?: RequestInit): Promise<postAllauthClientV1AuthCodeRequestResponse> => {
-  
-  return authInstance<postAllauthClientV1AuthCodeRequestResponse>(getPostAllauthClientV1AuthCodeRequestUrl(client),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      requestLoginCodeBody,)
-  }
-);}
-  
-
-
-
-export const getPostAllauthClientV1AuthCodeRequestMutationOptions = <TError = ErrorType<ErrorResponse | AuthenticationResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAllauthClientV1AuthCodeRequest>>, TError,{client: 'app' | 'browser';data: BodyType<RequestLoginCodeBody>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof postAllauthClientV1AuthCodeRequest>>, TError,{client: 'app' | 'browser';data: BodyType<RequestLoginCodeBody>}, TContext> => {
-
-const mutationKey = ['postAllauthClientV1AuthCodeRequest'];
-const {mutation: mutationOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAllauthClientV1AuthCodeRequest>>, {client: 'app' | 'browser';data: BodyType<RequestLoginCodeBody>}> = (props) => {
-          const {client,data} = props ?? {};
-
-          return  postAllauthClientV1AuthCodeRequest(client,data,)
-        }
-
-
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostAllauthClientV1AuthCodeRequestMutationResult = NonNullable<Awaited<ReturnType<typeof postAllauthClientV1AuthCodeRequest>>>
-    export type PostAllauthClientV1AuthCodeRequestMutationBody = BodyType<RequestLoginCodeBody>
-    export type PostAllauthClientV1AuthCodeRequestMutationError = ErrorType<ErrorResponse | AuthenticationResponse>
-
-    /**
- * @summary Request login code
+ * @summary Get passkey credential request options
  */
-export const usePostAllauthClientV1AuthCodeRequest = <TError = ErrorType<ErrorResponse | AuthenticationResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAllauthClientV1AuthCodeRequest>>, TError,{client: 'app' | 'browser';data: BodyType<RequestLoginCodeBody>}, TContext>, }
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof postAllauthClientV1AuthCodeRequest>>,
-        TError,
-        {client: 'app' | 'browser';data: BodyType<RequestLoginCodeBody>},
-        TContext
-      > => {
-      return useMutation(getPostAllauthClientV1AuthCodeRequestMutationOptions(options), queryClient);
-    }
-    /**
- * Use this endpoint to pass along the received "special" login code.
+export const GetAllauthClientV1AuthWebauthnSignupParams = zod.object({
+  "client": zod.enum(['app', 'browser']).describe('The type of client accessing the API.')
+})
 
- * @summary Confirm login code
+export const GetAllauthClientV1AuthWebauthnSignupHeader = zod.object({
+  "X-Session-Token": zod.string().optional().describe('Session token. Only needed when `client` is equal to `app`.\n')
+})
+
+export const GetAllauthClientV1AuthWebauthnSignupResponse = zod.object({
+  "status": zod.literal(200),
+  "data": zod.object({
+  "request_options": zod.looseObject({
+
+})
+})
+})
+
+/**
+ * Complete the passkey signup flow by handing over the WebAuthn credential.
+
+ * @summary Complete the passkey signup flow
  */
-export type postAllauthClientV1AuthCodeConfirmResponse200 = {
-  data: AuthenticatedByCodeResponse
-  status: 200
-}
+export const PutAllauthClientV1AuthWebauthnSignupParams = zod.object({
+  "client": zod.enum(['app', 'browser']).describe('The type of client accessing the API.')
+})
 
-export type postAllauthClientV1AuthCodeConfirmResponse400 = {
-  data: ErrorResponse
-  status: 400
-}
+export const PutAllauthClientV1AuthWebauthnSignupHeader = zod.object({
+  "X-Session-Token": zod.string().optional().describe('Session token. Only needed when `client` is equal to `app`.\n')
+})
 
-export type postAllauthClientV1AuthCodeConfirmResponse401 = {
-  data: AuthenticationResponse
-  status: 401
-}
+export const PutAllauthClientV1AuthWebauthnSignupBody = zod.object({
+  "name": zod.string().optional(),
+  "credential": zod.looseObject({
 
-export type postAllauthClientV1AuthCodeConfirmResponse409 = {
-  data: ConflictResponse
-  status: 409
-}
+})
+})
 
-export type postAllauthClientV1AuthCodeConfirmResponseSuccess = (postAllauthClientV1AuthCodeConfirmResponse200) & {
-  headers: Headers;
-};
-export type postAllauthClientV1AuthCodeConfirmResponseError = (postAllauthClientV1AuthCodeConfirmResponse400 | postAllauthClientV1AuthCodeConfirmResponse401 | postAllauthClientV1AuthCodeConfirmResponse409) & {
-  headers: Headers;
-};
+export const PutAllauthClientV1AuthWebauthnSignupResponse = zod.object({
+  "status": zod.literal(200),
+  "data": zod.object({
+  "user": zod.object({
+  "id": zod.number().optional().describe('The user ID.'),
+  "display": zod.string().describe('The display name for the user.'),
+  "email": zod.string().optional().describe('The email address.'),
+  "has_usable_password": zod.boolean().describe('Whether or not the account has a password set.'),
+  "username": zod.string().describe('The username.')
+}),
+  "methods": zod.array(zod.union([zod.object({
+  "method": zod.enum(['password']),
+  "at": zod.number().describe('An epoch based timestamp (trivial to parse using: `new Date(value)\*1000`)\n'),
+  "email": zod.string().optional().describe('The email address.\n'),
+  "username": zod.string().optional().describe('The username.\n')
+}),zod.object({
+  "method": zod.enum(['password_reset']),
+  "at": zod.number().describe('An epoch based timestamp (trivial to parse using: `new Date(value)\*1000`)\n'),
+  "email": zod.string().describe('The email address.\n')
+}),zod.object({
+  "method": zod.enum(['code']),
+  "at": zod.number().describe('An epoch based timestamp (trivial to parse using: `new Date(value)\*1000`)\n'),
+  "email": zod.string().describe('The email address.\n')
+}),zod.object({
+  "method": zod.enum(['code']),
+  "at": zod.number().describe('An epoch based timestamp (trivial to parse using: `new Date(value)\*1000`)\n'),
+  "phone": zod.string().describe('The phone number.\n')
+}),zod.object({
+  "method": zod.enum(['password']),
+  "at": zod.number().describe('An epoch based timestamp (trivial to parse using: `new Date(value)\*1000`)\n'),
+  "reauthenticated": zod.literal(true)
+}),zod.object({
+  "method": zod.enum(['socialaccount']),
+  "at": zod.number().describe('An epoch based timestamp (trivial to parse using: `new Date(value)\*1000`)\n'),
+  "provider": zod.string().describe('The provider ID.\n'),
+  "uid": zod.string().describe('The provider specific account ID.\n')
+}),zod.object({
+  "method": zod.enum(['mfa']),
+  "at": zod.number().describe('An epoch based timestamp (trivial to parse using: `new Date(value)\*1000`)\n'),
+  "type": zod.enum(['recovery_codes', 'totp', 'webauthn']).describe('The type of authenticator.\n'),
+  "reauthenticated": zod.boolean().optional()
+})])).describe('A list of methods used to authenticate.\n')
+}),
+  "meta": zod.object({
+  "session_token": zod.string().optional().describe('The session token (`app` clients only).\n'),
+  "access_token": zod.string().optional().describe('The access token (`app` clients only).\n')
+}).and(zod.object({
+  "is_authenticated": zod.boolean()
+}).describe('Metadata available in an authentication related response.\n'))
+})
 
-export type postAllauthClientV1AuthCodeConfirmResponse = (postAllauthClientV1AuthCodeConfirmResponseSuccess | postAllauthClientV1AuthCodeConfirmResponseError)
-
-export const getPostAllauthClientV1AuthCodeConfirmUrl = (client: 'app' | 'browser',) => {
-
-
-  
-
-  return `/_allauth/${client}/v1/auth/code/confirm`
-}
-
-export const postAllauthClientV1AuthCodeConfirm = async (client: 'app' | 'browser',
-    confirmLoginCodeBody: ConfirmLoginCodeBody, options?: RequestInit): Promise<postAllauthClientV1AuthCodeConfirmResponse> => {
-  
-  return authInstance<postAllauthClientV1AuthCodeConfirmResponse>(getPostAllauthClientV1AuthCodeConfirmUrl(client),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      confirmLoginCodeBody,)
-  }
-);}
-  
-
-
-
-export const getPostAllauthClientV1AuthCodeConfirmMutationOptions = <TError = ErrorType<ErrorResponse | AuthenticationResponse | ConflictResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAllauthClientV1AuthCodeConfirm>>, TError,{client: 'app' | 'browser';data: BodyType<ConfirmLoginCodeBody>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof postAllauthClientV1AuthCodeConfirm>>, TError,{client: 'app' | 'browser';data: BodyType<ConfirmLoginCodeBody>}, TContext> => {
-
-const mutationKey = ['postAllauthClientV1AuthCodeConfirm'];
-const {mutation: mutationOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
-
-      
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAllauthClientV1AuthCodeConfirm>>, {client: 'app' | 'browser';data: BodyType<ConfirmLoginCodeBody>}> = (props) => {
-          const {client,data} = props ?? {};
-
-          return  postAllauthClientV1AuthCodeConfirm(client,data,)
-        }
-
-
-
-        
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PostAllauthClientV1AuthCodeConfirmMutationResult = NonNullable<Awaited<ReturnType<typeof postAllauthClientV1AuthCodeConfirm>>>
-    export type PostAllauthClientV1AuthCodeConfirmMutationBody = BodyType<ConfirmLoginCodeBody>
-    export type PostAllauthClientV1AuthCodeConfirmMutationError = ErrorType<ErrorResponse | AuthenticationResponse | ConflictResponse>
-
-    /**
- * @summary Confirm login code
- */
-export const usePostAllauthClientV1AuthCodeConfirm = <TError = ErrorType<ErrorResponse | AuthenticationResponse | ConflictResponse>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAllauthClientV1AuthCodeConfirm>>, TError,{client: 'app' | 'browser';data: BodyType<ConfirmLoginCodeBody>}, TContext>, }
- , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof postAllauthClientV1AuthCodeConfirm>>,
-        TError,
-        {client: 'app' | 'browser';data: BodyType<ConfirmLoginCodeBody>},
-        TContext
-      > => {
-      return useMutation(getPostAllauthClientV1AuthCodeConfirmMutationOptions(options), queryClient);
-    }
-    

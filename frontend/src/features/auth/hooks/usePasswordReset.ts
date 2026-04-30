@@ -6,11 +6,13 @@
  * 2. confirm — ustawia nowe hasło na podstawie klucza z e-maila
  */
 import { useState } from "react";
-import { authService, useAuthStore } from "@core/auth";
+import { useQueryClient } from "@tanstack/react-query";
+import { authService } from "@core/auth";
 import type {
   RequestPasswordResetPayload,
   ConfirmPasswordResetPayload,
 } from "@core/auth";
+import { sessionQueryKey } from "./useSession";
 
 export interface UsePasswordResetResult {
   requestReset: (payload: RequestPasswordResetPayload) => Promise<void>;
@@ -23,7 +25,7 @@ export interface UsePasswordResetResult {
 }
 
 export function usePasswordReset(): UsePasswordResetResult {
-  const { setSession } = useAuthStore();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +51,8 @@ export function usePasswordReset(): UsePasswordResetResult {
     setError(null);
     try {
       const session = await authService.confirmPasswordReset(payload);
-      setSession(session);
+      queryClient.setQueryData(sessionQueryKey, session);
+      await queryClient.invalidateQueries({ queryKey: sessionQueryKey });
       setIsSuccess(true);
     } catch (err) {
       setError(

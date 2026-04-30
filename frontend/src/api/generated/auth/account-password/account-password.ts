@@ -254,21 +254,45 @@ that case, the current password is not required.
 
  * @summary Change password
  */
-export const postAllauthClientV1AccountPasswordChange = (
-    client: 'app' | 'browser',
-    changePasswordBody: BodyType<ChangePasswordBody>,
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<unknown>(
-      {url: `/_allauth/${client}/v1/account/password/change`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: changePasswordBody, signal
-    },
-      );
-    }
+export type postAllauthClientV1AccountPasswordChangeResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postAllauthClientV1AccountPasswordChangeResponse401 = {
+  data: AuthenticationResponse
+  status: 401
+}
+
+;
+export type postAllauthClientV1AccountPasswordChangeResponseError = (postAllauthClientV1AccountPasswordChangeResponse400 | postAllauthClientV1AccountPasswordChangeResponse401) & {
+  headers: Headers;
+};
+
+export type postAllauthClientV1AccountPasswordChangeResponse = (postAllauthClientV1AccountPasswordChangeResponseError)
+
+export const getPostAllauthClientV1AccountPasswordChangeUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/account/password/change`
+}
+
+export const postAllauthClientV1AccountPasswordChange = async (client: 'app' | 'browser',
+    changePasswordBody: ChangePasswordBody, options?: RequestInit): Promise<postAllauthClientV1AccountPasswordChangeResponse> => {
+  
+  return authInstance<postAllauthClientV1AccountPasswordChangeResponse>(getPostAllauthClientV1AccountPasswordChangeUrl(client),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      changePasswordBody,)
+  }
+);}
+  
+
 
 
 export const getPostAllauthClientV1AccountPasswordChangeMutationOptions = <TError = ErrorType<ErrorResponse | AuthenticationResponse>,

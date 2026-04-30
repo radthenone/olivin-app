@@ -266,18 +266,45 @@ import type { ErrorType , BodyType } from '../../../auth-mutator';
 
  * @summary List email addresses
  */
-export const getAllauthClientV1AccountEmail = (
-    client: 'app' | 'browser',
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<EmailAddressesResponse>(
-      {url: `/_allauth/${client}/v1/account/email`, method: 'GET', signal
-    },
-      );
-    }
+export type getAllauthClientV1AccountEmailResponse200 = {
+  data: EmailAddressesResponse
+  status: 200
+}
+
+export type getAllauthClientV1AccountEmailResponse401 = {
+  data: AuthenticationResponse
+  status: 401
+}
+
+export type getAllauthClientV1AccountEmailResponseSuccess = (getAllauthClientV1AccountEmailResponse200) & {
+  headers: Headers;
+};
+export type getAllauthClientV1AccountEmailResponseError = (getAllauthClientV1AccountEmailResponse401) & {
+  headers: Headers;
+};
+
+export type getAllauthClientV1AccountEmailResponse = (getAllauthClientV1AccountEmailResponseSuccess | getAllauthClientV1AccountEmailResponseError)
+
+export const getGetAllauthClientV1AccountEmailUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/account/email`
+}
+
+export const getAllauthClientV1AccountEmail = async (client: 'app' | 'browser', options?: RequestInit): Promise<getAllauthClientV1AccountEmailResponse> => {
+  
+  return authInstance<getAllauthClientV1AccountEmailResponse>(getGetAllauthClientV1AccountEmailUrl(client),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+  
+
 
 
 
@@ -297,7 +324,7 @@ const {query: queryOptions} = options ?? {};
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AccountEmail>>> = ({ signal }) => getAllauthClientV1AccountEmail(client, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AccountEmail>>> = ({ signal }) => getAllauthClientV1AccountEmail(client, { signal });
 
       
 
@@ -365,21 +392,57 @@ In all cases, an email verification mail will be sent containing a link or code 
  * @summary Add/Change email address
 
  */
-export const postAllauthClientV1AccountEmail = (
-    client: 'app' | 'browser',
-    emailBody: BodyType<EmailBody>,
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<EmailAddressesResponse>(
-      {url: `/_allauth/${client}/v1/account/email`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: emailBody, signal
-    },
-      );
-    }
+export type postAllauthClientV1AccountEmailResponse200 = {
+  data: EmailAddressesResponse
+  status: 200
+}
+
+export type postAllauthClientV1AccountEmailResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postAllauthClientV1AccountEmailResponse401 = {
+  data: AuthenticationOrReauthenticationResponse
+  status: 401
+}
+
+export type postAllauthClientV1AccountEmailResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type postAllauthClientV1AccountEmailResponseSuccess = (postAllauthClientV1AccountEmailResponse200) & {
+  headers: Headers;
+};
+export type postAllauthClientV1AccountEmailResponseError = (postAllauthClientV1AccountEmailResponse400 | postAllauthClientV1AccountEmailResponse401 | postAllauthClientV1AccountEmailResponse409) & {
+  headers: Headers;
+};
+
+export type postAllauthClientV1AccountEmailResponse = (postAllauthClientV1AccountEmailResponseSuccess | postAllauthClientV1AccountEmailResponseError)
+
+export const getPostAllauthClientV1AccountEmailUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/account/email`
+}
+
+export const postAllauthClientV1AccountEmail = async (client: 'app' | 'browser',
+    emailBody: EmailBody, options?: RequestInit): Promise<postAllauthClientV1AccountEmailResponse> => {
+  
+  return authInstance<postAllauthClientV1AccountEmailResponse>(getPostAllauthClientV1AccountEmailUrl(client),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      emailBody,)
+  }
+);}
+  
+
 
 
 export const getPostAllauthClientV1AccountEmailMutationOptions = <TError = ErrorType<ErrorResponse | AuthenticationOrReauthenticationResponse | ConflictResponse>,
@@ -434,21 +497,52 @@ email will not be sent.
 
  * @summary Request email verification
  */
-export const putAllauthClientV1AccountEmail = (
-    client: 'app' | 'browser',
-    emailBody: BodyType<EmailBody>,
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<StatusOKResponse>(
-      {url: `/_allauth/${client}/v1/account/email`, method: 'PUT',
-      headers: {'Content-Type': 'application/json', },
-      data: emailBody, signal
-    },
-      );
-    }
+export type putAllauthClientV1AccountEmailResponse200 = {
+  data: StatusOKResponse
+  status: 200
+}
+
+export type putAllauthClientV1AccountEmailResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type putAllauthClientV1AccountEmailResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type putAllauthClientV1AccountEmailResponseSuccess = (putAllauthClientV1AccountEmailResponse200) & {
+  headers: Headers;
+};
+export type putAllauthClientV1AccountEmailResponseError = (putAllauthClientV1AccountEmailResponse400 | putAllauthClientV1AccountEmailResponse403) & {
+  headers: Headers;
+};
+
+export type putAllauthClientV1AccountEmailResponse = (putAllauthClientV1AccountEmailResponseSuccess | putAllauthClientV1AccountEmailResponseError)
+
+export const getPutAllauthClientV1AccountEmailUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/account/email`
+}
+
+export const putAllauthClientV1AccountEmail = async (client: 'app' | 'browser',
+    emailBody: EmailBody, options?: RequestInit): Promise<putAllauthClientV1AccountEmailResponse> => {
+  
+  return authInstance<putAllauthClientV1AccountEmailResponse>(getPutAllauthClientV1AccountEmailUrl(client),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      emailBody,)
+  }
+);}
+  
+
 
 
 export const getPutAllauthClientV1AccountEmailMutationOptions = <TError = ErrorType<ErrorResponse | ForbiddenResponse>,
@@ -501,21 +595,47 @@ can be marked as primary.
 
  * @summary Change primary email address
  */
-export const patchAllauthClientV1AccountEmail = (
-    client: 'app' | 'browser',
-    markPrimaryEmailBody: BodyType<MarkPrimaryEmailBody>,
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<EmailAddressesResponse>(
-      {url: `/_allauth/${client}/v1/account/email`, method: 'PATCH',
-      headers: {'Content-Type': 'application/json', },
-      data: markPrimaryEmailBody, signal
-    },
-      );
-    }
+export type patchAllauthClientV1AccountEmailResponse200 = {
+  data: EmailAddressesResponse
+  status: 200
+}
+
+export type patchAllauthClientV1AccountEmailResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type patchAllauthClientV1AccountEmailResponseSuccess = (patchAllauthClientV1AccountEmailResponse200) & {
+  headers: Headers;
+};
+export type patchAllauthClientV1AccountEmailResponseError = (patchAllauthClientV1AccountEmailResponse400) & {
+  headers: Headers;
+};
+
+export type patchAllauthClientV1AccountEmailResponse = (patchAllauthClientV1AccountEmailResponseSuccess | patchAllauthClientV1AccountEmailResponseError)
+
+export const getPatchAllauthClientV1AccountEmailUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/account/email`
+}
+
+export const patchAllauthClientV1AccountEmail = async (client: 'app' | 'browser',
+    markPrimaryEmailBody: MarkPrimaryEmailBody, options?: RequestInit): Promise<patchAllauthClientV1AccountEmailResponse> => {
+  
+  return authInstance<patchAllauthClientV1AccountEmailResponse>(getPatchAllauthClientV1AccountEmailUrl(client),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      markPrimaryEmailBody,)
+  }
+);}
+  
+
 
 
 export const getPatchAllauthClientV1AccountEmailMutationOptions = <TError = ErrorType<ErrorResponse>,
@@ -567,21 +687,47 @@ export const usePatchAllauthClientV1AccountEmail = <TError = ErrorType<ErrorResp
 
  * @summary Remove an email address
  */
-export const deleteAllauthClientV1AccountEmail = (
-    client: 'app' | 'browser',
-    emailBody: BodyType<EmailBody>,
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<EmailAddressesResponse>(
-      {url: `/_allauth/${client}/v1/account/email`, method: 'DELETE',
-      headers: {'Content-Type': 'application/json', },
-      data: emailBody, signal
-    },
-      );
-    }
+export type deleteAllauthClientV1AccountEmailResponse200 = {
+  data: EmailAddressesResponse
+  status: 200
+}
+
+export type deleteAllauthClientV1AccountEmailResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type deleteAllauthClientV1AccountEmailResponseSuccess = (deleteAllauthClientV1AccountEmailResponse200) & {
+  headers: Headers;
+};
+export type deleteAllauthClientV1AccountEmailResponseError = (deleteAllauthClientV1AccountEmailResponse400) & {
+  headers: Headers;
+};
+
+export type deleteAllauthClientV1AccountEmailResponse = (deleteAllauthClientV1AccountEmailResponseSuccess | deleteAllauthClientV1AccountEmailResponseError)
+
+export const getDeleteAllauthClientV1AccountEmailUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/account/email`
+}
+
+export const deleteAllauthClientV1AccountEmail = async (client: 'app' | 'browser',
+    emailBody: EmailBody, options?: RequestInit): Promise<deleteAllauthClientV1AccountEmailResponse> => {
+  
+  return authInstance<deleteAllauthClientV1AccountEmailResponse>(getDeleteAllauthClientV1AccountEmailUrl(client),
+  {      
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      emailBody,)
+  }
+);}
+  
+
 
 
 export const getDeleteAllauthClientV1AccountEmailMutationOptions = <TError = ErrorType<ErrorResponse>,

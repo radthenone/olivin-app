@@ -265,18 +265,45 @@ endpoint returns a list of phone numbers, at most one entry is returned.
 
  * @summary Get the phone number
  */
-export const getAllauthClientV1AccountPhone = (
-    client: 'app' | 'browser',
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<PhoneNumbersResponse>(
-      {url: `/_allauth/${client}/v1/account/phone`, method: 'GET', signal
-    },
-      );
-    }
+export type getAllauthClientV1AccountPhoneResponse200 = {
+  data: PhoneNumbersResponse
+  status: 200
+}
+
+export type getAllauthClientV1AccountPhoneResponse401 = {
+  data: AuthenticationResponse
+  status: 401
+}
+
+export type getAllauthClientV1AccountPhoneResponseSuccess = (getAllauthClientV1AccountPhoneResponse200) & {
+  headers: Headers;
+};
+export type getAllauthClientV1AccountPhoneResponseError = (getAllauthClientV1AccountPhoneResponse401) & {
+  headers: Headers;
+};
+
+export type getAllauthClientV1AccountPhoneResponse = (getAllauthClientV1AccountPhoneResponseSuccess | getAllauthClientV1AccountPhoneResponseError)
+
+export const getGetAllauthClientV1AccountPhoneUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/account/phone`
+}
+
+export const getAllauthClientV1AccountPhone = async (client: 'app' | 'browser', options?: RequestInit): Promise<getAllauthClientV1AccountPhoneResponse> => {
+  
+  return authInstance<getAllauthClientV1AccountPhoneResponse>(getGetAllauthClientV1AccountPhoneUrl(client),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+  
+
 
 
 
@@ -296,7 +323,7 @@ const {query: queryOptions} = options ?? {};
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AccountPhone>>> = ({ signal }) => getAllauthClientV1AccountPhone(client, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AccountPhone>>> = ({ signal }) => getAllauthClientV1AccountPhone(client, { signal });
 
       
 
@@ -367,21 +394,57 @@ posting the verification code.
  * @summary Change the phone number
 
  */
-export const postAllauthClientV1AccountPhone = (
-    client: 'app' | 'browser',
-    phoneBody: BodyType<PhoneBody>,
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<PhoneNumberChangeResponse>(
-      {url: `/_allauth/${client}/v1/account/phone`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: phoneBody, signal
-    },
-      );
-    }
+export type postAllauthClientV1AccountPhoneResponse202 = {
+  data: PhoneNumberChangeResponse
+  status: 202
+}
+
+export type postAllauthClientV1AccountPhoneResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postAllauthClientV1AccountPhoneResponse401 = {
+  data: AuthenticationOrReauthenticationResponse
+  status: 401
+}
+
+export type postAllauthClientV1AccountPhoneResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type postAllauthClientV1AccountPhoneResponseSuccess = (postAllauthClientV1AccountPhoneResponse202) & {
+  headers: Headers;
+};
+export type postAllauthClientV1AccountPhoneResponseError = (postAllauthClientV1AccountPhoneResponse400 | postAllauthClientV1AccountPhoneResponse401 | postAllauthClientV1AccountPhoneResponse409) & {
+  headers: Headers;
+};
+
+export type postAllauthClientV1AccountPhoneResponse = (postAllauthClientV1AccountPhoneResponseSuccess | postAllauthClientV1AccountPhoneResponseError)
+
+export const getPostAllauthClientV1AccountPhoneUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/account/phone`
+}
+
+export const postAllauthClientV1AccountPhone = async (client: 'app' | 'browser',
+    phoneBody: PhoneBody, options?: RequestInit): Promise<postAllauthClientV1AccountPhoneResponse> => {
+  
+  return authInstance<postAllauthClientV1AccountPhoneResponse>(getPostAllauthClientV1AccountPhoneUrl(client),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      phoneBody,)
+  }
+);}
+  
+
 
 
 export const getPostAllauthClientV1AccountPhoneMutationOptions = <TError = ErrorType<ErrorResponse | AuthenticationOrReauthenticationResponse | ConflictResponse>,

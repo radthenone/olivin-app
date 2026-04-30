@@ -34,7 +34,7 @@
 │ │ │ ├─ auth.storage.ts # SecureStore wrapper
 │ │ │ └─ auth.types.ts
 │ │ ├─ api/
-│ │ │ ├─ http.ts # axios instance + interceptory
+│ │ │ ├─ client.ts # fetch client + CSRF/session token
 │ │ │ ├─ endpoints.ts # ścieżki endpointów
 │ │ │ ├─ client.ts # generyczny client (get/post)
 │ │ │ └─ api.types.ts

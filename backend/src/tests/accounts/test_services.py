@@ -1,11 +1,5 @@
 from __future__ import annotations
 
-"""
-Warstwa serwisów nie istnieje w apps/accounts — logika biznesowa
-siedzi w modelu Profile (właściwości full_name, age) i managerze CustomUserManager.
-Ten plik testuje logikę domenową modelu Profile.
-"""
-
 import datetime
 
 import pytest

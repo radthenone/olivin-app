@@ -1,4 +1,5 @@
 import type { PropsWithChildren } from "react";
+import { ScrollViewStyleReset } from "expo-router/html";
 
 export default function Root({ children }: PropsWithChildren) {
   return (
@@ -7,6 +8,8 @@ export default function Root({ children }: PropsWithChildren) {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#6366f1" />
+
+        <ScrollViewStyleReset />
 
         {/* SEO */}
         <meta name="description" content="Twój sklep internetowy" />

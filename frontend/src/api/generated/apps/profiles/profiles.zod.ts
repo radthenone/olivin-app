@@ -20,23 +20,23 @@ Actions:
 - destroy:        DELETE /api/v1/profiles/{id}/
 - change_role:    PATCH /api/v1/profiles/{id}/change-role/
  */
-export const accountsProfileListResponseFirstNameMax = 150;
+export const customersProfileListResponseFirstNameMax = 150;
 
-export const accountsProfileListResponseLastNameMax = 150;
+export const customersProfileListResponseLastNameMax = 150;
 
 
 
-export const AccountsProfileListResponseItem = zod.object({
+export const CustomersProfileListResponseItem = zod.object({
   "email": zod.email(),
-  "firstName": zod.string().max(accountsProfileListResponseFirstNameMax).optional().describe('User\'s first name'),
-  "lastName": zod.string().max(accountsProfileListResponseLastNameMax).optional().describe('User\'s last name'),
+  "firstName": zod.string().max(customersProfileListResponseFirstNameMax).optional().describe('User\'s first name'),
+  "lastName": zod.string().max(customersProfileListResponseLastNameMax).optional().describe('User\'s last name'),
   "fullName": zod.string(),
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
   "age": zod.number().nullable(),
   "phoneNumber": zod.string().optional(),
   "role": zod.enum(['customer', 'admin']).describe('\* `customer` - Customer\n\* `admin` - Admin')
 })
-export const AccountsProfileListResponse = zod.array(AccountsProfileListResponseItem)
+export const CustomersProfileListResponse = zod.array(CustomersProfileListResponseItem)
 
 /**
  * A viewset for viewing and editing profile instances.
@@ -50,15 +50,15 @@ Actions:
 - destroy:        DELETE /api/v1/profiles/{id}/
 - change_role:    PATCH /api/v1/profiles/{id}/change-role/
  */
-export const accountsProfileCreateBodyFirstNameMax = 150;
+export const customersProfileCreateBodyFirstNameMax = 150;
 
-export const accountsProfileCreateBodyLastNameMax = 150;
+export const customersProfileCreateBodyLastNameMax = 150;
 
 
 
-export const AccountsProfileCreateBody = zod.object({
-  "firstName": zod.string().max(accountsProfileCreateBodyFirstNameMax).optional().describe('User\'s first name'),
-  "lastName": zod.string().max(accountsProfileCreateBodyLastNameMax).optional().describe('User\'s last name'),
+export const CustomersProfileCreateBody = zod.object({
+  "firstName": zod.string().max(customersProfileCreateBodyFirstNameMax).optional().describe('User\'s first name'),
+  "lastName": zod.string().max(customersProfileCreateBodyLastNameMax).optional().describe('User\'s last name'),
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
   "phoneNumber": zod.string().optional()
 })
@@ -75,20 +75,20 @@ Actions:
 - destroy:        DELETE /api/v1/profiles/{id}/
 - change_role:    PATCH /api/v1/profiles/{id}/change-role/
  */
-export const AccountsProfileRetrieveParams = zod.object({
+export const CustomersProfileRetrieveParams = zod.object({
   "id": zod.coerce.string()
 })
 
-export const accountsProfileRetrieveResponseFirstNameMax = 150;
+export const customersProfileRetrieveResponseFirstNameMax = 150;
 
-export const accountsProfileRetrieveResponseLastNameMax = 150;
+export const customersProfileRetrieveResponseLastNameMax = 150;
 
 
 
-export const AccountsProfileRetrieveResponse = zod.object({
+export const CustomersProfileRetrieveResponse = zod.object({
   "email": zod.email(),
-  "firstName": zod.string().max(accountsProfileRetrieveResponseFirstNameMax).optional().describe('User\'s first name'),
-  "lastName": zod.string().max(accountsProfileRetrieveResponseLastNameMax).optional().describe('User\'s last name'),
+  "firstName": zod.string().max(customersProfileRetrieveResponseFirstNameMax).optional().describe('User\'s first name'),
+  "lastName": zod.string().max(customersProfileRetrieveResponseLastNameMax).optional().describe('User\'s last name'),
   "fullName": zod.string(),
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
   "age": zod.number().nullable(),
@@ -108,33 +108,33 @@ Actions:
 - destroy:        DELETE /api/v1/profiles/{id}/
 - change_role:    PATCH /api/v1/profiles/{id}/change-role/
  */
-export const AccountsProfileUpdateParams = zod.object({
+export const CustomersProfileUpdateParams = zod.object({
   "id": zod.coerce.string()
 })
 
-export const accountsProfileUpdateBodyFirstNameMax = 150;
+export const customersProfileUpdateBodyFirstNameMax = 150;
 
-export const accountsProfileUpdateBodyLastNameMax = 150;
+export const customersProfileUpdateBodyLastNameMax = 150;
 
 
 
-export const AccountsProfileUpdateBody = zod.object({
-  "firstName": zod.string().max(accountsProfileUpdateBodyFirstNameMax).optional().describe('User\'s first name'),
-  "lastName": zod.string().max(accountsProfileUpdateBodyLastNameMax).optional().describe('User\'s last name'),
+export const CustomersProfileUpdateBody = zod.object({
+  "firstName": zod.string().max(customersProfileUpdateBodyFirstNameMax).optional().describe('User\'s first name'),
+  "lastName": zod.string().max(customersProfileUpdateBodyLastNameMax).optional().describe('User\'s last name'),
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
   "phoneNumber": zod.string().optional()
 })
 
-export const accountsProfileUpdateResponseFirstNameMax = 150;
+export const customersProfileUpdateResponseFirstNameMax = 150;
 
-export const accountsProfileUpdateResponseLastNameMax = 150;
+export const customersProfileUpdateResponseLastNameMax = 150;
 
 
 
-export const AccountsProfileUpdateResponse = zod.object({
+export const CustomersProfileUpdateResponse = zod.object({
   "email": zod.email(),
-  "firstName": zod.string().max(accountsProfileUpdateResponseFirstNameMax).optional().describe('User\'s first name'),
-  "lastName": zod.string().max(accountsProfileUpdateResponseLastNameMax).optional().describe('User\'s last name'),
+  "firstName": zod.string().max(customersProfileUpdateResponseFirstNameMax).optional().describe('User\'s first name'),
+  "lastName": zod.string().max(customersProfileUpdateResponseLastNameMax).optional().describe('User\'s last name'),
   "fullName": zod.string(),
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
   "age": zod.number().nullable(),
@@ -154,33 +154,33 @@ Actions:
 - destroy:        DELETE /api/v1/profiles/{id}/
 - change_role:    PATCH /api/v1/profiles/{id}/change-role/
  */
-export const AccountsProfilePartialUpdateParams = zod.object({
+export const CustomersProfilePartialUpdateParams = zod.object({
   "id": zod.coerce.string()
 })
 
-export const accountsProfilePartialUpdateBodyFirstNameMax = 150;
+export const customersProfilePartialUpdateBodyFirstNameMax = 150;
 
-export const accountsProfilePartialUpdateBodyLastNameMax = 150;
+export const customersProfilePartialUpdateBodyLastNameMax = 150;
 
 
 
-export const AccountsProfilePartialUpdateBody = zod.object({
-  "firstName": zod.string().max(accountsProfilePartialUpdateBodyFirstNameMax).optional().describe('User\'s first name'),
-  "lastName": zod.string().max(accountsProfilePartialUpdateBodyLastNameMax).optional().describe('User\'s last name'),
+export const CustomersProfilePartialUpdateBody = zod.object({
+  "firstName": zod.string().max(customersProfilePartialUpdateBodyFirstNameMax).optional().describe('User\'s first name'),
+  "lastName": zod.string().max(customersProfilePartialUpdateBodyLastNameMax).optional().describe('User\'s last name'),
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
   "phoneNumber": zod.string().optional()
 })
 
-export const accountsProfilePartialUpdateResponseFirstNameMax = 150;
+export const customersProfilePartialUpdateResponseFirstNameMax = 150;
 
-export const accountsProfilePartialUpdateResponseLastNameMax = 150;
+export const customersProfilePartialUpdateResponseLastNameMax = 150;
 
 
 
-export const AccountsProfilePartialUpdateResponse = zod.object({
+export const CustomersProfilePartialUpdateResponse = zod.object({
   "email": zod.email(),
-  "firstName": zod.string().max(accountsProfilePartialUpdateResponseFirstNameMax).optional().describe('User\'s first name'),
-  "lastName": zod.string().max(accountsProfilePartialUpdateResponseLastNameMax).optional().describe('User\'s last name'),
+  "firstName": zod.string().max(customersProfilePartialUpdateResponseFirstNameMax).optional().describe('User\'s first name'),
+  "lastName": zod.string().max(customersProfilePartialUpdateResponseLastNameMax).optional().describe('User\'s last name'),
   "fullName": zod.string(),
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
   "age": zod.number().nullable(),
@@ -200,7 +200,7 @@ Actions:
 - destroy:        DELETE /api/v1/profiles/{id}/
 - change_role:    PATCH /api/v1/profiles/{id}/change-role/
  */
-export const AccountsProfileDestroyParams = zod.object({
+export const CustomersProfileDestroyParams = zod.object({
   "id": zod.coerce.string()
 })
 
@@ -208,33 +208,33 @@ export const AccountsProfileDestroyParams = zod.object({
  * Toggles user role between CUSTOMER and ADMIN.
  * @summary Change User Role
  */
-export const AccountsProfileChangeRolePartialUpdateParams = zod.object({
+export const CustomersProfileChangeRolePartialUpdateParams = zod.object({
   "id": zod.coerce.string()
 })
 
-export const accountsProfileChangeRolePartialUpdateBodyFirstNameMax = 150;
+export const customersProfileChangeRolePartialUpdateBodyFirstNameMax = 150;
 
-export const accountsProfileChangeRolePartialUpdateBodyLastNameMax = 150;
+export const customersProfileChangeRolePartialUpdateBodyLastNameMax = 150;
 
 
 
-export const AccountsProfileChangeRolePartialUpdateBody = zod.object({
-  "firstName": zod.string().max(accountsProfileChangeRolePartialUpdateBodyFirstNameMax).optional().describe('User\'s first name'),
-  "lastName": zod.string().max(accountsProfileChangeRolePartialUpdateBodyLastNameMax).optional().describe('User\'s last name'),
+export const CustomersProfileChangeRolePartialUpdateBody = zod.object({
+  "firstName": zod.string().max(customersProfileChangeRolePartialUpdateBodyFirstNameMax).optional().describe('User\'s first name'),
+  "lastName": zod.string().max(customersProfileChangeRolePartialUpdateBodyLastNameMax).optional().describe('User\'s last name'),
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
   "phoneNumber": zod.string().optional()
 })
 
-export const accountsProfileChangeRolePartialUpdateResponseFirstNameMax = 150;
+export const customersProfileChangeRolePartialUpdateResponseFirstNameMax = 150;
 
-export const accountsProfileChangeRolePartialUpdateResponseLastNameMax = 150;
+export const customersProfileChangeRolePartialUpdateResponseLastNameMax = 150;
 
 
 
-export const AccountsProfileChangeRolePartialUpdateResponse = zod.object({
+export const CustomersProfileChangeRolePartialUpdateResponse = zod.object({
   "email": zod.email(),
-  "firstName": zod.string().max(accountsProfileChangeRolePartialUpdateResponseFirstNameMax).optional().describe('User\'s first name'),
-  "lastName": zod.string().max(accountsProfileChangeRolePartialUpdateResponseLastNameMax).optional().describe('User\'s last name'),
+  "firstName": zod.string().max(customersProfileChangeRolePartialUpdateResponseFirstNameMax).optional().describe('User\'s first name'),
+  "lastName": zod.string().max(customersProfileChangeRolePartialUpdateResponseLastNameMax).optional().describe('User\'s last name'),
   "fullName": zod.string(),
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
   "age": zod.number().nullable(),

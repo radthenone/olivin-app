@@ -225,9 +225,7 @@ return authenticator names as follows:
  * OpenAPI spec version: 1
  */
 import type { Email } from './email';
-import type { Username } from './username';
 
 export interface BaseSignup {
-  email?: Email;
-  username: Username;
+  email: Email;
 }

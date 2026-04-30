@@ -2,18 +2,19 @@
  * useAuth.ts
  *
  * Główny hook eksponujący stan auth do komponentów.
- * Łączy authStore z wygodnymi selektorami.
+ * Łączy session query z wygodnymi selektorami.
  *
  * Użycie w komponencie:
  *   const { session, isAuthenticated, flows } = useAuth();
  */
-import { useAuthStore } from "@core/auth";
 import type { AuthFlow, AuthSessionResponse } from "@core/auth";
+import { useSession } from "./useSession";
 
 export function useAuth() {
-  const session = useAuthStore((s) => s.session);
+  const sessionQuery = useSession();
+  const session = sessionQuery.isError ? null : sessionQuery.data;
 
-  const isSessionChecked = session !== undefined;
+  const isSessionChecked = sessionQuery.isFetched || sessionQuery.isError;
   const isAuthenticated = session?.meta?.is_authenticated === true;
 
   const rawFlows = extractFlowsFromSession(session ?? undefined);
@@ -34,7 +35,7 @@ export function useAuth() {
 
     // Flagi
     isSessionChecked,
-    isSessionChecking: session === undefined,
+    isSessionChecking: sessionQuery.isLoading,
     isAuthenticated,
     isUnauthenticated: isSessionChecked && !isAuthenticated,
     isPendingMfa,
@@ -44,6 +45,7 @@ export function useAuth() {
     // Pomocnicze
     hasAnyPendingFlow: flows.length > 0,
     pendingFlowIds: flowIds,
+    sessionQuery,
   };
 }
 

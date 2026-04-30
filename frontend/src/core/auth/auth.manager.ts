@@ -1,5 +1,4 @@
 import { authStorage } from "./auth.storage";
-import { CONFIG } from "@core/env";
 import { isNative } from "@lib";
 
 export const authSessionManager = {

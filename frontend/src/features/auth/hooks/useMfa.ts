@@ -5,7 +5,9 @@
  * Używany gdy w raw `session.data.flows` pojawia się flow MFA.
  */
 import { useState } from "react";
-import { authService, useAuthStore } from "@core/auth";
+import { useQueryClient } from "@tanstack/react-query";
+import { authService } from "@core/auth";
+import { sessionQueryKey } from "./useSession";
 
 export interface UseMfaResult {
   verifyMfa: (code: string) => Promise<void>;
@@ -15,7 +17,7 @@ export interface UseMfaResult {
 }
 
 export function useMfa(): UseMfaResult {
-  const { setSession } = useAuthStore();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,7 +27,8 @@ export function useMfa(): UseMfaResult {
 
     try {
       const session = await authService.verifyMfa(code);
-      setSession(session);
+      queryClient.setQueryData(sessionQueryKey, session);
+      await queryClient.invalidateQueries({ queryKey: sessionQueryKey });
     } catch (err: unknown) {
       const message = extractMfaError(err);
       setError(message);

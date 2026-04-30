@@ -267,18 +267,50 @@ import type { ErrorType , BodyType } from '../../../auth-mutator';
 /**
  * @summary List authenticators
  */
-export const getAllauthClientV1AccountAuthenticators = (
-    client: 'app' | 'browser',
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<AuthenticatorsResponse>(
-      {url: `/_allauth/${client}/v1/account/authenticators`, method: 'GET', signal
-    },
-      );
-    }
+export type getAllauthClientV1AccountAuthenticatorsResponse200 = {
+  data: AuthenticatorsResponse
+  status: 200
+}
+
+export type getAllauthClientV1AccountAuthenticatorsResponse401 = {
+  data: AuthenticationResponse
+  status: 401
+}
+
+export type getAllauthClientV1AccountAuthenticatorsResponse410 = {
+  data: SessionGoneResponse
+  status: 410
+}
+
+export type getAllauthClientV1AccountAuthenticatorsResponseSuccess = (getAllauthClientV1AccountAuthenticatorsResponse200) & {
+  headers: Headers;
+};
+export type getAllauthClientV1AccountAuthenticatorsResponseError = (getAllauthClientV1AccountAuthenticatorsResponse401 | getAllauthClientV1AccountAuthenticatorsResponse410) & {
+  headers: Headers;
+};
+
+export type getAllauthClientV1AccountAuthenticatorsResponse = (getAllauthClientV1AccountAuthenticatorsResponseSuccess | getAllauthClientV1AccountAuthenticatorsResponseError)
+
+export const getGetAllauthClientV1AccountAuthenticatorsUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/account/authenticators`
+}
+
+export const getAllauthClientV1AccountAuthenticators = async (client: 'app' | 'browser', options?: RequestInit): Promise<getAllauthClientV1AccountAuthenticatorsResponse> => {
+  
+  return authInstance<getAllauthClientV1AccountAuthenticatorsResponse>(getGetAllauthClientV1AccountAuthenticatorsUrl(client),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+  
+
 
 
 
@@ -298,7 +330,7 @@ const {query: queryOptions} = options ?? {};
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AccountAuthenticators>>> = ({ signal }) => getAllauthClientV1AccountAuthenticators(client, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AccountAuthenticators>>> = ({ signal }) => getAllauthClientV1AccountAuthenticators(client, { signal });
 
       
 
@@ -359,18 +391,50 @@ export function useGetAllauthClientV1AccountAuthenticators<TData = Awaited<Retur
 
  * @summary TOTP authenticator status
  */
-export const getAllauthClientV1AccountAuthenticatorsTotp = (
-    client: 'app' | 'browser',
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<TOTPAuthenticatorResponse>(
-      {url: `/_allauth/${client}/v1/account/authenticators/totp`, method: 'GET', signal
-    },
-      );
-    }
+export type getAllauthClientV1AccountAuthenticatorsTotpResponse200 = {
+  data: TOTPAuthenticatorResponse
+  status: 200
+}
+
+export type getAllauthClientV1AccountAuthenticatorsTotpResponse404 = {
+  data: TOTPAuthenticatorNotFoundResponse
+  status: 404
+}
+
+export type getAllauthClientV1AccountAuthenticatorsTotpResponse409 = {
+  data: AddAuthenticatorConflictResponse
+  status: 409
+}
+
+export type getAllauthClientV1AccountAuthenticatorsTotpResponseSuccess = (getAllauthClientV1AccountAuthenticatorsTotpResponse200) & {
+  headers: Headers;
+};
+export type getAllauthClientV1AccountAuthenticatorsTotpResponseError = (getAllauthClientV1AccountAuthenticatorsTotpResponse404 | getAllauthClientV1AccountAuthenticatorsTotpResponse409) & {
+  headers: Headers;
+};
+
+export type getAllauthClientV1AccountAuthenticatorsTotpResponse = (getAllauthClientV1AccountAuthenticatorsTotpResponseSuccess | getAllauthClientV1AccountAuthenticatorsTotpResponseError)
+
+export const getGetAllauthClientV1AccountAuthenticatorsTotpUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/account/authenticators/totp`
+}
+
+export const getAllauthClientV1AccountAuthenticatorsTotp = async (client: 'app' | 'browser', options?: RequestInit): Promise<getAllauthClientV1AccountAuthenticatorsTotpResponse> => {
+  
+  return authInstance<getAllauthClientV1AccountAuthenticatorsTotpResponse>(getGetAllauthClientV1AccountAuthenticatorsTotpUrl(client),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+  
+
 
 
 
@@ -390,7 +454,7 @@ const {query: queryOptions} = options ?? {};
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AccountAuthenticatorsTotp>>> = ({ signal }) => getAllauthClientV1AccountAuthenticatorsTotp(client, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AccountAuthenticatorsTotp>>> = ({ signal }) => getAllauthClientV1AccountAuthenticatorsTotp(client, { signal });
 
       
 
@@ -453,21 +517,57 @@ retrieved from the TOTP authenticator status endpoint.
 
  * @summary Activate TOTP
  */
-export const postAllauthClientV1AccountAuthenticatorsTotp = (
-    client: 'app' | 'browser',
-    setupTOTPBody: BodyType<SetupTOTPBody>,
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<TOTPAuthenticatorResponse>(
-      {url: `/_allauth/${client}/v1/account/authenticators/totp`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: setupTOTPBody, signal
-    },
-      );
-    }
+export type postAllauthClientV1AccountAuthenticatorsTotpResponse200 = {
+  data: TOTPAuthenticatorResponse
+  status: 200
+}
+
+export type postAllauthClientV1AccountAuthenticatorsTotpResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postAllauthClientV1AccountAuthenticatorsTotpResponse401 = {
+  data: ReauthenticationRequiredResponse
+  status: 401
+}
+
+export type postAllauthClientV1AccountAuthenticatorsTotpResponse409 = {
+  data: AddAuthenticatorConflictResponse
+  status: 409
+}
+
+export type postAllauthClientV1AccountAuthenticatorsTotpResponseSuccess = (postAllauthClientV1AccountAuthenticatorsTotpResponse200) & {
+  headers: Headers;
+};
+export type postAllauthClientV1AccountAuthenticatorsTotpResponseError = (postAllauthClientV1AccountAuthenticatorsTotpResponse400 | postAllauthClientV1AccountAuthenticatorsTotpResponse401 | postAllauthClientV1AccountAuthenticatorsTotpResponse409) & {
+  headers: Headers;
+};
+
+export type postAllauthClientV1AccountAuthenticatorsTotpResponse = (postAllauthClientV1AccountAuthenticatorsTotpResponseSuccess | postAllauthClientV1AccountAuthenticatorsTotpResponseError)
+
+export const getPostAllauthClientV1AccountAuthenticatorsTotpUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/account/authenticators/totp`
+}
+
+export const postAllauthClientV1AccountAuthenticatorsTotp = async (client: 'app' | 'browser',
+    setupTOTPBody: SetupTOTPBody, options?: RequestInit): Promise<postAllauthClientV1AccountAuthenticatorsTotpResponse> => {
+  
+  return authInstance<postAllauthClientV1AccountAuthenticatorsTotpResponse>(getPostAllauthClientV1AccountAuthenticatorsTotpUrl(client),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      setupTOTPBody,)
+  }
+);}
+  
+
 
 
 export const getPostAllauthClientV1AccountAuthenticatorsTotpMutationOptions = <TError = ErrorType<ErrorResponse | ReauthenticationRequiredResponse | AddAuthenticatorConflictResponse>,
@@ -520,18 +620,45 @@ sufficiently recent, a reauthentication flow (`401`) will is presented.
 
  * @summary Deactivate TOTP
  */
-export const deleteAllauthClientV1AccountAuthenticatorsTotp = (
-    client: 'app' | 'browser',
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<StatusOKResponse>(
-      {url: `/_allauth/${client}/v1/account/authenticators/totp`, method: 'DELETE', signal
-    },
-      );
-    }
+export type deleteAllauthClientV1AccountAuthenticatorsTotpResponse200 = {
+  data: StatusOKResponse
+  status: 200
+}
+
+export type deleteAllauthClientV1AccountAuthenticatorsTotpResponse401 = {
+  data: ReauthenticationRequiredResponse
+  status: 401
+}
+
+export type deleteAllauthClientV1AccountAuthenticatorsTotpResponseSuccess = (deleteAllauthClientV1AccountAuthenticatorsTotpResponse200) & {
+  headers: Headers;
+};
+export type deleteAllauthClientV1AccountAuthenticatorsTotpResponseError = (deleteAllauthClientV1AccountAuthenticatorsTotpResponse401) & {
+  headers: Headers;
+};
+
+export type deleteAllauthClientV1AccountAuthenticatorsTotpResponse = (deleteAllauthClientV1AccountAuthenticatorsTotpResponseSuccess | deleteAllauthClientV1AccountAuthenticatorsTotpResponseError)
+
+export const getDeleteAllauthClientV1AccountAuthenticatorsTotpUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/account/authenticators/totp`
+}
+
+export const deleteAllauthClientV1AccountAuthenticatorsTotp = async (client: 'app' | 'browser', options?: RequestInit): Promise<deleteAllauthClientV1AccountAuthenticatorsTotpResponse> => {
+  
+  return authInstance<deleteAllauthClientV1AccountAuthenticatorsTotpResponse>(getDeleteAllauthClientV1AccountAuthenticatorsTotpUrl(client),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+  
+
 
 
 export const getDeleteAllauthClientV1AccountAuthenticatorsTotpMutationOptions = <TError = ErrorType<ReauthenticationRequiredResponse>,
@@ -583,18 +710,50 @@ export const useDeleteAllauthClientV1AccountAuthenticatorsTotp = <TError = Error
 
  * @summary List recovery codes
  */
-export const getAllauthClientV1AccountAuthenticatorsRecoveryCodes = (
-    client: 'app' | 'browser',
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<RecoveryCodesResponse>(
-      {url: `/_allauth/${client}/v1/account/authenticators/recovery-codes`, method: 'GET', signal
-    },
-      );
-    }
+export type getAllauthClientV1AccountAuthenticatorsRecoveryCodesResponse200 = {
+  data: RecoveryCodesResponse
+  status: 200
+}
+
+export type getAllauthClientV1AccountAuthenticatorsRecoveryCodesResponse401 = {
+  data: ReauthenticationRequiredResponse
+  status: 401
+}
+
+export type getAllauthClientV1AccountAuthenticatorsRecoveryCodesResponse404 = {
+  data: NotFoundResponse
+  status: 404
+}
+
+export type getAllauthClientV1AccountAuthenticatorsRecoveryCodesResponseSuccess = (getAllauthClientV1AccountAuthenticatorsRecoveryCodesResponse200) & {
+  headers: Headers;
+};
+export type getAllauthClientV1AccountAuthenticatorsRecoveryCodesResponseError = (getAllauthClientV1AccountAuthenticatorsRecoveryCodesResponse401 | getAllauthClientV1AccountAuthenticatorsRecoveryCodesResponse404) & {
+  headers: Headers;
+};
+
+export type getAllauthClientV1AccountAuthenticatorsRecoveryCodesResponse = (getAllauthClientV1AccountAuthenticatorsRecoveryCodesResponseSuccess | getAllauthClientV1AccountAuthenticatorsRecoveryCodesResponseError)
+
+export const getGetAllauthClientV1AccountAuthenticatorsRecoveryCodesUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/account/authenticators/recovery-codes`
+}
+
+export const getAllauthClientV1AccountAuthenticatorsRecoveryCodes = async (client: 'app' | 'browser', options?: RequestInit): Promise<getAllauthClientV1AccountAuthenticatorsRecoveryCodesResponse> => {
+  
+  return authInstance<getAllauthClientV1AccountAuthenticatorsRecoveryCodesResponse>(getGetAllauthClientV1AccountAuthenticatorsRecoveryCodesUrl(client),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+  
+
 
 
 
@@ -614,7 +773,7 @@ const {query: queryOptions} = options ?? {};
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AccountAuthenticatorsRecoveryCodes>>> = ({ signal }) => getAllauthClientV1AccountAuthenticatorsRecoveryCodes(client, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AccountAuthenticatorsRecoveryCodes>>> = ({ signal }) => getAllauthClientV1AccountAuthenticatorsRecoveryCodes(client, { signal });
 
       
 
@@ -673,18 +832,43 @@ export function useGetAllauthClientV1AccountAuthenticatorsRecoveryCodes<TData = 
 /**
  * @summary Regenerate recovery codes
  */
-export const postAllauthClientV1AccountAuthenticatorsRecoveryCodes = (
-    client: 'app' | 'browser',
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<unknown>(
-      {url: `/_allauth/${client}/v1/account/authenticators/recovery-codes`, method: 'POST', signal
-    },
-      );
-    }
+export type postAllauthClientV1AccountAuthenticatorsRecoveryCodesResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postAllauthClientV1AccountAuthenticatorsRecoveryCodesResponse401 = {
+  data: ReauthenticationRequiredResponse
+  status: 401
+}
+
+;
+export type postAllauthClientV1AccountAuthenticatorsRecoveryCodesResponseError = (postAllauthClientV1AccountAuthenticatorsRecoveryCodesResponse400 | postAllauthClientV1AccountAuthenticatorsRecoveryCodesResponse401) & {
+  headers: Headers;
+};
+
+export type postAllauthClientV1AccountAuthenticatorsRecoveryCodesResponse = (postAllauthClientV1AccountAuthenticatorsRecoveryCodesResponseError)
+
+export const getPostAllauthClientV1AccountAuthenticatorsRecoveryCodesUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/account/authenticators/recovery-codes`
+}
+
+export const postAllauthClientV1AccountAuthenticatorsRecoveryCodes = async (client: 'app' | 'browser', options?: RequestInit): Promise<postAllauthClientV1AccountAuthenticatorsRecoveryCodesResponse> => {
+  
+  return authInstance<postAllauthClientV1AccountAuthenticatorsRecoveryCodesResponse>(getPostAllauthClientV1AccountAuthenticatorsRecoveryCodesUrl(client),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+  
+
 
 
 export const getPostAllauthClientV1AccountAuthenticatorsRecoveryCodesMutationOptions = <TError = ErrorType<ErrorResponse | ReauthenticationRequiredResponse>,

@@ -1,42 +1,16 @@
-import { AxiosInstance } from "axios";
-import { CONFIG } from "src/core/env";
-import {
-  setupLoggingInterceptor,
-  setupVersioningInterceptor,
-  setupAuthInterceptor,
-} from "./interceptors";
-
-type InterceptorIds = {
-  logging?: { request: number; response: number };
-  auth?: { request: number; response: number };
-  versioning?: number;
-};
-
+/**
+ * Pozostałość kompatybilności po poprzednim kliencie HTTP.
+ *
+ * Fetch nie ma interceptorów, więc odpowiedzialności auth, CSRF, wersjonowania
+ * i logowania są wykonywane jawnie w `client.ts`.
+ */
 class ApiInterceptorManager {
-  private ids: InterceptorIds = {};
-
-  setupAll(apiClient: AxiosInstance): InterceptorIds {
-    if (CONFIG.IS_DEV) {
-      this.ids.logging = setupLoggingInterceptor(apiClient);
-    }
-
-    this.ids.versioning = setupVersioningInterceptor(apiClient);
-    this.ids.auth = setupAuthInterceptor(apiClient);
-
-    return this.ids;
+  setupAll(): Record<string, never> {
+    return {};
   }
 
-  ejectAll(apiClient: AxiosInstance): void {
-    Object.values(this.ids).forEach((interceptor) => {
-      if (!interceptor) return;
-      if (typeof interceptor === "number") {
-        apiClient.interceptors.request.eject(interceptor);
-      } else {
-        apiClient.interceptors.request.eject(interceptor.request);
-        apiClient.interceptors.response.eject(interceptor.response);
-      }
-    });
-    this.ids = {};
+  ejectAll(): void {
+    // Brak interceptorów do odpięcia w fetch client.
   }
 }
 

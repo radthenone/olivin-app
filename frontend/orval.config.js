@@ -48,7 +48,7 @@ module.exports = {
       target: "./src/api/generated/auth",
       schemas: "./src/api/generated/auth/schemas",
       client: "react-query",
-      httpClient: "axios",
+      httpClient: "fetch",
       mock: false,
       override: {
         mutator: {
@@ -68,7 +68,7 @@ module.exports = {
       target: "./src/api/generated/auth",
       fileExtension: ".zod.ts",
       client: "zod",
-      httpClient: "axios",
+      httpClient: "fetch",
       mock: false,
       override: ZOD_OVERRIDE,
     },
@@ -84,7 +84,7 @@ module.exports = {
       target: "./src/api/generated/apps",
       schemas: "./src/api/generated/apps/schemas",
       client: "react-query",
-      httpClient: "axios",
+      httpClient: "fetch",
       mock: false,
       override: {
         mutator: {
@@ -105,7 +105,7 @@ module.exports = {
       target: "./src/api/generated/apps",
       fileExtension: ".zod.ts",
       client: "zod",
-      httpClient: "axios",
+      httpClient: "fetch",
       mock: false,
       override: ZOD_OVERRIDE,
     },

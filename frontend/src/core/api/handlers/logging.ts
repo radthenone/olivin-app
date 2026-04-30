@@ -1,48 +1,17 @@
 import { log } from "@pack/logger";
-import {
-  InternalAxiosRequestConfig as Request,
-  AxiosResponse as Response,
-} from "axios";
 
-function logRequest(request: Request): void {
-  log.info("[API Request] Requesting URL", {
-    method: request.method,
-    url: request.url,
-    headers: request.headers,
-    data: request.data,
-    params: request.params,
-    baseURL: request.baseURL,
-    timeout: request.timeout,
-    withCredentials: request.withCredentials,
-    responseType: request.responseType,
-    responseEncoding: request.responseEncoding,
-    maxContentLength: request.maxContentLength,
-    maxBodyLength: request.maxBodyLength,
-    validateStatus: request.validateStatus,
-  });
+export function logRequest(request: unknown): void {
+  log.info("[API Request]", request as any);
 }
 
-function logRequestError(error: any): void {
-  log.error("[API Request Error]", error);
+export function logRequestError(error: unknown): void {
+  log.error("[API Request Error]", error as any);
 }
 
-function logResponse(response: Response): void {
-  log.info("[API Response] Response received", {
-    status: response.status,
-    data: response.data,
-    headers: response.headers,
-    config: response.config,
-  });
+export function logResponse(response: unknown): void {
+  log.info("[API Response]", response as any);
 }
 
-function logResponseError(error: any): void {
-  log.error("[API Response Error]", {
-    message: error.message,
-    url: error.config?.url,
-    baseURL: error.config?.baseURL,
-    status: error.response?.status,
-    data: error.response?.data,
-  });
+export function logResponseError(error: unknown): void {
+  log.error("[API Response Error]", error as any);
 }
-
-export { logRequest, logRequestError, logResponse, logResponseError };

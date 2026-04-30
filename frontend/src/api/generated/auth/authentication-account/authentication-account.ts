@@ -272,21 +272,57 @@ import type { ErrorType , BodyType } from '../../../auth-mutator';
 
  * @summary Login
  */
-export const postAllauthClientV1AuthLogin = (
-    client: 'app' | 'browser',
-    loginBody: BodyType<LoginBody>,
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<AuthenticatedByPasswordResponse>(
-      {url: `/_allauth/${client}/v1/auth/login`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: loginBody, signal
-    },
-      );
-    }
+export type postAllauthClientV1AuthLoginResponse200 = {
+  data: AuthenticatedByPasswordResponse
+  status: 200
+}
+
+export type postAllauthClientV1AuthLoginResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postAllauthClientV1AuthLoginResponse401 = {
+  data: AuthenticationResponse
+  status: 401
+}
+
+export type postAllauthClientV1AuthLoginResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type postAllauthClientV1AuthLoginResponseSuccess = (postAllauthClientV1AuthLoginResponse200) & {
+  headers: Headers;
+};
+export type postAllauthClientV1AuthLoginResponseError = (postAllauthClientV1AuthLoginResponse400 | postAllauthClientV1AuthLoginResponse401 | postAllauthClientV1AuthLoginResponse409) & {
+  headers: Headers;
+};
+
+export type postAllauthClientV1AuthLoginResponse = (postAllauthClientV1AuthLoginResponseSuccess | postAllauthClientV1AuthLoginResponseError)
+
+export const getPostAllauthClientV1AuthLoginUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/auth/login`
+}
+
+export const postAllauthClientV1AuthLogin = async (client: 'app' | 'browser',
+    loginBody: LoginBody, options?: RequestInit): Promise<postAllauthClientV1AuthLoginResponse> => {
+  
+  return authInstance<postAllauthClientV1AuthLoginResponse>(getPostAllauthClientV1AuthLoginUrl(client),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      loginBody,)
+  }
+);}
+  
+
 
 
 export const getPostAllauthClientV1AuthLoginMutationOptions = <TError = ErrorType<ErrorResponse | AuthenticationResponse | ConflictResponse>,
@@ -341,21 +377,62 @@ required.
 
  * @summary Signup
  */
-export const postAllauthClientV1AuthSignup = (
-    client: 'app' | 'browser',
-    signupBody: BodyType<SignupBody>,
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<AuthenticatedByPasswordResponse>(
-      {url: `/_allauth/${client}/v1/auth/signup`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: signupBody, signal
-    },
-      );
-    }
+export type postAllauthClientV1AuthSignupResponse200 = {
+  data: AuthenticatedByPasswordResponse
+  status: 200
+}
+
+export type postAllauthClientV1AuthSignupResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postAllauthClientV1AuthSignupResponse401 = {
+  data: AuthenticationResponse
+  status: 401
+}
+
+export type postAllauthClientV1AuthSignupResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type postAllauthClientV1AuthSignupResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type postAllauthClientV1AuthSignupResponseSuccess = (postAllauthClientV1AuthSignupResponse200) & {
+  headers: Headers;
+};
+export type postAllauthClientV1AuthSignupResponseError = (postAllauthClientV1AuthSignupResponse400 | postAllauthClientV1AuthSignupResponse401 | postAllauthClientV1AuthSignupResponse403 | postAllauthClientV1AuthSignupResponse409) & {
+  headers: Headers;
+};
+
+export type postAllauthClientV1AuthSignupResponse = (postAllauthClientV1AuthSignupResponseSuccess | postAllauthClientV1AuthSignupResponseError)
+
+export const getPostAllauthClientV1AuthSignupUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/auth/signup`
+}
+
+export const postAllauthClientV1AuthSignup = async (client: 'app' | 'browser',
+    signupBody: SignupBody, options?: RequestInit): Promise<postAllauthClientV1AuthSignupResponse> => {
+  
+  return authInstance<postAllauthClientV1AuthSignupResponse>(getPostAllauthClientV1AuthSignupUrl(client),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      signupBody,)
+  }
+);}
+  
+
 
 
 export const getPostAllauthClientV1AuthSignupMutationOptions = <TError = ErrorType<ErrorResponse | AuthenticationResponse | ForbiddenResponse | ConflictResponse>,
@@ -408,18 +485,50 @@ the user by email.
 
  * @summary Get email verification information
  */
-export const getAllauthClientV1AuthEmailVerify = (
-    client: 'app' | 'browser',
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<EmailVerificationInfoResponse>(
-      {url: `/_allauth/${client}/v1/auth/email/verify`, method: 'GET', signal
-    },
-      );
-    }
+export type getAllauthClientV1AuthEmailVerifyResponse200 = {
+  data: EmailVerificationInfoResponse
+  status: 200
+}
+
+export type getAllauthClientV1AuthEmailVerifyResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type getAllauthClientV1AuthEmailVerifyResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type getAllauthClientV1AuthEmailVerifyResponseSuccess = (getAllauthClientV1AuthEmailVerifyResponse200) & {
+  headers: Headers;
+};
+export type getAllauthClientV1AuthEmailVerifyResponseError = (getAllauthClientV1AuthEmailVerifyResponse400 | getAllauthClientV1AuthEmailVerifyResponse409) & {
+  headers: Headers;
+};
+
+export type getAllauthClientV1AuthEmailVerifyResponse = (getAllauthClientV1AuthEmailVerifyResponseSuccess | getAllauthClientV1AuthEmailVerifyResponseError)
+
+export const getGetAllauthClientV1AuthEmailVerifyUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/auth/email/verify`
+}
+
+export const getAllauthClientV1AuthEmailVerify = async (client: 'app' | 'browser', options?: RequestInit): Promise<getAllauthClientV1AuthEmailVerifyResponse> => {
+  
+  return authInstance<getAllauthClientV1AuthEmailVerifyResponse>(getGetAllauthClientV1AuthEmailVerifyUrl(client),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+  
+
 
 
 
@@ -439,7 +548,7 @@ const {query: queryOptions} = options ?? {};
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AuthEmailVerify>>> = ({ signal }) => getAllauthClientV1AuthEmailVerify(client, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllauthClientV1AuthEmailVerify>>> = ({ signal }) => getAllauthClientV1AuthEmailVerify(client, { signal });
 
       
 
@@ -509,21 +618,57 @@ in. For example, in case `ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION` is set to
 
  * @summary Verify an email
  */
-export const postAllauthClientV1AuthEmailVerify = (
-    client: 'app' | 'browser',
-    verifyEmailBody: BodyType<VerifyEmailBody>,
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<AuthenticatedResponse>(
-      {url: `/_allauth/${client}/v1/auth/email/verify`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: verifyEmailBody, signal
-    },
-      );
-    }
+export type postAllauthClientV1AuthEmailVerifyResponse200 = {
+  data: AuthenticatedResponse
+  status: 200
+}
+
+export type postAllauthClientV1AuthEmailVerifyResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postAllauthClientV1AuthEmailVerifyResponse401 = {
+  data: UnauthenticatedResponse
+  status: 401
+}
+
+export type postAllauthClientV1AuthEmailVerifyResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type postAllauthClientV1AuthEmailVerifyResponseSuccess = (postAllauthClientV1AuthEmailVerifyResponse200) & {
+  headers: Headers;
+};
+export type postAllauthClientV1AuthEmailVerifyResponseError = (postAllauthClientV1AuthEmailVerifyResponse400 | postAllauthClientV1AuthEmailVerifyResponse401 | postAllauthClientV1AuthEmailVerifyResponse409) & {
+  headers: Headers;
+};
+
+export type postAllauthClientV1AuthEmailVerifyResponse = (postAllauthClientV1AuthEmailVerifyResponseSuccess | postAllauthClientV1AuthEmailVerifyResponseError)
+
+export const getPostAllauthClientV1AuthEmailVerifyUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/auth/email/verify`
+}
+
+export const postAllauthClientV1AuthEmailVerify = async (client: 'app' | 'browser',
+    verifyEmailBody: VerifyEmailBody, options?: RequestInit): Promise<postAllauthClientV1AuthEmailVerifyResponse> => {
+  
+  return authInstance<postAllauthClientV1AuthEmailVerifyResponse>(getPostAllauthClientV1AuthEmailVerifyUrl(client),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      verifyEmailBody,)
+  }
+);}
+  
+
 
 
 export const getPostAllauthClientV1AuthEmailVerifyMutationOptions = <TError = ErrorType<ErrorResponse | UnauthenticatedResponse | ConflictResponse>,
@@ -576,18 +721,50 @@ Requires `ACCOUNT_EMAIL_VERIFICATION_SUPPORTS_RESEND = True`.
 
  * @summary Resend email verification code
  */
-export const postAllauthClientV1AuthEmailVerifyResend = (
-    client: 'app' | 'browser',
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<StatusOKResponse>(
-      {url: `/_allauth/${client}/v1/auth/email/verify/resend`, method: 'POST', signal
-    },
-      );
-    }
+export type postAllauthClientV1AuthEmailVerifyResendResponse200 = {
+  data: StatusOKResponse
+  status: 200
+}
+
+export type postAllauthClientV1AuthEmailVerifyResendResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type postAllauthClientV1AuthEmailVerifyResendResponse429 = {
+  data: TooManyRequestsResponse
+  status: 429
+}
+
+export type postAllauthClientV1AuthEmailVerifyResendResponseSuccess = (postAllauthClientV1AuthEmailVerifyResendResponse200) & {
+  headers: Headers;
+};
+export type postAllauthClientV1AuthEmailVerifyResendResponseError = (postAllauthClientV1AuthEmailVerifyResendResponse409 | postAllauthClientV1AuthEmailVerifyResendResponse429) & {
+  headers: Headers;
+};
+
+export type postAllauthClientV1AuthEmailVerifyResendResponse = (postAllauthClientV1AuthEmailVerifyResendResponseSuccess | postAllauthClientV1AuthEmailVerifyResendResponseError)
+
+export const getPostAllauthClientV1AuthEmailVerifyResendUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/auth/email/verify/resend`
+}
+
+export const postAllauthClientV1AuthEmailVerifyResend = async (client: 'app' | 'browser', options?: RequestInit): Promise<postAllauthClientV1AuthEmailVerifyResendResponse> => {
+  
+  return authInstance<postAllauthClientV1AuthEmailVerifyResendResponse>(getPostAllauthClientV1AuthEmailVerifyResendUrl(client),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+  
+
 
 
 export const getPostAllauthClientV1AuthEmailVerifyResendMutationOptions = <TError = ErrorType<ConflictResponse | TooManyRequestsResponse>,
@@ -641,21 +818,57 @@ verification was successful, yet, the user is still not signed in.
 
  * @summary Verify a phone number
  */
-export const postAllauthClientV1AuthPhoneVerify = (
-    client: 'app' | 'browser',
-    verifyPhoneBody: BodyType<VerifyPhoneBody>,
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<AuthenticatedResponse>(
-      {url: `/_allauth/${client}/v1/auth/phone/verify`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: verifyPhoneBody, signal
-    },
-      );
-    }
+export type postAllauthClientV1AuthPhoneVerifyResponse200 = {
+  data: AuthenticatedResponse
+  status: 200
+}
+
+export type postAllauthClientV1AuthPhoneVerifyResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postAllauthClientV1AuthPhoneVerifyResponse401 = {
+  data: UnauthenticatedResponse
+  status: 401
+}
+
+export type postAllauthClientV1AuthPhoneVerifyResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type postAllauthClientV1AuthPhoneVerifyResponseSuccess = (postAllauthClientV1AuthPhoneVerifyResponse200) & {
+  headers: Headers;
+};
+export type postAllauthClientV1AuthPhoneVerifyResponseError = (postAllauthClientV1AuthPhoneVerifyResponse400 | postAllauthClientV1AuthPhoneVerifyResponse401 | postAllauthClientV1AuthPhoneVerifyResponse409) & {
+  headers: Headers;
+};
+
+export type postAllauthClientV1AuthPhoneVerifyResponse = (postAllauthClientV1AuthPhoneVerifyResponseSuccess | postAllauthClientV1AuthPhoneVerifyResponseError)
+
+export const getPostAllauthClientV1AuthPhoneVerifyUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/auth/phone/verify`
+}
+
+export const postAllauthClientV1AuthPhoneVerify = async (client: 'app' | 'browser',
+    verifyPhoneBody: VerifyPhoneBody, options?: RequestInit): Promise<postAllauthClientV1AuthPhoneVerifyResponse> => {
+  
+  return authInstance<postAllauthClientV1AuthPhoneVerifyResponse>(getPostAllauthClientV1AuthPhoneVerifyUrl(client),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      verifyPhoneBody,)
+  }
+);}
+  
+
 
 
 export const getPostAllauthClientV1AuthPhoneVerifyMutationOptions = <TError = ErrorType<ErrorResponse | UnauthenticatedResponse | ConflictResponse>,
@@ -708,18 +921,50 @@ Requires `ACCOUNT_PHONE_VERIFICATION_SUPPORTS_RESEND = True`.
 
  * @summary Resend phone number verification code
  */
-export const postAllauthClientV1AuthPhoneVerifyResend = (
-    client: 'app' | 'browser',
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<StatusOKResponse>(
-      {url: `/_allauth/${client}/v1/auth/phone/verify/resend`, method: 'POST', signal
-    },
-      );
-    }
+export type postAllauthClientV1AuthPhoneVerifyResendResponse200 = {
+  data: StatusOKResponse
+  status: 200
+}
+
+export type postAllauthClientV1AuthPhoneVerifyResendResponse409 = {
+  data: ConflictResponse
+  status: 409
+}
+
+export type postAllauthClientV1AuthPhoneVerifyResendResponse429 = {
+  data: TooManyRequestsResponse
+  status: 429
+}
+
+export type postAllauthClientV1AuthPhoneVerifyResendResponseSuccess = (postAllauthClientV1AuthPhoneVerifyResendResponse200) & {
+  headers: Headers;
+};
+export type postAllauthClientV1AuthPhoneVerifyResendResponseError = (postAllauthClientV1AuthPhoneVerifyResendResponse409 | postAllauthClientV1AuthPhoneVerifyResendResponse429) & {
+  headers: Headers;
+};
+
+export type postAllauthClientV1AuthPhoneVerifyResendResponse = (postAllauthClientV1AuthPhoneVerifyResendResponseSuccess | postAllauthClientV1AuthPhoneVerifyResendResponseError)
+
+export const getPostAllauthClientV1AuthPhoneVerifyResendUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/auth/phone/verify/resend`
+}
+
+export const postAllauthClientV1AuthPhoneVerifyResend = async (client: 'app' | 'browser', options?: RequestInit): Promise<postAllauthClientV1AuthPhoneVerifyResendResponse> => {
+  
+  return authInstance<postAllauthClientV1AuthPhoneVerifyResendResponse>(getPostAllauthClientV1AuthPhoneVerifyResendUrl(client),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+  
+
 
 
 export const getPostAllauthClientV1AuthPhoneVerifyResendMutationOptions = <TError = ErrorType<ConflictResponse | TooManyRequestsResponse>,
@@ -776,21 +1021,47 @@ password. This is the endpoint related towards that flow.
 
  * @summary Reauthenticate
  */
-export const postAllauthClientV1AuthReauthenticate = (
-    client: 'app' | 'browser',
-    reauthenticateBody: BodyType<ReauthenticateBody>,
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<AuthenticatedByPasswordResponse>(
-      {url: `/_allauth/${client}/v1/auth/reauthenticate`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: reauthenticateBody, signal
-    },
-      );
-    }
+export type postAllauthClientV1AuthReauthenticateResponse200 = {
+  data: AuthenticatedByPasswordResponse
+  status: 200
+}
+
+export type postAllauthClientV1AuthReauthenticateResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postAllauthClientV1AuthReauthenticateResponseSuccess = (postAllauthClientV1AuthReauthenticateResponse200) & {
+  headers: Headers;
+};
+export type postAllauthClientV1AuthReauthenticateResponseError = (postAllauthClientV1AuthReauthenticateResponse400) & {
+  headers: Headers;
+};
+
+export type postAllauthClientV1AuthReauthenticateResponse = (postAllauthClientV1AuthReauthenticateResponseSuccess | postAllauthClientV1AuthReauthenticateResponseError)
+
+export const getPostAllauthClientV1AuthReauthenticateUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/auth/reauthenticate`
+}
+
+export const postAllauthClientV1AuthReauthenticate = async (client: 'app' | 'browser',
+    reauthenticateBody: ReauthenticateBody, options?: RequestInit): Promise<postAllauthClientV1AuthReauthenticateResponse> => {
+  
+  return authInstance<postAllauthClientV1AuthReauthenticateResponse>(getPostAllauthClientV1AuthReauthenticateUrl(client),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reauthenticateBody,)
+  }
+);}
+  
+
 
 
 export const getPostAllauthClientV1AuthReauthenticateMutationOptions = <TError = ErrorType<ErrorResponse>,

@@ -34,18 +34,38 @@ import type { ErrorType } from '../../../app-mutator';
  * Sprawdza stan wszystkich serwisów (DB, Redis, MinIO).
  * @summary Health check
  */
-export const healthRetrieve = (
-    
- signal?: AbortSignal
-) => {
-      
-      
-      return appInstance<HealthCheckResponse>(
-      {url: `/health/`, method: 'GET', signal
-    },
-      );
-    }
+export type healthRetrieveResponse200 = {
+  data: HealthCheckResponse
+  status: 200
+}
+
+export type healthRetrieveResponseSuccess = (healthRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type healthRetrieveResponse = (healthRetrieveResponseSuccess)
+
+export const getHealthRetrieveUrl = () => {
+
+
   
+
+  return `/health/`
+}
+
+export const healthRetrieve = async ( options?: RequestInit): Promise<healthRetrieveResponse> => {
+  
+  return appInstance<healthRetrieveResponse>(getHealthRetrieveUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+  
+
 
 
 
@@ -65,7 +85,7 @@ const {query: queryOptions} = options ?? {};
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof healthRetrieve>>> = ({ signal }) => healthRetrieve(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof healthRetrieve>>> = ({ signal }) => healthRetrieve({ signal });
 
       
 

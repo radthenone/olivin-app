@@ -74,81 +74,101 @@ Actions:
 - destroy:        DELETE /api/v1/profiles/{id}/
 - change_role:    PATCH /api/v1/profiles/{id}/change-role/
  */
-export const accountsProfileList = (
+export type customersProfileListResponse200 = {
+  data: Profile[]
+  status: 200
+}
+
+export type customersProfileListResponseSuccess = (customersProfileListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type customersProfileListResponse = (customersProfileListResponseSuccess)
+
+export const getCustomersProfileListUrl = () => {
+
+
+  
+
+  return `/customers/profile/`
+}
+
+export const customersProfileList = async ( options?: RequestInit): Promise<customersProfileListResponse> => {
+  
+  return appInstance<customersProfileListResponse>(getCustomersProfileListUrl(),
+  {      
+    ...options,
+    method: 'GET'
     
- signal?: AbortSignal
-) => {
-      
-      
-      return appInstance<Profile[]>(
-      {url: `/accounts/profile/`, method: 'GET', signal
-    },
-      );
-    }
+    
+  }
+);}
   
 
 
 
-export const getAccountsProfileListQueryKey = () => {
+
+export const getCustomersProfileListQueryKey = () => {
     return [
-    `/accounts/profile/`
+    `/customers/profile/`
     ] as const;
     }
 
     
-export const getAccountsProfileListQueryOptions = <TData = Awaited<ReturnType<typeof accountsProfileList>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsProfileList>>, TError, TData>>, }
+export const getCustomersProfileListQueryOptions = <TData = Awaited<ReturnType<typeof customersProfileList>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileList>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getAccountsProfileListQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getCustomersProfileListQueryKey();
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof accountsProfileList>>> = ({ signal }) => accountsProfileList(signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof customersProfileList>>> = ({ signal }) => customersProfileList({ signal });
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof accountsProfileList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof customersProfileList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type AccountsProfileListQueryResult = NonNullable<Awaited<ReturnType<typeof accountsProfileList>>>
-export type AccountsProfileListQueryError = ErrorType<unknown>
+export type CustomersProfileListQueryResult = NonNullable<Awaited<ReturnType<typeof customersProfileList>>>
+export type CustomersProfileListQueryError = ErrorType<unknown>
 
 
-export function useAccountsProfileList<TData = Awaited<ReturnType<typeof accountsProfileList>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsProfileList>>, TError, TData>> & Pick<
+export function useCustomersProfileList<TData = Awaited<ReturnType<typeof customersProfileList>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof accountsProfileList>>,
+          Awaited<ReturnType<typeof customersProfileList>>,
           TError,
-          Awaited<ReturnType<typeof accountsProfileList>>
+          Awaited<ReturnType<typeof customersProfileList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useAccountsProfileList<TData = Awaited<ReturnType<typeof accountsProfileList>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsProfileList>>, TError, TData>> & Pick<
+export function useCustomersProfileList<TData = Awaited<ReturnType<typeof customersProfileList>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof accountsProfileList>>,
+          Awaited<ReturnType<typeof customersProfileList>>,
           TError,
-          Awaited<ReturnType<typeof accountsProfileList>>
+          Awaited<ReturnType<typeof customersProfileList>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useAccountsProfileList<TData = Awaited<ReturnType<typeof accountsProfileList>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsProfileList>>, TError, TData>>, }
+export function useCustomersProfileList<TData = Awaited<ReturnType<typeof customersProfileList>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileList>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useAccountsProfileList<TData = Awaited<ReturnType<typeof accountsProfileList>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsProfileList>>, TError, TData>>, }
+export function useCustomersProfileList<TData = Awaited<ReturnType<typeof customersProfileList>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileList>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getAccountsProfileListQueryOptions(options)
+  const queryOptions = getCustomersProfileListQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -170,27 +190,46 @@ Actions:
 - destroy:        DELETE /api/v1/profiles/{id}/
 - change_role:    PATCH /api/v1/profiles/{id}/change-role/
  */
-export const accountsProfileCreate = (
-    profile: BodyType<NonReadonly<Profile>>,
- signal?: AbortSignal
-) => {
-      
-      
-      return appInstance<Profile>(
-      {url: `/accounts/profile/`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: profile, signal
-    },
-      );
-    }
+export type customersProfileCreateResponse201 = {
+  data: Profile
+  status: 201
+}
+
+export type customersProfileCreateResponseSuccess = (customersProfileCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type customersProfileCreateResponse = (customersProfileCreateResponseSuccess)
+
+export const getCustomersProfileCreateUrl = () => {
+
+
+  
+
+  return `/customers/profile/`
+}
+
+export const customersProfileCreate = async (profile: NonReadonly<Profile>, options?: RequestInit): Promise<customersProfileCreateResponse> => {
+  
+  return appInstance<customersProfileCreateResponse>(getCustomersProfileCreateUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      profile,)
+  }
+);}
   
 
 
-export const getAccountsProfileCreateMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsProfileCreate>>, TError,{data: BodyType<NonReadonly<Profile>>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof accountsProfileCreate>>, TError,{data: BodyType<NonReadonly<Profile>>}, TContext> => {
 
-const mutationKey = ['accountsProfileCreate'];
+export const getCustomersProfileCreateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersProfileCreate>>, TError,{data: BodyType<NonReadonly<Profile>>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof customersProfileCreate>>, TError,{data: BodyType<NonReadonly<Profile>>}, TContext> => {
+
+const mutationKey = ['customersProfileCreate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -200,10 +239,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof accountsProfileCreate>>, {data: BodyType<NonReadonly<Profile>>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof customersProfileCreate>>, {data: BodyType<NonReadonly<Profile>>}> = (props) => {
           const {data} = props ?? {};
 
-          return  accountsProfileCreate(data,)
+          return  customersProfileCreate(data,)
         }
 
 
@@ -213,19 +252,19 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type AccountsProfileCreateMutationResult = NonNullable<Awaited<ReturnType<typeof accountsProfileCreate>>>
-    export type AccountsProfileCreateMutationBody = BodyType<NonReadonly<Profile>>
-    export type AccountsProfileCreateMutationError = ErrorType<unknown>
+    export type CustomersProfileCreateMutationResult = NonNullable<Awaited<ReturnType<typeof customersProfileCreate>>>
+    export type CustomersProfileCreateMutationBody = BodyType<NonReadonly<Profile>>
+    export type CustomersProfileCreateMutationError = ErrorType<unknown>
 
-    export const useAccountsProfileCreate = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsProfileCreate>>, TError,{data: BodyType<NonReadonly<Profile>>}, TContext>, }
+    export const useCustomersProfileCreate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersProfileCreate>>, TError,{data: BodyType<NonReadonly<Profile>>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof accountsProfileCreate>>,
+        Awaited<ReturnType<typeof customersProfileCreate>>,
         TError,
         {data: BodyType<NonReadonly<Profile>>},
         TContext
       > => {
-      return useMutation(getAccountsProfileCreateMutationOptions(options), queryClient);
+      return useMutation(getCustomersProfileCreateMutationOptions(options), queryClient);
     }
     /**
  * A viewset for viewing and editing profile instances.
@@ -239,81 +278,101 @@ Actions:
 - destroy:        DELETE /api/v1/profiles/{id}/
 - change_role:    PATCH /api/v1/profiles/{id}/change-role/
  */
-export const accountsProfileRetrieve = (
-    id: string,
- signal?: AbortSignal
-) => {
-      
-      
-      return appInstance<Profile>(
-      {url: `/accounts/profile/${id}/`, method: 'GET', signal
-    },
-      );
-    }
+export type customersProfileRetrieveResponse200 = {
+  data: Profile
+  status: 200
+}
+
+export type customersProfileRetrieveResponseSuccess = (customersProfileRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type customersProfileRetrieveResponse = (customersProfileRetrieveResponseSuccess)
+
+export const getCustomersProfileRetrieveUrl = (id: string,) => {
+
+
+  
+
+  return `/customers/profile/${id}/`
+}
+
+export const customersProfileRetrieve = async (id: string, options?: RequestInit): Promise<customersProfileRetrieveResponse> => {
+  
+  return appInstance<customersProfileRetrieveResponse>(getCustomersProfileRetrieveUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
   
 
 
 
-export const getAccountsProfileRetrieveQueryKey = (id: string,) => {
+
+export const getCustomersProfileRetrieveQueryKey = (id: string,) => {
     return [
-    `/accounts/profile/${id}/`
+    `/customers/profile/${id}/`
     ] as const;
     }
 
     
-export const getAccountsProfileRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof accountsProfileRetrieve>>, TError = ErrorType<unknown>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsProfileRetrieve>>, TError, TData>>, }
+export const getCustomersProfileRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof customersProfileRetrieve>>, TError = ErrorType<unknown>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileRetrieve>>, TError, TData>>, }
 ) => {
 
 const {query: queryOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getAccountsProfileRetrieveQueryKey(id);
+  const queryKey =  queryOptions?.queryKey ?? getCustomersProfileRetrieveQueryKey(id);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof accountsProfileRetrieve>>> = ({ signal }) => accountsProfileRetrieve(id, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof customersProfileRetrieve>>> = ({ signal }) => customersProfileRetrieve(id, { signal });
 
       
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof accountsProfileRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof customersProfileRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
-export type AccountsProfileRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof accountsProfileRetrieve>>>
-export type AccountsProfileRetrieveQueryError = ErrorType<unknown>
+export type CustomersProfileRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof customersProfileRetrieve>>>
+export type CustomersProfileRetrieveQueryError = ErrorType<unknown>
 
 
-export function useAccountsProfileRetrieve<TData = Awaited<ReturnType<typeof accountsProfileRetrieve>>, TError = ErrorType<unknown>>(
- id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsProfileRetrieve>>, TError, TData>> & Pick<
+export function useCustomersProfileRetrieve<TData = Awaited<ReturnType<typeof customersProfileRetrieve>>, TError = ErrorType<unknown>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileRetrieve>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof accountsProfileRetrieve>>,
+          Awaited<ReturnType<typeof customersProfileRetrieve>>,
           TError,
-          Awaited<ReturnType<typeof accountsProfileRetrieve>>
+          Awaited<ReturnType<typeof customersProfileRetrieve>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useAccountsProfileRetrieve<TData = Awaited<ReturnType<typeof accountsProfileRetrieve>>, TError = ErrorType<unknown>>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsProfileRetrieve>>, TError, TData>> & Pick<
+export function useCustomersProfileRetrieve<TData = Awaited<ReturnType<typeof customersProfileRetrieve>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileRetrieve>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof accountsProfileRetrieve>>,
+          Awaited<ReturnType<typeof customersProfileRetrieve>>,
           TError,
-          Awaited<ReturnType<typeof accountsProfileRetrieve>>
+          Awaited<ReturnType<typeof customersProfileRetrieve>>
         > , 'initialData'
       >, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useAccountsProfileRetrieve<TData = Awaited<ReturnType<typeof accountsProfileRetrieve>>, TError = ErrorType<unknown>>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsProfileRetrieve>>, TError, TData>>, }
+export function useCustomersProfileRetrieve<TData = Awaited<ReturnType<typeof customersProfileRetrieve>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileRetrieve>>, TError, TData>>, }
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useAccountsProfileRetrieve<TData = Awaited<ReturnType<typeof accountsProfileRetrieve>>, TError = ErrorType<unknown>>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof accountsProfileRetrieve>>, TError, TData>>, }
+export function useCustomersProfileRetrieve<TData = Awaited<ReturnType<typeof customersProfileRetrieve>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileRetrieve>>, TError, TData>>, }
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getAccountsProfileRetrieveQueryOptions(id,options)
+  const queryOptions = getCustomersProfileRetrieveQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -335,28 +394,47 @@ Actions:
 - destroy:        DELETE /api/v1/profiles/{id}/
 - change_role:    PATCH /api/v1/profiles/{id}/change-role/
  */
-export const accountsProfileUpdate = (
-    id: string,
-    profile: BodyType<NonReadonly<Profile>>,
- signal?: AbortSignal
-) => {
-      
-      
-      return appInstance<Profile>(
-      {url: `/accounts/profile/${id}/`, method: 'PUT',
-      headers: {'Content-Type': 'application/json', },
-      data: profile, signal
-    },
-      );
-    }
+export type customersProfileUpdateResponse200 = {
+  data: Profile
+  status: 200
+}
+
+export type customersProfileUpdateResponseSuccess = (customersProfileUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type customersProfileUpdateResponse = (customersProfileUpdateResponseSuccess)
+
+export const getCustomersProfileUpdateUrl = (id: string,) => {
+
+
+  
+
+  return `/customers/profile/${id}/`
+}
+
+export const customersProfileUpdate = async (id: string,
+    profile: NonReadonly<Profile>, options?: RequestInit): Promise<customersProfileUpdateResponse> => {
+  
+  return appInstance<customersProfileUpdateResponse>(getCustomersProfileUpdateUrl(id),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      profile,)
+  }
+);}
   
 
 
-export const getAccountsProfileUpdateMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsProfileUpdate>>, TError,{id: string;data: BodyType<NonReadonly<Profile>>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof accountsProfileUpdate>>, TError,{id: string;data: BodyType<NonReadonly<Profile>>}, TContext> => {
 
-const mutationKey = ['accountsProfileUpdate'];
+export const getCustomersProfileUpdateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersProfileUpdate>>, TError,{id: string;data: BodyType<NonReadonly<Profile>>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof customersProfileUpdate>>, TError,{id: string;data: BodyType<NonReadonly<Profile>>}, TContext> => {
+
+const mutationKey = ['customersProfileUpdate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -366,10 +444,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof accountsProfileUpdate>>, {id: string;data: BodyType<NonReadonly<Profile>>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof customersProfileUpdate>>, {id: string;data: BodyType<NonReadonly<Profile>>}> = (props) => {
           const {id,data} = props ?? {};
 
-          return  accountsProfileUpdate(id,data,)
+          return  customersProfileUpdate(id,data,)
         }
 
 
@@ -379,19 +457,19 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type AccountsProfileUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof accountsProfileUpdate>>>
-    export type AccountsProfileUpdateMutationBody = BodyType<NonReadonly<Profile>>
-    export type AccountsProfileUpdateMutationError = ErrorType<unknown>
+    export type CustomersProfileUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof customersProfileUpdate>>>
+    export type CustomersProfileUpdateMutationBody = BodyType<NonReadonly<Profile>>
+    export type CustomersProfileUpdateMutationError = ErrorType<unknown>
 
-    export const useAccountsProfileUpdate = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsProfileUpdate>>, TError,{id: string;data: BodyType<NonReadonly<Profile>>}, TContext>, }
+    export const useCustomersProfileUpdate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersProfileUpdate>>, TError,{id: string;data: BodyType<NonReadonly<Profile>>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof accountsProfileUpdate>>,
+        Awaited<ReturnType<typeof customersProfileUpdate>>,
         TError,
         {id: string;data: BodyType<NonReadonly<Profile>>},
         TContext
       > => {
-      return useMutation(getAccountsProfileUpdateMutationOptions(options), queryClient);
+      return useMutation(getCustomersProfileUpdateMutationOptions(options), queryClient);
     }
     /**
  * A viewset for viewing and editing profile instances.
@@ -405,28 +483,47 @@ Actions:
 - destroy:        DELETE /api/v1/profiles/{id}/
 - change_role:    PATCH /api/v1/profiles/{id}/change-role/
  */
-export const accountsProfilePartialUpdate = (
-    id: string,
-    patchedProfile: BodyType<NonReadonly<PatchedProfile>>,
- signal?: AbortSignal
-) => {
-      
-      
-      return appInstance<Profile>(
-      {url: `/accounts/profile/${id}/`, method: 'PATCH',
-      headers: {'Content-Type': 'application/json', },
-      data: patchedProfile, signal
-    },
-      );
-    }
+export type customersProfilePartialUpdateResponse200 = {
+  data: Profile
+  status: 200
+}
+
+export type customersProfilePartialUpdateResponseSuccess = (customersProfilePartialUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type customersProfilePartialUpdateResponse = (customersProfilePartialUpdateResponseSuccess)
+
+export const getCustomersProfilePartialUpdateUrl = (id: string,) => {
+
+
+  
+
+  return `/customers/profile/${id}/`
+}
+
+export const customersProfilePartialUpdate = async (id: string,
+    patchedProfile: NonReadonly<PatchedProfile>, options?: RequestInit): Promise<customersProfilePartialUpdateResponse> => {
+  
+  return appInstance<customersProfilePartialUpdateResponse>(getCustomersProfilePartialUpdateUrl(id),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      patchedProfile,)
+  }
+);}
   
 
 
-export const getAccountsProfilePartialUpdateMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsProfilePartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedProfile>>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof accountsProfilePartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedProfile>>}, TContext> => {
 
-const mutationKey = ['accountsProfilePartialUpdate'];
+export const getCustomersProfilePartialUpdateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersProfilePartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedProfile>>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof customersProfilePartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedProfile>>}, TContext> => {
+
+const mutationKey = ['customersProfilePartialUpdate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -436,10 +533,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof accountsProfilePartialUpdate>>, {id: string;data: BodyType<NonReadonly<PatchedProfile>>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof customersProfilePartialUpdate>>, {id: string;data: BodyType<NonReadonly<PatchedProfile>>}> = (props) => {
           const {id,data} = props ?? {};
 
-          return  accountsProfilePartialUpdate(id,data,)
+          return  customersProfilePartialUpdate(id,data,)
         }
 
 
@@ -449,19 +546,19 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type AccountsProfilePartialUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof accountsProfilePartialUpdate>>>
-    export type AccountsProfilePartialUpdateMutationBody = BodyType<NonReadonly<PatchedProfile>>
-    export type AccountsProfilePartialUpdateMutationError = ErrorType<unknown>
+    export type CustomersProfilePartialUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof customersProfilePartialUpdate>>>
+    export type CustomersProfilePartialUpdateMutationBody = BodyType<NonReadonly<PatchedProfile>>
+    export type CustomersProfilePartialUpdateMutationError = ErrorType<unknown>
 
-    export const useAccountsProfilePartialUpdate = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsProfilePartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedProfile>>}, TContext>, }
+    export const useCustomersProfilePartialUpdate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersProfilePartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedProfile>>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof accountsProfilePartialUpdate>>,
+        Awaited<ReturnType<typeof customersProfilePartialUpdate>>,
         TError,
         {id: string;data: BodyType<NonReadonly<PatchedProfile>>},
         TContext
       > => {
-      return useMutation(getAccountsProfilePartialUpdateMutationOptions(options), queryClient);
+      return useMutation(getCustomersProfilePartialUpdateMutationOptions(options), queryClient);
     }
     /**
  * A viewset for viewing and editing profile instances.
@@ -475,25 +572,45 @@ Actions:
 - destroy:        DELETE /api/v1/profiles/{id}/
 - change_role:    PATCH /api/v1/profiles/{id}/change-role/
  */
-export const accountsProfileDestroy = (
-    id: string,
- signal?: AbortSignal
-) => {
-      
-      
-      return appInstance<void>(
-      {url: `/accounts/profile/${id}/`, method: 'DELETE', signal
-    },
-      );
-    }
+export type customersProfileDestroyResponse204 = {
+  data: void
+  status: 204
+}
+
+export type customersProfileDestroyResponseSuccess = (customersProfileDestroyResponse204) & {
+  headers: Headers;
+};
+;
+
+export type customersProfileDestroyResponse = (customersProfileDestroyResponseSuccess)
+
+export const getCustomersProfileDestroyUrl = (id: string,) => {
+
+
+  
+
+  return `/customers/profile/${id}/`
+}
+
+export const customersProfileDestroy = async (id: string, options?: RequestInit): Promise<customersProfileDestroyResponse> => {
+  
+  return appInstance<customersProfileDestroyResponse>(getCustomersProfileDestroyUrl(id),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
   
 
 
-export const getAccountsProfileDestroyMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsProfileDestroy>>, TError,{id: string}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof accountsProfileDestroy>>, TError,{id: string}, TContext> => {
 
-const mutationKey = ['accountsProfileDestroy'];
+export const getCustomersProfileDestroyMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersProfileDestroy>>, TError,{id: string}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof customersProfileDestroy>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['customersProfileDestroy'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -503,10 +620,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof accountsProfileDestroy>>, {id: string}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof customersProfileDestroy>>, {id: string}> = (props) => {
           const {id} = props ?? {};
 
-          return  accountsProfileDestroy(id,)
+          return  customersProfileDestroy(id,)
         }
 
 
@@ -516,46 +633,77 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type AccountsProfileDestroyMutationResult = NonNullable<Awaited<ReturnType<typeof accountsProfileDestroy>>>
+    export type CustomersProfileDestroyMutationResult = NonNullable<Awaited<ReturnType<typeof customersProfileDestroy>>>
     
-    export type AccountsProfileDestroyMutationError = ErrorType<unknown>
+    export type CustomersProfileDestroyMutationError = ErrorType<unknown>
 
-    export const useAccountsProfileDestroy = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsProfileDestroy>>, TError,{id: string}, TContext>, }
+    export const useCustomersProfileDestroy = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersProfileDestroy>>, TError,{id: string}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof accountsProfileDestroy>>,
+        Awaited<ReturnType<typeof customersProfileDestroy>>,
         TError,
         {id: string},
         TContext
       > => {
-      return useMutation(getAccountsProfileDestroyMutationOptions(options), queryClient);
+      return useMutation(getCustomersProfileDestroyMutationOptions(options), queryClient);
     }
     /**
  * Toggles user role between CUSTOMER and ADMIN.
  * @summary Change User Role
  */
-export const accountsProfileChangeRolePartialUpdate = (
-    id: string,
-    patchedProfile: BodyType<NonReadonly<PatchedProfile>>,
- signal?: AbortSignal
-) => {
-      
-      
-      return appInstance<Profile>(
-      {url: `/accounts/profile/${id}/change-role/`, method: 'PATCH',
-      headers: {'Content-Type': 'application/json', },
-      data: patchedProfile, signal
-    },
-      );
-    }
+export type customersProfileChangeRolePartialUpdateResponse200 = {
+  data: Profile
+  status: 200
+}
+
+export type customersProfileChangeRolePartialUpdateResponse403 = {
+  data: void
+  status: 403
+}
+
+export type customersProfileChangeRolePartialUpdateResponse404 = {
+  data: void
+  status: 404
+}
+
+export type customersProfileChangeRolePartialUpdateResponseSuccess = (customersProfileChangeRolePartialUpdateResponse200) & {
+  headers: Headers;
+};
+export type customersProfileChangeRolePartialUpdateResponseError = (customersProfileChangeRolePartialUpdateResponse403 | customersProfileChangeRolePartialUpdateResponse404) & {
+  headers: Headers;
+};
+
+export type customersProfileChangeRolePartialUpdateResponse = (customersProfileChangeRolePartialUpdateResponseSuccess | customersProfileChangeRolePartialUpdateResponseError)
+
+export const getCustomersProfileChangeRolePartialUpdateUrl = (id: string,) => {
+
+
+  
+
+  return `/customers/profile/${id}/change-role/`
+}
+
+export const customersProfileChangeRolePartialUpdate = async (id: string,
+    patchedProfile: NonReadonly<PatchedProfile>, options?: RequestInit): Promise<customersProfileChangeRolePartialUpdateResponse> => {
+  
+  return appInstance<customersProfileChangeRolePartialUpdateResponse>(getCustomersProfileChangeRolePartialUpdateUrl(id),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      patchedProfile,)
+  }
+);}
   
 
 
-export const getAccountsProfileChangeRolePartialUpdateMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsProfileChangeRolePartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedProfile>>}, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<typeof accountsProfileChangeRolePartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedProfile>>}, TContext> => {
 
-const mutationKey = ['accountsProfileChangeRolePartialUpdate'];
+export const getCustomersProfileChangeRolePartialUpdateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersProfileChangeRolePartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedProfile>>}, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof customersProfileChangeRolePartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedProfile>>}, TContext> => {
+
+const mutationKey = ['customersProfileChangeRolePartialUpdate'];
 const {mutation: mutationOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -565,10 +713,10 @@ const {mutation: mutationOptions} = options ?
       
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof accountsProfileChangeRolePartialUpdate>>, {id: string;data: BodyType<NonReadonly<PatchedProfile>>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof customersProfileChangeRolePartialUpdate>>, {id: string;data: BodyType<NonReadonly<PatchedProfile>>}> = (props) => {
           const {id,data} = props ?? {};
 
-          return  accountsProfileChangeRolePartialUpdate(id,data,)
+          return  customersProfileChangeRolePartialUpdate(id,data,)
         }
 
 
@@ -578,21 +726,21 @@ const {mutation: mutationOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type AccountsProfileChangeRolePartialUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof accountsProfileChangeRolePartialUpdate>>>
-    export type AccountsProfileChangeRolePartialUpdateMutationBody = BodyType<NonReadonly<PatchedProfile>>
-    export type AccountsProfileChangeRolePartialUpdateMutationError = ErrorType<void>
+    export type CustomersProfileChangeRolePartialUpdateMutationResult = NonNullable<Awaited<ReturnType<typeof customersProfileChangeRolePartialUpdate>>>
+    export type CustomersProfileChangeRolePartialUpdateMutationBody = BodyType<NonReadonly<PatchedProfile>>
+    export type CustomersProfileChangeRolePartialUpdateMutationError = ErrorType<void>
 
     /**
  * @summary Change User Role
  */
-export const useAccountsProfileChangeRolePartialUpdate = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof accountsProfileChangeRolePartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedProfile>>}, TContext>, }
+export const useCustomersProfileChangeRolePartialUpdate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersProfileChangeRolePartialUpdate>>, TError,{id: string;data: BodyType<NonReadonly<PatchedProfile>>}, TContext>, }
  , queryClient?: QueryClient): UseMutationResult<
-        Awaited<ReturnType<typeof accountsProfileChangeRolePartialUpdate>>,
+        Awaited<ReturnType<typeof customersProfileChangeRolePartialUpdate>>,
         TError,
         {id: string;data: BodyType<NonReadonly<PatchedProfile>>},
         TContext
       > => {
-      return useMutation(getAccountsProfileChangeRolePartialUpdateMutationOptions(options), queryClient);
+      return useMutation(getCustomersProfileChangeRolePartialUpdateMutationOptions(options), queryClient);
     }
     

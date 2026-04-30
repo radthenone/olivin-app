@@ -3,10 +3,13 @@
  *
  * Hook do rejestracji nowego użytkownika z fork-join:
  * → allauth signup + opcjonalny profil + opcjonalny adres.
+ * Po zakończeniu odświeża session query.
  */
 import { useState } from "react";
-import { authService, useAuthStore } from "@core/auth";
+import { useQueryClient } from "@tanstack/react-query";
+import { authService } from "@core/auth";
 import type { RegisterPayload } from "@core/auth";
+import { sessionQueryKey } from "./useSession";
 
 export interface UseRegisterResult {
   register: (payload: RegisterPayload) => Promise<void>;
@@ -16,7 +19,7 @@ export interface UseRegisterResult {
 }
 
 export function useRegister(): UseRegisterResult {
-  const { setSession } = useAuthStore();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,11 +29,12 @@ export function useRegister(): UseRegisterResult {
 
     try {
       const session = await authService.register(payload);
-      setSession(session);
+      queryClient.setQueryData(sessionQueryKey, session);
+      await queryClient.invalidateQueries({ queryKey: sessionQueryKey });
     } catch (err: unknown) {
       const message = extractRegisterError(err);
       setError(message);
-      setSession(null);
+      queryClient.setQueryData(sessionQueryKey, null);
     } finally {
       setIsLoading(false);
     }

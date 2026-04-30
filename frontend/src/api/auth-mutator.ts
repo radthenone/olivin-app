@@ -1,9 +1,23 @@
-import apiClient from "@http/client";
-import type { AxiosRequestConfig, AxiosResponse } from "axios";
+import {
+  apiResponse,
+  type ApiError,
+  type ApiRequestConfig,
+} from "@http/client";
 
-export const authInstance = <T>(config: AxiosRequestConfig): Promise<T> => {
-  return apiClient(config).then(({ data }) => data);
+export const authInstance = <T>(
+  url: string,
+  options: RequestInit = {},
+): Promise<T> => {
+  const config: ApiRequestConfig = {
+    url,
+    method: options.method,
+    headers: options.headers,
+    body: options.body,
+    signal: options.signal ?? undefined,
+  };
+
+  return apiResponse<T>(config);
 };
 
-export type ErrorType<Error> = AxiosResponse<Error>;
+export type ErrorType<Error> = ApiError<Error>;
 export type BodyType<BodyData> = BodyData;

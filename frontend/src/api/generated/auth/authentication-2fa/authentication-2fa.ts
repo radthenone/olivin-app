@@ -254,21 +254,52 @@ be completed.
 
  * @summary Two-factor authentication
  */
-export const postAllauthClientV1Auth2faAuthenticate = (
-    client: 'app' | 'browser',
-    mFAAuthenticateBody: BodyType<MFAAuthenticateBody>,
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<AuthenticatedByPasswordAnd2FAResponse>(
-      {url: `/_allauth/${client}/v1/auth/2fa/authenticate`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: mFAAuthenticateBody, signal
-    },
-      );
-    }
+export type postAllauthClientV1Auth2faAuthenticateResponse200 = {
+  data: AuthenticatedByPasswordAnd2FAResponse
+  status: 200
+}
+
+export type postAllauthClientV1Auth2faAuthenticateResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postAllauthClientV1Auth2faAuthenticateResponse401 = {
+  data: AuthenticationResponse
+  status: 401
+}
+
+export type postAllauthClientV1Auth2faAuthenticateResponseSuccess = (postAllauthClientV1Auth2faAuthenticateResponse200) & {
+  headers: Headers;
+};
+export type postAllauthClientV1Auth2faAuthenticateResponseError = (postAllauthClientV1Auth2faAuthenticateResponse400 | postAllauthClientV1Auth2faAuthenticateResponse401) & {
+  headers: Headers;
+};
+
+export type postAllauthClientV1Auth2faAuthenticateResponse = (postAllauthClientV1Auth2faAuthenticateResponseSuccess | postAllauthClientV1Auth2faAuthenticateResponseError)
+
+export const getPostAllauthClientV1Auth2faAuthenticateUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/auth/2fa/authenticate`
+}
+
+export const postAllauthClientV1Auth2faAuthenticate = async (client: 'app' | 'browser',
+    mFAAuthenticateBody: MFAAuthenticateBody, options?: RequestInit): Promise<postAllauthClientV1Auth2faAuthenticateResponse> => {
+  
+  return authInstance<postAllauthClientV1Auth2faAuthenticateResponse>(getPostAllauthClientV1Auth2faAuthenticateUrl(client),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      mFAAuthenticateBody,)
+  }
+);}
+  
+
 
 
 export const getPostAllauthClientV1Auth2faAuthenticateMutationOptions = <TError = ErrorType<ErrorResponse | AuthenticationResponse>,
@@ -326,21 +357,47 @@ related towards that flow.
 
  * @summary Reauthenticate using 2FA
  */
-export const postAllauthClientV1Auth2faReauthenticate = (
-    client: 'app' | 'browser',
-    mFAAuthenticateBody: BodyType<MFAAuthenticateBody>,
- signal?: AbortSignal
-) => {
-      
-      
-      return authInstance<AuthenticatedByPasswordAnd2FAResponse>(
-      {url: `/_allauth/${client}/v1/auth/2fa/reauthenticate`, method: 'POST',
-      headers: {'Content-Type': 'application/json', },
-      data: mFAAuthenticateBody, signal
-    },
-      );
-    }
+export type postAllauthClientV1Auth2faReauthenticateResponse200 = {
+  data: AuthenticatedByPasswordAnd2FAResponse
+  status: 200
+}
+
+export type postAllauthClientV1Auth2faReauthenticateResponse400 = {
+  data: ErrorResponse
+  status: 400
+}
+
+export type postAllauthClientV1Auth2faReauthenticateResponseSuccess = (postAllauthClientV1Auth2faReauthenticateResponse200) & {
+  headers: Headers;
+};
+export type postAllauthClientV1Auth2faReauthenticateResponseError = (postAllauthClientV1Auth2faReauthenticateResponse400) & {
+  headers: Headers;
+};
+
+export type postAllauthClientV1Auth2faReauthenticateResponse = (postAllauthClientV1Auth2faReauthenticateResponseSuccess | postAllauthClientV1Auth2faReauthenticateResponseError)
+
+export const getPostAllauthClientV1Auth2faReauthenticateUrl = (client: 'app' | 'browser',) => {
+
+
   
+
+  return `/_allauth/${client}/v1/auth/2fa/reauthenticate`
+}
+
+export const postAllauthClientV1Auth2faReauthenticate = async (client: 'app' | 'browser',
+    mFAAuthenticateBody: MFAAuthenticateBody, options?: RequestInit): Promise<postAllauthClientV1Auth2faReauthenticateResponse> => {
+  
+  return authInstance<postAllauthClientV1Auth2faReauthenticateResponse>(getPostAllauthClientV1Auth2faReauthenticateUrl(client),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      mFAAuthenticateBody,)
+  }
+);}
+  
+
 
 
 export const getPostAllauthClientV1Auth2faReauthenticateMutationOptions = <TError = ErrorType<ErrorResponse>,
