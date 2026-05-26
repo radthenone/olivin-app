@@ -3,15 +3,97 @@
 version: "3"
 
 tasks:
+    # =======================================================
+    # GŁÓWNE KOMENDY (DEV CLIENT - ZALECANE DLA OAUTH / NATIVE)
+    # =======================================================
     run:
-        desc: Run Expo app
+        desc: Run Expo locally using Dev Client (Default) on Android emulator
+        dir: frontend
+        interactive: true
+        vars:
+            ANDROID_SERIAL: '{{default "emulator-5554" .CLI_ARGS}}'
+        cmds:
+            - bash -lc '(cd .. && ./scripts/open-expo-dev-client-android.sh "{{.ANDROID_SERIAL}}") & bunx expo start --lan --dev-client'
+
+    run:clear:
+        desc: Run Expo locally using Dev Client with cleared cache
+        dir: frontend
+        interactive: true
+        vars:
+            ANDROID_SERIAL: '{{default "emulator-5554" .CLI_ARGS}}'
+        cmds:
+            - bash -lc '(cd .. && ./scripts/open-expo-dev-client-android.sh "{{.ANDROID_SERIAL}}") & bunx expo start --lan --dev-client --clear'
+
+    # =======================================================
+    # KOMENDY EXPO GO (TYLKO DLA UI / BEZ NATYWNYCH MODUŁÓW)
+    # =======================================================
+    run:go:
+        desc: Run Expo using standard Expo Go on Android emulator
+        dir: frontend
+        interactive: true
+        vars:
+            ANDROID_SERIAL: '{{default "emulator-5554" .CLI_ARGS}}'
+        cmds:
+            - bash -lc '(cd .. && ./scripts/open-expo-android.sh "{{.ANDROID_SERIAL}}") & bunx expo start --lan'
+
+    run:go:clear:
+        desc: Run Expo using standard Expo Go with cleared cache
+        dir: frontend
+        interactive: true
+        vars:
+            ANDROID_SERIAL: '{{default "emulator-5554" .CLI_ARGS}}'
+        cmds:
+            - bash -lc '(cd .. && ./scripts/open-expo-android.sh "{{.ANDROID_SERIAL}}") & bunx expo start --lan --clear'
+
+    # =======================================================
+    # METRO BUNDLER (BEZ AUTOMATYCZNEGO URUCHAMIANIA NA TELEFONIE)
+    # =======================================================
+    metro:
+        desc: Start Metro bundler only
         dir: frontend
         interactive: true
         cmds:
-            - bun run lan
-    rebuild:
-        desc: Rebuild Expo app
+            - bunx expo start --lan --dev-client
+
+    metro:clear:
+        desc: Start Metro bundler only with cleared cache
         dir: frontend
         interactive: true
         cmds:
-            - bun run free-cache
+            - bunx expo start --lan --dev-client --clear
+
+    # =======================================================
+    # NARZĘDZIA NATYWNE (BUDOWANIE DEV CLIENTA)
+    # =======================================================
+    build:android:
+        desc: Build and install Expo Development Client on selected Android device
+        dir: frontend
+        interactive: true
+        vars:
+            ANDROID_SERIAL: '{{default "emulator-5554" .CLI_ARGS}}'
+        cmds:
+            - bash -lc '../scripts/build-install-expo-dev-client-android.sh "{{.ANDROID_SERIAL}}"'
+
+    prebuild:clean:
+        desc: Recreate Android native project from Expo config
+        dir: frontend
+        interactive: true
+        cmds:
+            - bunx expo prebuild --clean --platform android
+
+    # =======================================================
+    # RĘCZNE OTWIERANIE NA TELEFONIE (JEŚLI BUNDLER JUŻ DZIAŁA)
+    # =======================================================
+    open:
+        desc: Open Dev Client app on Android without starting Metro
+        vars:
+            ANDROID_SERIAL: '{{default "emulator-5554" .CLI_ARGS}}'
+        cmds:
+            - bash -lc './scripts/open-expo-dev-client-android.sh "{{.ANDROID_SERIAL}}"'
+
+    open:go:
+        desc: Open Expo Go app on Android without starting Metro
+        vars:
+            ANDROID_SERIAL: '{{default "emulator-5554" .CLI_ARGS}}'
+        cmds:
+            - bash -lc './scripts/open-expo-android.sh "{{.ANDROID_SERIAL}}"'

@@ -45,3 +45,5 @@ app-example
 
 # ignore backend
 backend/
+_old
+_learning

@@ -9,6 +9,7 @@ from common import TimestampedModel
 
 # Create your models here.
 
+
 class Profile(TimestampedModel):
     """User profile model storing additional user information.
 
@@ -20,11 +21,12 @@ class Profile(TimestampedModel):
         phone_number: Primary phone number with country code.
         role: User's role in the system.
     """
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="profile",
-        )
+    )
     first_name = models.CharField(
         max_length=150,
         blank=True,
@@ -41,12 +43,12 @@ class Profile(TimestampedModel):
     phone_number = PhoneNumberField(
         blank=True,
         help_text="Primary phone number with country code",
-        )
+    )
     role = models.CharField(
         max_length=20,
         choices=RoleChoices.choices,
         default=RoleChoices.CUSTOMER,
-        )
+    )
 
     class Meta:
         verbose_name = "Profile"

@@ -42,6 +42,14 @@ Przy każdym pytaniu technicznym i każdej propozycji zmian:
 
 `olivin-app` jest projektem full-stack w układzie monorepo.
 
+Szybkie źródła kontekstu:
+
+- `README.md` — start developerski i najważniejsze taski,
+- `docs/ai/architecture.md` — opis warstw i odpowiedzialności,
+- `docs/ai/workflow.md` — sposób pracy agentów AI,
+- `.github/instructions/backend.instructions.md` — reguły dla `backend/**`,
+- `.github/instructions/frontend.instructions.md` — reguły dla `frontend/**`.
+
 ### Frontend
 
 Frontend znajduje się w `frontend/` i jest oparty o Expo / React Native, nie o klasyczne React SPA w przeglądarce.
@@ -61,7 +69,6 @@ Potwierdzone biblioteki i podejścia:
 - `zustand`,
 - `react-hook-form`,
 - `zod`,
-- `axios`,
 - `orval`,
 - `nativewind`.
 
@@ -96,7 +103,10 @@ Potwierdzone biblioteki i podejścia:
 Projekt używa [Taskfile](https://taskfile.dev/) jako głównego interfejsu do poleceń deweloperskich.
 Główny plik: `Taskfile.yml` w root repo — importuje moduły z `taskfiles/`.
 
-**Zasada:** jeśli potrzebujesz zaproponować komendę (migracja, test, shell, build, paczki), najpierw sprawdź czy istnieje gotowy task. Preferuj `task <namespace>:<nazwa>` zamiast bezpośrednich wywołań.
+**Zasada:** jeśli potrzebujesz zaproponować albo uruchomić komendę (migracja, test, shell, build, paczki, generowanie API, frontend), najpierw sprawdź `Taskfile.yml` oraz właściwy plik w `taskfiles/`. Preferuj `task <namespace>:<nazwa>` zamiast bezpośrednich wywołań.
+
+Jeśli nie pamiętasz nazwy taska, użyj lub zaproponuj `task --list`.
+Jeśli środowisko agenta nie ma lokalnie `task`, `bun`, `uv` albo Dockera w `PATH`, napisz to wprost i podaj równoważną komendę taskową do wykonania przez użytkownika.
 
 Dostępne namespace'y i przykłady:
 
@@ -104,14 +114,36 @@ Dostępne namespace'y i przykłady:
 |-----------|------|-------------------|
 | `backend` | `taskfiles/backend.yml` | `task backend:run`, `task backend:build`, `task backend:logs`, `task backend:clean-docker` |
 | `db` | `taskfiles/db.yml` | `task db:migrate`, `task db:migrations:make -- <app>`, `task db:migrations:rollback -- <app> <nr>`, `task db:clean:volumes` |
-| `test` | `taskfiles/test.yml` | `task test:backend`, `task test:backend-cmd -- <ścieżka>`, `task test:backend-watch`, `task test:backend-build`, `task test:backend-down` |
+| `test` | `taskfiles/test.yml` | `task test:backend`, `task test:backend-local -- <ścieżka>`, `task test:backend-local-unit -- <ścieżka>`, `task test:backend-integration -- <ścieżka>`, `task test:backend-cmd -- <ścieżka>`, `task test:backend-down` |
 | `shell` | `taskfiles/shell.yml` | `task shell:run`, `task shell:run:plus` |
-| `frontend` | `taskfiles/frontend.yml` | `task frontend:run`, `task frontend:rebuild` |
+| `frontend` | `taskfiles/frontend.yml` | `task frontend:run`, `task frontend:run:clear`, `task frontend:metro`, `task frontend:metro:clear`, `task frontend:build:android`, `task frontend:prebuild:clean` |
 | `packages` | `taskfiles/packages.yml` | `task packages:backend:add -- <pkg>`, `task packages:frontend:add -- <pkg>` |
 | `ovral` | `taskfiles/ovral.yml` | `task ovral:generate`, `task ovral:watch` |
 | `emulator` | `taskfiles/emulators.yml` | `task emulator:run` |
+| `lints` | `taskfiles/lints.yml` | `task lints:backend:ruff`, `task lints:backend:ruff:check`, `task lints:backend:typecheck`, `task lints:frontend:lint`, `task lints:frontend:lint:check`, `task lints:frontend:typecheck`, `task lints:frontend:format`, `task lints:frontend:format:check` |
+
+**Uwaga:** namespace `ovral` jest nazwą taska w repo, ale dotyczy narzędzia Orval. Nie edytuj ręcznie plików w `frontend/src/api/generated/**`; po zmianach API generuj klienta przez `task ovral:generate`.
 
 **Ważne:** Gdy task przyjmuje argumenty, przekazuj je po `--` zgodnie z konwencją Taskfile, np. `task db:migrations:make -- accounts`.
+
+### Komendy kontrolne po zmianach
+
+Dobieraj najmniejszy sensowny zestaw kontroli do zakresu zmiany:
+
+- backend szybki: `task test:backend-local -- <ścieżka>`,
+- backend jednostkowy: `task test:backend-local-unit -- <ścieżka>`,
+- backend integracyjny: `task test:backend-integration -- <ścieżka lub marker>`,
+- backend pełny w Dockerze: `task test:backend`,
+- backend lint i format Ruff z poprawkami: `task lints:backend:ruff`,
+- backend lint i format Ruff bez zmian w plikach: `task lints:backend:ruff:check`,
+- backend typecheck: `task lints:backend:typecheck`,
+- frontend lint z poprawkami: `task lints:frontend:lint`,
+- frontend lint bez zmian w plikach: `task lints:frontend:lint:check`,
+- frontend typecheck: `task lints:frontend:typecheck`,
+- frontend format: `task lints:frontend:format`,
+- frontend format check: `task lints:frontend:format:check`.
+
+Jeśli środowisko nie pozwala uruchomić kontroli, napisz wprost, których tasków nie udało się wykonać i dlaczego.
 
 ### Shell — bash, nie PowerShell
 
@@ -170,6 +202,12 @@ Albo przez odpowiedni task, np. `task db:migrate`.
 - Stosuj lazy loading tam, gdzie realnie poprawia performance lub ogranicza koszt wejścia do ciężkich ekranów.
 - Cache konfiguruj świadomie zgodnie z naturą danych i UX.
 - Uważaj na zbędne re-rendery, efekty uboczne i niestabilne zależności hooków.
+- Wygenerowane klienty i typy API trzymaj w `frontend/src/api/generated/`; nie edytuj ich ręcznie.
+- Niskopoziomową mechanikę sesji allauth trzymaj w `frontend/src/core/auth/`.
+- Flow logowania, rejestracji, weryfikacji email, resetu hasła i MFA trzymaj w `frontend/src/features/auth/`.
+- Dane konta zalogowanego użytkownika, profil, adresy i ustawienia bezpieczeństwa trzymaj w `frontend/src/features/account/`.
+- Wspólne komponenty UI trzymaj w `frontend/src/ui/`; różnice web/native rozwiązuj przez pliki `.web/.native` albo helpery w `frontend/src/ui/platform/`.
+- Dla stylu shadcn-like w Expo / React Native preferuj lokalne primitives + NativeWind + `class-variance-authority`, nie DOM-only komponenty z klasycznego `shadcn/ui`.
 
 ### Backend
 
@@ -179,6 +217,7 @@ Albo przez odpowiedni task, np. `task db:migrate`.
 - Uważaj na N+1 queries oraz sensowne użycie `select_related` i `prefetch_related`.
 - Zwracaj uwagę na atomowość operacji i side effecty.
 - Jeśli zmieniasz kontrakt API, oceń wpływ na `backend/src/schema.yaml` i frontendowe typy lub klienty generowane przez Orval.
+- Jeśli zmieniasz serializer, viewset, URL albo schema endpointu, po zmianie zaplanuj `task ovral:generate` oraz kontrolę `task lints:frontend:typecheck`.
 
 ## Jak odpowiadać
 
@@ -204,3 +243,10 @@ W praktyce:
 - gdy proponujesz komendę do wykonania, **zawsze najpierw sprawdź Taskfile** — jeśli istnieje odpowiedni task, użyj go zamiast surowego docker/bash,
 - komendy shellowe pisz w **bash**, nie w PowerShell,
 - gdy odwołujesz się do kontenera lub serwisu, używaj nazw z sekcji Docker Compose powyżej.
+
+## Higiena repozytorium
+
+- Nie commituj lokalnych cache'y, coverage, logów, plików `.env`, `.venv`, `node_modules`, `.expo`, `mediafiles`, `staticfiles` ani build outputów.
+- Nie edytuj ręcznie plików w `frontend/src/api/generated/**`.
+- Jeśli repo ma dużo zmian roboczych, przed większą analizą nazwij ten fakt i uważaj, by nie cofnąć cudzych zmian.
+- Przy zmianach API pamiętaj o sekwencji: backend schema → `task ovral:generate` → `task lints:frontend:typecheck`.

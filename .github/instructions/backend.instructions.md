@@ -48,7 +48,12 @@ Najważniejsze obszary struktury:
 
 ## Komendy — Taskfile i bash
 
-- Jeśli potrzebujesz wywołać komendę przejżyj folder `taskfile` z komendami i Taskfile.yml, komendy zawsze wywołuj bashowe
+- Jeśli potrzebujesz wywołać komendę, najpierw przejrzyj `Taskfile.yml` oraz właściwy plik w `taskfiles/`.
+- Preferuj taski, np. `task db:migrate`, `task test:backend-local -- src/apps/accounts -q`, `task test:backend-cmd -- src/apps/accounts -q`.
+- Komendy shellowe zapisuj w składni bash.
+- Jeśli zmieniasz serializer, viewset, URL albo schema endpointu, uwzględnij regenerację klienta frontendowego przez `task ovral:generate`.
+- Po zmianach backendowych dobierz właściwą kontrolę: `task test:backend-local -- <ścieżka>`, `task test:backend-local-unit -- <ścieżka>`, `task test:backend-integration -- <ścieżka lub marker>`, `task lints:backend:ruff`, `task lints:backend:ruff:check`, `task lints:backend:typecheck`.
+- W CI i przy review preferuj `task lints:backend:ruff:check`, bo nie modyfikuje plików.
 
 ### Docker Compose — kontenery backendu
 

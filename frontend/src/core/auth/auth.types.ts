@@ -1,104 +1,49 @@
-import type { AuthenticatedResponse } from "@api/generated/auth/schemas/authenticatedResponse";
-import type { AuthenticationResponse } from "@api/generated/auth/schemas/authenticationResponse";
+export type AuthFlow = {
+  id: string;
+  providers?: string[];
+};
 
-// ─── MFA ────────────────────────────────────────────────────────────────────
-export type MfaMethod = "totp" | "recovery_codes" | "webauthn";
-
-// ─── Allauth Flows ───────────────────────────────────────────────────────────
-export type AuthFlowId =
-  | "login"
-  | "signup"
-  | "provider_redirect"
-  | "provider_token"
-  | "provider_signup"
-  | "login_by_code"
-  | "verify_email"
-  | "verify_phone"
-  | "mfa_authenticate"
-  | "mfa_reauthenticate"
-  | "mfa_trust"
-  | "reauthenticate"
-  | (string & {});
-
-export interface AuthFlow {
-  id: AuthFlowId;
-  [key: string]: unknown;
-}
-
-// ─── Typ klienta allauth ─────────────────────────────────────────────────────
-export type AllauthClient = "app" | "browser";
-
-// ─── Odpowiedź session (raw) ────────────────────────────────────────────────
-export type AuthSessionResponse =
-  | AuthenticatedResponse
-  | AuthenticationResponse;
-
-/**
- * `undefined` → jeszcze nie sprawdzono sesji
- * `null`      → sprawdzono, ale brak ważnej sesji (np. 410 / wylogowany)
- */
-export type AuthSessionState = AuthSessionResponse | null | undefined;
-
-// ─── Stan globalny auth ──────────────────────────────────────────────────────
-export interface AuthState {
-  session: AuthSessionState;
-}
-
-// ─── Dane logowania ──────────────────────────────────────────────────────────
-export interface LoginCredentials {
+export type AllauthUser = {
+  id: number;
+  display: string;
   email: string;
-  password: string;
-}
+  has_usable_password: boolean;
+};
 
-// ─── Dane rejestracji ────────────────────────────────────────────────────────
-export interface RegisterProfileData {
-  firstName?: string;
-  lastName?: string;
-  dateOfBirth?: string | null;
-  phoneNumber?: string;
-}
+export type AllauthBody = {
+  status: number;
+  data?: {
+    user?: AllauthUser;
+    flows?: AuthFlow[];
+    methods?: unknown[];
+  };
+  meta: {
+    is_authenticated: boolean;
+    session_token?: string;
+  };
+};
 
-export interface RegisterAddressData {
-  street?: string;
-  street2?: string;
-  city?: string;
-  state?: string;
-  postalCode?: string;
-  country?: string;
-  isDefault?: boolean;
-}
+export type AuthState =
+  | { status: "authenticated"; user: AllauthUser; flows: AuthFlow[] }
+  | { status: "unauthenticated"; flows: AuthFlow[] }
+  | { status: "mfa_required"; flows: AuthFlow[] }
+  | { status: "email_verification_required"; flows: AuthFlow[] };
 
 /**
- * Kompletne dane rejestracji: allauth signup + opcjonalny profil + opcjonalny adres.
+ * Sprawdza, czy nieznana odpowiedź wygląda jak body allauth.
  *
- * Uwaga: allauth SignupBody używa pojedynczego pola `password` (nie password1/password2).
- * Walidacja potwierdzenia hasła powinna odbyć się po stronie UI.
+ * Dlaczego istnieje:
+ * granica z backendem nie powinna przepuszczać `any` do rdzenia auth.
  */
-export interface RegisterPayload {
-  // allauth fields
-  email: string;
-  password: string;
-  // fork-join profile (opcjonalne pola po stronie API są optional)
-  profile?: RegisterProfileData;
-  // fork-join address (całość opcjonalna)
-  address?: RegisterAddressData;
-}
+export function isAllauthBody(value: unknown): value is AllauthBody {
+  if (!value || typeof value !== "object") return false;
 
-// ─── Zmiana hasła ────────────────────────────────────────────────────────────
-export interface ChangePasswordPayload {
-  currentPassword: string;
-  newPassword: string;
-  newPasswordConfirm: string;
-}
+  const body = value as Record<string, unknown>;
+  const meta = body.meta as Record<string, unknown> | undefined;
 
-// ─── Reset hasła ─────────────────────────────────────────────────────────────
-export interface RequestPasswordResetPayload {
-  email: string;
-}
-
-export interface ConfirmPasswordResetPayload {
-  /** Klucz z e-maila resetującego hasło */
-  key: string;
-  /** Nowe hasło */
-  password: string;
+  return (
+    typeof body.status === "number" &&
+    !!meta &&
+    typeof meta.is_authenticated === "boolean"
+  );
 }

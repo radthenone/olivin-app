@@ -1,11 +1,20 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Any, Dict, cast
 
 import pytest
 
 from apps.accounts.serializers import ProfileSerializer
 from tests.factories.accounts import ProfileFactory, UserFactory
+
+
+def subtract_years(value: date, years: int) -> date:
+    """Zwraca datę przesuniętą o liczbę lat z obsługą 29 lutego."""
+    try:
+        return value.replace(year=value.year - years)
+    except ValueError:
+        return value.replace(year=value.year - years, day=28)
 
 
 @pytest.mark.django_db
@@ -85,3 +94,28 @@ class TestProfileSerializer:
         assert serializer.is_valid(), serializer.errors
         validated_data = cast(Dict[str, Any], serializer.validated_data)
         assert validated_data["first_name"] == "Nowe"
+
+    def test_date_of_birth_nie_moze_byc_dla_niepelnoletniego(self):
+        """Data urodzenia nie powinna pozwalać na profil osoby niepełnoletniej."""
+        profile = ProfileFactory()
+        underage_date = subtract_years(date.today(), 17)
+        serializer = ProfileSerializer(
+            profile,
+            data={"date_of_birth": underage_date.isoformat()},
+            partial=True,
+        )
+
+        assert not serializer.is_valid()
+        assert "date_of_birth" in serializer.errors
+
+    def test_date_of_birth_moze_byc_dla_pelnoletniego(self):
+        """Data urodzenia osoby pełnoletniej powinna przejść walidację."""
+        profile = ProfileFactory()
+        adult_date = subtract_years(date.today(), 18)
+        serializer = ProfileSerializer(
+            profile,
+            data={"date_of_birth": adult_date.isoformat()},
+            partial=True,
+        )
+
+        assert serializer.is_valid(), serializer.errors

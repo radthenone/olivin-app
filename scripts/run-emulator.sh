@@ -22,7 +22,7 @@ export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
 function wait_for_adb() {
     local timeout=300
     local elapsed=0
-    local interval=15
+    local interval=5
 
     # Logi idą na stderr żeby nie psuć podstawienia $()
     echo "Czekam aż emulator pojawi się w ADB (max ${timeout}s)..." >&2
@@ -34,6 +34,14 @@ function wait_for_adb() {
             echo "$serial"  # jedyna linia na stdout
             return 0
         fi
+
+        local offline_serial
+        offline_serial=$(adb devices | awk '/emulator/ && /offline/ {print $1; exit}' || true)
+        if [ -n "$offline_serial" ]; then
+            echo "Emulator jest w ADB, ale ma status offline: $offline_serial. Próbuję odświeżyć połączenie..." >&2
+            adb reconnect offline >/dev/null 2>&1 || true
+        fi
+
         sleep $interval
         elapsed=$((elapsed + interval))
         echo "  ...czekam na emulator w ADB ($elapsed/${timeout}s)" >&2
@@ -75,8 +83,17 @@ function wait_for_boot() {
 function run-emulator() {
     local avd_name="${1:-S23}"
 
-    echo "Uruchamiam emulator: $avd_name..."
-    emulator -avd "$avd_name" -no-snapshot-load > /dev/null 2>&1 &
+    adb start-server >/dev/null 2>&1 || true
+
+    local existing_device
+    existing_device=$(adb devices | awk '/emulator/ && /device/ {print $1; exit}' || true)
+
+    if [ -n "$existing_device" ]; then
+        echo "Emulator już działa w ADB: $existing_device"
+    else
+        echo "Uruchamiam emulator: $avd_name..."
+        emulator -avd "$avd_name" -no-snapshot-load > /dev/null 2>&1 &
+    fi
 
     local serial
     serial=$(wait_for_adb)

@@ -45,4 +45,3 @@ REST_FRAMEWORK = {
     "DEFAULT_VERSION": os.environ.get("EXPO_PUBLIC_VERSION", "v1"),
     "ALLOWED_VERSIONS": tuple(os.environ.get("EXPO_PUBLIC_VERSIONS", "v1").split(",")),
 }
-

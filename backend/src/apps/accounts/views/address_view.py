@@ -30,17 +30,29 @@ class AddressViewSet(viewsets.ModelViewSet):
     serializer_class = AddressSerializer
 
     def get_queryset(self):
-        return Address.objects.filter(user=self.request.user)
+        return Address.objects.filter(profile__user=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        profile = getattr(self.request.user, "profile", None)
+
+        if profile is None:
+            raise ValidationError("User profile does not exist")
+
+        serializer.save(profile=profile)
 
     @action(detail=True, methods=["patch"], url_path="set-default")
     def set_default(self, request, pk=None):
-        Address.objects.filter(user=request.user).update(is_default=False)
         address = self.get_object()
+
         if address.is_default:
-            raise ValidationError("Address is already set as default")
+            return Response(
+                self.get_serializer(address).data,
+                status=status.HTTP_200_OK,
+            )
+
+        Address.objects.filter(profile__user=request.user).exclude(
+            pk=address.pk,
+        ).update(is_default=False)
         address.is_default = True
         address.save()
         return Response(self.get_serializer(address).data, status=status.HTTP_200_OK)

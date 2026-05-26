@@ -33,6 +33,8 @@ includes:
     packages: ./taskfiles/packages.yml
     ovral: ./taskfiles/ovral.yml
     test: ./taskfiles/test.yml
+    lints: ./taskfiles/lints.yml
+    precommit: ./taskfiles/precommit.yml
 
 tasks:
     default:

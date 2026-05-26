@@ -31,6 +31,9 @@ To ważne, bo nie należy traktować go jak zwykłej aplikacji React SPA działa
 - `frontend/src/api/` — klient i typy oparte o kontrakt API,
 - `frontend/src/ui/` — współdzielone komponenty UI.
 
+Potwierdzone podobszary w `frontend/src/core/` obejmują m.in. `auth`, `config`, `http`, `logger`, `navigation`, `query`, `styles` i `theme`.
+Potwierdzone moduły funkcjonalne obejmują m.in. `account`, `auth` i `profile`.
+
 ### Zasady pracy na frontendzie
 
 - Server state powinien być prowadzony przez TanStack Query.
@@ -48,6 +51,9 @@ Backend znajduje się w `backend/` i jest oparty o Django + DRF.
 - `backend/src/core/` — konfiguracja i infrastruktura,
 - `backend/src/apps/` — moduły domenowe,
 - `backend/src/common/` — elementy współdzielone,
+- `backend/src/tests/` — testy backendu.
+
+Potwierdzone aplikacje domenowe obejmują m.in. `accounts`, `analytics`, `categories`, `discounts`, `inventory`, `notifications`, `orders`, `payments`, `products`, `reviews` i `shipping`.
 
 ### Zasady pracy na backendzie
 
@@ -74,3 +80,23 @@ Najważniejsza zasada:
 - Jeśli czegoś nie potwierdza repo, nie zakładaj tego jako faktu.
 - Odpowiedzi techniczne i docstringi powinny być po polsku.
 - Nazewnictwo techniczne w kodzie pozostaje po angielsku.
+
+## Komendy i jakość
+
+Źródłem prawdy dla komend jest `Taskfile.yml` oraz pliki w `taskfiles/`.
+Nie proponuj surowych komend, jeśli istnieje odpowiedni task.
+
+Najważniejsze kontrole:
+
+- `task test:backend-local -- <ścieżka>`,
+- `task lints:backend:ruff:check`,
+- `task lints:backend:typecheck`,
+- `task lints:frontend:lint:check`,
+- `task lints:frontend:typecheck`,
+- `task lints:frontend:format:check`.
+
+Po zmianach API:
+
+1. Zaktualizuj backend i schemę.
+2. Uruchom `task ovral:generate`.
+3. Uruchom `task lints:frontend:typecheck`.

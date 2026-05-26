@@ -14,8 +14,7 @@ def get_stale_unverified_users_queryset() -> QuerySet:
     )
 
     return (
-        user_model.objects
-        .filter(
+        user_model.objects.filter(
             last_login__isnull=True,
             is_superuser=False,
             is_staff=False,

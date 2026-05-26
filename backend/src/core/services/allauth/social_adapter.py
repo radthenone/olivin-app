@@ -1,18 +1,39 @@
+from typing import Any, cast
+
 from allauth.account.internal.emailkit import valid_email_or_none
 from allauth.account.utils import user_email, user_field
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.socialaccount.models import SocialLogin
+from django.db import transaction
+
+from apps.accounts.models import CustomUser
+from apps.accounts.services import ensure_profile_for_user
 
 
 class SocialAccountAdapter(DefaultSocialAccountAdapter):
-    def populate_user(self, request, sociallogin, data):
+    def save_user(self, request, sociallogin, form=None):
+        """Zapisuje social signup i zakłada powiązany profil."""
+        with transaction.atomic():
+            user = super().save_user(request, sociallogin, form)
+            ensure_profile_for_user(user)
+            return user
+
+    def populate_user(
+        self,
+        request: Any,
+        sociallogin: SocialLogin,
+        data: dict[str, Any],
+    ) -> CustomUser:
         first_name = data.get("first_name")
         last_name = data.get("last_name")
         email = data.get("email")
         name = data.get("name", "")
-        user = sociallogin.user
+        if sociallogin.user is None:
+            raise ValueError("SocialLogin nie zawiera użytkownika do uzupełnienia.")
 
-        user.username = None
+        user = cast(CustomUser, sociallogin.user)
+
+        user_field(user, "username", None)
         user_email(user, valid_email_or_none(email) or "")
         name_parts = (name or "").partition(" ")
         user_field(user, "first_name", first_name or name_parts[0])

@@ -1,6 +1,7 @@
 """
 Database configuration.
 """
+
 import os
 
 DATABASES = {

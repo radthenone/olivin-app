@@ -1,4 +1,4 @@
-root = true
+root = false
 
 [*]
 charset = utf-8
@@ -20,4 +20,3 @@ indent_size = 2
 
 [*.md]
 trim_trailing_whitespace = false
-

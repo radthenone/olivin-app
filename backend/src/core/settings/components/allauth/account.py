@@ -15,6 +15,7 @@ ACCOUNT_PREVENT_ENUMERATION = True
 ACCOUNT_SESSION_REMEMBER = True
 
 ACCOUNT_ADAPTER = "core.services.mail.AsyncAccountAdapter"
+ACCOUNT_FORMS = {"signup": "core.services.allauth.forms.SignupWithProfileForm"}
 
 ACCOUNT_RATE_LIMITS = {
     "login": "10/m/ip",

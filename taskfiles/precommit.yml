@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
+
+tasks:
+    install:
+        desc: Install pre-commit hooks
+        cmds:
+            - uvx pre-commit install
+
+    run:
+        desc: Run pre-commit hooks against staged files
+        cmds:
+            - uvx pre-commit run
+
+    run:all:
+        desc: Run pre-commit hooks against all files
+        cmds:
+            - uvx pre-commit run --all-files
+
+    uninstall:
+        desc: Uninstall pre-commit hooks
+        cmds:
+            - uvx pre-commit uninstall

@@ -3,10 +3,8 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "lan": "expo start --lan",
-    "free-cache": "expo start --lan --clear",
-    "tunnel": "expo start --tunnel",
     "lint": "expo lint",
+    "typecheck": "tsc --noEmit",
     "api:generate": "orval",
     "api:generate:watch": "orval --watch"
   },
@@ -22,13 +20,16 @@
     "dotenv": "^17.2.3",
     "dotenv-expand": "^12.0.3",
     "expo": "~54.0.13",
+    "expo-auth-session": "~7.0.11",
     "expo-constants": "~18.0.9",
+    "expo-crypto": "~15.0.9",
+    "expo-dev-client": "~6.0.21",
     "expo-font": "~14.0.9",
     "expo-haptics": "~15.0.7",
     "expo-image": "~3.0.9",
     "expo-linking": "~8.0.8",
     "expo-router": "~6.0.11",
-    "expo-secure-store": "^55.0.8",
+    "expo-secure-store": "~15.0.8",
     "expo-splash-screen": "~31.0.10",
     "expo-status-bar": "~3.0.8",
     "expo-symbols": "~1.0.7",
@@ -52,7 +53,6 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "@pack/logger": "git+https://github.com/radthenone/pack-logger.git#v0.1.3",
     "@tanstack/react-query-devtools": "^5.91.3",
     "@types/react": "~19.1.0",
     "@types/react-native": "^0.72.8",
@@ -64,11 +64,11 @@
     "eslint-import-resolver-babel-module": "^5.3.2",
     "orval": "^8.5.2",
     "prettier": "^3.7.1",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "ws": "^8.19.0"
   },
   "private": true,
   "trustedDependencies": [
-    "@pack/logger",
     "esbuild",
     "unrs-resolver"
   ]

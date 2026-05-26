@@ -1,44 +1,48 @@
-# Projekt
+# Szybki Start
 
-## Konfiguracja
+Ten plik jest krótką ściągą. Pełniejszy opis znajduje się w `README.md`.
 
-### backend
+## Instalacja zależności
 
 ```bash
-cd backend
-uv sync --all-extras
-uv pip install "pack-logger[django] @ git+https://github.com/radthenone/pack-logger.git@v0.1.0#subdirectory=backend"
-docker-compose --profile backend up --build -d
+cp .env.example .env
+task packages:backend:sync
+task packages:frontend:sync
 ```
 
-### frontend
+## Backend
 
 ```bash
-cd frontend
-bun add "git+https://github.com/radthenone/pack-logger.git#v0.1.0"
-bun install
+task backend:build
+task db:migrate
+task backend:logs
 ```
 
-## Uruchomienie
-
-### backend
+## Frontend
 
 ```bash
-make backend
+task frontend:run
 ```
 
-### android
+Wyczyść cache Metro:
 
 ```bash
-przed uruchomieniem uruchom emulator android
-avdmanager list avd # lista emulatorów
-emulator -avd <nazwa_emulatora_z_listy> # najczesciej S23 S23-Ultra
-#wtedy
-make android
+task frontend:run:clear
 ```
 
-### frontend
+## Android
 
 ```bash
-make web
+task emulator:run -- S23
+task frontend:run -- emulator-5554
+```
+
+## Kontrole
+
+```bash
+task test:backend-local -- src/ -m "not integration"
+task lints:backend:ruff:check
+task lints:backend:typecheck
+task lints:frontend:lint
+task lints:frontend:typecheck
 ```

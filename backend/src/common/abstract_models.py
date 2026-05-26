@@ -1,4 +1,3 @@
-
 import uuid
 
 from django.db import models
@@ -6,6 +5,7 @@ from django.db import models
 
 class TimestampedModel(models.Model):
     """Abstract base model that provides timestamp fields."""
+
     id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,

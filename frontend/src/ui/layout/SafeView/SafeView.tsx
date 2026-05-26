@@ -1,23 +1,23 @@
-import React from "react";
+import type { PropsWithChildren } from "react";
 import { View, type ViewProps } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { cn } from "lib";
+import { cn } from "@core/styles/cn";
 
 type Edge = "top" | "bottom" | "left" | "right";
 
-export interface SafeViewProps extends ViewProps {
-  children: React.ReactNode;
-  edges?: Edge[];
-  className?: string;
-}
+type SafeViewProps = PropsWithChildren<
+  ViewProps & {
+    edges?: Edge[];
+    className?: string;
+  }
+>;
 
 /**
- * Komponent SafeView to wrapper ekranu uwzględniający bezpieczne obszary urządzenia.
- * Domyślnie dodaje padding tylko dla górnej i dolnej krawędzi (notch, navigation bar).
+ * Kontener uwzględniający bezpieczne obszary ekranu na native.
  *
- * @param edges - Krawędzie, dla których ma być dodany padding (domyślnie ["top", "bottom"])
- * @param className - Dodatkowe klasy CSS
- * @param children - Zawartość ekranu
+ * Dlaczego istnieje:
+ * stary działający layout owijał stack na Androidzie w taki wrapper,
+ * co stabilizuje pozycjonowanie treści i natywnych overlayów Expo.
  */
 export function SafeView({
   children,
@@ -30,9 +30,11 @@ export function SafeView({
 
   return (
     <View
+      className={cn("flex-1", className)}
       style={[
         {
           flex: 1,
+          backgroundColor: "#ffffff",
           paddingTop: edges.includes("top") ? insets.top : 0,
           paddingBottom: edges.includes("bottom") ? insets.bottom : 0,
           paddingLeft: edges.includes("left") ? insets.left : 0,
@@ -40,7 +42,6 @@ export function SafeView({
         },
         style,
       ]}
-      className={cn("flex-1", className)}
       {...props}
     >
       {children}

@@ -6,60 +6,26 @@
     "moduleSuffixes": [".native", ".web", ""],
     "baseUrl": ".",
     "paths": {
-      "@app": [
-        "./app"
-      ],
-      "@app/*": [
-        "./app/*"
-      ],
-      "@assets/": [
-        "./assets"
-      ],
-      "@assets/*": [
-        "./assets/*"
-      ],
-      "@lib": [
-        "lib"
-      ],
-      "@lib/*": [
-        "lib/*"
-      ],
-      "@styles": [
-        "styles"
-      ],
-      "@styles/*": [
-        "styles/*"
-      ],
-      "@core": [
-        "./src/core/"
-      ],
-      "@core/*": [
-        "./src/core/*"
-      ],
-      "@http": [
-        "./src/core/api/"
-      ],
-      "@http/*": [
-        "./src/core/api/*"
-      ],
-      "@features": [
-        "./src/features/"
-      ],
-      "@features/*": [
-        "./src/features/*"
-      ],
-      "@ui": [
-        "./src/ui/"
-      ],
-      "@ui/*": [
-        "./src/ui/*"
-      ],
-      "@api": [
-        "./src/api/"
-      ],
-      "@api/*": [
-        "./src/api/*"
-       ]
+      "@app": ["./app"],
+      "@app/*": ["./app/*"],
+      "@assets/": ["./assets"],
+      "@assets/*": ["./assets/*"],
+      "@lib": ["lib"],
+      "@lib/*": ["lib/*"],
+      "@styles": ["styles"],
+      "@styles/*": ["styles/*"],
+      "@core": ["./src/core/"],
+      "@core/*": ["./src/core/*"],
+      "@config": ["./src/core/config/"],
+      "@config/*": ["./src/core/config/*"],
+      "@http": ["./src/core/http/"],
+      "@http/*": ["./src/core/http/*"],
+      "@features": ["./src/features/"],
+      "@features/*": ["./src/features/*"],
+      "@ui": ["./src/ui/"],
+      "@ui/*": ["./src/ui/*"],
+      "@api": ["./src/api/"],
+      "@api/*": ["./src/api/*"]
     }
   },
   "include": [
@@ -78,6 +44,8 @@
   "exclude": [
     "../packages/**/frontend/node_modules/**",
     "../packages/**/frontend/dist/**",
-    "node_modules"
+    "node_modules",
+    "_old",
+    "_learning"
   ]
 }

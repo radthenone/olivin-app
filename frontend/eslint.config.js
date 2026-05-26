@@ -55,6 +55,7 @@ module.exports = defineConfig([
       "orval.config.js",
       "eslint.config.js",
       "load-env.js",
+      "src/api/generated/**",
     ],
   },
 ]);

@@ -1,32 +1,26 @@
-import { Text, View } from "react-native";
-import { cn, ps } from "@lib";
-import { Container } from "@ui";
+import { Redirect } from "expo-router";
+import { useAuthContext } from "@core/auth/auth.provider";
 
-export default function HomeScreen() {
-  return (
-    <>
-      <View className={cn("flex-1", ps({ web: "p-2", native: "p-2" }))}>
-        <Text>Home</Text>
-        <Container
-          direction="row"
-          platform="web"
-          gap={4}
-          align="center"
-          justify="between"
-        >
-          <Text>Web</Text>
-        </Container>
-        <Container
-          direction="row"
-          platform="native"
-          gap={4}
-          align="center"
-          justify="center"
-          className="p-4 bg-gray-200 rounded"
-        >
-          <Text>Native</Text>
-        </Container>
-      </View>
-    </>
-  );
+/**
+ * Wejściowa trasa aplikacji.
+ *
+ * Dlaczego istnieje:
+ * Expo Router potrzebuje index route, a właściwy ekran zależy od sesji.
+ */
+export default function IndexRoute() {
+  const auth = useAuthContext();
+
+  if (auth.isAuthenticated) {
+    return <Redirect href="/home" />;
+  }
+
+  if (auth.isMfaRequired) {
+    return <Redirect href="/mfa" />;
+  }
+
+  if (auth.isEmailVerificationRequired) {
+    return <Redirect href="/verify-email" />;
+  }
+
+  return <Redirect href="/login" />;
 }

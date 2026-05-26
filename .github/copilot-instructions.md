@@ -1,135 +1,114 @@
 # GitHub Copilot Instructions for olivin-app
 
-## Główny cel
+## Źródła Prawdy
 
-Pomagaj w pracy nad repozytorium `olivin-app` zgodnie z realną strukturą projektu, zasadami clean architecture i repo-first workflow.
-Jeśli projektujesz większą zmianę lub diagnozujesz obszerny błąd, uwzględnij kontekst zawarty w `docs/ai/architecture.md` oraz `docs/ai/workflow.md`.
+To repo działa w trybie repo-first. Przed techniczną odpowiedzią sprawdź realne pliki i taski.
 
-## Zasady globalne
+Najważniejsze dokumenty:
+
+- `AGENTS.md` — nadrzędne zasady dla agentów AI,
+- `docs/ai/architecture.md` — architektura i odpowiedzialności warstw,
+- `docs/ai/workflow.md` — tryby pracy: bugfix, feature, refactor, documentation/workflow,
+- `.github/instructions/backend.instructions.md` — reguły dla `backend/**`,
+- `.github/instructions/frontend.instructions.md` — reguły dla `frontend/**`,
+- `Taskfile.yml` i `taskfiles/*.yml` — źródło prawdy dla komend.
+
+Jeśli instrukcje są sprzeczne, ważniejszy jest bezpośredni request użytkownika, potem `AGENTS.md`, potem lokalne instrukcje `.github/instructions/*`.
+
+## Język
 
 - Odpowiadaj po polsku.
-- Pisz docstringi po polsku.
-- Nazwy techniczne w kodzie pozostawiaj po angielsku.
-- Najpierw analizuj repo, potem proponuj zmiany.
-- Wskazuj konkretne pliki i ścieżki.
-- Nie zakładaj istnienia plików lub warstw, których nie da się potwierdzić.
-- Nie proponuj dużej przebudowy, jeśli wystarcza poprawka lokalna.
+- Docstringi i komentarze wyjaśniające pisz po polsku.
+- Nazwy techniczne w kodzie zostaw po angielsku.
 
-## Kontekst projektu
+## Projekt
 
-Projekt ma strukturę monorepo z frontendem Expo / React Native oraz backendem Django / DRF.
+`olivin-app` to monorepo:
 
-### Frontend
+- `backend/` — Django + Django REST Framework,
+- `frontend/` — Expo / React Native z Expo Router,
+- `taskfiles/` — komendy developerskie przez Taskfile,
+- `docs/ai/` — dokumentacja dla ludzi i agentów AI.
 
-Pracuj z założeniem, że frontend znajduje się w `frontend/` i używa:
+Frontend nie jest klasycznym React SPA. Nie zakładaj DOM-only API ani komponentów web-only, jeśli repo tego nie potwierdza.
 
-- Expo Router,
-- TanStack Query,
-- Zustand,
-- React Hook Form,
-- Zod,
-- Axios,
-- Orval,
-- NativeWind.
+## Backend
 
-W praktyce:
+Główne katalogi:
 
-- `frontend/app/` obsługuje routing i layouty,
-- `frontend/src/core/` zawiera fundamenty techniczne,
-- `frontend/src/features/` zawiera logikę funkcjonalną,
-- `frontend/src/api/` odpowiada za kontrakty i klienty,
-- `frontend/src/ui/` zawiera współdzielone UI.
+- `backend/src/core/` — konfiguracja, settings, urls, celery, infrastruktura,
+- `backend/src/apps/` — domeny biznesowe,
+- `backend/src/common/` — współdzielone abstrakcje,
+- `backend/src/tests/` — testy.
 
-### Backend
+Zasady:
 
-Pracuj z założeniem, że backend znajduje się w `backend/` i używa:
+- Widoki i viewsety powinny być cienkie.
+- Logika biznesowa nie powinna być rozlana po modelach, serializerach i widokach naraz.
+- Pilnuj walidacji, permissions, atomowości, side effectów i ryzyka N+1.
+- Po zmianie API uwzględnij schema, Orval i frontendowy typecheck.
 
-- Django,
-- Django REST Framework,
-- allauth,
-- SimpleJWT,
-- Celery,
-- Redis,
-- Stripe,
-- drf-spectacular,
-- pytest,
-- ruff.
+## Frontend
 
-W praktyce:
+Główne katalogi:
 
-- `backend/src/core/` zawiera konfigurację i infrastrukturę,
-- `backend/src/apps/` zawiera moduły domenowe,
-- `backend/src/common/` zawiera elementy współdzielone,
+- `frontend/app/` — routing i layouty Expo Router,
+- `frontend/src/core/` — auth, config, http, query, theme, navigation,
+- `frontend/src/features/` — moduły funkcjonalne,
+- `frontend/src/api/` — klienty i typy generowane,
+- `frontend/src/ui/` — współdzielone UI.
 
-## Zasady implementacyjne
+Zasady:
 
-### Frontend
+- TanStack Query służy do server state.
+- Zustand służy tylko do local/app state.
+- Nie wywołuj API bezpośrednio w dużych komponentach ekranowych, jeśli logika powinna być w hooku, serwisie albo warstwie feature.
+- Nie edytuj ręcznie `frontend/src/api/generated/**`.
+- Różnice web/native rozwiązuj przez pliki `.web/.native` albo helpery w `frontend/src/ui/platform/`.
 
-- TanStack Query stosuj do server state.
-- Zustand stosuj wyłącznie do local/app state.
-- Nie przechowuj danych serwerowych w Zustand bez mocnego uzasadnienia.
-- Nie mieszaj routingu, zapytań i UI w jednym miejscu, jeśli można to rozdzielić.
-- Preferuj `async/await`.
-- Używaj debounce do searcha, filtrów i wejść powodujących nadmiarowe requesty.
-- Używaj lazy loading tam, gdzie faktycznie poprawia performance.
-- Dbaj o stabilność hooków i unikaj zbędnych re-renderów.
+## Komendy
 
-### Backend
+Zawsze najpierw sprawdź `Taskfile.yml` i właściwy plik w `taskfiles/`.
+Preferuj `task <namespace>:<nazwa>` zamiast surowych wywołań.
+Argumenty przekazuj po `--`.
 
-- Trzymaj widoki cienkie.
-- Logikę biznesową trzymaj poza widokami.
-- Nie rozlewaj odpowiedzialności po modelach, serializerach i viewsetach naraz.
-- Pilnuj walidacji, permissions, bezpieczeństwa i atomowości operacji.
-- Uważaj na wydajność zapytań ORM.
-- Jeśli zmieniasz API, sprawdź wpływ na schema i frontendowy klient.
+Najczęstsze taski:
 
-## Komendy — Taskfile i bash
+- `task backend:run`
+- `task backend:build`
+- `task db:migrate`
+- `task test:backend-local -- <ścieżka>`
+- `task test:backend`
+- `task lints:backend:ruff`
+- `task lints:backend:ruff:check`
+- `task lints:backend:typecheck`
+- `task frontend:run`
+- `task frontend:run:clear`
+- `task lints:frontend:lint`
+- `task lints:frontend:lint:check`
+- `task lints:frontend:typecheck`
+- `task lints:frontend:format`
+- `task lints:frontend:format:check`
+- `task ovral:generate`
 
-Gdy proponujesz komendę do wykonania, **zawsze najpierw sprawdź Taskfile** w root repo.
-Preferuj `task <namespace>:<nazwa>` zamiast surowych wywołań docker/bash.
+Komendy shellowe w projekcie zapisuj w bash, nie w PowerShell.
 
-Dostępne namespace'y:
+## Kontrakt API
 
-- `backend` — build, run, logs, clean-docker,
-- `db` — migracje (migrate, make, rollback, reset, clean),
-- `test` — backend, backend-cmd, backend-watch, backend-down,
-- `shell` — Django shell (run, run:plus),
-- `frontend` — run, rebuild,
-- `packages` — dodawanie/usuwanie paczek frontend i backend,
-- `ovral` — generowanie klientów API,
-- `emulator` — Android emulator.
+Jeśli zmieniasz serializer, viewset, URL, schema endpointu albo strukturę odpowiedzi:
 
-Argumenty do tasków przekazuj po `--`, np. `task db:migrations:make -- accounts`.
+1. Oceń wpływ na `backend/src/schema.yaml`.
+2. Uruchom lub zaplanuj `task ovral:generate`.
+3. Uruchom lub zaplanuj `task lints:frontend:typecheck`.
 
-Komendy shellowe pisz w składni **bash** (nie PowerShell).
+## Styl Odpowiedzi
 
-### Kontenery Docker Compose
+Przy pytaniach technicznych:
 
-| Kontener | Rola | Profile |
-|----------|------|---------|
-| `olivin-postgres` | PostgreSQL 16 | `dev`, `backend`, `full`, `local` |
-| `olivin-redis` | Cache / broker | `dev`, `backend`, `full`, `local`, `test` |
-| `olivin-minio` | S3 storage | `dev`, `backend`, `full`, `local`, `test` |
-| `olivin-mailhog` | Lokalny SMTP | `dev`, `backend`, `full`, `local` |
-| `olivin-django` | Django / DRF | `dev`, `backend`, `full` |
-| `olivin-celery-worker` | Celery worker | `dev`, `backend`, `full`, `celery` |
-| `olivin-celery-beat` | Celery beat | `dev`, `backend`, `full`, `celery` |
-| `olivin-celery-flower` | Flower UI | `dev`, `backend`, `full`, `celery` |
+1. Wskaż powiązane pliki.
+2. Podaj krótką diagnozę.
+3. Wypisz ryzyka lub ograniczenia.
+4. Zaproponuj plan albo wykonaj małą, lokalną zmianę.
+5. Napisz, czego nie udało się potwierdzić.
 
-## Styl odpowiedzi
-
-Jeśli analizujesz kod lub architekturę:
-
-1. najpierw wskaż pliki,
-2. potem opisz diagnozę,
-3. potem podaj ryzyka,
-4. na końcu zaproponuj plan zmian.
-
-## Styl kodu
-
-- Clean code.
-- Czytelne nazwy.
-- Małe moduły.
-- Silne typowanie.
-- Minimalna potrzebna abstrakcja.
-- Bez ukrytych side effectów.
+Nie zakładaj istnienia warstw, plików ani wzorców, których repo nie potwierdza.

@@ -27,7 +27,6 @@ from drf_spectacular.views import (
 from core.utils import (
     AllauthRedocView,
     AllauthSwaggerView,
-    CsrfViewSet,
     HealthCheckView,
 )
 

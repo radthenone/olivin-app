@@ -7,6 +7,8 @@ vars:
 
 tasks:
     run:
-        desc: Run Android Emulator
+        desc: Run Android Emulator (task emulator:run -- S23)
+        vars:
+            AVD_NAME: '{{default .AVD_NAME .CLI_ARGS}}'
         cmds:
             - bash -lc './scripts/run-emulator.sh {{.AVD_NAME}}'

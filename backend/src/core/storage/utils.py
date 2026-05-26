@@ -70,7 +70,9 @@ def sync_buckets(buckets_names: str) -> SyncResult:
             result.created.append(bucket_name)
         except Exception as exc:
             result.success = False
-            result.errors.append(f"Nie udało się utworzyć bucketu '{bucket_name}': {exc}")
+            result.errors.append(
+                f"Nie udało się utworzyć bucketu '{bucket_name}': {exc}"
+            )
 
     # Usuń buckety których nie ma na liście
     for bucket_name in existing_buckets - expected_buckets:

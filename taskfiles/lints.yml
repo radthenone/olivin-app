@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
+
+tasks:
+    backend:ruff:
+        desc: Lint backend with Ruff and apply safe fixes, then format code
+        dir: backend
+        cmds:
+            - uv run ruff check . --fix {{.CLI_ARGS}}
+            - uv run ruff format .
+    backend:ruff:check:
+        desc: Check backend with Ruff without modifying files
+        dir: backend
+        cmds:
+            - uv run ruff check . {{.CLI_ARGS}}
+            - uv run ruff format . --check
+    backend:typecheck:
+        desc: Check Python typing with MyPy
+        dir: backend
+        cmds:
+            - uv run mypy .
+    frontend:lint:
+        desc: Lint Expo app
+        dir: frontend
+        vars:
+            FIX: '{{default "--fix" .CLI_ARGS}}'
+        cmds:
+            - bun run lint {{.FIX}}
+    frontend:lint:check:
+        desc: Check Expo app lint without modifying files
+        dir: frontend
+        cmds:
+            - bun run lint
+    frontend:typecheck:
+        desc: Type-check Expo app
+        dir: frontend
+        cmds:
+            - bun run typecheck
+    frontend:format:
+        desc: Format Expo app codebase using Prettier
+        dir: frontend
+        cmds:
+            # Flaga --write sama zmodyfikuje pliki, a --check sprawdzi czy poprawki są konieczne
+            - bunx prettier --write "**/*.{ts,tsx,js,jsx,json,css,md}"
+    frontend:format:check:
+        desc: Check Expo app formatting with Prettier
+        dir: frontend
+        cmds:
+            - bunx prettier --check "**/*.{ts,tsx,js,jsx,json,css,md}"

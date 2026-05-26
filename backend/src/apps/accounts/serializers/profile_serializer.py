@@ -1,3 +1,5 @@
+from datetime import date
+
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import serializers
 
@@ -13,6 +15,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = [
+            "id",
             "email",
             "first_name",
             "last_name",
@@ -22,10 +25,27 @@ class ProfileSerializer(serializers.ModelSerializer):
             "phone_number",
             "role",
         ]
-        read_only_fields = ["email", "role"]
+        read_only_fields = ["id", "email", "role"]
 
     def get_full_name(self, obj: Profile) -> str:
         return obj.full_name
 
     def get_age(self, obj: Profile) -> int | None:
         return obj.age
+
+    def validate_date_of_birth(self, value: date | None) -> date | None:
+        """Waliduje, że klient ma ukończone 18 lat."""
+        if value is None:
+            return value
+
+        today = date.today()
+
+        try:
+            adult_birth_date = today.replace(year=today.year - 18)
+        except ValueError:
+            adult_birth_date = today.replace(year=today.year - 18, day=28)
+
+        if value > adult_birth_date:
+            raise serializers.ValidationError("Użytkownik musi mieć ukończone 18 lat.")
+
+        return value

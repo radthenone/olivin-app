@@ -1,0 +1,27 @@
+minimum_pre_commit_version: "3.0.0"
+
+repos:
+    - repo: local
+      hooks:
+          - id: backend-ruff-fix
+            name: Backend Ruff lint + format
+            entry: scripts/precommit-backend-ruff.sh
+            language: system
+            pass_filenames: true
+            files: ^backend/.*\.py$
+
+          - id: frontend-eslint-fix
+            name: Frontend ESLint
+            entry: scripts/precommit-frontend-eslint.sh
+            language: system
+            pass_filenames: true
+            files: ^frontend/.*\.(js|jsx|ts|tsx)$
+            exclude: ^frontend/src/api/generated/
+
+          - id: frontend-prettier
+            name: Frontend Prettier
+            entry: scripts/precommit-frontend-prettier.sh
+            language: system
+            pass_filenames: true
+            files: ^frontend/.*\.(js|jsx|ts|tsx|json|css|md)$
+            exclude: ^frontend/src/api/generated/

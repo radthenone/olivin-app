@@ -1,23 +1,18 @@
-import {
-  apiResponse,
-  type ApiError,
-  type ApiRequestConfig,
-} from "@http/client";
+import { httpClient } from "@core/http/client";
+import type { ApiError } from "@core/http/errors";
+import { createAppMutator } from "./create-app-mutator";
 
-export const appInstance = <T>(
-  url: string,
-  options: RequestInit = {},
-): Promise<T> => {
-  const config: ApiRequestConfig = {
-    url,
-    method: options.method,
-    headers: options.headers,
-    body: options.body,
-    signal: options.signal ?? undefined,
-  };
+/**
+ * Mutator wymagany przez Orval dla endpointów aplikacyjnych.
+ *
+ * Dlaczego istnieje:
+ * Orval generuje funkcje endpointów, ale transport należy do naszej aplikacji.
+ */
+const appMutator = createAppMutator(httpClient);
 
-  return apiResponse<T>(config);
-};
+export function appInstance<T>(url: string, options?: RequestInit): Promise<T> {
+  return appMutator<T>(url, options);
+}
 
 export type ErrorType<Error> = ApiError<Error>;
 export type BodyType<BodyData> = BodyData;

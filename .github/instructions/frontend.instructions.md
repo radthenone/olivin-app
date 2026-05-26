@@ -27,6 +27,11 @@ Najważniejsze obszary struktury:
 - Nie proponuj rozwiązań web-only, jeśli nie są zgodne z Expo / React Native.
 - Nie zakładaj DOM-only API, jeśli nie ma potwierdzenia, że dany fragment działa na webie.
 
+## Przy pytaniach do AI o Expo używaj
+
+https://docs.expo.dev/llms.txt
+https://docs.expo.dev/skills/
+
 ## Stan i dane
 
 - TanStack Query służy do server state.
@@ -43,6 +48,12 @@ Najważniejsze obszary struktury:
 - Wspólne fundamenty techniczne trzymaj w `frontend/src/core/`.
 - Wspólne UI trzymaj poza logiką biznesową.
 - Nie wywołuj API bezpośrednio w dużych komponentach ekranowych, jeśli można użyć hooka, modułu api albo warstwy feature.
+- Niskopoziomowe allauth/session/token storage trzymaj w `frontend/src/core/auth/`.
+- Ekrany i hooki flow auth trzymaj w `frontend/src/features/auth/`.
+- Profil, adresy i ustawienia konta użytkownika trzymaj w `frontend/src/features/account/`.
+- Różnice web/native w UI rozwiązuj przez pliki `.web/.native` albo helpery w `frontend/src/ui/platform/`.
+- Nie edytuj ręcznie `frontend/src/api/generated/**`; po zmianie kontraktu API użyj `task ovral:generate`.
+- Dla shadcn-like UI w Expo używaj lokalnych primitives, NativeWind i `class-variance-authority`; nie zakładaj DOM-only komponentów.
 
 ## Formularze i walidacja
 
@@ -57,6 +68,16 @@ Najważniejsze obszary struktury:
 - Używaj lazy loading tam, gdzie ogranicza koszt ciężkich ekranów lub zależności.
 - Uważaj na zbędne re-rendery, niestabilne callbacki i niepotrzebne memo.
 - Nie dodawaj `useMemo` i `useCallback` bez wyraźnego powodu.
+
+## Komendy kontrolne
+
+- Po zmianach frontendowych preferuj `task lints:frontend:typecheck`.
+- Po zmianach w kodzie frontendu preferuj też `task lints:frontend:lint:check`; jeśli chcesz zastosować poprawki automatyczne, użyj `task lints:frontend:lint`.
+- Po zmianach UI lub routingowych preferuj `task frontend:run:clear`, jeśli Metro cache może trzymać stary stan.
+- Po zmianach natywnych albo konfiguracji Expo rozważ `task frontend:prebuild:clean` albo `task frontend:build:android`.
+- Po zmianach kontraktu API preferuj `task ovral:generate`, a potem `task lints:frontend:typecheck`.
+- Do formatowania frontendu używaj `task lints:frontend:format`.
+- Do sprawdzania formatowania bez modyfikowania plików używaj `task lints:frontend:format:check`.
 
 ## Oczekiwany styl odpowiedzi
 

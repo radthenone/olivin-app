@@ -2,8 +2,11 @@ import os
 
 from pack_logger import configure_logging
 
-from core.settings.components.apps import (APPLICATION_APPS, DJANGO_APPS,
-                                           THIRD_PARTY_APPS)
+from core.settings.components.apps import (
+    APPLICATION_APPS,
+    DJANGO_APPS,
+    THIRD_PARTY_APPS,
+)
 from core.settings.components.auth import REST_FRAMEWORK
 from core.settings.components.middleware import MIDDLEWARE as BASE_MIDDLEWARE
 

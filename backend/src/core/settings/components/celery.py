@@ -32,6 +32,6 @@ CELERY_IMPORTS = (
 CELERY_BEAT_SCHEDULE = {
     "cleanup-stale-unverified-users": {
         "task": "core.services.allauth.tasks.cleanup_stale_unverified_users",
-        "schedule": schedule(run_every=timedelta(days=1)), # 1 day
+        "schedule": schedule(run_every=timedelta(days=1)),  # 1 day
     },
 }

@@ -1,216 +1,151 @@
-# Olivin Shop
+# Olivin App
 
-## Instalacja developerska
+`olivin-app` to monorepo full-stack dla aplikacji sklepowej:
 
-### 1. Wymagania wstępne
+- `backend/` — Django + Django REST Framework,
+- `frontend/` — Expo / React Native z Expo Router,
+- `taskfiles/` — główne komendy developerskie przez Taskfile,
+- `docs/ai/` i `.github/instructions/` — instrukcje pracy dla ludzi i agentów AI.
 
-Przed rozpoczęciem zainstaluj:
+## Wymagania
 
-- **Java 17+** — [adoptium.net](https://adoptium.net)
-- **Android SDK cmdline-tools** — [command-tools](https://developer.android.com/studio#command-tools)
-  Pobierz "Command line tools only" → wypakuj do `~/Android/Sdk/cmdline-tools/latest/`
-- **Android SDK manager** - [sdkmanager](developer.android.com/tools/sdkmanager)
+Zainstaluj lokalnie:
+
+- Git,
+- Docker i Docker Compose,
+- Taskfile (`task`),
+- Python zgodny z `.python-version`,
+- `uv`,
+- Bun,
+- Node zgodny z `.nvmrc`,
+- Java 17+ oraz Android SDK, jeśli pracujesz z aplikacją na Androidzie.
+
+Projekt zakłada komendy shellowe w składni bash. Na Windows używaj WSL albo Git Bash.
+
+## Pierwsze uruchomienie
 
 ```bash
-# Zainstaluj narzędzia
-sdkmanager --install "platform-tools" "emulator" "system-images;android-34;google_apis;x86_64"
+cp .env.example .env
+task packages:backend:sync
+task packages:frontend:sync
 ```
+
+Uruchom backend i usługi developerskie:
 
 ```bash
-export ANDROID_HOME="$HOME/AppData/Local/Android/Sdk"
-export PATH="$ANDROID_HOME/emulator:$PATH"
-export PATH="$ANDROID_HOME/platform-tools:$PATH"
-export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+task backend:build
 ```
+
+Uruchom migracje:
 
 ```bash
-# Utwórz AVD
-echo "Tworzę AVD S23..."
-avdmanager create avd \
-    --name "S23" \
-    --package "system-images;android-34;google_apis;x86_64" \
-    --force
+task db:migrate
 ```
 
-#### DO USUNIECIA PONIZEJ
+Uruchom frontend Expo Dev Client:
 
-project-root/
-├── app/ # Expo Router
-│ ├── \_layout.tsx # Root z providers + Zustand hydration
-│ ├── index.tsx # Initial redirect logic
-│ │
-│ ├── (auth)/ # Publiczne - logowanie/rejestracja
-│ │ ├── \_layout.tsx # Stack layout bez protection
-│ │ ├── login.tsx
-│ │ ├── register.tsx
-│ │ ├── forgot-password.tsx
-│ │ ├── google-callback.tsx
-│ │ └── mfa-verify.tsx
-│ │
-│ ├── (shop)/ # Główna aplikacja sklepu
-│ │ ├── \_layout.tsx # Protected layout z redirect
-│ │ ├── \_layout.web.tsx # Desktop layout (header/sidebar/footer)
-│ │ ├── \_layout.native.tsx # Mobile layout
-│ │ │
-│ │ ├── (tabs)/ # Dolny tab bar na mobile
-│ │ │ ├── \_layout.tsx
-│ │ │ ├── index.tsx # Home/Featured products
-│ │ │ ├── categories.tsx # Lista kategorii
-│ │ │ ├── cart.tsx # Koszyk
-│ │ │ └── profile.tsx # Profil użytkownika
-│ │ │
-│ │ ├── category/
-│ │ │ └── [categoryId]/
-│ │ │ ├── index.tsx # Lista podkategorii
-│ │ │ └── [subcategoryId]/
-│ │ │ ├── index.tsx # Lista produktów
-│ │ │ └── [productId].tsx # Szczegóły produktu
-│ │ │
-│ │ ├── checkout/
-│ │ │ ├── index.tsx # Przegląd koszyka
-│ │ │ ├── shipping.tsx # Adres dostawy
-│ │ │ ├── payment.tsx # Płatność
-│ │ │ └── confirmation.tsx # Potwierdzenie
-│ │ │
-│ │ ├── orders/
-│ │ │ ├── index.tsx # Historia zamówień
-│ │ │ └── [orderId].tsx # Szczegóły zamówienia
-│ │ │
-│ │ └── search.tsx # Wyszukiwarka produktów
-│ │
-│ └── +not-found.tsx # 404 page
-│
-├── src/
-│ ├── api/ # API Layer
-│ │ ├── client.ts # Axios config + interceptors
-│ │ ├── endpoints.ts # API URLs constants
-│ │ └── services/
-│ │ ├── auth.ts # Login, register, MFA, Google OAuth
-│ │ ├── categories.ts # CRUD categories
-│ │ ├── products.ts # Products, filters, search
-│ │ ├── cart.ts # Cart operations
-│ │ ├── orders.ts # Create order, history
-│ │ └── payments.ts # Payment processing (Stripe/etc)
-│ │
-│ ├── components/ # UI Components
-│ │ ├── ui/ # Reusable UI (buttons, inputs)
-│ │ │ ├── Button.tsx
-│ │ │ ├── Input.tsx
-│ │ │ ├── Card.tsx
-│ │ │ ├── Badge.tsx
-│ │ │ └── Modal.tsx
-│ │ │
-│ │ ├── layout/
-│ │ │ ├── Header.tsx
-│ │ │ ├── Header.web.tsx
-│ │ │ ├── Header.native.tsx
-│ │ │ ├── Sidebar.tsx
-│ │ │ ├── Footer.tsx
-│ │ │ └── CategoryMenu.tsx
-│ │ │
-│ │ ├── product/
-│ │ │ ├── ProductCard.tsx
-│ │ │ ├── ProductList.tsx
-│ │ │ ├── ProductFilter.tsx
-│ │ │ ├── ProductDetails.tsx
-│ │ │ └── ProductImage.tsx
-│ │ │
-│ │ ├── cart/
-│ │ │ ├── CartItem.tsx
-│ │ │ ├── CartSummary.tsx
-│ │ │ └── CartIcon.tsx
-│ │ │
-│ │ └── order/
-│ │ ├── OrderCard.tsx
-│ │ ├── OrderStatus.tsx
-│ │ └── OrderTimeline.tsx
-│ │
-│ ├── stores/ # Zustand stores
-│ │ ├── authStore.ts # Auth state + actions
-│ │ ├── cartStore.ts # Cart state + actions
-│ │ ├── productsStore.ts # Products cache + filters
-│ │ ├── categoriesStore.ts # Categories tree
-│ │ └── ordersStore.ts # Orders history
-│ │
-│ ├── hooks/ # Custom hooks
-│ │ ├── useAuth.ts # Wrapper dla authStore
-│ │ ├── useCart.ts # Wrapper dla cartStore
-│ │ ├── useBreakpoint.ts # Responsive breakpoints
-│ │ ├── useSecureStorage.ts # expo-secure-store wrapper
-│ │ └── useDebounce.ts # Debounce dla search
-│ │
-│ ├── types/ # TypeScript types
-│ │ ├── auth.types.ts
-│ │ ├── product.types.ts
-│ │ ├── category.types.ts
-│ │ ├── cart.types.ts
-│ │ ├── order.types.ts
-│ │ ├── payment.types.ts
-│ │ └── index.ts
-│ │
-│ ├── lib/ # Utilities
-│ │ ├── storage.ts # SecureStore dla tokenów
-│ │ ├── formatters.ts # Format ceny, daty
-│ │ ├── validators.ts # Zod schemas
-│ │ └── constants.ts # App constants
-│ │
-│ └── styles/
-│ └── tailwind.css # NativeWind global styles
-│
-├── backend/ # Django Backend
-│ ├── manage.py
-│ ├── config/
-│ │ ├── settings/
-│ │ │ ├── base.py
-│ │ │ ├── development.py
-│ │ │ └── production.py
-│ │ ├── urls.py
-│ │ └── wsgi.py
-│ │
-│ ├── apps/
-│ │ ├── authentication/ # Custom auth (bez dj-rest-auth)
-│ │ │ ├── models.py # Custom User model
-│ │ │ ├── serializers.py # JWT serializers
-│ │ │ ├── views.py # Login, register, MFA endpoints
-│ │ │ ├── urls.py
-│ │ │ └── utils.py # JWT helpers, Google OAuth
-│ │ │
-│ │ ├── categories/
-│ │ │ ├── models.py # Category, Subcategory
-│ │ │ ├── serializers.py
-│ │ │ ├── views.py
-│ │ │ └── urls.py
-│ │ │
-│ │ ├── products/
-│ │ │ ├── models.py # Product, ProductImage, Review
-│ │ │ ├── serializers.py
-│ │ │ ├── views.py # CRUD, filters, search
-│ │ │ └── urls.py
-│ │ │
-│ │ ├── cart/
-│ │ │ ├── models.py # Cart, CartItem
-│ │ │ ├── serializers.py
-│ │ │ ├── views.py
-│ │ │ └── urls.py
-│ │ │
-│ │ ├── orders/
-│ │ │ ├── models.py # Order, OrderItem, OrderStatus
-│ │ │ ├── serializers.py
-│ │ │ ├── views.py
-│ │ │ └── urls.py
-│ │ │
-│ │ └── payments/
-│ │ ├── models.py # Payment, PaymentMethod
-│ │ ├── serializers.py
-│ │ ├── views.py # Stripe/PayPal integration
-│ │ ├── urls.py
-│ │ └── webhooks.py # Payment webhooks
-│ │
-│ └── requirements.txt
-│
-├── tailwind.config.js # Tailwind config
-├── metro.config.js # Metro bundler config
-├── babel.config.js # Babel with NativeWind preset
-├── tsconfig.json
-├── .env # Environment variables
-└── package.json
+```bash
+task frontend:run
+```
+
+Jeśli Metro albo routing trzyma stary stan, użyj:
+
+```bash
+task frontend:run:clear
+```
+
+## Android
+
+Podstawowy emulator w Taskfile ma nazwę `S23`.
+
+```bash
+task emulator:run -- S23
+task frontend:run -- emulator-5554
+```
+
+Budowanie i instalacja Expo Development Client:
+
+```bash
+task frontend:build:android -- emulator-5554
+```
+
+## Najważniejsze Taski
+
+```bash
+task --list
+task backend:run
+task backend:build
+task backend:logs
+task db:migrate
+task db:migrations:make -- <app>
+task test:backend-local -- <ścieżka>
+task test:backend
+task lints:backend:ruff
+task lints:backend:ruff:check
+task lints:backend:typecheck
+task lints:frontend:lint
+task lints:frontend:typecheck
+task lints:frontend:format
+task ovral:generate
+```
+
+Argumenty do tasków przekazuj po `--`.
+
+## Struktura
+
+```text
+backend/
+  src/
+    apps/      # domeny biznesowe
+    common/    # współdzielone abstrakcje
+    core/      # konfiguracja, urls, celery, settings, infrastruktura
+    tests/     # testy backendu
+
+frontend/
+  app/         # routing i layouty Expo Router
+  src/
+    api/       # klienty i typy generowane z kontraktu API
+    core/      # auth, http, query, env, theme, navigation
+    features/  # moduły funkcjonalne
+    ui/        # współdzielone komponenty UI
+```
+
+## Kontrakt API
+
+Nie edytuj ręcznie `frontend/src/api/generated/**`.
+
+Po zmianach serializerów, viewsetów, URL-i albo schemy backendu:
+
+```bash
+task ovral:generate
+task lints:frontend:typecheck
+```
+
+## Kontrola jakości
+
+Dobieraj zakres kontroli do zmiany:
+
+```bash
+task test:backend-local -- <ścieżka>
+task lints:backend:ruff:check
+task lints:backend:typecheck
+task lints:frontend:lint
+task lints:frontend:typecheck
+```
+
+Pełne testy backendu w środowisku testowym:
+
+```bash
+task test:backend
+```
+
+## Instrukcje dla AI
+
+Źródła zasad pracy:
+
+- `AGENTS.md` — nadrzędne instrukcje repo-first,
+- `docs/ai/architecture.md` — opis architektury,
+- `docs/ai/workflow.md` — sposób pracy z agentami AI,
+- `.github/copilot-instructions.md` i `.github/instructions/*.instructions.md` — skrócone instrukcje dla Copilota i agentów IDE.
+
+Najważniejsza zasada: najpierw sprawdź realne pliki w repo, potem diagnozuj i proponuj zmiany.

@@ -1,103 +1,76 @@
-/**
- * Root layout — inicjalizuje providery i redirektuje na właściwy ekran.
- * Stan sesji pochodzi z TanStack Query przez endpoint allauth session.
- */
 import "../styles/global.css";
-import { Stack, useRouter, useSegments } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { Stack } from "expo-router";
+import { Platform } from "react-native";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { useEffect } from "react";
-import { queryClient } from "@lib/queryClient";
 import {
   SafeAreaProvider,
   initialWindowMetrics,
 } from "react-native-safe-area-context";
-import { platformRender } from "@lib";
-import { SafeView } from "@ui";
-import { useAuth } from "@features/auth";
+import { queryClient } from "@core/query/query-client";
+import { AuthProvider, useAuthContext } from "@core/auth/auth.provider";
+import { SafeView } from "@ui/layout/SafeView";
 
-export default function AppLayout() {
+/**
+ * Główny layout aplikacji.
+ *
+ * Dlaczego istnieje:
+ * tu spinamy globalne providery oraz ochronę route groups w Expo Router.
+ */
+export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AppNavigator />
-    </QueryClientProvider>
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+      <StatusBar backgroundColor="#ffffff" style="dark" />
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <RootNavigator />
+        </AuthProvider>
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }
 
-function AppNavigator() {
-  useAuthGuard();
+function RootNavigator() {
+  const auth = useAuthContext();
+
+  if (auth.isChecking) {
+    return null;
+  }
+
+  const canAccessAuthRoutes =
+    auth.isUnauthenticated ||
+    auth.isMfaRequired ||
+    auth.isEmailVerificationRequired;
 
   const stack = (
-    <Stack initialRouteName="index">
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      <Stack.Screen name="(app)" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="+not-found"
-        options={{ title: "Not Found", headerShown: false }}
-      />
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: "#ffffff" },
+      }}
+    >
+      <Stack.Screen name="index" />
+      <Stack.Screen name="authredirect" />
+      <Stack.Screen name="oauthredirect" />
+      <Stack.Screen name="authorize" />
+
+      <Stack.Protected guard={auth.isAuthenticated}>
+        <Stack.Screen name="(app)" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={canAccessAuthRoutes}>
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
     </Stack>
   );
 
+  if (Platform.OS === "web") {
+    return stack;
+  }
+
   return (
-    <>
-      {platformRender({
-        web: <>{stack}</>,
-        native: (
-          <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-            <SafeView>{stack}</SafeView>
-          </SafeAreaProvider>
-        ),
-      })}
-    </>
+    <SafeView className="bg-white" style={{ backgroundColor: "#ffffff" }}>
+      {stack}
+    </SafeView>
   );
-}
-
-/**
- * Guard nawigacji — na podstawie `session.meta.is_authenticated` oraz flows
- * przenosi użytkownika do właściwej grupy routów.
- */
-function useAuthGuard() {
-  const router = useRouter();
-  const segments = useSegments();
-  const rootSegment = segments[0];
-  const {
-    session,
-    isSessionChecked,
-    isAuthenticated,
-    isPendingMfa,
-    isPendingVerification,
-  } = useAuth();
-
-  useEffect(() => {
-    if (!isSessionChecked) return; // czekamy na sprawdzenie sesji
-
-    const inAuth =
-      rootSegment === "(auth)" ||
-      rootSegment === "login" ||
-      rootSegment === "register" ||
-      rootSegment === "verify-email" ||
-      rootSegment === "mfa" ||
-      rootSegment === "forgot-password";
-    const inApp = rootSegment === "(app)" || rootSegment === "home";
-
-    if (isPendingMfa && !inAuth) {
-      router.replace("/(auth)/mfa");
-    } else if (isPendingVerification && !inAuth) {
-      router.replace("/(auth)/verify-email");
-    } else if (isAuthenticated && inAuth) {
-      router.replace("/(app)/home");
-    } else if (!isAuthenticated && inApp) {
-      router.replace("/(auth)/login");
-    } else if (!isAuthenticated && !inAuth) {
-      router.replace("/(auth)/login");
-    }
-  }, [
-    router,
-    rootSegment,
-    isSessionChecked,
-    isAuthenticated,
-    isPendingMfa,
-    isPendingVerification,
-    session,
-  ]);
 }
