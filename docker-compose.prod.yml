@@ -1,0 +1,62 @@
+x-backend-build-prod: &backend-build-prod
+  context: .
+  dockerfile: docker/backend/Dockerfile
+  target: prod
+
+x-backend-env: &backend-env
+  - ./.envs/dev/backend/django.env
+  - ./.envs/dev/backend/db.env
+  - ./.envs/dev/backend/cache_broker.env
+  - ./.envs/dev/backend/broker.env
+  - ./.envs/dev/backend/s3.env
+  - ./.envs/dev/backend/email.env
+  - ./.envs/dev/backend/authorization.env
+
+services:
+  olivin-django:
+    build: *backend-build-prod
+    env_file: *backend-env
+    ports:
+      - "${DJANGO_PORT}:8000"
+    working_dir: /app/src
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000
+    restart: unless-stopped
+    depends_on:
+      olivin-postgres:
+        condition: service_healthy
+      olivin-redis:
+        condition: service_healthy
+      olivin-minio:
+        condition: service_healthy
+    networks:
+      - olivin-network
+
+  olivin-celery-worker:
+    build: *backend-build-prod
+    env_file: *backend-env
+    working_dir: /app/src
+    entrypoint: ["/celery/celery-entrypoint.sh"]
+    command: bash -c "/celery/worker.sh"
+    restart: unless-stopped
+    depends_on:
+      olivin-postgres:
+        condition: service_healthy
+      olivin-redis:
+        condition: service_healthy
+    networks:
+      - olivin-network
+
+  olivin-celery-beat:
+    build: *backend-build-prod
+    env_file: *backend-env
+    working_dir: /app/src
+    entrypoint: ["/celery/celery-entrypoint.sh"]
+    command: bash -c "/celery/beat.sh"
+    restart: unless-stopped
+    depends_on:
+      olivin-postgres:
+        condition: service_healthy
+      olivin-redis:
+        condition: service_healthy
+    networks:
+      - olivin-network
