@@ -1,0 +1,6 @@
+interface:
+  display_name: "Olivin App"
+  short_description: "Repo-specific patterns and workflows for olivin-app"
+  default_prompt: "Use the olivin-app repo skill to follow existing architecture, testing, and workflow conventions."
+policy:
+  allow_implicit_invocation: true
