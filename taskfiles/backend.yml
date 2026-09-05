@@ -3,6 +3,37 @@
 version: "3"
 
 tasks:
+    schema:generate:
+        desc: Regenerate OpenAPI schema from the code (task backend:schema:generate)
+        dir: backend
+        env:
+            # drf-spectacular siedzi w INSTALLED_APPS tylko w development.py,
+            # więc komenda `spectacular` istnieje wyłącznie w tym środowisku.
+            # Samo generowanie nie dotyka bazy, więc chodzi też na czystym runnerze.
+            DJANGO_ENVIRONMENT: development
+            DJANGO_DEBUG: "1"
+        cmds:
+            - uv run python src/manage.py spectacular --file src/schema.yaml
+
+    schema:check:
+        desc: Fail if schema.yaml is stale versus the code (task backend:schema:check)
+        dir: backend
+        env:
+            DJANGO_ENVIRONMENT: development
+            DJANGO_DEBUG: "1"
+        cmds:
+            # Ten sam wzorzec co `db:migrations:check`: generujemy obok i porównujemy,
+            # zamiast ufać, że ktoś pamiętał o regeneracji po zmianie serializera.
+            # Rozjazd schematu nie psuje testów — wychodzi dopiero, gdy klient
+            # frontendu przestaje pasować do API.
+            #
+            # `spectacular` zapisuje schemat wyłącznie przez `--file` (bez tej flagi na
+            # stdout nie trafia nic), więc porównanie idzie przez plik obok. `defer`
+            # sprząta go także wtedy, gdy diff zwróci różnicę i zadanie padnie.
+            - uv run python src/manage.py spectacular --file .schema-check.yaml
+            - defer: rm -f .schema-check.yaml
+            - diff -u src/schema.yaml .schema-check.yaml
+
     run:
         desc: Run Django app and microservices
         cmds:
