@@ -55,6 +55,11 @@ jobs:
       - name: Missing migrations
         run: task db:migrations:check
 
+      # Zmieniony serializer bez regeneracji schematu nie psuje żadnego testu —
+      # rozjazd wychodzi dopiero, gdy klient frontendu przestaje pasować do API.
+      - name: API schema up to date
+        run: task backend:schema:check
+
       - name: Backend tests
         run: task test:backend-local -- src/ -m "not integration"
 
