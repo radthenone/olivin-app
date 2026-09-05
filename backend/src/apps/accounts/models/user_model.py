@@ -22,7 +22,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
 
-    objects: CustomUserManager = CustomUserManager()
+    # Menedżer na modelu użytkownika to standardowy wzorzec Django, ale w klasach
+    # bazowych (AbstractBaseUser, PermissionsMixin) `objects` jest ClassVar-em,
+    # więc przypisanie instancji wygląda dla checkera na niezgodne nadpisanie.
+    objects: CustomUserManager = CustomUserManager()  # pyrefly: ignore[bad-override]
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

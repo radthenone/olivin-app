@@ -1,0 +1,18 @@
+# Klient API generowany przez Orval (`task ovral:generate`). Formatuje go generator,
+# nie my — sprawdzanie go Prettierem tylko psuje CI po każdej regeneracji, a poprawki
+# i tak zniknęłyby przy następnym przebiegu. Ten sam katalog jest wykluczony
+# w `.pre-commit-config.yaml`; trzymaj oba wpisy zgodne.
+src/api/generated/
+
+# Artefakty builda i zależności
+node_modules/
+.expo/
+dist/
+build/
+web-build/
+android/
+ios/
+
+# Lockfile — utrzymywany przez bun
+bun.lock
+bun.lockb

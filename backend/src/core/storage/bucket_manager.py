@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 import boto3
 from botocore.config import Config
@@ -13,9 +14,14 @@ class S3BucketManager:
 
     def _build_config(self) -> Config:
         addressing_style = os.environ.get("AWS_S3_ADDRESSING_STYLE", "path")
+        # botocore typuje `s3` jako wąski TypedDict domknięty na konkretne klucze,
+        # więc zwykły dict — poprawny w czasie działania — nie przechodzi sprawdzenia.
+        # Adnotacja `Any` mówi to wprost i przeżywa przeformatowanie pliku, czego
+        # komentarz wyciszający na końcu linii nie robi.
+        s3_options: Any = {"addressing_style": addressing_style}
         return Config(
             signature_version="s3v4",
-            s3={"addressing_style": addressing_style},
+            s3=s3_options,
         )
 
     def _build_client(self):

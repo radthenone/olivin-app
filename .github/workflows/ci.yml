@@ -7,6 +7,16 @@ on:
       - main
       - master
 
+# Nowy push na ten sam PR ubija poprzedni przebieg — bez tego kilka pushów pod rząd
+# trzyma runnery zajęte wynikami, których i tak nikt nie przeczyta.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# CI tylko czyta repozytorium. Domyślny token ma szersze uprawnienia, niż potrzeba.
+permissions:
+  contents: read
+
 jobs:
   backend:
     name: Backend
@@ -17,9 +27,14 @@ jobs:
 
       - name: Install Task
         uses: arduino/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -33,8 +48,12 @@ jobs:
       - name: Ruff
         run: task lints:backend:ruff:check
 
-      - name: MyPy
+      - name: Pyrefly
         run: task lints:backend:typecheck
+
+      # Model zmieniony bez migracji przechodzi testy i pada dopiero na deployu.
+      - name: Missing migrations
+        run: task db:migrations:check
 
       - name: Backend tests
         run: task test:backend-local -- src/ -m "not integration"
@@ -48,11 +67,22 @@ jobs:
 
       - name: Install Task
         uses: arduino/setup-task@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
+      # setup-bun nie cache'uje pobranych paczek — bez tego każdy przebieg
+      # ściąga ponad tysiąc pakietów od zera.
+      - name: Cache Bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('frontend/bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
 
       - name: Sync frontend dependencies
         working-directory: frontend
@@ -66,3 +96,50 @@ jobs:
 
       - name: Prettier check
         run: task lints:frontend:format:check
+
+  # Hooki lokalne i CI sprawdzają ten sam kod, ale innymi ścieżkami — i właśnie na tej
+  # różnicy CI potrafi paść na czymś, co lokalnie przeszło. Ten job odpala dokładnie te
+  # hooki co `git commit`, więc rozjazd wychodzi tutaj, a nie po zmergowaniu.
+  # Hooki dotykają obu stron repo, stąd i uv, i Bun w jednym jobie.
+  pre-commit:
+    name: Pre-commit hooks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache Bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('frontend/bun.lock') }}
+          restore-keys: ${{ runner.os }}-bun-
+
+      - name: Sync backend dependencies
+        working-directory: backend
+        run: uv sync --all-extras
+
+      - name: Sync frontend dependencies
+        working-directory: frontend
+        run: bun install --frozen-lockfile
+
+      # Hooki formatują w miejscu, więc `--all-files` kończy się błędem, gdy cokolwiek
+      # zmieniły — to jest ten sygnał, o który chodzi.
+      - name: Run pre-commit
+        run: uvx pre-commit run --all-files --show-diff-on-failure

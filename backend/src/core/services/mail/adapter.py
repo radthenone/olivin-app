@@ -59,7 +59,11 @@ class AsyncAccountAdapter(DefaultAccountAdapter):
         task = cast(Any, send_email_payloads_task)
         on_commit(lambda: task.delay([payload]))
 
-    def clean_username(self, username: str | None, shallow: bool = False) -> str | None:
+    # Sygnatura celowo dopuszcza None — patrz docstring. Allauth nie ma stubów,
+    # więc checker porównuje z własną rekonstrukcją typu i widzi niezgodność.
+    def clean_username(  # pyrefly: ignore[bad-override]
+        self, username: str | None, shallow: bool = False
+    ) -> str | None:
         """
         Zabezpieczenie dla kont społecznościowych, gdzie username wymuszamy na None.
         Domyślny walidator Allauth wyrzuca TypeError (NoneType ma brak domyślnej długości).
