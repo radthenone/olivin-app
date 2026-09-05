@@ -2,88 +2,15 @@
 applyTo: "frontend/**"
 ---
 
-# Frontend instructions — olivin-app
+# Frontend — olivin-app
 
-## Zakres
+Instrukcje przeniesione do **instruction-kit** (MCP `project-guides`).
 
-Te instrukcje dotyczą zmian w `frontend/**`.
+Przed zmianami w `frontend/**`:
 
-## Kontekst technologiczny
+1. MCP `get_bundle` → `frontend`
+2. MCP `get_overlay` → overlay olivin (Taskfile, Orval)
+3. Context7 dla docs Expo
 
-Frontend to Expo / React Native oparty o Expo Router.
-Najważniejsze obszary struktury:
-
-- `frontend/app/` — routing i layouty,
-- `frontend/src/core/` — auth, api, env, theme i fundamenty techniczne,
-- `frontend/src/features/` — logika funkcjonalna i moduły domenowe,
-- `frontend/src/api/` — kontrakty i klienty generowane,
-- `frontend/src/ui/` — współdzielone komponenty UI.
-
-## Zasady obowiązkowe
-
-- ZAWSZE odpowiadaj po polsku.
-- ZAWSZE pisz docstringi po polsku.
-- Najpierw wskaż pliki związane z problemem.
-- Nie proponuj rozwiązań web-only, jeśli nie są zgodne z Expo / React Native.
-- Nie zakładaj DOM-only API, jeśli nie ma potwierdzenia, że dany fragment działa na webie.
-
-## Przy pytaniach do AI o Expo używaj
-
-https://docs.expo.dev/llms.txt
-https://docs.expo.dev/skills/
-
-## Stan i dane
-
-- TanStack Query służy do server state.
-- Zustand służy tylko do local/app state.
-- Nie przenoś odpowiedzialności za fetchowanie danych z backendu do losowych store'ów.
-- Query keys powinny być spójne i przewidywalne.
-- Inwalidację i cache projektuj świadomie.
-- Nie ustawiaj długiego cache bez uzasadnienia biznesowego.
-
-## Warstwy odpowiedzialności
-
-- Routing zostaw w `frontend/app/`.
-- Logikę domenową trzymaj w `frontend/src/features/`.
-- Wspólne fundamenty techniczne trzymaj w `frontend/src/core/`.
-- Wspólne UI trzymaj poza logiką biznesową.
-- Nie wywołuj API bezpośrednio w dużych komponentach ekranowych, jeśli można użyć hooka, modułu api albo warstwy feature.
-- Niskopoziomowe allauth/session/token storage trzymaj w `frontend/src/core/auth/`.
-- Ekrany i hooki flow auth trzymaj w `frontend/src/features/auth/`.
-- Profil, adresy i ustawienia konta użytkownika trzymaj w `frontend/src/features/account/`.
-- Różnice web/native w UI rozwiązuj przez pliki `.web/.native` albo helpery w `frontend/src/ui/platform/`.
-- Nie edytuj ręcznie `frontend/src/api/generated/**`; po zmianie kontraktu API użyj `task ovral:generate`.
-- Dla shadcn-like UI w Expo używaj lokalnych primitives, NativeWind i `class-variance-authority`; nie zakładaj DOM-only komponentów.
-
-## Formularze i walidacja
-
-- Preferuj `react-hook-form`.
-- Walidację projektuj czytelnie, najlepiej z wykorzystaniem Zod, jeśli pasuje do istniejącego wzorca.
-- Nie rozrzucaj walidacji po wielu warstwach bez potrzeby.
-
-## Performance i DX
-
-- Preferuj `async/await`.
-- Używaj debounce przy wyszukiwaniu, filtrowaniu i wejściach generujących nadmiarowe requesty.
-- Używaj lazy loading tam, gdzie ogranicza koszt ciężkich ekranów lub zależności.
-- Uważaj na zbędne re-rendery, niestabilne callbacki i niepotrzebne memo.
-- Nie dodawaj `useMemo` i `useCallback` bez wyraźnego powodu.
-
-## Komendy kontrolne
-
-- Po zmianach frontendowych preferuj `task lints:frontend:typecheck`.
-- Po zmianach w kodzie frontendu preferuj też `task lints:frontend:lint:check`; jeśli chcesz zastosować poprawki automatyczne, użyj `task lints:frontend:lint`.
-- Po zmianach UI lub routingowych preferuj `task frontend:run:clear`, jeśli Metro cache może trzymać stary stan.
-- Po zmianach natywnych albo konfiguracji Expo rozważ `task frontend:prebuild:clean` albo `task frontend:build:android`.
-- Po zmianach kontraktu API preferuj `task ovral:generate`, a potem `task lints:frontend:typecheck`.
-- Do formatowania frontendu używaj `task lints:frontend:format`.
-- Do sprawdzania formatowania bez modyfikowania plików używaj `task lints:frontend:format:check`.
-
-## Oczekiwany styl odpowiedzi
-
-1. Krótka diagnoza.
-2. Powiązane pliki frontendowe.
-3. Problemy i ryzyka.
-4. Plan zmian.
-5. Jeśli ma sens: propozycja implementacji.
-6. Czego nie udało się potwierdzić.
+Preset kita: `shop` (ustawiony w `.mcp.json` / `.vscode/mcp.json`). Fakty tego repo —
+ścieżki, Taskfile, Orval — są w `.ai/project.md`, nie tutaj.

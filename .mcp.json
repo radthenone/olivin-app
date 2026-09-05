@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "project-guides": {
+      "command": "uv",
+      "args": [
+        "run", "--directory", "M:/projects/ai-instruction-kit-mcp",
+        "guides-mcp",
+        "--preset", "shop",
+        "--language", "pl",
+        "--codegen", "orval",
+        "--clients", "claude,codex,vscode",
+        "--kit-root", "M:/projects/ai-instruction-kit-mcp",
+        "--workspace", "${CLAUDE_PROJECT_DIR:-.}"
+      ]
+    }
+  }
+}

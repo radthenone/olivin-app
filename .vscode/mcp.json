@@ -1,0 +1,18 @@
+{
+  "servers": {
+    "project-guides": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run", "--directory", "M:/projects/ai-instruction-kit-mcp",
+        "guides-mcp",
+        "--preset", "shop",
+        "--language", "pl",
+        "--codegen", "orval",
+        "--clients", "claude,codex,vscode",
+        "--kit-root", "M:/projects/ai-instruction-kit-mcp",
+        "--workspace", "${workspaceFolder}"
+      ]
+    }
+  }
+}

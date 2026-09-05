@@ -1,7 +1,9 @@
 # IDE i edytory
 .history
 .history/*
-.vscode
+.vscode/*
+!.vscode/
+!.vscode/mcp.json
 .idea
 *.swp
 *.swo
@@ -60,9 +62,12 @@ logs/
 *.temp
 .cache/
 pyrightconfig.json
-.cursor/
 .uv-cache/
 .codex-bin/
+
+# Konfiguracja klientów AI (.claude/, .codex/, .cursor/, .vscode/mcp.json,
+# .github/prompts/) żyje w sekcji instruction-kit na końcu tego pliku —
+# bootstrap kita ją utrzymuje, nie edytuj jej ręcznie.
 
 # Local settings
 backend/src/core/settings/local.py
@@ -78,3 +83,75 @@ bruno
 bruno/*
 /backups/*
 .codegraph/
+/backend/src/_temp/*
+_temp.ipynb
+_temp
+
+# >>> instruction-kit >>>
+# Pliki instalowane przez instruction-kit (bootstrap-project.sh).
+#
+# Zasada: konfiguracja AI jest częścią repo — hooki bezpieczeństwa, agenci i komendy
+# mają działać u każdego, kto klonuje projekt, nie tylko na maszynie, gdzie odpalono
+# bootstrap. Lokalny stan klienta (sesje, cache, ustawienia prywatne) zostaje poza gitem.
+#
+# Reguły są w formie "ignoruj katalog, odwróć dla plików kita", bo klienci AI trzymają
+# w tych samych katalogach dane sesji. Git nie wejdzie do zignorowanego katalogu, więc
+# wyjątek na sam plik nie wystarczy — musi być też wyjątek na katalog po drodze.
+
+# --- Claude Code -------------------------------------------------------------
+.claude/*
+!.claude/agents/
+!.claude/agents/**
+!.claude/commands/
+!.claude/commands/**
+!.claude/hooks/
+!.claude/hooks/**
+!.claude/skills/
+# Wersjonujemy tylko skille kita, wyliczone z nazwy. Reszta zawartosci tego katalogu
+# to zwykle dowiazania do `.agents/skills/` (npx skills add), ktory jest ignorowany —
+# w repo bylyby to linki donikad, na dodatek ze sciezka absolutna maszyny, na ktorej
+# odpalono instalator.
+.claude/skills/*
+!.claude/skills/skill-authoring/
+!.claude/skills/skill-authoring/**
+!.claude/settings.json
+# Prywatne nadpisania: uprawnienia, włączone serwery MCP. Per maszyna, nie per repo.
+.claude/settings.local.json
+
+# --- Codex CLI ---------------------------------------------------------------
+.codex/*
+!.codex/config.toml
+!.codex/skills/
+!.codex/skills/**
+
+# --- GitHub Copilot (VS Code) ------------------------------------------------
+# .vscode bywa ignorowane globalnie — te trzy wpisy to konfiguracja kita, nie stan IDE.
+!.vscode/mcp.json
+!.github/copilot-instructions.md
+!.github/prompts/
+!.github/prompts/**
+
+# --- Cursor ------------------------------------------------------------------
+.cursor/*
+!.cursor/mcp.json
+!.cursor/hooks.json
+!.cursor/BUGBOT.md
+!.cursor/agents/
+!.cursor/agents/**
+!.cursor/hooks/
+!.cursor/hooks/**
+!.cursor/rules/
+!.cursor/rules/**
+!.cursor/skills/
+.cursor/skills/*
+!.cursor/skills/compact/
+!.cursor/skills/compact/**
+!.cursor/skills/skill-authoring/
+!.cursor/skills/skill-authoring/**
+
+# --- Skille spoza kita (npx skills add …) ------------------------------------
+# Instalowane globalnie w ~/.agents/skills/ i linkowane do projektu. Kopia w repo
+# to duplikat, który zaraz rozjedzie się z globalną wersją — trzymaj je globalnie.
+.agents/skills/
+skills-lock.json
+# <<< instruction-kit <<<

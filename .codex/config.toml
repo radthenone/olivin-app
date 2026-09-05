@@ -1,0 +1,18 @@
+# Codex CLI nie ma stałej zmiennej odpowiadającej ${workspaceFolder}.
+# Użyj ścieżki absolutnej do workspace (katalog projektu aplikacji).
+# Wybierz kategorię z kita (`_base`, albo `shop` dla e-commerce).
+# Lokalny .ai/project.profile.yaml tylko przy forku kategorii → wtedy --profile zamiast --preset.
+# --clients: metadane (all | cursor | claude | …); bundle bez zmian — get_clients.
+
+[mcp_servers.project-guides]
+command = "uv"
+args = [
+  "run", "--directory", "M:/projects/ai-instruction-kit-mcp",
+  "guides-mcp",
+  "--preset", "shop",
+  "--language", "pl",
+  "--codegen", "orval",
+  "--clients", "claude,codex,vscode",
+  "--kit-root", "M:/projects/ai-instruction-kit-mcp",
+  "--workspace", "M:/projects/olivin-app",
+]

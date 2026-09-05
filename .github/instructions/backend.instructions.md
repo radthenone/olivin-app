@@ -2,79 +2,15 @@
 applyTo: "backend/**"
 ---
 
-# Backend instructions — olivin-app
+# Backend — olivin-app
 
-## Zakres
+Instrukcje przeniesione do **instruction-kit** (MCP `project-guides`).
 
-Te instrukcje dotyczą zmian w `backend/**`.
+Przed zmianami w `backend/**`:
 
-## Kontekst technologiczny
+1. MCP `get_bundle` → `backend`
+2. MCP `get_overlay` → overlay olivin (Taskfile, Docker)
+3. Context7 dla docs Django/DRF
 
-Backend to Django + Django REST Framework.
-Najważniejsze obszary struktury:
-
-- `backend/src/core/` — settings, urls, celery, envs, storage,
-- `backend/src/apps/` — aplikacje domenowe,
-- `backend/src/common/` — współdzielone elementy i abstrakcje,
-
-## Zasady obowiązkowe
-
-- ZAWSZE odpowiadaj po polsku.
-- ZAWSZE pisz docstringi po polsku.
-- Najpierw wskaż pliki związane z problemem.
-- Nie zakładaj dodatkowych warstw, jeśli repo ich nie potwierdza.
-- Nie rozlewaj logiki biznesowej po wielu warstwach bez wyraźnej potrzeby.
-
-## Architektura i odpowiedzialności
-
-- Widoki i viewsety powinny być cienkie.
-- Logika biznesowa nie powinna siedzieć jednocześnie w modelu, serializerze i widoku.
-- Walidację, permissions i bezpieczeństwo traktuj jako obowiązkowy element rozwiązania.
-- Zwracaj uwagę na atomowość operacji i side effecty.
-- Jeśli zadanie jest domenowe, umieszczaj je w odpowiedniej appce w `backend/src/apps/`.
-
-## ORM i wydajność
-
-- Oceń ryzyko N+1 queries.
-- Rozważ `select_related` i `prefetch_related`, jeśli mają uzasadnienie.
-- Nie optymalizuj na ślepo; najpierw wskaż realny problem.
-- Dbaj o czytelność zapytań i ich testowalność.
-
-## API i kontrakt
-
-- Jeśli zmieniasz endpoint, serializer lub strukturę odpowiedzi, oceń wpływ na kontrakt API.
-- Uwzględnij wpływ na `backend/src/schema.yaml`.
-- Uwzględnij wpływ na frontend i generowane klienty lub typy.
-
-## Komendy — Taskfile i bash
-
-- Jeśli potrzebujesz wywołać komendę, najpierw przejrzyj `Taskfile.yml` oraz właściwy plik w `taskfiles/`.
-- Preferuj taski, np. `task db:migrate`, `task test:backend-local -- src/apps/accounts -q`, `task test:backend-cmd -- src/apps/accounts -q`.
-- Komendy shellowe zapisuj w składni bash.
-- Jeśli zmieniasz serializer, viewset, URL albo schema endpointu, uwzględnij regenerację klienta frontendowego przez `task ovral:generate`.
-- Po zmianach backendowych dobierz właściwą kontrolę: `task test:backend-local -- <ścieżka>`, `task test:backend-local-unit -- <ścieżka>`, `task test:backend-integration -- <ścieżka lub marker>`, `task lints:backend:ruff`, `task lints:backend:ruff:check`, `task lints:backend:typecheck`.
-- W CI i przy review preferuj `task lints:backend:ruff:check`, bo nie modyfikuje plików.
-
-### Docker Compose — kontenery backendu
-
-| Nazwa kontenera        | Rola                             | Profile                                   |
-| ---------------------- | -------------------------------- | ----------------------------------------- |
-| `olivin-postgres`      | PostgreSQL 16 (port `5434:5432`) | `dev`, `backend`, `full`, `local`         |
-| `olivin-redis`         | Cache / broker Celery            | `dev`, `backend`, `full`, `local`, `test` |
-| `olivin-minio`         | S3-compatible storage            | `dev`, `backend`, `full`, `local`, `test` |
-| `olivin-mailhog`       | Lokalny SMTP                     | `dev`, `backend`, `full`, `local`         |
-| `olivin-django`        | Serwer Django / DRF              | `dev`, `backend`, `full`                  |
-| `olivin-celery-worker` | Celery worker                    | `dev`, `backend`, `full`, `celery`        |
-| `olivin-celery-beat`   | Celery beat                      | `dev`, `backend`, `full`, `celery`        |
-| `olivin-celery-flower` | Flower UI                        | `dev`, `backend`, `full`, `celery`        |
-
-- Reszta kontenerów znajduje się w `docker-compose.yml`
-
-## Oczekiwany styl odpowiedzi
-
-1. Krótka diagnoza.
-2. Powiązane pliki backendowe.
-3. Problemy i ryzyka.
-4. Plan zmian.
-5. Jeśli ma sens: propozycja implementacji.
-6. Czego nie udało się potwierdzić.
+Preset kita: `shop` (ustawiony w `.mcp.json` / `.vscode/mcp.json`). Fakty tego repo —
+ścieżki, Taskfile, porty — są w `.ai/project.md`, nie tutaj.
