@@ -8,6 +8,16 @@ tasks:
         cmds:
             - docker exec -it olivin-django python manage.py migrate
 
+    migrations:check:
+        desc: Fail if models changed without a migration (bez Dockera, dla CI)
+        dir: backend
+        env:
+            DJANGO_ENVIRONMENT: testing
+        cmds:
+            # --check zwraca kod != 0, gdy brakuje migracji; --dry-run nie zapisuje pliku.
+            # Nie potrzebuje bazy, więc chodzi też na czystym runnerze CI.
+            - uv run python src/manage.py makemigrations --check --dry-run
+
     migrations:make:
         desc: Make migrations for specific app (task db:migrations:make -- <app-name>)
         cmds:
