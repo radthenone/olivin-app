@@ -1664,6 +1664,10 @@ components:
     PatchedProfile:
       type: object
       properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
         email:
           type: string
           format: email
@@ -1697,6 +1701,10 @@ components:
     Profile:
       type: object
       properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
         email:
           type: string
           format: email
@@ -1731,6 +1739,7 @@ components:
       - age
       - email
       - fullName
+      - id
       - role
     RoleEnum:
       enum:
