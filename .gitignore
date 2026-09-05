@@ -75,6 +75,10 @@ backend/src/media/
 backend/src/mediafiles/
 backend/src/staticfiles/
 
+# Plik roboczy `task backend:schema:check` — porównywana kopia schematu.
+# Zadanie sprząta go samo, wpis jest na wypadek przerwania w połowie.
+backend/.schema-check.yaml
+
 # Taskfile cache ignore
 .task/
 
