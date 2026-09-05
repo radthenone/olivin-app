@@ -16,10 +16,10 @@ tasks:
             - uv run ruff check . {{.CLI_ARGS}}
             - uv run ruff format . --check
     backend:typecheck:
-        desc: Check Python typing with MyPy
+        desc: Check Python typing with Pyrefly
         dir: backend
         cmds:
-            - uv run mypy .
+            - uv run pyrefly check
     frontend:lint:
         desc: Lint Expo app
         dir: frontend

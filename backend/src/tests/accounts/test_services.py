@@ -93,6 +93,7 @@ class TestProfileOneToOne:
         """Profil powinien być usuwany kaskadowo gdy user zostaje usunięty."""
         user = UserFactory()
         ProfileFactory(user=user)
-        profile_id = user.profile.pk
+        # `profile` to odwrotny akcesor OneToOne generowany przez Django w runtime.
+        profile_id = user.profile.pk  # pyrefly: ignore[missing-attribute]
         user.delete()
         assert not Profile.objects.filter(pk=profile_id).exists()
