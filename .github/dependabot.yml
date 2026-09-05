@@ -1,0 +1,54 @@
+version: 2
+
+updates:
+  # Akcje w workflowach nie mają lockfile'a — wersję trzyma sam plik YAML, więc bez
+  # tego nikt nigdy nie podniesie `actions/checkout@v4`. Tu podatność uderza wprost
+  # w pipeline, który ma dostęp do repozytorium.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(ci)
+
+  # Dependabot nie obsługuje ekosystemu `uv`, ale czyta zależności z pyproject.toml
+  # przez `pip`. Skutek: dostaniesz PR-y podnoszące wersje w pyproject, natomiast
+  # `uv.lock` trzeba odświeżyć samemu (`uv lock`) przed zmergowaniem.
+  - package-ecosystem: pip
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      # Aktualizacje łatek osobno na paczkę to szum. Zgrupowane wchodzą jednym PR-em,
+      # a wersje minor i major zostają pojedynczo, bo tam trzeba przeczytać changelog.
+      python-patch:
+        update-types:
+          - patch
+
+  # Bun jest wspierany od wersji 1.1.39 — projekt używa nowszej, więc `bun.lock`
+  # zostanie zaktualizowany razem z package.json.
+  - package-ecosystem: bun
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      js-patch:
+        update-types:
+          - patch
+    ignore:
+      # Wersje Expo, Reacta i React Native są związane z konkretnym SDK Expo —
+      # podnoszenie ich pojedynczo rozjeżdża projekt. Te idą razem z upgradem SDK,
+      # ręcznie, według przewodnika migracji.
+      - dependency-name: expo
+      - dependency-name: expo-*
+      - dependency-name: react
+      - dependency-name: react-dom
+      - dependency-name: react-native
+      - dependency-name: react-native-*
