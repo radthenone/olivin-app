@@ -50,7 +50,7 @@ dev = [
     "drf-spectacular>=0.29.0",
     "ipython>=9.11.0",
     "pyrefly>=1.2.0",
-    "ruff>=0.14.1",
+    "ruff>=0.16.5",
 ]
 test = [
     "factory-boy>=3.3.3",
