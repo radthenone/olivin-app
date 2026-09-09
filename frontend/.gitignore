@@ -10,3 +10,6 @@ dist/
 
 # lokalne env
 .env*.local
+
+# katalog roboczy kontroli rozjazdu klienta API (task ovral:check)
+.orval-check/

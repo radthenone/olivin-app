@@ -11,7 +11,8 @@
     "generate": "orval",
     "generate:watch": "orval --watch",
     "format": "prettier --write \"**/*.{ts,js,json}\"",
-    "format:check": "prettier --check \"**/*.{ts,js,json}\""
+    "format:check": "prettier --check \"**/*.{ts,js,json}\"",
+    "generate:check": "orval --config orval.check.config.js"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.8",

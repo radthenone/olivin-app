@@ -3,7 +3,7 @@
  * Do not edit manually.
  * olivin-app
  * API documentation
- * OpenAPI spec version: 1.0.0 (v1)
+ * OpenAPI spec version: 1.0.0
  */
 import {
   useMutation,

@@ -1,3 +1,5 @@
+const path = require("path");
+
 const { loadEnv } = require("@olivin/config/load-env.js");
 
 loadEnv();
@@ -35,8 +37,21 @@ const ZOD_OVERRIDE = {
   },
 };
 
-const ALLAUTH_SCHEMA_URL = `http://${process.env.EXPO_PUBLIC_BACKEND_URL || "localhost:8020"}/_allauth/openapi.json`;
-const APPS_SCHEMA_URL = `http://${process.env.EXPO_PUBLIC_BACKEND_URL || "localhost:8020"}/api/schema/`;
+// Schematy czytamy z plikow w repozytorium, nie po HTTP. Powod jest praktyczny:
+// bramka rozjazdu (task ovral:check) ma dzialac takze w ciaglej integracji, gdzie
+// nie ma uruchomionego Django. Aktualnosc pliku schematu domenowego pilnuje
+// osobna kontrola (task backend:schema:check), wiec lancuch jest zamkniety:
+// kod Django -> schema.yaml -> wygenerowany klient.
+//
+// Snapshot schematu allauth odswieza `task ovral:schema:allauth` przy podbiciu
+// wersji biblioteki — ten schemat pochodzi z zewnatrz i zmienia sie wylacznie
+// razem z nia.
+const REPO_ROOT = path.resolve(__dirname, "../../..");
+const ALLAUTH_SCHEMA_URL = path.join(
+  REPO_ROOT,
+  "backend/src/allauth-schema.json",
+);
+const APPS_SCHEMA_URL = path.join(REPO_ROOT, "backend/src/schema.yaml");
 
 module.exports = {
   "allauth-headless": {
