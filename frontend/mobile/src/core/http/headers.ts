@@ -2,7 +2,7 @@ import { allauthClient } from "@core/config/platform";
 import { sessionTokenStorage } from "@core/auth/session-token.storage";
 import { ensureCsrfCookie, getCsrfTokenFromCookie } from "@core/auth/csrf";
 import { ENV } from "@core/config/env";
-import type { HttpRequestConfig } from "./types";
+import type { HttpRequestConfig } from "@olivin/api";
 
 const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 

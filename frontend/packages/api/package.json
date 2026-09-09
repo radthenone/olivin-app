@@ -1,0 +1,26 @@
+{
+  "name": "@olivin/api",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Klient API obu schematów wraz z kontraktem transportu",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "prettier": "@olivin/config/prettier/index.json",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "generate": "orval",
+    "generate:watch": "orval --watch",
+    "format": "prettier --write \"**/*.{ts,js,json}\"",
+    "format:check": "prettier --check \"**/*.{ts,js,json}\""
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.102.8",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@olivin/config": "workspace:*",
+    "dotenv": "^17.2.3",
+    "orval": "^8.5.2",
+    "typescript": "~5.9.2"
+  }
+}

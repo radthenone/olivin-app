@@ -10,6 +10,11 @@ import {
 import { queryClient } from "@core/query/query-client";
 import { AuthProvider, useAuthContext } from "@core/auth/auth.provider";
 import { SafeView } from "@ui/layout/SafeView";
+import { configureMobileApi } from "@core/api/transport";
+
+// Transport musi być podłączony, zanim którykolwiek ekran wykona żądanie —
+// stąd wywołanie w module, a nie w efekcie komponentu.
+configureMobileApi();
 
 /**
  * Główny layout aplikacji.

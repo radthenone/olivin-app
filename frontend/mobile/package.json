@@ -13,13 +13,12 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
-    "api:generate": "orval",
-    "api:generate:watch": "orval --watch",
     "android": "expo run:android",
     "ios": "expo run:ios"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
+    "@olivin/api": "workspace:*",
     "@olivin/tokens": "workspace:*",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.9.40",
@@ -75,7 +74,6 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "eslint-import-resolver-babel-module": "^5.3.2",
-    "orval": "^8.5.2",
     "prettier": "^3.7.1",
     "typescript": "~5.9.2",
     "ws": "^8.21.3"

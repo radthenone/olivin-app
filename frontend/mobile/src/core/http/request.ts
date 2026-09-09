@@ -1,5 +1,5 @@
 import { buildHeaders } from "./headers";
-import type { HttpMethod, HttpRequest, HttpRequestConfig } from "./types";
+import type { HttpMethod, HttpRequest, HttpRequestConfig } from "@olivin/api";
 import { buildUrl } from "./url";
 import { buildRequestBody } from "./body";
 

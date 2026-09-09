@@ -1,4 +1,4 @@
-const { loadEnv } = require("./load-env");
+const { loadEnv } = require("@olivin/config/load-env.js");
 
 loadEnv();
 

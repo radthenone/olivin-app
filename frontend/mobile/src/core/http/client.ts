@@ -3,8 +3,8 @@ import { getDurationMs, logError, logRequest, logResponse } from "./logging";
 import { createRequest } from "./request";
 import { getResponseBody } from "./response";
 import { createTimeoutController } from "./timeout";
-import type { HttpRequestConfig, HttpResponse } from "./types";
-import { ApiError } from "./errors";
+import type { HttpRequestConfig, HttpResponse } from "@olivin/api";
+import { ApiError } from "@olivin/api";
 
 function isAcceptedStatus(config: HttpRequestConfig, status: number): boolean {
   if (config.acceptStatuses === "all") {

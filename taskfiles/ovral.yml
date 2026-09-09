@@ -5,12 +5,12 @@ version: "3"
 tasks:
     generate:
         desc: Orval API client generation
-        dir: frontend/mobile
+        dir: frontend/packages/api
         cmds:
-            - bun run api:generate
+            - bun run generate
     watch:
         desc: Ovral API client generation in watch mode
-        dir: frontend/mobile
+        dir: frontend/packages/api
         interactive: true
         cmds:
-            - bun run api:generate:watch
+            - bun run generate:watch

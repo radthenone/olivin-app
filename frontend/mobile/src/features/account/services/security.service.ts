@@ -3,9 +3,9 @@ import {
   deleteAllauthClientV1AccountAuthenticatorsTotp,
   getAllauthClientV1AccountAuthenticatorsTotp,
   postAllauthClientV1AccountAuthenticatorsTotp,
-} from "@api/generated/auth/account-2fa/account-2fa";
-import { postAllauthClientV1AccountPasswordChange } from "@api/generated/auth/account-password/account-password";
-import { postAllauthClientV1AccountEmail } from "@api/generated/auth/account-email/account-email";
+} from "@olivin/api/generated/auth/account-2fa/account-2fa";
+import { postAllauthClientV1AccountPasswordChange } from "@olivin/api/generated/auth/account-password/account-password";
+import { postAllauthClientV1AccountEmail } from "@olivin/api/generated/auth/account-email/account-email";
 
 type AuthResponseLike = {
   status: number;

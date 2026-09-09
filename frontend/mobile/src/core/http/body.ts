@@ -1,4 +1,4 @@
-import type { HttpRequestConfig } from "./types";
+import type { HttpRequestConfig } from "@olivin/api";
 
 export function buildRequestBody(
   config: HttpRequestConfig,

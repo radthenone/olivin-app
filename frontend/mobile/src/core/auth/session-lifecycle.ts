@@ -1,5 +1,5 @@
 import { allauthClient } from "@core/config/platform";
-import type { HttpResponse } from "@core/http/types";
+import type { HttpResponse } from "@olivin/api";
 import { sessionTokenStorage } from "./session-token.storage";
 import { isAllauthBody } from "./auth.types";
 

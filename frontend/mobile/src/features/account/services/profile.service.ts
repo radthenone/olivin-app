@@ -2,8 +2,11 @@ import {
   customersProfileCreate,
   customersProfileList,
   customersProfilePartialUpdate,
-} from "@api/generated/apps/profiles/profiles";
-import type { PatchedProfile, Profile } from "@api/generated/apps/schemas";
+} from "@olivin/api/generated/apps/profiles/profiles";
+import type {
+  PatchedProfile,
+  Profile,
+} from "@olivin/api/generated/apps/schemas";
 
 export type ProfileRequiredData = {
   firstName: string;

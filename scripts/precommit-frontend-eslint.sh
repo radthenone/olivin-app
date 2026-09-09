@@ -41,7 +41,7 @@ for file in "$@"; do
     relative="${rest#"$workspace"/}"
 
     case "$relative" in
-        src/api/generated/*) continue ;;
+        generated/*) continue ;;
     esac
 
     case "$relative" in

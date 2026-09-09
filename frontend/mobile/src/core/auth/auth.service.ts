@@ -2,22 +2,22 @@ import { allauthClient } from "@core/config/platform";
 import {
   getAllauthClientV1AuthSession,
   deleteAllauthClientV1AuthSession,
-} from "@api/generated/auth/authentication-current-session/authentication-current-session";
+} from "@olivin/api/generated/auth/authentication-current-session/authentication-current-session";
 import {
   postAllauthClientV1AuthLogin,
   postAllauthClientV1AuthSignup,
   postAllauthClientV1AuthEmailVerify,
-} from "@api/generated/auth/authentication-account/authentication-account";
-import { postAllauthClientV1Auth2faAuthenticate } from "@api/generated/auth/authentication-2fa/authentication-2fa";
+} from "@olivin/api/generated/auth/authentication-account/authentication-account";
+import { postAllauthClientV1Auth2faAuthenticate } from "@olivin/api/generated/auth/authentication-2fa/authentication-2fa";
 import {
   postAllauthClientV1AuthPasswordRequest,
   postAllauthClientV1AuthPasswordReset,
-} from "@api/generated/auth/authentication-password-reset/authentication-password-reset";
+} from "@olivin/api/generated/auth/authentication-password-reset/authentication-password-reset";
 import {
   postAllauthClientV1AuthCodeRequest,
   postAllauthClientV1AuthCodeConfirm,
-} from "@api/generated/auth/authentication-login-by-code/authentication-login-by-code";
-import { postAllauthClientV1AuthProviderToken } from "@api/generated/auth/authentication-providers/authentication-providers";
+} from "@olivin/api/generated/auth/authentication-login-by-code/authentication-login-by-code";
+import { postAllauthClientV1AuthProviderToken } from "@olivin/api/generated/auth/authentication-providers/authentication-providers";
 import { mapAllauthBodyToAuthState } from "./auth.mapper";
 
 type SocialProviderTokenInput =

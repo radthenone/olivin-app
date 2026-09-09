@@ -1,7 +1,7 @@
 import { ENV } from "@core/config/env";
 import { log } from "@core/logger";
-import type { HttpMethod, HttpRequestConfig } from "./types";
-import { ApiError } from "./errors";
+import type { HttpMethod, HttpRequestConfig } from "@olivin/api";
+import { ApiError } from "@olivin/api";
 
 const REDACTED_HEADERS = new Set([
   "authorization",

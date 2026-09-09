@@ -11,7 +11,7 @@ const sharedIgnores = [
   // Klient API generuje Orval. Formatuje i tak generator, a poprawki znikają
   // przy następnej regeneracji — ten sam katalog jest wykluczony w Prettierze
   // i w hookach pre-commit; trzymaj wszystkie trzy wpisy zgodne.
-  "src/api/generated/**",
+  "generated/**",
 ];
 
 /** Rozszerzenia platformowe rozpoznawane przez resolver importów. */

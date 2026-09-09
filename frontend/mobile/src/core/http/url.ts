@@ -1,5 +1,5 @@
 import { ENV } from "@core/config/env";
-import { type HttpRequestConfig, type Primitive } from "./types";
+import { type HttpRequestConfig, type Primitive } from "@olivin/api";
 
 function isPlainObject(value: unknown): value is Record<string, Primitive> {
   if (value === null || typeof value !== "object") {

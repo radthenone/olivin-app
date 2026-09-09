@@ -4,8 +4,11 @@ import {
   customersAddressesList,
   customersAddressesPartialUpdate,
   customersAddressesSetDefaultPartialUpdate,
-} from "@api/generated/apps/addresses/addresses";
-import type { Address, PatchedAddress } from "@api/generated/apps/schemas";
+} from "@olivin/api/generated/apps/addresses/addresses";
+import type {
+  Address,
+  PatchedAddress,
+} from "@olivin/api/generated/apps/schemas";
 
 export type AddressCreateInput = Omit<Address, "id">;
 export type AddressUpdateInput = {

@@ -1,5 +1,5 @@
 import { QueryClient } from "@tanstack/react-query";
-import { ApiError } from "@core/http/errors";
+import { ApiError } from "@olivin/api";
 
 /**
  * Globalny klient TanStack Query.

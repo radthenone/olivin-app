@@ -21,9 +21,7 @@
       "@features": ["./src/features/"],
       "@features/*": ["./src/features/*"],
       "@ui": ["./src/ui/"],
-      "@ui/*": ["./src/ui/*"],
-      "@api": ["./src/api/"],
-      "@api/*": ["./src/api/*"]
+      "@ui/*": ["./src/ui/*"]
     }
   },
   "include": [

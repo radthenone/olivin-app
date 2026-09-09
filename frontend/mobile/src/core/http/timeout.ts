@@ -1,5 +1,5 @@
 import { ENV } from "@core/config/env";
-import type { TimeoutController } from "./types";
+import type { TimeoutController } from "@olivin/api";
 
 export function createTimeoutController(
   timeoutMs?: number,

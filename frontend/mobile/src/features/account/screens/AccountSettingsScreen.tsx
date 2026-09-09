@@ -3,7 +3,7 @@ import { ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { z } from "zod";
 import { useAuthContext } from "@core/auth/auth.provider";
-import { ApiError } from "@core/http/errors";
+import { ApiError } from "@olivin/api";
 import { ErrorMessage } from "@ui/feedback/ErrorMessage";
 import { Screen } from "@ui/layout/Screen";
 import { Button } from "@ui/primitives/Button";
