@@ -13,6 +13,7 @@
       "version": "1.0.0",
       "dependencies": {
         "@expo/vector-icons": "^15.0.2",
+        "@olivin/tokens": "workspace:*",
         "@react-navigation/bottom-tabs": "^7.4.0",
         "@react-navigation/elements": "^2.9.40",
         "@react-navigation/native": "^7.1.8",
@@ -75,6 +76,13 @@
     "packages/config": {
       "name": "@olivin/config",
       "version": "0.0.0",
+    },
+    "packages/tokens": {
+      "name": "@olivin/tokens",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@olivin/config": "workspace:*",
+      },
     },
   },
   "trustedDependencies": [
@@ -463,6 +471,8 @@
     "@olivin/config": ["@olivin/config@workspace:packages/config"],
 
     "@olivin/mobile": ["@olivin/mobile@workspace:mobile"],
+
+    "@olivin/tokens": ["@olivin/tokens@workspace:packages/tokens"],
 
     "@orval/angular": ["@orval/angular@8.10.0", "", { "dependencies": { "@orval/core": "8.10.0" } }, "sha512-MAamzCA68K796MwgmS1WEnVrDIDeMm3iv2fmKtz8oOhYxjVRDLX+Bh3dgsoGPmQwCN1x8xMHdHW1c6vrnIZCCA=="],
 

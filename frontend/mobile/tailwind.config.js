@@ -1,4 +1,10 @@
 const nativewind = require("nativewind/preset");
+const tokens = require("@olivin/tokens");
+
+// Adapter tokenów dla Tailwinda v3 (wymaganego przez NativeWind 4).
+// Web ma własny adapter dla v4 — patrz docs/adr/0002-tokeny-designu-jako-obiekt-typescript.md
+// Wartości nie powstają tutaj; ten plik wyłącznie przekłada pakiet tokenów na
+// kształt konfiguracji, którego oczekuje Tailwind.
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -9,14 +15,16 @@ module.exports = {
   ],
   presets: [nativewind],
   theme: {
-    screens: {
-      sm: "640px",
-      md: "768px",
-      lg: "1024px",
-      xl: "1280px",
-      "2xl": "1536px",
+    screens: tokens.screens,
+    extend: {
+      colors: tokens.colors,
+      fontFamily: tokens.fontFamily,
+      fontSize: tokens.fontSize,
+      fontWeight: tokens.fontWeight,
+      borderRadius: tokens.borderRadius,
+      boxShadow: tokens.boxShadow,
+      spacing: tokens.spacing,
     },
-    extend: {},
   },
   plugins: [],
 };

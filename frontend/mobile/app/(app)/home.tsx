@@ -17,7 +17,9 @@ export default function HomeRoute() {
   return (
     <Screen>
       <View className="gap-4">
-        <Text className="text-2xl font-semibold">Olivin</Text>
+        {/* Kolor pochodzi z @olivin/tokens przez adapter w tailwind.config.js —
+            jedyne miejsce w aplikacji, gdzie widać, że łańcuch tokenów działa. */}
+        <Text className="text-2xl font-semibold text-brand-600">Olivin</Text>
         <Text className="text-base text-neutral-700">
           {auth.user?.email ?? "Zalogowany użytkownik"}
         </Text>
