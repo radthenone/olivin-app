@@ -4,6 +4,7 @@
   "compilerOptions": {
     "strict": true,
     "moduleResolution": "bundler",
+    "module": "preserve",
     "skipLibCheck": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,

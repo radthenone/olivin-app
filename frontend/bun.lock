@@ -77,6 +77,22 @@
       "name": "@olivin/config",
       "version": "0.0.0",
     },
+    "packages/money": {
+      "name": "@olivin/money",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@olivin/config": "workspace:*",
+        "typescript": "~5.9.2",
+      },
+    },
+    "packages/schemas": {
+      "name": "@olivin/schemas",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@olivin/config": "workspace:*",
+        "typescript": "~5.9.2",
+      },
+    },
     "packages/tokens": {
       "name": "@olivin/tokens",
       "version": "0.0.0",
@@ -471,6 +487,10 @@
     "@olivin/config": ["@olivin/config@workspace:packages/config"],
 
     "@olivin/mobile": ["@olivin/mobile@workspace:mobile"],
+
+    "@olivin/money": ["@olivin/money@workspace:packages/money"],
+
+    "@olivin/schemas": ["@olivin/schemas@workspace:packages/schemas"],
 
     "@olivin/tokens": ["@olivin/tokens@workspace:packages/tokens"],
 
