@@ -7,16 +7,33 @@ fi
 
 # Jak w wariancie ESLint: sciezki przychodza od korzenia repo, a Prettier
 # uruchamiamy w katalogu workspace'a, zeby zlapal jego .prettierignore.
+# Workspace to albo pierwszy segment (mobile, web), albo dwa segmenty pod
+# packages/. Branie zawsze pierwszego segmentu trafialoby w frontend/packages,
+# gdzie nie ma manifestu, i bun wspinalby sie do korzenia uruchamiajac zadanie
+# Turborepo zamiast lintera aplikacji.
+workspace_of() {
+    case "$1" in
+        packages/*/*)
+            local without_prefix="${1#packages/}"
+            echo "packages/${without_prefix%%/*}"
+            ;;
+        *)
+            echo "${1%%/*}"
+            ;;
+    esac
+}
+
 declare -A grouped=()
 
 for file in "$@"; do
     rest="${file#frontend/}"
     [[ "$rest" == "$file" ]] && continue
 
-    workspace="${rest%%/*}"
+    workspace="$(workspace_of "$rest")"
     [[ "$workspace" == "$rest" ]] && continue
+    [[ -f "frontend/$workspace/package.json" ]] || continue
 
-    relative="${rest#*/}"
+    relative="${rest#"$workspace"/}"
 
     case "$relative" in
         src/api/generated/*) continue ;;

@@ -62,7 +62,9 @@
     "zod": "^4.3.6",
     "zustand": "^5.0.15"
   },
+  "prettier": "@olivin/config/prettier/index.json",
   "devDependencies": {
+    "@olivin/config": "workspace:*",
     "@tanstack/react-query-devtools": "^5.91.3",
     "@types/react": "~19.1.0",
     "@types/react-native": "^0.72.8",
