@@ -52,13 +52,15 @@ Nie zakładaj, że którakolwiek z nich cokolwiek zawiera. Nie ma modelu Product
 
 ## Taskfile — obowiązkowy punkt wejścia
 
-Główny plik `Taskfile.yml`, importy z `taskfiles/`. Istniejące namespace'y: `backend`, `db`, `frontend`, `emulator`, `shell`, `packages`, `ovral`, `test`, `lints`, `precommit`.
+Główny plik `Taskfile.yml`, importy z `taskfiles/`. Istniejące namespace'y: `backend`, `db`, `mobile`, `emulator`, `shell`, `packages`, `ovral`, `test`, `lints`, `precommit`.
 
 Argumenty tasków po `--`, np. `task db:migrations:make -- accounts`.
 
-Przykłady: `task backend:run`, `task db:migrate`, `task test:backend-local -- src/tests/accounts/`, `task frontend:run` (Dev Client), `task ovral:generate`, `task lints:frontend:typecheck`.
+Przykłady: `task backend:run`, `task db:migrate`, `task test:backend-local -- src/tests/accounts/`, `task mobile:run` (Dev Client), `task ovral:generate`, `task lints:frontend:typecheck`.
 
-**Brak taska na uruchomienie weba** — dziś `cd frontend && bunx expo start --web`.
+Namespace `mobile:` obsługuje aplikację Expo. Namespace `lints:frontend:*` obejmuje **wszystkie** workspace'y JavaScriptu i idzie przez Turborepo.
+
+**Aplikacja webowa jeszcze nie istnieje** — powstaje w #53.
 
 ## Shell
 
@@ -117,11 +119,12 @@ Sekwencja po zmianie API: backend → migracje → regeneracja `schema.yaml` →
 
 | Cel | Komenda |
 | --- | --- |
-| Mobile (domyślnie) | `task frontend:run` — Dev Client + Metro `--lan --dev-client` + Android |
-| Expo Go (bez modułów natywnych) | `task frontend:run:go` |
-| Metro sam | `task frontend:metro` |
-| Build Dev Client | `task frontend:build:android` |
-| Web | brak taska — `cd frontend && bunx expo start --web` |
+| Mobile (domyślnie) | `task mobile:run` — Dev Client + Metro `--lan --dev-client` + Android |
+| Expo Go (bez modułów natywnych) | `task mobile:run:go` |
+| Metro sam | `task mobile:metro` |
+| Build Dev Client | `task mobile:build:android` |
+| Regeneracja projektu natywnego | `task mobile:prebuild:clean` |
+| Web | jeszcze nie istnieje |
 
 `web.output: "static"` w `app.config.js`. Platforma w kodzie przez `moduleSuffixes: [".native", ".web", ""]`. Pliki: `session-token.storage.native.ts` (SecureStore) vs `.web.ts` (cookies). Wybór klienta allauth: `src/core/auth/platform.ts`.
 
