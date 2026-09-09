@@ -5,18 +5,31 @@ if [[ "$#" -eq 0 ]]; then
     exit 0
 fi
 
-files=()
+# Pliki przychodza jako sciezki od korzenia repo: frontend/<workspace>/<reszta>.
+# ESLint uruchamiamy w katalogu workspace'a, bo tam lezy jego flat config,
+# wiec grupujemy pliki po workspacie i robimy jedno wywolanie na kazdy.
+declare -A grouped=()
+
 for file in "$@"; do
-    case "$file" in
-        frontend/src/api/generated/*)
-            ;;
-        frontend/*.js|frontend/*.jsx|frontend/*.ts|frontend/*.tsx)
-            files+=("${file#frontend/}")
-            ;;
+    rest="${file#frontend/}"
+    [[ "$rest" == "$file" ]] && continue
+
+    workspace="${rest%%/*}"
+    # plik lezacy bezposrednio w frontend/ nie nalezy do zadnego workspace'a
+    [[ "$workspace" == "$rest" ]] && continue
+
+    relative="${rest#*/}"
+
+    case "$relative" in
+        src/api/generated/*) continue ;;
+    esac
+
+    case "$relative" in
+        *.js|*.jsx|*.ts|*.tsx) grouped["$workspace"]+=" $relative" ;;
     esac
 done
 
-if [[ "${#files[@]}" -eq 0 ]]; then
+if [[ "${#grouped[@]}" -eq 0 ]]; then
     exit 0
 fi
 
@@ -37,9 +50,14 @@ if ! command -v bun >/dev/null 2>&1; then
     exit 127
 fi
 
-cd frontend
-if command -v cmd.exe >/dev/null 2>&1; then
-    cmd.exe //c bun.exe run lint --fix -- "${files[@]}"
-else
-    bun run lint --fix -- "${files[@]}"
-fi
+for workspace in "${!grouped[@]}"; do
+    read -r -a files <<<"${grouped[$workspace]}"
+    (
+        cd "frontend/$workspace"
+        if command -v cmd.exe >/dev/null 2>&1; then
+            cmd.exe //c bun.exe run lint --fix -- "${files[@]}"
+        else
+            bun run lint --fix -- "${files[@]}"
+        fi
+    )
+done
