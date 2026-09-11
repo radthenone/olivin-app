@@ -34,3 +34,23 @@ tasks:
         dir: frontend/web
         cmds:
             - bun run e2e -- {{.CLI_ARGS}}
+
+    up:
+        desc: Start the web app with the backend in containers (profile web, without the mobile bundler)
+        cmds:
+            - docker-compose --profile web up -d
+
+    up:build:
+        desc: Rebuild images and start the web app with the backend in containers
+        cmds:
+            - docker-compose --profile web up --build -d
+
+    down:
+        desc: Stop the web profile containers
+        cmds:
+            - docker-compose --profile web down
+
+    logs:
+        desc: Follow the web app container logs
+        cmds:
+            - docker compose logs -f olivin-web
