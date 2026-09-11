@@ -43,7 +43,6 @@ export default {
         backgroundImage: "./assets/images/android-icon-background.png",
         monochromeImage: "./assets/images/android-icon-monochrome.png",
       },
-      edgeToEdgeEnabled: false,
       predictiveBackGestureEnabled: false,
       softwareKeyboardLayoutMode: "pan",
       package: "com.olivin.frontend",
@@ -54,8 +53,13 @@ export default {
       favicon: "./assets/images/favicon.png",
     },
     plugins: [
-      "@rnrepo/expo-config-plugin",
       "expo-router",
+      // SDK 57 wymaga jawnej rejestracji tych modulow jako pluginow konfiguracji.
+      "expo-font",
+      "expo-image",
+      "expo-secure-store",
+      "expo-status-bar",
+      "expo-web-browser",
       [
         "expo-splash-screen",
         {
