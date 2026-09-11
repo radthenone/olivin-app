@@ -3,6 +3,7 @@
   "private": true,
   "packageManager": "bun@1.3.13",
   "workspaces": [
+    "web",
     "mobile",
     "packages/*"
   ],

@@ -1,0 +1,15 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+/* Tokeny pochodzą z @olivin/tokens i są przekładane na blok @theme przez
+   scripts/generate-tokens-css.mjs. Nie wpisuj tu wartości kolorów ani
+   typografii — zmieniaj je w pakiecie tokenów. */
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--color-neutral-50);
+  color: var(--color-neutral-900);
+}

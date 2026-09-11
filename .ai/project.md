@@ -2,7 +2,7 @@
 
 **Zasada tego pliku:** opisuje to, co JEST, nigdy to, co ma być. Plany mieszkają w zgłoszeniach na trackerze, decyzje w `docs/adr/`, słownik domeny w `CONTEXT.md`. Jeśli ten plik rozjedzie się z kodem, kod ma rację — zgłoś rozjazd zamiast budować na opisie.
 
-Zweryfikowano: 2026-09-09.
+Zweryfikowano: 2026-09-11.
 
 ## Gdzie czego szukać
 
@@ -18,9 +18,11 @@ Zweryfikowano: 2026-09-09.
 **Żywe:**
 
 - `backend/src/apps/accounts` — User, Profile, Address, managery, serializery, serwisy, widoki, schematy. Testy w `backend/src/tests/accounts/`.
-- `backend/src/core/` — settings (django-split-settings), integracje, storage, utils (w tym health check w `core/utils/health/`).
+- `backend/src/core/` — settings (django-split-settings), integracje, storage, utils. Health check: **`GET /health/`** (nie pod `/api/`), zwraca stan bazy, Redisa i storage.
 - `backend/src/common/` — pola, modele bazowe w tym `TranslatableModel`, lokalizacja.
-- `frontend/` — aplikacja Expo: ekrany auth (logowanie, rejestracja, MFA, weryfikacja e-mail, reset hasła, logowanie kodem), konto, profil. Klienty Orval.
+- `frontend/mobile/` — aplikacja Expo: ekrany auth (logowanie, rejestracja, MFA, weryfikacja e-mail, reset hasła, logowanie kodem), konto, profil.
+- `frontend/web/` — aplikacja Next.js 16 (App Router, Tailwind v4). **Jedna trasa**: strona główna ze stanem zdrowia backendu. Zero ekranów sklepu.
+- `frontend/packages/` — `@olivin/config` (tsconfig, eslint, prettier, loader env), `@olivin/tokens` (tokeny designu, CommonJS + d.ts), `@olivin/api` (klient Orval obu schematów + kontrakt transportu), `@olivin/schemas` i `@olivin/money` (**puste** szkielety).
 
 **Puste szkielety po `startapp` — dziewięć linii kodu każdy, zero modeli, zero migracji:**
 
@@ -38,12 +40,14 @@ Nie zakładaj, że którakolwiek z nich cokolwiek zawiera. Nie ma modelu Product
 | --- | --- |
 | Python | 3.12.10 (`.python-version`) |
 | Backend PM | **uv** — `uv sync --extra dev` |
-| Django / DRF | 5.2.11 / 3.16.1 (`uv.lock`) |
+| Django / DRF | **6.0.8** / 3.18.1 (`uv.lock`) — Django podbity o wersję główną w #51 |
 | Typecheck BE | **Pyrefly** — `task lints:backend:typecheck`. Nie MyPy. |
 | Lint BE | Ruff |
 | Node | 20.19.2 (`.nvmrc`) |
 | Frontend PM | **Bun** — `bun install --frozen-lockfile` |
 | Expo / RN / React | SDK 54 / 0.81.5 / 19.1 |
+| Web | Next.js 16 (Turbopack), Tailwind v4, React 19.1 (przypięty do wersji z Expo) |
+| Monorepo JS | Bun workspaces (`linker = "hoisted"`) + Turborepo 2 |
 | Styling mobile | NativeWind 4.2 (Tailwind v3) |
 | Stan | TanStack Query (serwer) + Zustand (klient) |
 | Formularze | react-hook-form + Zod |
@@ -52,7 +56,7 @@ Nie zakładaj, że którakolwiek z nich cokolwiek zawiera. Nie ma modelu Product
 
 ## Taskfile — obowiązkowy punkt wejścia
 
-Główny plik `Taskfile.yml`, importy z `taskfiles/`. Istniejące namespace'y: `backend`, `db`, `mobile`, `emulator`, `shell`, `packages`, `ovral`, `test`, `lints`, `precommit`.
+Główny plik `Taskfile.yml`, importy z `taskfiles/`. Istniejące namespace'y: `backend`, `db`, `mobile`, `web`, `emulator`, `shell`, `packages`, `ovral`, `test`, `lints`, `precommit`.
 
 Argumenty tasków po `--`, np. `task db:migrations:make -- accounts`.
 
@@ -60,7 +64,7 @@ Przykłady: `task backend:run`, `task db:migrate`, `task test:backend-local -- s
 
 Namespace `mobile:` obsługuje aplikację Expo. Namespace `lints:frontend:*` obejmuje **wszystkie** workspace'y JavaScriptu i idzie przez Turborepo.
 
-**Aplikacja webowa jeszcze nie istnieje** — powstaje w #53.
+Web: `task web:run` (dev, port 3000), `task web:build`, `task web:tokens` (regeneracja `app/tokens.css` z pakietu tokenów).
 
 ## Shell
 
@@ -102,18 +106,18 @@ Testy integracyjne: `docker-compose.test.yml`, próg pokrycia **60%**.
 
 ## Orval — dual schema
 
-**Nie edytuj `frontend/src/api/generated/**` ręcznie.**
+**Nie edytuj `frontend/packages/api/generated/**` ręcznie.**
 
-| Wejście | URL | Mutator |
+| Wejście | Plik (nie HTTP) | Mutator |
 | --- | --- | --- |
-| Allauth | `/_allauth/openapi.json` | `auth-mutator.ts` |
-| DRF apps | `/api/schema/` | `app-mutator.ts` |
+| Allauth | `backend/src/allauth-schema.json` (snapshot; odśwież `task ovral:schema:allauth`) | `src/auth-mutator.ts` |
+| DRF apps | `backend/src/schema.yaml` (pilnowany przez `backend:schema:check`) | `src/app-mutator.ts` |
 
 Generowane są też schematy Zod (`.zod.ts`) dla obu wejść.
 
-`APPS_TAGS` w `frontend/orval.config.js` (obecnie): **`Addresses`, `Profiles`, `Health`**. Nowy viewset domenowy bez dopisania tagu nie trafi do klienta — cichy błąd.
+`APPS_TAGS` w `frontend/packages/api/orval.config.js` (obecnie): **`Addresses`, `Profiles`, `Health`**. Nowy viewset domenowy bez dopisania tagu nie trafi do klienta — cichy błąd.
 
-Sekwencja po zmianie API: backend → migracje → regeneracja `schema.yaml` → tag w `APPS_TAGS` → `task ovral:generate` → `task lints:frontend:typecheck`.
+Sekwencja po zmianie API: backend → migracje → regeneracja `schema.yaml` → tag w `APPS_TAGS` → `task ovral:generate` → `task lints:frontend:typecheck`. Bramka: `task ovral:check` (offline, w CI).
 
 ## Web vs mobile (Expo, stan obecny)
 
@@ -124,7 +128,7 @@ Sekwencja po zmianie API: backend → migracje → regeneracja `schema.yaml` →
 | Metro sam | `task mobile:metro` |
 | Build Dev Client | `task mobile:build:android` |
 | Regeneracja projektu natywnego | `task mobile:prebuild:clean` |
-| Web | jeszcze nie istnieje |
+| Web | `task web:run` — Next dev na porcie 3000, natywnie, poza Dockerem |
 
 `web.output: "static"` w `app.config.js`. Platforma w kodzie przez `moduleSuffixes: [".native", ".web", ""]`. Pliki: `session-token.storage.native.ts` (SecureStore) vs `.web.ts` (cookies). Wybór klienta allauth: `src/core/auth/platform.ts`.
 
@@ -147,11 +151,17 @@ Adaptery w **`core/integrations/`** (mail, allauth). Settings i Celery mogą jes
 
 ## Struktura katalogów (stan obecny)
 
-**Frontend:** `app/` (routing Expo Router), `src/core/`, `src/features/`, `src/api/generated/`, `src/ui/` (`primitives/`, `layout/`, `feedback/`, `platform/`).
+**Frontend (`frontend/` = korzeń workspace'ów Bun):** `web/`, `mobile/`, `packages/{config,tokens,api,schemas,money}`, `turbo.json`, `bunfig.toml`, `bun.lock`.
+
+**Mobile:** `app/` (routing Expo Router), `src/core/` (w tym `core/api/transport.ts` — wstrzyknięcie transportu), `src/features/`, `src/ui/`.
+
+**Web:** `app/` (App Router: `layout.tsx`, `page.tsx`, `providers.tsx`, `globals.css`, generowany `tokens.css`), `src/lib/` (`http.ts`, `api-transport.ts`), `scripts/generate-tokens-css.mjs`.
+
+**Klient API:** `frontend/packages/api/generated/` — **nie edytuj ręcznie**. Wejścia Orvala to pliki `backend/src/schema.yaml` i `backend/src/allauth-schema.json`, nie HTTP.
 
 **Backend:** `core/`, `apps/`, `common/`, `schema.yaml`, `tests/` (centralnie, nie per-app `tests.py`).
 
-**Tokeny designu:** `frontend/tailwind.config.js` ma zdefiniowane wyłącznie breakpointy. `theme.extend` jest **pusty** — brak palety, typografii i skali odstępów.
+**Tokeny designu:** `@olivin/tokens` — paleta robocza (brand/neutral/semantyczne), typografia, promienie, cienie, breakpointy. Adaptery: `mobile/tailwind.config.js` (v3) i `web/scripts/generate-tokens-css.mjs` → `web/app/tokens.css` (v4). Tożsamość wizualna marki **nie jest** jeszcze dobrana.
 
 ## CI (`.github/workflows/ci.yml`)
 
@@ -161,13 +171,15 @@ Adaptery w **`core/integrations/`** (mail, allauth). Settings i Celery mogą jes
 
 **Pre-commit:** osobny job uruchamiający te same hooki co `git commit`.
 
-**Czego CI nie robi:** bramki diffu Orvala (schemat jest pilnowany, wygenerowany klient nie), testów integracyjnych w Dockerze, żadnych testów frontendu, buildów EAS ani buildu weba.
+**Frontend w CI dodatkowo:** `task ovral:check` — rozjazd wygenerowanego klienta ze schematem zatrzymuje przepływ.
+
+**Czego CI nie robi:** testów integracyjnych w Dockerze, żadnych testów frontendu (brak runnera), buildów EAS, buildu weba.
 
 ## Kontrole po zmianach
 
 - Backend: `task test:backend-local -- <ścieżka>`, `task lints:backend:ruff:check`, `task lints:backend:typecheck`
 - Frontend: `task lints:frontend:lint:check`, `task lints:frontend:typecheck`
 
-## Planowana przebudowa — jeszcze NIE wykonana
+## Co zostało z przebudowy
 
-Zaplanowane jest przeniesienie `frontend/` do monorepo Turborepo z osobną aplikacją Next.js (`frontend/web/`), przeniesioną aplikacją Expo (`frontend/mobile/`) i pakietami współdzielonymi (`frontend/packages/`). **Nic z tego jeszcze nie istnieje.** Do czasu wykonania obowiązuje struktura opisana wyżej.
+Wykonane: monorepo, web ze stroną główną, pakiety, bramka Orvala. **Niewykonane:** test przeglądarkowy (#55), web w docker-compose (#56), tożsamość wizualna (paleta w tokenach jest robocza).
