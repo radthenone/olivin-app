@@ -2,6 +2,10 @@
 
 version: "3"
 
+# Backend idzie bezpośrednio przez uv. Frontend idzie przez Turborepo, żeby jedna
+# komenda obejmowała wszystkie workspace'y (mobile, web, packages/*) i korzystała
+# z pamięci podręcznej zadań. Task pozostaje jedynym interfejsem dla człowieka —
+# patrz docs/adr/0004-task-jako-interfejs-turborepo-jako-silnik.md
 tasks:
     backend:ruff:
         desc: Lint backend with Ruff and apply safe fixes, then format code
@@ -20,31 +24,29 @@ tasks:
         dir: backend
         cmds:
             - uv run pyrefly check
+
     frontend:lint:
-        desc: Lint Expo app
+        desc: Lint all frontend workspaces and apply fixes
         dir: frontend
-        vars:
-            FIX: '{{default "--fix" .CLI_ARGS}}'
         cmds:
-            - bun run lint {{.FIX}}
+            - bun run lint:fix -- {{.CLI_ARGS}}
     frontend:lint:check:
-        desc: Check Expo app lint without modifying files
+        desc: Check frontend lint without modifying files
         dir: frontend
         cmds:
-            - bun run lint
+            - bun run lint -- {{.CLI_ARGS}}
     frontend:typecheck:
-        desc: Type-check Expo app
+        desc: Type-check all frontend workspaces
         dir: frontend
         cmds:
-            - bun run typecheck
+            - bun run typecheck -- {{.CLI_ARGS}}
     frontend:format:
-        desc: Format Expo app codebase using Prettier
+        desc: Format all frontend workspaces using Prettier
         dir: frontend
         cmds:
-            # Flaga --write sama zmodyfikuje pliki, a --check sprawdzi czy poprawki są konieczne
-            - bunx prettier --write "**/*.{ts,tsx,js,jsx,json,css,md}"
+            - bun run format -- {{.CLI_ARGS}}
     frontend:format:check:
-        desc: Check Expo app formatting with Prettier
+        desc: Check frontend formatting with Prettier
         dir: frontend
         cmds:
-            - bunx prettier --check "**/*.{ts,tsx,js,jsx,json,css,md}"
+            - bun run format:check -- {{.CLI_ARGS}}

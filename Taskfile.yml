@@ -27,7 +27,8 @@ dotenv:
 includes:
     emulator: ./taskfiles/emulators.yml
     backend: ./taskfiles/backend.yml
-    frontend: ./taskfiles/frontend.yml
+    mobile: ./taskfiles/mobile.yml
+    web: ./taskfiles/web.yml
     db: ./taskfiles/db.yml
     shell: ./taskfiles/shell.yml
     packages: ./taskfiles/packages.yml

@@ -1,0 +1,9 @@
+# artefakty budowania Next.js
+.next/
+out/
+
+# generowane z @olivin/tokens (bun run tokens)
+app/tokens.css
+
+node_modules/
+next-env.d.ts

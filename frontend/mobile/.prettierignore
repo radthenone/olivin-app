@@ -1,0 +1,12 @@
+# Artefakty builda i zależności
+node_modules/
+.expo/
+dist/
+build/
+web-build/
+android/
+ios/
+
+# Lockfile — utrzymywany przez bun
+bun.lock
+bun.lockb

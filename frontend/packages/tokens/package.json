@@ -1,0 +1,20 @@
+{
+  "name": "@olivin/tokens",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Tokeny designu — jedno źródło prawdy dla web i mobile",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
+  "prettier": "@olivin/config/prettier/index.json",
+  "scripts": {
+    "format": "prettier --write \"**/*.{js,ts,json}\"",
+    "format:check": "prettier --check \"**/*.{js,ts,json}\""
+  },
+  "devDependencies": {
+    "@olivin/config": "workspace:*"
+  }
+}

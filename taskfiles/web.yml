@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
+
+tasks:
+    run:
+        desc: Run the Next.js web app in development mode
+        dir: frontend/web
+        interactive: true
+        cmds:
+            - bun run dev
+
+    build:
+        desc: Build the web app for production
+        dir: frontend/web
+        cmds:
+            - bun run build
+
+    start:
+        desc: Serve the production build of the web app
+        dir: frontend/web
+        interactive: true
+        cmds:
+            - bun run start
+
+    tokens:
+        desc: Regenerate the Tailwind v4 theme from the design tokens package
+        dir: frontend/web
+        cmds:
+            - bun run tokens

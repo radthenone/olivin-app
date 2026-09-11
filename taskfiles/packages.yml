@@ -2,45 +2,54 @@
 
 version: "3"
 
+# Frontend jest monorepo Bun. Zależności dokłada się do konkretnego workspace'a
+# (mobile, web, packages/*), nie do korzenia — stąd osobne taski zamiast jednego
+# `frontend:add`. Do korzenia trafia wyłącznie narzędziówka wspólna dla całości.
 tasks:
-    frontend:add:
-        desc: Add frontend package (task app:frontend:add -- <package>)
-        dir: frontend
+    mobile:add:
+        desc: Add package to the mobile workspace (task packages:mobile:add -- <package>)
+        dir: frontend/mobile
         cmds:
             - bun add {{.CLI_ARGS}}
-    frontend:add:development:
-        desc: Add frontend dev package (task app:frontend:add:development -- <package>)
+    mobile:add:development:
+        desc: Add dev package to the mobile workspace (task packages:mobile:add:development -- <package>)
+        dir: frontend/mobile
+        cmds:
+            - bun add -d {{.CLI_ARGS}}
+    mobile:remove:
+        desc: Remove package from the mobile workspace (task packages:mobile:remove -- <package>)
+        dir: frontend/mobile
+        cmds:
+            - bun remove {{.CLI_ARGS}}
+
+    frontend:add:root:
+        desc: Add shared tooling to the frontend workspace root (task packages:frontend:add:root -- <package>)
         dir: frontend
         cmds:
             - bun add -d {{.CLI_ARGS}}
-    frontend:remove:
-        desc: Remove frontend package (task app:frontend:remove -- <package>)
-        dir: frontend
-        cmds:
-            - bun remove {{.CLI_ARGS}}
     frontend:sync:
-        desc: Sync frontend packages (task app:frontend:sync)
+        desc: Install all frontend workspaces (task packages:frontend:sync)
         dir: frontend
         cmds:
             - bun install
 
     backend:add:
-        desc: Add backend package (task app:backend:add -- <package>)
+        desc: Add backend package (task packages:backend:add -- <package>)
         dir: backend
         cmds:
             - uv add {{.CLI_ARGS}}
     backend:add:development:
-        desc: Add backend dev package (task app:backend:add:development -- <package>)
+        desc: Add backend dev package (task packages:backend:add:development -- <package>)
         dir: backend
         cmds:
             - uv add {{.CLI_ARGS}} --optional dev
     backend:remove:
-        desc: Remove backend package (task app:backend:remove -- <package>)
+        desc: Remove backend package (task packages:backend:remove -- <package>)
         dir: backend
         cmds:
             - uv remove {{.CLI_ARGS}}
     backend:sync:
-        desc: Sync backend packages (task app:backend:sync)
+        desc: Sync backend packages (task packages:backend:sync)
         dir: backend
         cmds:
             - uv sync --extra dev

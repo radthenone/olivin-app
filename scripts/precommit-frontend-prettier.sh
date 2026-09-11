@@ -5,18 +5,46 @@ if [[ "$#" -eq 0 ]]; then
     exit 0
 fi
 
-files=()
+# Jak w wariancie ESLint: sciezki przychodza od korzenia repo, a Prettier
+# uruchamiamy w katalogu workspace'a, zeby zlapal jego .prettierignore.
+# Workspace to albo pierwszy segment (mobile, web), albo dwa segmenty pod
+# packages/. Branie zawsze pierwszego segmentu trafialoby w frontend/packages,
+# gdzie nie ma manifestu, i bun wspinalby sie do korzenia uruchamiajac zadanie
+# Turborepo zamiast lintera aplikacji.
+workspace_of() {
+    case "$1" in
+        packages/*/*)
+            local without_prefix="${1#packages/}"
+            echo "packages/${without_prefix%%/*}"
+            ;;
+        *)
+            echo "${1%%/*}"
+            ;;
+    esac
+}
+
+declare -A grouped=()
+
 for file in "$@"; do
-    case "$file" in
-        frontend/src/api/generated/*)
-            ;;
-        frontend/*.js|frontend/*.jsx|frontend/*.ts|frontend/*.tsx|frontend/*.json|frontend/*.css|frontend/*.md)
-            files+=("${file#frontend/}")
-            ;;
+    rest="${file#frontend/}"
+    [[ "$rest" == "$file" ]] && continue
+
+    workspace="$(workspace_of "$rest")"
+    [[ "$workspace" == "$rest" ]] && continue
+    [[ -f "frontend/$workspace/package.json" ]] || continue
+
+    relative="${rest#"$workspace"/}"
+
+    case "$relative" in
+        generated/*) continue ;;
+    esac
+
+    case "$relative" in
+        *.js|*.jsx|*.ts|*.tsx|*.json|*.css|*.md) grouped["$workspace"]+=" $relative" ;;
     esac
 done
 
-if [[ "${#files[@]}" -eq 0 ]]; then
+if [[ "${#grouped[@]}" -eq 0 ]]; then
     exit 0
 fi
 
@@ -37,9 +65,14 @@ if ! command -v bunx >/dev/null 2>&1; then
     exit 127
 fi
 
-cd frontend
-if command -v cmd.exe >/dev/null 2>&1; then
-    cmd.exe //c bunx.exe prettier --write -- "${files[@]}"
-else
-    bunx prettier --write -- "${files[@]}"
-fi
+for workspace in "${!grouped[@]}"; do
+    read -r -a files <<<"${grouped[$workspace]}"
+    (
+        cd "frontend/$workspace"
+        if command -v cmd.exe >/dev/null 2>&1; then
+            cmd.exe //c bunx.exe prettier --write -- "${files[@]}"
+        else
+            bunx prettier --write -- "${files[@]}"
+        fi
+    )
+done

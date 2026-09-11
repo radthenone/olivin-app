@@ -16,7 +16,7 @@ repos:
             language: system
             pass_filenames: true
             files: ^frontend/.*\.(js|jsx|ts|tsx)$
-            exclude: ^frontend/src/api/generated/
+            exclude: ^frontend/packages/api/generated/
 
           - id: frontend-prettier
             name: Frontend Prettier
@@ -24,4 +24,4 @@ repos:
             language: system
             pass_filenames: true
             files: ^frontend/.*\.(js|jsx|ts|tsx|json|css|md)$
-            exclude: ^frontend/src/api/generated/
+            exclude: ^frontend/packages/api/generated/

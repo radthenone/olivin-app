@@ -99,6 +99,14 @@ jobs:
       - name: TypeScript
         run: task lints:frontend:typecheck
 
+      # Schemat jest pilnowany wzgledem kodu Django osobna kontrola, ale nic nie
+      # pilnowalo, czy wygenerowany klient zgadza sie ze schematem. Zmiana
+      # serializera bez regeneracji nie psuje zadnego testu — wychodzi dopiero w
+      # dzialajacej aplikacji, a po dolozeniu drugiej aplikacji konsumujacej ten
+      # sam klient kosztuje dwa razy wiecej.
+      - name: API client up to date
+        run: task ovral:check
+
       - name: Prettier check
         run: task lints:frontend:format:check
 
