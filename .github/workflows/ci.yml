@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - master
+      - dev
 
 # Nowy push na ten sam PR ubija poprzedni przebieg — bez tego kilka pushów pod rząd
 # trzyma runnery zajęte wynikami, których i tak nikt nie przeczyta.
