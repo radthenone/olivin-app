@@ -206,6 +206,7 @@ addopts = """
   --no-migrations
   --cov=apps
   --cov=core
+  --cov=common
   --cov-report=term-missing
   --cov-report=lcov:coverage/lcov.info
   --cov-report=html:coverage/html
