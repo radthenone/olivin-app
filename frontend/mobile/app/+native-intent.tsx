@@ -8,7 +8,7 @@ type NativeIntent = {
  */
 export function redirectSystemPath({ path }: NativeIntent): string {
   try {
-    const url = new URL(path, "frontend://app");
+    const url = new URL(path, "olivin://app");
 
     const callbackNames = ["authredirect", "oauthredirect", "authorize"];
 

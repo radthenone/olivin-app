@@ -12,13 +12,16 @@ const facebookScheme = process.env.EXPO_PUBLIC_FACEBOOK_CLIENT_ID
 
 export default {
   expo: {
-    name: process.env.EXPO_PUBLIC_BACKEND_URL || "frontend",
-    slug: "frontend",
+    name: process.env.EXPO_PUBLIC_APP_NAME || "Olivin",
+    slug: "olivin",
     version: getAppVersion(),
     orientation: "portrait",
     icon: "./assets/images/icon.png",
+    // Identyfikatory pakietów (com.olivin.frontend) zostają: Google i Facebook
+    // mają je zarejestrowane razem z odciskiem klucza, zmiana zerwałaby
+    // logowanie społecznościowe na urządzeniach.
     scheme: [
-      "frontend",
+      "olivin",
       "com.olivin.frontend",
       ...(facebookScheme ? [facebookScheme] : []),
     ],
