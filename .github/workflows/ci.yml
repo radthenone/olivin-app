@@ -111,6 +111,16 @@ jobs:
       - name: Prettier check
         run: task lints:frontend:format:check
 
+      # Jedyny test przeglądarkowy: strona główna wstaje i pokazuje stan backendu.
+      # Odpowiedź /health/ jest podstawiana w teście, więc Django nie jest tu
+      # potrzebne — sprawdzana jest hydratacja i to, co widzi użytkownik.
+      - name: Install Playwright browser
+        working-directory: frontend/web
+        run: bun x playwright install --with-deps chromium
+
+      - name: Web smoke test
+        run: task web:e2e
+
   # Hooki lokalne i CI sprawdzają ten sam kod, ale innymi ścieżkami — i właśnie na tej
   # różnicy CI potrafi paść na czymś, co lokalnie przeszło. Ten job odpala dokładnie te
   # hooki co `git commit`, więc rozjazd wychodzi tutaj, a nie po zmergowaniu.

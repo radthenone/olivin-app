@@ -28,3 +28,9 @@ tasks:
         dir: frontend/web
         cmds:
             - bun run tokens
+
+    e2e:
+        desc: Run the browser smoke tests for the web app (E2E_LIVE_BACKEND=1 to hit the real backend)
+        dir: frontend/web
+        cmds:
+            - bun run e2e -- {{.CLI_ARGS}}
