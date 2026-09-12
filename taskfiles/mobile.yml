@@ -13,7 +13,7 @@ tasks:
         vars:
             ANDROID_SERIAL: '{{default "emulator-5554" .CLI_ARGS}}'
         cmds:
-            - bash -lc '(cd ../.. && ./scripts/open-expo-dev-client-android.sh "{{.ANDROID_SERIAL}}") & bunx expo start --lan --dev-client'
+            - bash -lc '(cd ../.. && ./scripts/open-expo-dev-client-android.sh "{{.ANDROID_SERIAL}}") & bun run start'
 
     run:clear:
         desc: Run Expo locally using Dev Client with cleared cache
@@ -22,7 +22,7 @@ tasks:
         vars:
             ANDROID_SERIAL: '{{default "emulator-5554" .CLI_ARGS}}'
         cmds:
-            - bash -lc '(cd ../.. && ./scripts/open-expo-dev-client-android.sh "{{.ANDROID_SERIAL}}") & bunx expo start --lan --dev-client --clear'
+            - bash -lc '(cd ../.. && ./scripts/open-expo-dev-client-android.sh "{{.ANDROID_SERIAL}}") & bun run start:clear'
 
     # =======================================================
     # KOMENDY EXPO GO (TYLKO DLA UI / BEZ NATYWNYCH MODUŁÓW)
@@ -34,7 +34,7 @@ tasks:
         vars:
             ANDROID_SERIAL: '{{default "emulator-5554" .CLI_ARGS}}'
         cmds:
-            - bash -lc '(cd ../.. && ./scripts/open-expo-android.sh "{{.ANDROID_SERIAL}}") & bunx expo start --lan'
+            - bash -lc '(cd ../.. && ./scripts/open-expo-android.sh "{{.ANDROID_SERIAL}}") & bun run start:go'
 
     run:go:clear:
         desc: Run Expo using standard Expo Go with cleared cache
@@ -43,7 +43,7 @@ tasks:
         vars:
             ANDROID_SERIAL: '{{default "emulator-5554" .CLI_ARGS}}'
         cmds:
-            - bash -lc '(cd ../.. && ./scripts/open-expo-android.sh "{{.ANDROID_SERIAL}}") & bunx expo start --lan --clear'
+            - bash -lc '(cd ../.. && ./scripts/open-expo-android.sh "{{.ANDROID_SERIAL}}") & bun run start:go:clear'
 
     # =======================================================
     # METRO BUNDLER (BEZ AUTOMATYCZNEGO URUCHAMIANIA NA TELEFONIE)
