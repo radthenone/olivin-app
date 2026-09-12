@@ -1,0 +1,6 @@
+# Metro i Babel zakladaja plaski node_modules: transformacja pliku lezacego
+# wewnatrz pakietu (np. expo-router/entry.js) rozwiazuje swoje presety w gore
+# drzewa katalogow. Domyslny izolowany uklad Buna (node_modules/.bun/...) tej
+# sciezki nie udostepnia i konczy sie bledem "Cannot find module babel-preset-expo".
+[install]
+linker = "hoisted"

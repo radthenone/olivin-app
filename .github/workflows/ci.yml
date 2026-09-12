@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - master
+      - dev
 
 # Nowy push na ten sam PR ubija poprzedni przebieg — bez tego kilka pushów pod rząd
 # trzyma runnery zajęte wynikami, których i tak nikt nie przeczyta.
@@ -99,8 +100,26 @@ jobs:
       - name: TypeScript
         run: task lints:frontend:typecheck
 
+      # Schemat jest pilnowany wzgledem kodu Django osobna kontrola, ale nic nie
+      # pilnowalo, czy wygenerowany klient zgadza sie ze schematem. Zmiana
+      # serializera bez regeneracji nie psuje zadnego testu — wychodzi dopiero w
+      # dzialajacej aplikacji, a po dolozeniu drugiej aplikacji konsumujacej ten
+      # sam klient kosztuje dwa razy wiecej.
+      - name: API client up to date
+        run: task ovral:check
+
       - name: Prettier check
         run: task lints:frontend:format:check
+
+      # Jedyny test przeglądarkowy: strona główna wstaje i pokazuje stan backendu.
+      # Odpowiedź /health/ jest podstawiana w teście, więc Django nie jest tu
+      # potrzebne — sprawdzana jest hydratacja i to, co widzi użytkownik.
+      - name: Install Playwright browser
+        working-directory: frontend/web
+        run: bun x playwright install --with-deps chromium
+
+      - name: Web smoke test
+        run: task web:e2e
 
   # Hooki lokalne i CI sprawdzają ten sam kod, ale innymi ścieżkami — i właśnie na tej
   # różnicy CI potrafi paść na czymś, co lokalnie przeszło. Ten job odpala dokładnie te

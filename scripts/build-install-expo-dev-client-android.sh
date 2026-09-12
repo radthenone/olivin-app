@@ -7,7 +7,7 @@ set -o nounset
 # Buduje development clienta dla ABI konkretnego urządzenia ADB i instaluje APK.
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-frontend_dir="${repo_root}/frontend"
+frontend_dir="${repo_root}/frontend/mobile"
 serial="${1:-${ANDROID_SERIAL:-emulator-5554}}"
 package_name="com.olivin.frontend"
 
@@ -34,7 +34,7 @@ if [ -x "./gradlew" ]; then
 elif [ -f "./gradlew.bat" ]; then
     gradle_cmd=(cmd.exe /c gradlew.bat)
 else
-    echo "Brakuje gradlew lub gradlew.bat w frontend/android. Uruchom najpierw prebuild dev clienta."
+    echo "Brakuje gradlew lub gradlew.bat w frontend/mobile/android. Uruchom najpierw prebuild dev clienta."
     exit 1
 fi
 

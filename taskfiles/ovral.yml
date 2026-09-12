@@ -5,12 +5,32 @@ version: "3"
 tasks:
     generate:
         desc: Orval API client generation
-        dir: frontend
+        dir: frontend/packages/api
         cmds:
-            - bun run api:generate
+            - bun run generate
     watch:
         desc: Ovral API client generation in watch mode
-        dir: frontend
+        dir: frontend/packages/api
         interactive: true
         cmds:
-            - bun run api:generate:watch
+            - bun run generate:watch
+    check:
+        desc: Fail if the generated API client is stale versus the schema (task ovral:check)
+        dir: frontend/packages/api
+        cmds:
+            # Ten sam wzorzec co `db:migrations:check` i `backend:schema:check`:
+            # generujemy obok i porównujemy, zamiast ufać, że ktoś pamiętał o
+            # regeneracji po zmianie serializera. Rozjazd klienta nie psuje
+            # żadnego testu — wychodzi dopiero w działającej aplikacji.
+            - defer: rm -rf .orval-check
+            - bun run generate:check
+            - diff -r generated .orval-check
+
+    schema:allauth:
+        desc: Refresh the committed allauth OpenAPI snapshot (task ovral:schema:allauth)
+        cmds:
+            # Schemat allauth pochodzi z biblioteki, nie z naszego kodu, więc
+            # zmienia się wyłącznie przy podbiciu jej wersji. Trzymamy snapshot
+            # w repozytorium, żeby generowanie klienta i bramka rozjazdu działały
+            # bez uruchomionego Django. Wymaga działającego backendu.
+            - curl -fsS "http://${EXPO_PUBLIC_BACKEND_URL}/_allauth/openapi.json" -o backend/src/allauth-schema.json

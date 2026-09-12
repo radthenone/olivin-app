@@ -1,0 +1,47 @@
+{
+  "extends": ["expo/tsconfig.base", "@olivin/config/tsconfig/base.json"],
+  "compilerOptions": {
+    "moduleSuffixes": [".native", ".web", ""],
+    "baseUrl": ".",
+    "paths": {
+      "@app": ["./app"],
+      "@app/*": ["./app/*"],
+      "@assets/": ["./assets"],
+      "@assets/*": ["./assets/*"],
+      "@lib": ["lib"],
+      "@lib/*": ["lib/*"],
+      "@styles": ["styles"],
+      "@styles/*": ["styles/*"],
+      "@core": ["./src/core/"],
+      "@core/*": ["./src/core/*"],
+      "@config": ["./src/core/config/"],
+      "@config/*": ["./src/core/config/*"],
+      "@http": ["./src/core/http/"],
+      "@http/*": ["./src/core/http/*"],
+      "@features": ["./src/features/"],
+      "@features/*": ["./src/features/*"],
+      "@ui": ["./src/ui/"],
+      "@ui/*": ["./src/ui/*"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.web.ts",
+    "**/*.web.tsx",
+    "**/*.android.ts",
+    "**/*.android.tsx",
+    "**/*.ios.ts",
+    "**/*.ios.tsx",
+    "**/*.native.ts",
+    "**/*.native.tsx",
+    "nativewind-env.d.ts"
+  ],
+  "exclude": [
+    "../packages/**/frontend/node_modules/**",
+    "../packages/**/frontend/dist/**",
+    "node_modules",
+    "_old",
+    "_learning"
+  ]
+}

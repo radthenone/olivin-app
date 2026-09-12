@@ -19,7 +19,6 @@ THIRD_PARTY_APPS = [
     "djangorestframework_camel_case",
     "storages",
     "rest_framework.authtoken",
-    "rest_framework_simplejwt",
     "allauth",
     "allauth.account",
     "allauth.headless",

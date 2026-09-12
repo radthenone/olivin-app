@@ -10,6 +10,12 @@ volumes:
     name: olivin-media
   olivin-node_modules:
     name: olivin-node_modules
+  olivin-web-node_modules:
+    name: olivin-web-node_modules
+  olivin-mobile-node_modules:
+    name: olivin-mobile-node_modules
+  olivin-web-next:
+    name: olivin-web-next
 
 x-backend-build-dev: &backend-build-dev
   context: .
@@ -72,7 +78,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-    profiles: ["dev", "backend", "full", "local"]
+    profiles: ["dev", "backend", "full", "local", "web"]
 
   olivin-redis:
     container_name: olivin-redis
@@ -88,7 +94,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    profiles: ["dev", "backend", "full", "local", "test"]
+    profiles: ["dev", "backend", "full", "local", "test", "web"]
 
   olivin-minio:
     container_name: olivin-minio
@@ -110,7 +116,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-    profiles: ["dev", "backend", "full", "local", "test"]
+    profiles: ["dev", "backend", "full", "local", "test", "web"]
 
   olivin-mailhog:
     container_name: olivin-mailhog
@@ -120,7 +126,7 @@ services:
       - "8025:8025"
     networks:
       - olivin-network
-    profiles: ["dev", "backend", "full", "local"]
+    profiles: ["dev", "backend", "full", "local", "web"]
 
   olivin-django:
     <<: *django
@@ -136,7 +142,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 120s
-    profiles: ["dev", "backend", "full"]
+    profiles: ["dev", "backend", "full", "web"]
 
   olivin-celery-worker:
     <<: *celery
@@ -166,3 +172,38 @@ services:
     command: bash -c "/celery/flower.sh"
     restart: unless-stopped
     profiles: ["dev", "backend", "full", "celery"]
+
+  # Aplikacja webowa (Next.js) w trybie deweloperskim. Kod z hosta, node_modules
+  # w woluminach — patrz docker/frontend/web/Dockerfile. Bundler mobilny zostaje
+  # na hoście (ADR 0007), stąd osobny profil "web" bez usług Expo.
+  olivin-web:
+    container_name: olivin-web
+    build:
+      context: .
+      dockerfile: docker/frontend/web/Dockerfile
+      target: dev
+    volumes:
+      - ./frontend:/app:z
+      - olivin-node_modules:/app/node_modules
+      - olivin-web-node_modules:/app/web/node_modules
+      - olivin-mobile-node_modules:/app/mobile/node_modules
+      - olivin-web-next:/app/web/.next
+    environment:
+      # Przeglądarka woła backend przez port opublikowany na hoście, nie przez
+      # sieć kontenerową — stąd 127.0.0.1, nie olivin-django.
+      - NEXT_PUBLIC_BACKEND_URL=http://127.0.0.1:${DJANGO_PORT}
+      # Zdarzenia inotify nie przechodzą przez wolumin z Windows/macOS, więc
+      # w kontenerze Next odpytuje system plików. Turbopack tego trybu tu nie
+      # respektuje (watchOptions.pollIntervalMs bez efektu), stąd webpack.
+      # Na hoście `task web:run` nadal używa Turbopacka.
+      - WATCHPACK_POLLING=true
+    command: ["--webpack"]
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      olivin-django:
+        condition: service_started
+    networks:
+      - olivin-network
+    restart: unless-stopped
+    profiles: ["web", "full"]

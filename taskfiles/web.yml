@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
+
+tasks:
+    run:
+        desc: Run the Next.js web app in development mode
+        dir: frontend/web
+        interactive: true
+        cmds:
+            - bun run dev
+
+    build:
+        desc: Build the web app for production
+        dir: frontend/web
+        cmds:
+            - bun run build
+
+    start:
+        desc: Serve the production build of the web app
+        dir: frontend/web
+        interactive: true
+        cmds:
+            - bun run start
+
+    tokens:
+        desc: Regenerate the Tailwind v4 theme from the design tokens package
+        dir: frontend/web
+        cmds:
+            - bun run tokens
+
+    e2e:
+        desc: Run the browser smoke tests for the web app (E2E_LIVE_BACKEND=1 to hit the real backend)
+        dir: frontend/web
+        cmds:
+            - bun run e2e -- {{.CLI_ARGS}}
+
+    up:
+        desc: Start the web app with the backend in containers (profile web, without the mobile bundler)
+        cmds:
+            - docker-compose --profile web up -d
+
+    up:build:
+        desc: Rebuild images and start the web app with the backend in containers
+        cmds:
+            - docker-compose --profile web up --build -d
+
+    down:
+        desc: Stop the web profile containers
+        cmds:
+            - docker-compose --profile web down
+
+    logs:
+        desc: Follow the web app container logs
+        cmds:
+            - docker compose logs -f olivin-web

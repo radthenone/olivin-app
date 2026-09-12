@@ -5,12 +5,20 @@ from typing import Protocol, cast
 import pytest
 from allauth.account.adapter import get_adapter
 from django.contrib.auth import get_user_model
+from django.forms import BaseForm
 from rest_framework import status
 
 from apps.accounts.models import CustomUser, Profile
 
 
 class SignupFormStub:
+    """Adapter czyta z formularza wyłącznie `cleaned_data`, więc stub podaje tylko to.
+
+    Sygnatura `save_user` wymaga `BaseForm`, stąd rzutowanie w miejscu wywołania —
+    dziedziczenie po `BaseForm` ciągnęłoby całą maszynerię walidacji, której ten
+    test nie używa.
+    """
+
     cleaned_data = {
         "email": "signup@test.com",
         "password1": "testpass123!",
@@ -39,7 +47,9 @@ def test_account_adapter_tworzy_profil_po_udanym_signupie(rf):
         },
     )
 
-    saved_user = get_adapter().save_user(request, user, SignupFormStub())
+    saved_user = get_adapter().save_user(
+        request, user, cast(BaseForm, SignupFormStub())
+    )
 
     profile = Profile.objects.get(user=saved_user)
     assert profile.first_name == "Jan"
