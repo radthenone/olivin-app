@@ -1,7 +1,7 @@
 {
-  "kit_commit": "a4a34e53ef7ae5c241c3c74bbf1998d45e02b531",
+  "kit_commit": "d46c8c32381e9dc31e349d90aa861d02ff3d1bd3",
   "kit_from": "/m/projects/ai-instruction-kit-mcp",
-  "bootstrapped_at": "2026-09-04T16:35:21Z",
+  "bootstrapped_at": "2026-09-14T21:37:04Z",
   "preset": "shop",
   "language": "pl",
   "codegen": "orval",
