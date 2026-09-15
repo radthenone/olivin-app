@@ -1,11 +1,5 @@
 export type HttpMethod =
-  | "GET"
-  | "POST"
-  | "PUT"
-  | "PATCH"
-  | "DELETE"
-  | "HEAD"
-  | "OPTIONS";
+  "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS";
 
 export type Primitive = string | number | boolean | null | undefined;
 
