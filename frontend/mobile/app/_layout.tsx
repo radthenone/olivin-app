@@ -25,7 +25,9 @@ configureMobileApi();
 export default function RootLayout() {
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-      <StatusBar backgroundColor="#ffffff" style="dark" />
+      {/* SDK 57 usunął backgroundColor z paska stanu — na Androidzie 16+ tło
+          paska wynika z edge-to-edge, nie z propa. */}
+      <StatusBar style="dark" />
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <RootNavigator />
