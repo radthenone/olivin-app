@@ -15,35 +15,6 @@ jest jeszcze zaimplementowany.
 
 ---
 
-## Praca odłożona
-
-### Podniesienie Expo z SDK 54 do SDK 57
-
-Zablokowane upstream. Dev Client nie potrafi pobrać bundla z Metro — parser
-chunked encoding po stronie React Native desynchronizuje się, chociaż ten sam
-strumień pobrany z hosta jest poprawny. Bez działającego bundla nie da się
-sprawdzić logowania, stylowania ani tokenów.
-
-Właściciel rozstrzygnie termin powrotu do tematu samodzielnie.
-
-Żywym artefaktem tej pracy pozostaje **draft PR #59** wraz z pełną diagnostyką.
-
-Zmiana z tej gałęzi niezależna od SDK została już wydzielona i zmergowana:
-wykluczenie katalogów wynikowych z obserwatora plików Metro (PR #88).
-
-W gałęzi zostają jeszcze dwie zmiany, świadomie nieprzenoszone:
-
-- usunięcie `@rnrepo/expo-config-plugin` — to realna zależność wpięta
-  w `app.config.js`; usunięcie zmienia konfigurację builda natywnego,
-  a weryfikacja wymaga `expo prebuild` i Android SDK
-- `StatusBar` bez `backgroundColor` — na SDK 54 atrybut nadal działa, więc
-  usunięcie go byłoby zmianą wyglądu bez powodu
-
-Przy wznawianiu: odnośnik do zgłoszenia upstream podany w opisie #59 nie zgadza
-się z opisem blokady i wymaga poprawienia.
-
----
-
 ## Pomysły na przyszłość
 
 Oznaczone na trackerze etykietą `future-idea`. Nie są zaplanowaną pracą — są

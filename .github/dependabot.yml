@@ -54,9 +54,9 @@ updates:
       - dependency-name: react-native-*
       # Ta paczka numeruje wydania wersjami SDK Expo (dist-tagi `sdk-51`, `sdk-55`,
       # `sdk-56`), więc mimo nazwy należy do grupy powyżej — wzorzec `expo-*` jej
-      # nie łapie. Bez tego wpisu wraca PR podnoszący ją do linii SDK 57, podczas
-      # gdy aplikacja stoi na 54; przy okazji ciągnie eslint-plugin-react-hooks v7
-      # z nowymi regułami, które wywracają lint na istniejącym kodzie.
+      # nie łapie. Bez tego wpisu wraca PR podnoszący ją do linii kolejnego SDK,
+      # podczas gdy aplikacja stoi na poprzednim; przy okazji ciągnie nowe reguły
+      # eslint-plugin-react-hooks, które potrafią wywrócić lint na istniejącym kodzie.
       - dependency-name: eslint-config-expo
       # `web` jest na Tailwindzie v4, ale `mobile` musi zostać na v3, bo tego wymaga
       # NativeWind 4 (patrz komentarz w `frontend/mobile/tailwind.config.js`).

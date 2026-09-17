@@ -43,10 +43,10 @@ Nie zakładaj, że którakolwiek z nich cokolwiek zawiera. Nie ma modelu Product
 | Django / DRF | **6.0.8** / 3.18.1 (`uv.lock`) — Django podbity o wersję główną w #51 |
 | Typecheck BE | **Pyrefly** — `task lints:backend:typecheck`. Nie MyPy. |
 | Lint BE | Ruff |
-| Node | 20.19.2 (`.nvmrc`) |
+| Node | 22.23.2 (`.nvmrc`) — React Native 0.86 wymaga ^20.19.4 albo ^22.13 |
 | Frontend PM | **Bun** — `bun install --frozen-lockfile` |
-| Expo / RN / React | SDK 54 / 0.81.5 / 19.1 |
-| Web | Next.js 16 (Turbopack), Tailwind v4, React 19.1 (przypięty do wersji z Expo) |
+| Expo / RN / React | SDK 57 / 0.86.3 / 19.2 |
+| Web | Next.js 16 (Turbopack), Tailwind v4, React 19.2 (przypięty do wersji z Expo) |
 | Monorepo JS | Bun workspaces (`linker = "hoisted"`) + Turborepo 2 |
 | Styling mobile | NativeWind 4.2 (Tailwind v3) |
 | Stan | TanStack Query (serwer) + Zustand (klient) |
