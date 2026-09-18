@@ -1,3 +1,7 @@
+---
+status: superseded by ADR-0022
+---
+
 # Cena ustalana ręcznie, ze wstępnym wyliczeniem od próby i kursu kruszcu
 
 Cenę wariantu ustala człowiek. Wartość wyrobu jubilerskiego nie wynika z samej

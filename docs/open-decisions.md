@@ -31,6 +31,25 @@ między przedsiębiorcami.
 Przed podjęciem tematu stan przepisów i obowiązujące terminy wymagają
 potwierdzenia u księgowości — zmieniały się wielokrotnie.
 
+### Kampanie marketingowe z harmonogramem i segmentami
+
+Ogłoszenie promocji to dziś ręczna akcja w panelu przy promocji, rozsyłana
+trzema kanałami do klientów ze zgodą marketingową i potwierdzonych subskrypcji
+newslettera. Osobny byt kampanii — harmonogram, segmenty (premium / wszyscy),
+statystyki otwarć — wraca, gdy ręczny przycisk przestanie wystarczać.
+
+### Świadomie poza zakresem pierwszej wersji
+
+Zapisane, żeby nie wracały jako „a może by”: waluty poza złotym i euro,
+marketplace z wieloma sprzedawcami, program poleceń, raty i odroczone
+płatności, konfigurator 3D z wyceną na żywo, czat i wsparcie na żywo,
+własne zdarzenia analityczne z aplikacji mobilnej, adapter kursu kruszcu
+(do czasu wyboru dostawcy kurs wpisuje się ręcznie). Raty i polecenia mają
+sens po pierwszym roku sprzedaży.
+
+Kolejność platform: web i Android równolegle, iOS po domknięciu narzędzi
+EAS (#94).
+
 ### Terraform jako warstwa infrastruktury jako kodu
 
 Dziś jedynym opisem wdrożenia jest `docker-compose.prod.yml`, nakładany na host
@@ -79,4 +98,15 @@ stanem obrotu wobec progu sprzedaży wysyłkowej
 ([0019](adr/0019-sprzedaz-do-ue-w-euro-po-polskim-vat.md)).
 
 Regulamin zwrotów i kuponów wymaga przeglądu przez prawnika przed uruchomieniem
-sprzedaży ([0015](adr/0015-podstawa-zwrotu-decyduje-o-formie-rekompensaty.md)).
+sprzedaży ([0015](adr/0015-podstawa-zwrotu-decyduje-o-formie-rekompensaty.md)),
+wraz z wyłączeniem odstąpienia dla grawerunku i produktów na zamówienie
+([0024](adr/0024-produkt-na-zamowienie-i-para-jako-jedna-pozycja.md)) oraz
+zapisem o przejściu ryzyka i procedurze zaginięcia przesyłki
+([0028](adr/0028-ubezpieczenie-przesylki-wliczone-nie-do-wyboru.md)).
+
+Do potwierdzenia u księgowości dodatkowo: zwolnienie z kasy fiskalnej dla
+sprzedaży wysyłkowej przy płatności przez operatora na rachunek i ewidencji
+wiążącej wpłatę z zamówieniem ([0026](adr/0026-dokument-sprzedazy-generowany-raz-na-backendzie.md)).
+
+Decyzje właściciela z 18–19 września 2026 (przegląd całej wizji sklepu)
+zapisane w ADR 0022–0029 i w `CONTEXT.md`; ADR 0017 zastąpiony przez 0022.
