@@ -5,3 +5,10 @@ Zwroty i rekompensaty realizowane są jako kupony o określonej wartości; sklep
 ## Consequences
 
 Jeden mechanizm obsługuje zarówno zwroty, jak i rabaty marketingowe. Dodanie salda w przyszłości wymaga konsultacji prawnej, nie decyzji technicznej.
+
+## Uzupełnienie (2026-09-19)
+
+Kupon ma nominał z listy (wielokrotność 10 zł), dwanaście miesięcy ważności,
+kod nadawany wyłącznie przez sklep i pokrywa tylko towar — nigdy dostawę;
+niewykorzystana część przepada. Rabaty procentowe nie są kuponami — patrz
+[ADR 0023](0023-rabat-jako-promocja-kupon-jako-zaplata.md).

@@ -44,3 +44,13 @@ inaczej, ale sklep prowadzi wyłącznie sprzedaż konsumencką — patrz
 
 Zastrzeżenie: ten dokument zapisuje decyzję właściciela wraz z jej
 uzasadnieniem, nie stanowi porady prawnej.
+
+## Uzupełnienie (2026-09-19)
+
+Terminy: odstąpienie 14 dni (część zapłacona pieniędzmi wraca pieniędzmi,
+część zapłacona kuponem — nowym kuponem), reklamacja 2 lata (zawsze
+pieniądze), zwrot dobrowolny 30 dni (wartość pozycji jako nowy kupon
+zaokrąglony w górę do pełnych 10 zł, z nowym terminem ważności). Wymiana
+rozmiaru nie jest osobnym procesem — to zwrot dobrowolny i nowe zamówienie.
+Produkt na zamówienie wyłącza odstąpienie tak jak grawer — patrz
+[ADR 0024](0024-produkt-na-zamowienie-i-para-jako-jedna-pozycja.md).

@@ -38,3 +38,9 @@ nie przesądza o kwalifikacji podatkowej.
 Wielojęzyczność katalogu jest zagadnieniem odrębnym od wielowalutowości
 i rozliczeń transgranicznych — katalog może być tłumaczony niezależnie od tego,
 dokąd sklep sprzedaje.
+
+## Uzupełnienie (2026-09-19)
+
+Ceny źródłowe są w złotych. Kurs euro pochodzi z Narodowego Banku Polskiego,
+pobierany codziennie; klient z kraju Unii widzi euro w katalogu i w kasie,
+płaci w euro, a kurs z chwili złożenia zamówienia zostaje w nim zapisany.
