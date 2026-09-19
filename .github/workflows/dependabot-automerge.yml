@@ -1,0 +1,35 @@
+name: Dependabot auto-merge
+
+# `pull_request_target` zamiast `pull_request`: token ma prawo zapisu, którego
+# potrzebuje `gh pr merge`. Bezpieczne tylko dlatego, że workflow nie checkoutuje
+# ani nie uruchamia kodu z PR-a — czyta metadane i włącza auto-merge.
+on:
+  pull_request_target:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  automerge:
+    name: Enable auto-merge
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # `--auto` nie merguje od razu: czeka, aż przejdą required status checks
+      # z rulesetu gałęzi (Backend, Frontend, Pre-commit hooks). Major zostaje
+      # do ręcznego przeczytania changelogu — dla grupy liczy się najwyższy typ.
+      - name: Enable auto-merge for patch and minor updates
+        if: |
+          steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+          steps.meta.outputs.update-type == 'version-update:semver-minor'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --merge "$PR_URL"

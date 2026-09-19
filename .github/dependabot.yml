@@ -1,22 +1,28 @@
 version: 2
 
+# PR-y idą na `dev`, nie na default branch (`master`). Praca integruje się na `dev`,
+# a `master` dostaje ją przy merge'u `dev` -> `master` — inaczej obie gałęzie
+# rozjeżdżają się w zestawie paczek. Patch i minor merguje automatycznie workflow
+# `dependabot-automerge.yml` po zielonym CI; majory zostają do ręcznego przejrzenia.
 updates:
   # Akcje w workflowach nie mają lockfile'a — wersję trzyma sam plik YAML, więc bez
   # tego nikt nigdy nie podniesie `actions/checkout@v4`. Tu podatność uderza wprost
   # w pipeline, który ma dostęp do repozytorium.
   - package-ecosystem: github-actions
     directory: /
+    target-branch: dev
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
     commit-message:
       prefix: chore(ci)
 
-  # Dependabot nie obsługuje ekosystemu `uv`, ale czyta zależności z pyproject.toml
-  # przez `pip`. Skutek: dostaniesz PR-y podnoszące wersje w pyproject, natomiast
-  # `uv.lock` trzeba odświeżyć samemu (`uv lock`) przed zmergowaniem.
-  - package-ecosystem: pip
+  # Natywny ekosystem `uv` podnosi wersję w pyproject.toml i odświeża `uv.lock`
+  # w tym samym commicie. CI robi `uv sync --frozen`, więc PR z rozjechanym lockiem
+  # nie przejdzie — to warunek, żeby auto-merge był bezpieczny.
+  - package-ecosystem: uv
     directory: /backend
+    target-branch: dev
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
@@ -33,6 +39,7 @@ updates:
   # zostanie zaktualizowany razem z package.json.
   - package-ecosystem: bun
     directory: /frontend
+    target-branch: dev
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
