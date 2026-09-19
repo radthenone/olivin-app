@@ -19,6 +19,7 @@ Zweryfikowano: 2026-09-11.
 
 - `backend/src/apps/accounts` — User, Profile, Address, managery, serializery, serwisy, widoki, schematy. Testy w `backend/src/tests/accounts/`.
 - `backend/src/apps/categories` — `Category` jako drzewo (rodzic jako klucz obcy do siebie, bez mptt), slug niezmienny, narzut domyślny. Panel do edycji, API **tylko do odczytu**: `GET /categories/` (drzewo zagnieżdżone, bez stronicowania) i `GET /categories/<slug>/`, oba `AllowAny`. Testy w `backend/src/tests/categories/`.
+- `backend/src/apps/collections` — `Collection` (nazwa PL, slug niezmienny, relacja wiele-do-wielu z produktami). Panel z `filter_horizontal`, API **tylko do odczytu**: `GET /collections/` i `GET /collections/<slug>/`, `AllowAny`, wyłącznie kolekcje z co najmniej jednym opublikowanym produktem. Produkty kolekcji przez `GET /products/?collection=<slug>`. Testy w `backend/src/tests/collections/`.
 - `backend/src/apps/products` — `Product` (status `draft`/`published`, kategoria-liść, materiał i próba jako `choices`, flaga produktu na zamówienie z czasem realizacji) oraz `ProductVariant` (SKU, kolor kruszcu, rozmiar/długość, kamień, masa kruszcu, `price` i `manual_price` jako grosze, stawka VAT albo zwolnienie z podstawą prawną). Panel z wariantami inline i akcją publikacji; API **tylko do odczytu**: `GET /products/` (opublikowane, każdy z najtańszym wariantem; filtry cech, zakres ceny, kategoria z potomkami, sortowanie `?ordering=`, wyszukiwarka `?search=`) i `GET /products/<slug>/`, oba `AllowAny`. Testy w `backend/src/tests/products/`.
 - `backend/src/core/` — settings (django-split-settings), integracje, storage, utils. Health check: **`GET /health/`** (nie pod `/api/`), zwraca stan bazy, Redisa i storage.
 - `backend/src/common/` — pola, modele bazowe w tym `TranslatableModel`, lokalizacja, pieniądze (`money/`) i slugi katalogu (`slugs.py`).
@@ -115,7 +116,7 @@ Testy integracyjne: `docker-compose.test.yml`, próg pokrycia **60%**.
 
 Generowane są też schematy Zod (`.zod.ts`) dla obu wejść.
 
-`APPS_TAGS` w `frontend/packages/api/orval.config.js` (obecnie): **`Addresses`, `Categories`, `Products`, `Profiles`, `Health`**. Nowy viewset domenowy bez dopisania tagu nie trafi do klienta — cichy błąd.
+`APPS_TAGS` w `frontend/packages/api/orval.config.js` (obecnie): **`Addresses`, `Categories`, `Collections`, `Products`, `Profiles`, `Health`**. Nowy viewset domenowy bez dopisania tagu nie trafi do klienta — cichy błąd.
 
 Sekwencja po zmianie API: backend → migracje → regeneracja `schema.yaml` → tag w `APPS_TAGS` → `task ovral:generate` → `task lints:frontend:typecheck`. Bramka: `task ovral:check` (offline, w CI).
 

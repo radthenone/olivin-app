@@ -37,6 +37,7 @@ urlpatterns = [
     # API
     path("customers/", include("apps.accounts.urls")),
     path("categories/", include("apps.categories.urls")),
+    path("collections/", include("apps.collections.urls")),
     path("products/", include("apps.products.urls")),
     # Headless API
     path("accounts/", include("allauth.urls")),
