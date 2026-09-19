@@ -30,32 +30,33 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     # stronę bez swojego korzenia. Taksonomia liczy dziesiątki węzłów.
     pagination_class = None
 
+    def _tree(self) -> tuple[list[Category], dict[str, object]]:
+        """Całe drzewo jednym zapytaniem wraz z kontekstem serializera.
+
+        `filter_queryset` zostaje w łańcuchu, choć dziś żaden filtr nie jest
+        zadeklarowany: bez niego dopisanie `filterset_fields` ogłosiłoby
+        parametr, którego odpowiedź i tak by nie uwzględniła.
+        """
+        categories = list(self.filter_queryset(self.get_queryset()))
+        context = {
+            **self.get_serializer_context(),
+            **CategorySerializer.with_tree(categories),
+        }
+        return categories, context
+
     def list(self, request: Request, *args, **kwargs) -> Response:
-        categories = list(self.get_queryset())
+        categories, context = self._tree()
         roots = [category for category in categories if category.parent_id is None]
-        serializer = self.get_serializer(
-            roots,
-            many=True,
-            context={
-                **self.get_serializer_context(),
-                **CategorySerializer.with_tree(categories),
-            },
-        )
+        serializer = self.get_serializer(roots, many=True, context=context)
         return Response(serializer.data)
 
     def retrieve(self, request: Request, *args, **kwargs) -> Response:
         # Całe drzewo i tak jest potrzebne do złożenia potomków, więc szukany
         # węzeł bierzemy z już wczytanej listy zamiast dobijać bazę drugi raz.
-        categories = list(self.get_queryset())
+        categories, context = self._tree()
         slug = kwargs[self.lookup_field]
         category = next((node for node in categories if node.slug == slug), None)
         if category is None:
             raise Http404
-        serializer = self.get_serializer(
-            category,
-            context={
-                **self.get_serializer_context(),
-                **CategorySerializer.with_tree(categories),
-            },
-        )
+        serializer = self.get_serializer(category, context=context)
         return Response(serializer.data)

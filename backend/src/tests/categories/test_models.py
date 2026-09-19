@@ -36,6 +36,20 @@ class TestSlug:
 
         assert len(category.slug) == SLUG_MAX_LENGTH
 
+    @pytest.mark.parametrize(
+        ("name", "expected"),
+        [
+            ("Łańcuszki", "lancuszki"),
+            ("Pierścionki złote", "pierscionki-zlote"),
+            ("ŁAŃCUSZKI", "lancuszki"),
+            ("Kolczyki żółte", "kolczyki-zolte"),
+        ],
+    )
+    def test_polskie_litery_nie_wypadaja_z_adresu(self, name: str, expected: str):
+        """`slugify` nie rozkłada „ł" — bez podmiany zostaje `ancuszki`,
+        a slug jest niezmienny, więc literówka zostałaby na stałe."""
+        assert CategoryFactory(name=name).slug == expected
+
     def test_nazwa_bez_znakow_slugowalnych_nie_zostawia_pustego_adresu(self):
         category = CategoryFactory(name="✦✦✦")
 
@@ -110,6 +124,35 @@ class TestTree:
             root.full_clean()
 
         assert "parent" in error.value.message_dict
+
+    def test_petla_nie_przechodzi_takze_przez_sam_zapis(self):
+        """`save()` nie woła `clean()`, a pętla to uszkodzenie danych:
+        gałąź bez korzenia wypada z menu i rozkłada rekurencję przy odczycie."""
+        root = CategoryFactory(name="Biżuteria")
+        child = CategoryFactory(name="Pierścionki", parent=root)
+
+        root.parent = child
+        with pytest.raises(ValidationError) as error:
+            root.save()
+
+        assert "parent" in error.value.message_dict
+
+    def test_kategoria_nie_zostanie_swoim_rodzicem_przez_zapis(self):
+        category = CategoryFactory(name="Biżuteria")
+
+        category.parent = category
+        with pytest.raises(ValidationError):
+            category.save()
+
+    def test_glebokie_drzewo_zapisuje_sie_bez_falszywego_alarmu(self):
+        node = CategoryFactory(name="Poziom 0")
+        for depth in range(1, 12):
+            node = CategoryFactory(name=f"Poziom {depth}", parent=node)
+
+        node.name = "Poziom ostatni"
+        node.save()
+
+        assert Category.objects.count() == 12
 
     def test_kategoria_z_potomkami_nie_znika_po_cichu(self):
         from django.db.models import ProtectedError

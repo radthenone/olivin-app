@@ -8,6 +8,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.test import APIClient
 
+from apps.categories.models import Category
 from tests.factories.categories import CategoryFactory
 
 
@@ -134,6 +135,35 @@ class TestCategoryTreeShape:
 
         with django_assert_num_queries(1):
             api_client.get(reverse("category-list"))
+
+
+@pytest.mark.django_db
+class TestCategoryTreeSurvivesBrokenData:
+    """Zapis pętli nie przepuszcza, ale `UPDATE` z pominięciem modelu już tak."""
+
+    def test_petla_w_bazie_nie_rozklada_odczytu(self, api_client: APIClient):
+        root = CategoryFactory(name="Biżuteria", slug="jewellery")
+        child = CategoryFactory(name="Pierścionki", slug="rings", parent=root)
+        Category.objects.filter(pk=root.pk).update(parent=child)
+
+        response = cast(
+            Response,
+            api_client.get(reverse("category-detail", kwargs={"slug": "rings"})),
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert _names(response.data["children"]) == ["Biżuteria"]  # type: ignore
+        assert response.data["children"][0]["children"] == []  # type: ignore
+
+    def test_pozostale_korzenie_zostaja_w_menu(self, api_client: APIClient):
+        root = CategoryFactory(name="Biżuteria", slug="jewellery")
+        child = CategoryFactory(name="Pierścionki", slug="rings", parent=root)
+        CategoryFactory(name="Złoto inwestycyjne", slug="bullion")
+        Category.objects.filter(pk=root.pk).update(parent=child)
+
+        response = cast(Response, api_client.get(reverse("category-list")))
+
+        assert _names(response.data) == ["Złoto inwestycyjne"]  # type: ignore
 
 
 @pytest.mark.django_db

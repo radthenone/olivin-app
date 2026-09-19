@@ -42,10 +42,15 @@ class CategoryAdmin(admin.ModelAdmin):
 
     @admin.display(description="Ścieżka")
     def path(self, obj: Category) -> str:
+        # Zbiór odwiedzonych, bo panel ma pokazać uszkodzone dane, a nie
+        # zawiesić się na nich: zapis pętli nie przepuszcza, ale rekord
+        # zmieniony z pominięciem modelu nadal może ją zawierać.
         names = [obj.name]
+        seen = {obj.pk}
         node = obj.parent
-        while node is not None:
+        while node is not None and node.pk not in seen:
             names.append(node.name)
+            seen.add(node.pk)
             node = node.parent
         return " → ".join(reversed(names))
 

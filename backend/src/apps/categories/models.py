@@ -9,6 +9,16 @@ from common.money import DEFAULT_CURRENCY, Money, MoneyAmountField
 
 SLUG_MAX_LENGTH = 140
 
+# `slugify` rozkłada znaki diakrytyczne przez NFKD i odrzuca to, co zostanie
+# poza ASCII. Polskie „ł" nie jest literą z ogonkiem, tylko osobnym znakiem bez
+# rozkładu — bez tej podmiany „Łańcuszki" dają slug `ancuszki`, a ponieważ slug
+# jest niezmienny, literówka w adresie zostaje na stałe.
+_POLISH_ASCII = str.maketrans({"ł": "l", "Ł": "L"})
+
+
+def polish_to_ascii(value: str) -> str:
+    return value.translate(_POLISH_ASCII)
+
 
 class Category(TimestampedModel):
     """Węzeł drzewiastej taksonomii katalogu (`CONTEXT.md`, Category).
@@ -99,19 +109,28 @@ class Category(TimestampedModel):
                     )
                 }
             )
+        self._reject_cycle()
+
+    def save(self, *args, **kwargs) -> None:
+        # Pętla w drzewie nie jest błędem formularza, tylko uszkodzeniem
+        # danych: gałąź zamknięta w cykl nie ma korzenia, więc wypada z menu,
+        # a wejście na nią rozkłada rekurencję. Bazy nie da się o to poprosić
+        # przenośnym ograniczeniem, więc pilnuje tego zapis, a nie `clean()`,
+        # którego `save()` nie woła.
+        self._reject_cycle()
+        if not self.slug:
+            self.slug = self._available_slug(slugify(polish_to_ascii(self.name)))
+        else:
+            self._reject_slug_change()
+        super().save(*args, **kwargs)
+
+    def _reject_cycle(self) -> None:
         if self.parent_id and self.parent_id == self.pk:
             raise ValidationError({"parent": "Kategoria nie może być swoim rodzicem."})
         if self._creates_cycle():
             raise ValidationError(
                 {"parent": "Taki rodzic zamknąłby drzewo w pętlę."},
             )
-
-    def save(self, *args, **kwargs) -> None:
-        if not self.slug:
-            self.slug = self._available_slug(slugify(self.name))
-        else:
-            self._reject_slug_change()
-        super().save(*args, **kwargs)
 
     def _reject_slug_change(self) -> None:
         if not self.pk:

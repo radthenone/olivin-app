@@ -9,6 +9,7 @@ from rest_framework import serializers
 from apps.categories.models import Category
 
 BY_PARENT = "categories_by_parent"
+VISITED = "categories_visited"
 
 
 def group_by_parent(categories: list[Category]) -> dict[Any, list[Category]]:
@@ -47,14 +48,24 @@ class CategorySerializer(serializers.ModelSerializer):
         # serializer bez pogrupowanego drzewa musiałby dobić bazę na każdym
         # węźle, a cicho zwrócona pusta lista wyglądałaby jak brak potomków.
         by_parent = self.context[BY_PARENT]
-        children = by_parent.get(obj.id, [])
+        # W drzewie każdy węzeł ma jednego rodzica, więc wspólny zbiór
+        # odwiedzonych nie przytnie niczego poprawnego. Chroni za to przed
+        # rozłożeniem rekurencji, gdyby pętla weszła do bazy z pominięciem
+        # modelu — zapis jej nie przepuszcza, ale `UPDATE` już tak.
+        visited = self.context.setdefault(VISITED, set())
+        visited.add(obj.id)
+        children = [
+            node for node in by_parent.get(obj.id, []) if node.id not in visited
+        ]
         return list(CategorySerializer(children, many=True, context=self.context).data)
 
 
 # Pole jest rekurencyjne, więc typu nie da się podać w ciele klasy — w tym
 # miejscu nazwa `CategorySerializer` jeszcze nie istnieje. Bez tej adnotacji
-# drf-spectacular opisuje potomków jako wartość nieokreśloną i klient Orvala
-# dostaje `unknown[]` zamiast drzewa.
+# drf-spectacular opisuje potomków jako wartość nieokreśloną, a wygenerowany
+# interfejs TypeScriptu dostaje `unknown[]` zamiast drzewa. Schemat Zod i tak
+# zostaje przy `unknown` — orval nie potrafi zapisać typu rekurencyjnego
+# w tamtym wyjściu.
 CategorySerializer.get_children = extend_schema_field(  # type: ignore[method-assign]
     CategorySerializer(many=True)
 )(CategorySerializer.get_children)
