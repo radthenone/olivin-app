@@ -9,6 +9,7 @@
 export * from './address';
 export * from './addressCountry';
 export * from './blankEnum';
+export * from './category';
 export * from './countryEnum';
 export * from './customersAddressesListParams';
 export * from './customersProfileListParams';
