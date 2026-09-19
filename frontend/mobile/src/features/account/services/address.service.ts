@@ -26,7 +26,9 @@ export type AddressUpdateInput = {
 export const addressService = {
   async list() {
     const response = await customersAddressesList();
-    return response.data;
+    // Lista jest paginowana (24 na stronę). Konto z większą liczbą adresów
+    // nie istnieje w praktyce, więc ekrany dostają samą pierwszą stronę.
+    return response.data.results ?? [];
   },
 
   async create(data: AddressCreateInput) {

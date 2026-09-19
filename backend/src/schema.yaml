@@ -39,6 +39,25 @@ paths:
         - partial_update: PATCH /api/v1/addresses/{id}/
         - destroy:        DELETE /api/v1/addresses/{id}/
         - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
       tags:
       - Addresses
       security:
@@ -49,9 +68,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Address'
+                $ref: '#/components/schemas/PaginatedAddressList'
           description: ''
     post:
       operationId: customers_addresses_create
@@ -296,6 +313,25 @@ paths:
         - partial_update: PATCH /api/v1/profiles/{id}/
         - destroy:        DELETE /api/v1/profiles/{id}/
         - change_role:    PATCH /api/v1/profiles/{id}/change-role/
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
       tags:
       - Profiles
       security:
@@ -306,9 +342,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Profile'
+                $ref: '#/components/schemas/PaginatedProfileList'
           description: ''
     post:
       operationId: customers_profile_create
@@ -1375,6 +1409,52 @@ components:
       - database
       - redis
       - storage
+    PaginatedAddressList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+    PaginatedProfileList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Profile'
     PatchedAddress:
       type: object
       properties:

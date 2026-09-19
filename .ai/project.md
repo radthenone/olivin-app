@@ -26,7 +26,7 @@ Zweryfikowano: 2026-09-11.
 
 **Puste szkielety po `startapp` — dziewięć linii kodu każdy, zero modeli, zero migracji:**
 
-`products`, `categories`, `orders`, `payments`, `discounts`, `inventory`, `shipping`, `reviews`, `notifications`, `analytics`
+`products`, `categories`, `orders`, `payments`, `discounts`, `inventory`, `shipping`, `reviews`, `notifications`
 
 Nie zakładaj, że którakolwiek z nich cokolwiek zawiera. Nie ma modelu Product, nie ma Order, nie ma Cart.
 
@@ -141,7 +141,9 @@ OAuth wymaga **Dev Client**, nie działa w Expo Go.
 - Pipeline zdjęć (ADR 0025): klient wysyła oryginał (≤ ~2000 px, ≤ 10 MB) + kadr `{x,y,w,h}`; Celery + Pillow: crop → 400/800/1600 WebP q80–85; rekord ze statusem processing/ready; klucz bez hosta/bucketa, URL składa serializer.
 - PDF (ADR 0026): WeasyPrint z szablonu Django, bezpośrednio z taska; Pango/Cairo w obrazie workera. `django-weasyprint` — nie.
 
-## Konwencje API (rozstrzygnięte 2026-09-19, do wdrożenia przy katalogu)
+## Konwencje API (rozstrzygnięte 2026-09-19)
+
+**W kodzie globalnie** (`core/settings/components/auth.py`, `core/api/pagination.py`): paginacja, backendy filtrów, limity żądań i domyślna permisja. Reszta punktów niżej dotyczy widoków, które dopiero powstaną.
 
 - Permisje: globalnie `IsAuthenticated` zostaje. `AllowAny` odczyt: products, categories, collections, aktywne promotions, shipping-methods. Koszyk gościa po `session_key`. Zapis własnych danych: zalogowany + queryset filtrowany po `request.user`. **Bez django-guardian.**
 - Mutacje katalogu, promocji, kursów kruszcu, metod dostawy — **wyłącznie Django admin** (ADR 0021). Zero POST/PUT/DELETE na te zasoby w API. Staff nie ma osobnego API.
@@ -149,10 +151,10 @@ OAuth wymaga **Dev Client**, nie działa w Expo Go.
 - Filtry: `django-filter` po cechach z `choices` (material, fineness na Product; metal_color, size/length, stone na Variant), cena min/max, kategoria z potomkami, kolekcja; sort: cena / nowość / nazwa. Wyszukiwarka: Postgres `SearchVector`. **Bez tagów, bez Elasticsearch.**
 - Slug: jeden, angielski, z nazwy EN przy publikacji, niezmienny (zmiana = 301). Web: Next i18n routing `/pl/` `/en/`, `NEXT_LOCALE`, hreflang, sitemap z API, OG, schema.org Product, robots.txt. Mobile: język z urządzenia, deep link `olivin://product/<slug>`.
 - i18n interfejsu: pliki tłumaczeń web/mobile, poza bazą. Tłumaczenia treści katalogu: baza (`Translation`, ADR 0027).
-- Throttling DRF (wbudowany): anon 60/min, user 300/min; osobny scope `coupons/validate` i `auth/login` 10/min. Stripe webhook: podpis + idempotencja przez `WebhookEvent`. Stripe Radar włączony. Limity: max 5 szt. na pozycję, gość max 10 000 zł (powyżej wymaga konta).
+- Throttling DRF (wbudowany): anon 60/min, user 300/min; osobny scope `auth` 10/min, włączany na widoku przez `throttle_scope` — czeka na logowanie i walidację kuponu. Stripe webhook: podpis + idempotencja przez `WebhookEvent`. Stripe Radar włączony. Limity: max 5 szt. na pozycję, gość max 10 000 zł (powyżej wymaga konta).
 - Staff: TOTP obowiązkowe dla `is_staff` (allauth); e-mail do właściciela po aktywacji `MetalRate`; `LogEntry` admina jako audyt.
 - Celery beat (`DatabaseScheduler` jest): tłumaczenia 24 h; rezerwacje co 5 min (TTL 30 min od Payment Intent); `pending` > 24 h → `cancelled` co 1 h; MetalRate miesięcznie → proposed; NBP dziennie; porzucone koszyki e-mail po 24 h (opt-in). `Watch` zdarzeniowo, nie cyklicznie.
-- Analityka: Umami self-hosted (kontener + baza na tym samym Postgresie), bez cookies; baner web: „niezbędne” + „marketing” (off), bez „analityczne”. `apps/analytics` do usunięcia. Mobile: nic.
+- Analityka: Umami self-hosted (kontener + baza na tym samym Postgresie), bez cookies; baner web: „niezbędne” + „marketing” (off), bez „analityczne”. `apps/analytics` usunięta. Mobile: nic.
 - Testy: backend pytest per app + factory_boy, markery, 60%; MSW w `packages/api` wspólny web+mobile; Playwright smoke web; Maestro smoke mobile (ADR 0020). Kolejność: backend → MSW → Playwright → Maestro.
 - Paczki instalowane przy bilecie, nie z góry: backend `weasyprint`, `deepl`; frontend `msw`, `expo-notifications`, `expo-file-system`, `expo-sharing`, widget InPost (web script, mobile WebView). **Nie**: guardian, django-weasyprint, elasticsearch, GA, Plausible CE.
 

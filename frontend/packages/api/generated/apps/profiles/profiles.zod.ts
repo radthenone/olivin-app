@@ -20,24 +20,34 @@ Actions:
 - destroy:        DELETE /api/v1/profiles/{id}/
 - change_role:    PATCH /api/v1/profiles/{id}/change-role/
  */
-export const customersProfileListResponseFirstNameMax = 150;
+export const CustomersProfileListQueryParams = zod.object({
+  "page": zod.coerce.number().optional().describe('A page number within the paginated result set.'),
+  "pageSize": zod.coerce.number().optional().describe('Number of results to return per page.'),
+  "search": zod.coerce.string().optional().describe('A search term.')
+})
 
-export const customersProfileListResponseLastNameMax = 150;
+export const customersProfileListResponseResultsItemFirstNameMax = 150;
+
+export const customersProfileListResponseResultsItemLastNameMax = 150;
 
 
 
-export const CustomersProfileListResponseItem = zod.object({
+export const CustomersProfileListResponse = zod.object({
+  "count": zod.number(),
+  "next": zod.url().nullish(),
+  "previous": zod.url().nullish(),
+  "results": zod.array(zod.object({
   "id": zod.uuid(),
   "email": zod.email(),
-  "firstName": zod.string().max(customersProfileListResponseFirstNameMax).optional().describe('User\'s first name'),
-  "lastName": zod.string().max(customersProfileListResponseLastNameMax).optional().describe('User\'s last name'),
+  "firstName": zod.string().max(customersProfileListResponseResultsItemFirstNameMax).optional().describe('User\'s first name'),
+  "lastName": zod.string().max(customersProfileListResponseResultsItemLastNameMax).optional().describe('User\'s last name'),
   "fullName": zod.string(),
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
   "age": zod.number().nullable(),
   "phoneNumber": zod.string().optional(),
   "role": zod.enum(['customer', 'admin']).describe('\* `customer` - Customer\n\* `admin` - Admin')
+}))
 })
-export const CustomersProfileListResponse = zod.array(CustomersProfileListResponseItem)
 
 /**
  * A viewset for viewing and editing profile instances.
