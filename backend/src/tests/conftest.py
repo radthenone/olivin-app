@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import fakeredis
 import pytest
+from django.core.cache import cache
 from moto import mock_aws
 from rest_framework.test import APIClient
 
@@ -74,6 +75,20 @@ def mock_redis_connection(request):
         patch("redis.StrictRedis", return_value=mock_redis_instance),
     ):
         yield mock_redis_instance
+
+
+@pytest.fixture(autouse=True)
+def clear_throttle_history():
+    """Czyści cache między testami, żeby limity żądań się nie kumulowały.
+
+    DRF trzyma historię żądań w domyślnym cache'u, a ten w testach żyje przez
+    cały przebieg. Bez czyszczenia dwudziesty test uderzający w to samo API
+    dostaje 429 z powodu żądań wykonanych przez testy wcześniejsze.
+    """
+
+    cache.clear()
+    yield
+    cache.clear()
 
 
 @pytest.fixture

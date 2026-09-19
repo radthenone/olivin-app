@@ -53,7 +53,7 @@ class Profile(TimestampedModel):
     class Meta:
         verbose_name = "Profile"
         verbose_name_plural = "Profiles"
-        ordering = ["-created_at"]
+        ordering = ["-created_at", "-id"]
 
     def __str__(self):
         return f"{self.user.email} - {self.role}"

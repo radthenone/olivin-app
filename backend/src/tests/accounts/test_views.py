@@ -46,14 +46,15 @@ class TestProfileViewSetList:
         api_client.force_authenticate(user=user1)
         response = cast(Response, api_client.get(reverse("profile-list")))
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 1  # type: ignore
-        assert response.data[0]["email"] == user1.email  # type: ignore
+        assert response.data["count"] == 1  # type: ignore
+        assert response.data["results"][0]["email"] == user1.email  # type: ignore
 
     def test_pusta_lista_gdy_brak_profilu(self, authenticated_client: APIClient):
         """Lista profili powinna być pusta gdy użytkownik nie ma profilu."""
         response = cast(Response, authenticated_client.get(reverse("profile-list")))
         assert response.status_code == status.HTTP_200_OK
-        assert response.data == []  # type: ignore
+        assert response.data["count"] == 0  # type: ignore
+        assert response.data["results"] == []  # type: ignore
 
 
 @pytest.mark.django_db
