@@ -18,6 +18,10 @@ export type ProductsListParams = {
  */
 category?: string;
 /**
+ * Slug kolekcji marketingowej
+ */
+collection?: string;
+/**
  * Próba kruszcu
 
 * `333` - 333 (8 karatów)

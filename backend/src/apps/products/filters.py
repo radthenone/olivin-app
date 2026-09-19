@@ -76,6 +76,11 @@ class ProductFilterSet(django_filters.FilterSet):
         method="filter_category",
         label="Slug kategorii; obejmuje również jej podkategorie",
     )
+    collection = django_filters.CharFilter(
+        field_name="collections__slug",
+        distinct=True,
+        label="Slug kolekcji marketingowej",
+    )
     search = django_filters.CharFilter(
         method="filter_search",
         label="Fraza szukana w nazwie i opisie",
