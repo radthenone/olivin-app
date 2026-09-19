@@ -131,6 +131,24 @@ class ProductVariant(TimestampedModel):
                 ),
                 name="variant_exemption_has_legal_basis",
             ),
+            # Walidatory pól działają wyłącznie w `full_clean()`, więc zapis
+            # programowy — import, `bulk_create`, przyszłe przeliczenie ceny
+            # z ADR 0022 — przepuściłby kwotę ujemną. Próg kosztowy to osobna
+            # sprawa; tutaj chodzi o to, żeby cena w ogóle była liczbą, która
+            # ma sens.
+            models.CheckConstraint(
+                condition=models.Q(price__gte=0),
+                name="variant_price_is_not_negative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(manual_price__isnull=True)
+                | models.Q(manual_price__gte=0),
+                name="variant_manual_price_is_not_negative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(metal_weight_grams__gt=0),
+                name="variant_metal_weight_is_positive",
+            ),
         ]
 
     def __str__(self) -> str:

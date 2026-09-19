@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from typing import Any
 
 import pytest
 from django.core.exceptions import ValidationError
@@ -165,6 +166,34 @@ class TestVariantPrice:
 
         assert getattr(variant, EFFECTIVE_PRICE) == 99900
         assert variant.effective_price == Money(99900, "PLN")
+
+    @pytest.mark.parametrize(
+        ("field", "value"),
+        [
+            ("price", -1),
+            ("manual_price", -1),
+            ("metal_weight_grams", Decimal("0.000")),
+        ],
+    )
+    def test_baza_nie_przepusci_bezsensownej_wartosci(self, field: str, value: Any):
+        """Walidatory pól działają tylko w `full_clean()` — zapis programowy
+        (import, `bulk_create`, przeliczenie ceny) omija je."""
+        product = PublishedProductFactory()
+        fields: dict[str, Any] = {
+            "product": product,
+            "sku": "BULK-NEG",
+            "metal_color": "yellow",
+            "metal_weight_grams": Decimal("1.000"),
+            "price": 1000,
+            "currency": "PLN",
+            "vat_rate": Decimal("0.2300"),
+            "is_vat_exempt": False,
+            "vat_exemption_basis": "",
+        }
+        fields[field] = value
+
+        with pytest.raises(IntegrityError):
+            ProductVariant.objects.bulk_create([ProductVariant(**fields)])
 
     def test_sku_jest_unikalne_w_calym_katalogu(self):
         ProductVariantFactory(sku="SKU-1")
