@@ -29,7 +29,7 @@ dependencies = [
     "python-dotenv>=1.1.2",
     "redis>=6.4.0",
     "stripe>=13.0.1",
-    "rich>=14.2.0",
+    "rich>=15.0.0",
     "pack-logger[django]",
     "django-countries>=9.0.0",
     "django-phonenumber-field>=8.4.0",
