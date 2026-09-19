@@ -13,8 +13,19 @@ import * as zod from 'zod';
  * @summary Lista opublikowanych produktów
  */
 export const ProductsListQueryParams = zod.object({
+  "category": zod.coerce.string().optional().describe('Slug kategorii; obejmuje również jej podkategorie'),
+  "fineness": zod.enum(['333', '375', '585', '750', '916', '925', '950', '999']).optional().describe('Próba kruszcu\n\n\* `333` - 333 (8 karatów)\n\* `375` - 375 (9 karatów)\n\* `585` - 585 (14 karatów)\n\* `750` - 750 (18 karatów)\n\* `916` - 916 (22 karaty)\n\* `925` - 925 (srebro próby 925)\n\* `950` - 950 (platyna)\n\* `999` - 999 (kruszec inwestycyjny)'),
+  "length": zod.enum(['16', '18', '20', '36', '38', '40', '42', '45', '50', '55', '60', '70', '80']).optional().describe('Długość w centymetrach\n\n\* `16` - 16 cm\n\* `18` - 18 cm\n\* `20` - 20 cm\n\* `36` - 36 cm\n\* `38` - 38 cm\n\* `40` - 40 cm\n\* `42` - 42 cm\n\* `45` - 45 cm\n\* `50` - 50 cm\n\* `55` - 55 cm\n\* `60` - 60 cm\n\* `70` - 70 cm\n\* `80` - 80 cm'),
+  "material": zod.enum(['gold', 'palladium', 'platinum', 'silver']).optional().describe('Kruszec\n\n\* `gold` - Złoto\n\* `silver` - Srebro\n\* `platinum` - Platyna\n\* `palladium` - Pallad'),
+  "metalColor": zod.enum(['bicolor', 'rose', 'white', 'yellow']).optional().describe('Kolor kruszcu\n\n\* `yellow` - Żółte\n\* `white` - Białe\n\* `rose` - Różowe\n\* `bicolor` - Dwukolorowe'),
+  "ordering": zod.coerce.string().optional().describe('Kolejność listy: price, -price, newest, name, -name. Domyślnie newest.'),
   "page": zod.coerce.number().optional().describe('A page number within the paginated result set.'),
-  "pageSize": zod.coerce.number().optional().describe('Number of results to return per page.')
+  "pageSize": zod.coerce.number().optional().describe('Number of results to return per page.'),
+  "priceMax": zod.coerce.number().optional().describe('Cena najtańszego wariantu do (grosze)'),
+  "priceMin": zod.coerce.number().optional().describe('Cena najtańszego wariantu od (grosze)'),
+  "search": zod.coerce.string().optional().describe('Fraza szukana w nazwie i opisie'),
+  "size": zod.enum(['10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '8', '9']).optional().describe('Rozmiar pierścionka\n\n\* `8` - 8\n\* `9` - 9\n\* `10` - 10\n\* `11` - 11\n\* `12` - 12\n\* `13` - 13\n\* `14` - 14\n\* `15` - 15\n\* `16` - 16\n\* `17` - 17\n\* `18` - 18\n\* `19` - 19\n\* `20` - 20\n\* `21` - 21\n\* `22` - 22\n\* `23` - 23\n\* `24` - 24\n\* `25` - 25\n\* `26` - 26'),
+  "stone": zod.enum(['amber', 'amethyst', 'cubic_zirconia', 'diamond', 'emerald', 'moissanite', 'pearl', 'ruby', 'sapphire', 'topaz']).optional().describe('Rodzaj kamienia\n\n\* `diamond` - Diament\n\* `sapphire` - Szafir\n\* `ruby` - Rubin\n\* `emerald` - Szmaragd\n\* `pearl` - Perła\n\* `amber` - Bursztyn\n\* `topaz` - Topaz\n\* `amethyst` - Ametyst\n\* `cubic_zirconia` - Cyrkonia\n\* `moissanite` - Moissanit')
 })
 
 export const productsListResponseResultsItemSlugRegExp = new RegExp('^[-a-zA-Z0-9_]+$');
