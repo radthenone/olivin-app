@@ -2,11 +2,10 @@ from __future__ import annotations
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.utils.text import slugify
 
-from apps.categories.models import SLUG_MAX_LENGTH, polish_to_ascii
 from apps.products.models.choices import Fineness, Material, ProductStatus
 from common import TimestampedModel
+from common.slugs import SLUG_MAX_LENGTH, slug_base, unique_slug
 
 
 class ProductQuerySet(models.QuerySet["Product"]):
@@ -116,7 +115,9 @@ class Product(TimestampedModel):
     def save(self, *args, **kwargs) -> None:
         self._reject_production_time_mismatch()
         if not self.slug:
-            self.slug = self._available_slug(slugify(polish_to_ascii(self.name)))
+            self.slug = unique_slug(
+                type(self), slug_base(self.name, "product"), self.pk
+            )
         else:
             self._reject_slug_change_after_publication()
         super().save(*args, **kwargs)
@@ -174,14 +175,3 @@ class Product(TimestampedModel):
                     )
                 }
             )
-
-    def _available_slug(self, base: str) -> str:
-        base = base[:SLUG_MAX_LENGTH] or "product"
-        candidate = base
-        taken = type(self).objects.exclude(pk=self.pk)
-        suffix = 2
-        while taken.filter(slug=candidate).exists():
-            tail = f"-{suffix}"
-            candidate = f"{base[: SLUG_MAX_LENGTH - len(tail)]}{tail}"
-            suffix += 1
-        return candidate
