@@ -53,7 +53,7 @@ dev = [
 ]
 test = [
     "factory-boy>=3.3.3",
-    "faker>=40.13.0",
+    "faker>=40.39.0",
     "fakeredis>=2.35.1",
     "freezegun>=1.5.5",
     "moto[s3]>=5.1.22",
