@@ -14,7 +14,6 @@ import pytest
 from django.apps import apps
 from django.conf import settings
 from django.urls import reverse
-from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -131,27 +130,14 @@ class TestPaginationOnLiveEndpoint:
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["results"]) == 5  # type: ignore
 
-    def test_strony_nie_powtarzaja_rekordow_z_ta_sama_chwila_utworzenia(
-        self, api_client: APIClient
-    ):
-        """`created_at` nie jest unikalny — bez rozstrzygnięcia remisu wynik
-        paginacji zależy od kolejności, jaką akurat zwróci baza."""
-        user = UserFactory()
-        with freeze_time("2026-09-19 12:00:00"):
-            _fill_addresses(ProfileFactory(user=user))
-
-        api_client.force_authenticate(user=user)
-        first = cast(Response, api_client.get(reverse("address-list")))
-        second = cast(Response, api_client.get(reverse("address-list"), {"page": 2}))
-
-        seen = [row["id"] for row in first.data["results"]]  # type: ignore
-        seen += [row["id"] for row in second.data["results"]]  # type: ignore
-        assert len(seen) == ADDRESSES_PER_PROFILE
-        assert len(set(seen)) == ADDRESSES_PER_PROFILE
-
 
 class TestOrdering:
-    """Porządek modeli ma rozstrzygnięcie remisu — inaczej paginacja kłamie."""
+    """Porządek modeli ma rozstrzygnięcie remisu — inaczej paginacja kłamie.
+
+    Sprawdzamy sam porządek, a nie wynik paginacji na dwóch stronach: testy
+    chodzą na SQLite, który przy remisie `created_at` i tak zwraca rekordy
+    w stabilnej kolejności, więc taki test przechodziłby również bez poprawki.
+    """
 
     def test_model_bazowy_rozstrzyga_remis_identyfikatorem(self):
         assert TimestampedModel._meta.ordering == ["-created_at", "-id"]
