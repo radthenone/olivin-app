@@ -65,7 +65,7 @@
   "prettier": "@olivin/config/prettier/index.json",
   "devDependencies": {
     "@olivin/config": "workspace:*",
-    "@tanstack/react-query-devtools": "^5.91.3",
+    "@tanstack/react-query-devtools": "^5.103.0",
     "@types/react": "~19.1.0",
     "@types/react-native": "^0.72.8",
     "ajv": "^8.18.0",
