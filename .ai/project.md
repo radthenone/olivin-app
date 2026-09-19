@@ -19,6 +19,7 @@ Zweryfikowano: 2026-09-11.
 
 - `backend/src/apps/accounts` — User, Profile, Address, managery, serializery, serwisy, widoki, schematy. Testy w `backend/src/tests/accounts/`.
 - `backend/src/apps/categories` — `Category` jako drzewo (rodzic jako klucz obcy do siebie, bez mptt), slug niezmienny, narzut domyślny. Panel do edycji, API **tylko do odczytu**: `GET /categories/` (drzewo zagnieżdżone, bez stronicowania) i `GET /categories/<slug>/`, oba `AllowAny`. Testy w `backend/src/tests/categories/`.
+- `backend/src/apps/products` — `Product` (status `draft`/`published`, kategoria-liść, materiał i próba jako `choices`, flaga produktu na zamówienie z czasem realizacji) oraz `ProductVariant` (SKU, kolor kruszcu, rozmiar/długość, kamień, masa kruszcu, `price` i `manual_price` jako grosze, stawka VAT albo zwolnienie z podstawą prawną). Panel z wariantami inline i akcją publikacji; API **tylko do odczytu**: `GET /products/` (opublikowane, każdy z najtańszym wariantem) i `GET /products/<slug>/`, oba `AllowAny`. Testy w `backend/src/tests/products/`.
 - `backend/src/core/` — settings (django-split-settings), integracje, storage, utils. Health check: **`GET /health/`** (nie pod `/api/`), zwraca stan bazy, Redisa i storage.
 - `backend/src/common/` — pola, modele bazowe w tym `TranslatableModel`, lokalizacja.
 - `frontend/mobile/` — aplikacja Expo: ekrany auth (logowanie, rejestracja, MFA, weryfikacja e-mail, reset hasła, logowanie kodem), konto, profil.
@@ -27,13 +28,11 @@ Zweryfikowano: 2026-09-11.
 
 **Puste szkielety po `startapp` — dziewięć linii kodu każdy, zero modeli, zero migracji:**
 
-`products`, `orders`, `payments`, `discounts`, `inventory`, `shipping`, `reviews`, `notifications`
+`orders`, `payments`, `discounts`, `inventory`, `shipping`, `reviews`, `notifications`
 
-Nie zakładaj, że którakolwiek z nich cokolwiek zawiera. Nie ma modelu Product, nie ma Order, nie ma Cart.
+Nie zakładaj, że którakolwiek z nich cokolwiek zawiera. Nie ma modelu Order, nie ma Cart, nie ma stanu magazynowego.
 
 **Nie istnieje po stronie frontendu:** `features/catalog`, `features/cart`, `features/checkout`, `features/orders`, `features/payments`. Są tylko `auth`, `account`, `profile`.
-
-**Znany defekt:** `apps/products` ma jednocześnie `models.py` i pusty katalog `models/` (oraz `selectors/`, `serializers/`, `views/`). Pakiet przesłania moduł. Katalogi są puste, więc git ich nie śledzi.
 
 ## Wersje i narzędzia (lockfile = prawda)
 
@@ -116,7 +115,7 @@ Testy integracyjne: `docker-compose.test.yml`, próg pokrycia **60%**.
 
 Generowane są też schematy Zod (`.zod.ts`) dla obu wejść.
 
-`APPS_TAGS` w `frontend/packages/api/orval.config.js` (obecnie): **`Addresses`, `Categories`, `Profiles`, `Health`**. Nowy viewset domenowy bez dopisania tagu nie trafi do klienta — cichy błąd.
+`APPS_TAGS` w `frontend/packages/api/orval.config.js` (obecnie): **`Addresses`, `Categories`, `Products`, `Profiles`, `Health`**. Nowy viewset domenowy bez dopisania tagu nie trafi do klienta — cichy błąd.
 
 Sekwencja po zmianie API: backend → migracje → regeneracja `schema.yaml` → tag w `APPS_TAGS` → `task ovral:generate` → `task lints:frontend:typecheck`. Bramka: `task ovral:check` (offline, w CI).
 

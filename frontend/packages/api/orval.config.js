@@ -20,7 +20,7 @@ const ALLAUTH_TAGS = [
   "Tokens",
 ];
 
-const APPS_TAGS = ["Addresses", "Categories", "Profiles", "Health"];
+const APPS_TAGS = ["Addresses", "Categories", "Products", "Profiles", "Health"];
 
 const ZOD_OVERRIDE = {
   zod: {
