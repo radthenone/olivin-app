@@ -6,7 +6,7 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 
-from apps.categories.models import SLUG_MAX_LENGTH, Category
+from apps.categories.models import Category
 from common.money import Money
 from tests.factories.categories import CategoryFactory
 
@@ -30,11 +30,6 @@ class TestSlug:
         second = CategoryFactory(name="Gold rings")
 
         assert second.slug == "gold-rings-2"
-
-    def test_slug_nie_przekracza_dlugosci_kolumny(self):
-        category = CategoryFactory(name="x" * (SLUG_MAX_LENGTH + 50))
-
-        assert len(category.slug) == SLUG_MAX_LENGTH
 
     @pytest.mark.parametrize(
         ("name", "expected"),

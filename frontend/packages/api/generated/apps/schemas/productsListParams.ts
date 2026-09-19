@@ -5,8 +5,71 @@
  * API documentation
  * OpenAPI spec version: 1.0.0
  */
+import type { ProductsListFineness } from './productsListFineness';
+import type { ProductsListLength } from './productsListLength';
+import type { ProductsListMaterial } from './productsListMaterial';
+import type { ProductsListMetalColor } from './productsListMetalColor';
+import type { ProductsListSize } from './productsListSize';
+import type { ProductsListStone } from './productsListStone';
 
 export type ProductsListParams = {
+/**
+ * Slug kategorii; obejmuje również jej podkategorie
+ */
+category?: string;
+/**
+ * Próba kruszcu
+
+* `333` - 333 (8 karatów)
+* `375` - 375 (9 karatów)
+* `585` - 585 (14 karatów)
+* `750` - 750 (18 karatów)
+* `916` - 916 (22 karaty)
+* `925` - 925 (srebro próby 925)
+* `950` - 950 (platyna)
+* `999` - 999 (kruszec inwestycyjny)
+ */
+fineness?: ProductsListFineness;
+/**
+ * Długość w centymetrach
+
+* `16` - 16 cm
+* `18` - 18 cm
+* `20` - 20 cm
+* `36` - 36 cm
+* `38` - 38 cm
+* `40` - 40 cm
+* `42` - 42 cm
+* `45` - 45 cm
+* `50` - 50 cm
+* `55` - 55 cm
+* `60` - 60 cm
+* `70` - 70 cm
+* `80` - 80 cm
+ */
+length?: ProductsListLength;
+/**
+ * Kruszec
+
+* `gold` - Złoto
+* `silver` - Srebro
+* `platinum` - Platyna
+* `palladium` - Pallad
+ */
+material?: ProductsListMaterial;
+/**
+ * Kolor kruszcu
+
+* `yellow` - Żółte
+* `white` - Białe
+* `rose` - Różowe
+* `bicolor` - Dwukolorowe
+ */
+metalColor?: ProductsListMetalColor;
+/**
+ * Kolejność listy: price, -price, newest, name, -name. Domyślnie newest.
+ */
+ordering?: string;
 /**
  * A page number within the paginated result set.
  */
@@ -15,4 +78,55 @@ page?: number;
  * Number of results to return per page.
  */
 pageSize?: number;
+/**
+ * Cena najtańszego wariantu do (grosze)
+ */
+priceMax?: number;
+/**
+ * Cena najtańszego wariantu od (grosze)
+ */
+priceMin?: number;
+/**
+ * Fraza szukana w nazwie i opisie
+ */
+search?: string;
+/**
+ * Rozmiar pierścionka
+
+* `8` - 8
+* `9` - 9
+* `10` - 10
+* `11` - 11
+* `12` - 12
+* `13` - 13
+* `14` - 14
+* `15` - 15
+* `16` - 16
+* `17` - 17
+* `18` - 18
+* `19` - 19
+* `20` - 20
+* `21` - 21
+* `22` - 22
+* `23` - 23
+* `24` - 24
+* `25` - 25
+* `26` - 26
+ */
+size?: ProductsListSize;
+/**
+ * Rodzaj kamienia
+
+* `diamond` - Diament
+* `sapphire` - Szafir
+* `ruby` - Rubin
+* `emerald` - Szmaragd
+* `pearl` - Perła
+* `amber` - Bursztyn
+* `topaz` - Topaz
+* `amethyst` - Ametyst
+* `cubic_zirconia` - Cyrkonia
+* `moissanite` - Moissanit
+ */
+stone?: ProductsListStone;
 };

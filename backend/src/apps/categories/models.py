@@ -1,23 +1,13 @@
 from __future__ import annotations
 
+from typing import Any
+
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.utils.text import slugify
 
 from common import TimestampedModel
 from common.money import DEFAULT_CURRENCY, Money, MoneyAmountField
-
-SLUG_MAX_LENGTH = 140
-
-# `slugify` rozkłada znaki diakrytyczne przez NFKD i odrzuca to, co zostanie
-# poza ASCII. Polskie „ł" nie jest literą z ogonkiem, tylko osobnym znakiem bez
-# rozkładu — bez tej podmiany „Łańcuszki" dają slug `ancuszki`, a ponieważ slug
-# jest niezmienny, literówka w adresie zostaje na stałe.
-_POLISH_ASCII = str.maketrans({"ł": "l", "Ł": "L"})
-
-
-def polish_to_ascii(value: str) -> str:
-    return value.translate(_POLISH_ASCII)
+from common.slugs import SLUG_MAX_LENGTH, slug_base, unique_slug
 
 
 class Category(TimestampedModel):
@@ -92,6 +82,40 @@ class Category(TimestampedModel):
     def __str__(self) -> str:
         return self.name
 
+    @classmethod
+    def subtree_ids(cls, slug: str) -> list[Any]:
+        """Identyfikatory kategorii o podanym slugu wraz ze wszystkimi potomkami.
+
+        Klient filtrujący listę po „Pierścionkach" oczekuje także wyrobów
+        z „Zaręczynowych" — produkt siedzi w liściu, a menu pozwala kliknąć
+        w węzeł wyżej.
+
+        Całe drzewo idzie jednym zapytaniem i schodzi w Pythonie: rekurencyjne
+        zapytanie po bazie kosztowałoby więcej niż wczytanie kilkudziesięciu
+        par `(id, parent_id)`. Nieznany slug daje pustą listę, czyli pustą
+        listę produktów — nie cichy brak filtru.
+        """
+        rows = list(cls.objects.values_list("id", "parent_id", "slug"))
+        root_ids = [row[0] for row in rows if row[2] == slug]
+        if not root_ids:
+            return []
+
+        children: dict[Any, list[Any]] = {}
+        for node_id, parent_id, _ in rows:
+            children.setdefault(parent_id, []).append(node_id)
+
+        collected: list[Any] = []
+        seen: set[Any] = set()
+        queue = list(root_ids)
+        while queue:
+            node_id = queue.pop()
+            if node_id in seen:
+                continue
+            seen.add(node_id)
+            collected.append(node_id)
+            queue.extend(children.get(node_id, []))
+        return collected
+
     @property
     def margin(self) -> Money | None:
         """Narzut kwotowy jako `Money`; `None`, gdy kategoria go nie ma."""
@@ -119,7 +143,9 @@ class Category(TimestampedModel):
         # którego `save()` nie woła.
         self._reject_cycle()
         if not self.slug:
-            self.slug = self._available_slug(slugify(polish_to_ascii(self.name)))
+            self.slug = unique_slug(
+                type(self), slug_base(self.name, "category"), self.pk
+            )
         else:
             self._reject_slug_change()
         super().save(*args, **kwargs)
@@ -142,22 +168,6 @@ class Category(TimestampedModel):
             raise ValidationError(
                 {"slug": "Slug jest niezmienny — adres kategorii już istnieje."}
             )
-
-    def _available_slug(self, base: str) -> str:
-        """Dokłada przyrostek, dopóki slug jest zajęty.
-
-        Kolizja jest realna: „Pierścionki złote" i „Pierścionki, złote" dają
-        ten sam slug, a kolumna jest unikalna.
-        """
-        base = base[:SLUG_MAX_LENGTH] or "category"
-        candidate = base
-        taken = type(self).objects.exclude(pk=self.pk)
-        suffix = 2
-        while taken.filter(slug=candidate).exists():
-            tail = f"-{suffix}"
-            candidate = f"{base[: SLUG_MAX_LENGTH - len(tail)]}{tail}"
-            suffix += 1
-        return candidate
 
     def _creates_cycle(self) -> bool:
         if not self.pk or not self.parent_id:
