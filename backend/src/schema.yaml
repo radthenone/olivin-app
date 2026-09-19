@@ -4,6 +4,54 @@ info:
   version: 1.0.0
   description: API documentation
 paths:
+  /categories/:
+    get:
+      operationId: categories_list
+      description: Zwraca korzenie taksonomii wraz z całym zagnieżdżeniem. Odpowiedź
+        nie jest stronicowana — gałąź bez korzenia nie jest drzewem.
+      summary: Drzewo kategorii
+      tags:
+      - Categories
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+          description: ''
+  /categories/{slug}/:
+    get:
+      operationId: categories_retrieve
+      description: Zwraca wskazaną kategorię wraz z jej zagnieżdżonymi potomkami.
+        Adresem jest slug, nie identyfikator.
+      summary: Gałąź drzewa od wskazanej kategorii
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z nazwy przy zapisie. Po zapisaniu nie da się go zmienić.
+        required: true
+      tags:
+      - Categories
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
   /csrf/:
     get:
       operationId: csrf_list
@@ -872,6 +920,38 @@ components:
     BlankEnum:
       enum:
       - ''
+    Category:
+      type: object
+      description: |-
+        Węzeł drzewa wraz z potomkami.
+
+        Narzut nie wychodzi na zewnątrz: to dana cenotwórcza panelu, nie treść
+        katalogu.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          description: Nazwa kategorii po polsku, widoczna w menu sklepu
+        slug:
+          type: string
+          readOnly: true
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z nazwy przy zapisie. Po zapisaniu nie da się go zmienić.
+          pattern: ^[-a-zA-Z0-9_]+$
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+          readOnly: true
+      required:
+      - children
+      - id
+      - name
+      - slug
     CountryEnum:
       enum:
       - PL

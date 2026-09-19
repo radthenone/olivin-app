@@ -36,6 +36,7 @@ urlpatterns = [
     path("health/", HealthCheckView.as_view(), name="health_check"),
     # API
     path("customers/", include("apps.accounts.urls")),
+    path("categories/", include("apps.categories.urls")),
     # Headless API
     path("accounts/", include("allauth.urls")),
     path("_allauth/", include("allauth.headless.urls")),
