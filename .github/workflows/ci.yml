@@ -44,7 +44,7 @@ jobs:
 
       - name: Sync backend dependencies
         working-directory: backend
-        run: uv sync --all-extras
+        run: uv sync --frozen --all-extras
 
       - name: Ruff
         run: task lints:backend:ruff:check
@@ -157,7 +157,7 @@ jobs:
 
       - name: Sync backend dependencies
         working-directory: backend
-        run: uv sync --all-extras
+        run: uv sync --frozen --all-extras
 
       - name: Sync frontend dependencies
         working-directory: frontend
