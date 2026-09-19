@@ -2,7 +2,6 @@
 Health check endpoints for Docker.
 """
 
-from django.conf import settings
 from django.core.cache import cache
 from django.db import connection
 from pack_logger import log
@@ -12,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.storage.bucket_manager import S3BucketManager
+from core.storage.buckets import PRODUCTS
 
 from .schema import health_schema
 
@@ -54,7 +54,7 @@ class HealthCheckView(APIView):
         # MinIO/S3
         try:
             bucket_manager = S3BucketManager()
-            bucket_manager.client.head_bucket(Bucket=settings.AWS_STORAGE_BUCKET_NAME)
+            bucket_manager.client.head_bucket(Bucket=PRODUCTS.name)
             health_status["services"]["storage"] = "healthy"
         except Exception as e:
             health_status["services"]["storage"] = f"unhealthy: {str(e)}"
