@@ -4,6 +4,7 @@ Paginacja, filtry i limity żądań są ustawione globalnie w `REST_FRAMEWORK`,
 żeby widoki katalogu nie powtarzały tej konfiguracji u siebie.
 """
 
+from core.api.filters import SearchFilter
 from core.api.pagination import StandardPagination
 
-__all__ = ["StandardPagination"]
+__all__ = ["SearchFilter", "StandardPagination"]

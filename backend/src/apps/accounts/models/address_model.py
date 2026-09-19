@@ -42,7 +42,7 @@ class Address(TimestampedModel):
     class Meta:
         verbose_name = "Address"
         verbose_name_plural = "Addresses"
-        ordering = ["-created_at"]
+        ordering = ["-created_at", "-id"]
 
     def __str__(self):
         return f"{self.street}, {self.city}, {self.state}, {self.postal_code}, {self.country}"

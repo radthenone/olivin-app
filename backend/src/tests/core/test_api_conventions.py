@@ -14,6 +14,7 @@ import pytest
 from django.apps import apps
 from django.conf import settings
 from django.urls import reverse
+from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -22,8 +23,11 @@ from rest_framework.throttling import SimpleRateThrottle
 from rest_framework.views import APIView
 
 from apps.accounts.models import Address, Profile
+from common import TimestampedModel
+from core.api.filters import SearchFilter
 from core.api.pagination import StandardPagination
 from core.paths import APPS_DIR, CORE_DIR
+from core.settings.components import cache as cache_settings
 from tests.factories.accounts import ProfileFactory, UserFactory
 
 ADDRESSES_PER_PROFILE = 30
@@ -127,6 +131,43 @@ class TestPaginationOnLiveEndpoint:
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["results"]) == 5  # type: ignore
 
+    def test_strony_nie_powtarzaja_rekordow_z_ta_sama_chwila_utworzenia(
+        self, api_client: APIClient
+    ):
+        """`created_at` nie jest unikalny — bez rozstrzygnięcia remisu wynik
+        paginacji zależy od kolejności, jaką akurat zwróci baza."""
+        user = UserFactory()
+        with freeze_time("2026-09-19 12:00:00"):
+            _fill_addresses(ProfileFactory(user=user))
+
+        api_client.force_authenticate(user=user)
+        first = cast(Response, api_client.get(reverse("address-list")))
+        second = cast(Response, api_client.get(reverse("address-list"), {"page": 2}))
+
+        seen = [row["id"] for row in first.data["results"]]  # type: ignore
+        seen += [row["id"] for row in second.data["results"]]  # type: ignore
+        assert len(seen) == ADDRESSES_PER_PROFILE
+        assert len(set(seen)) == ADDRESSES_PER_PROFILE
+
+
+class TestOrdering:
+    """Porządek modeli ma rozstrzygnięcie remisu — inaczej paginacja kłamie."""
+
+    def test_model_bazowy_rozstrzyga_remis_identyfikatorem(self):
+        assert TimestampedModel._meta.ordering == ["-created_at", "-id"]
+
+    @pytest.mark.parametrize("model", [Address, Profile])
+    def test_modele_kont_dziedzicza_ten_sam_porzadek(self, model):
+        assert model._meta.ordering == ["-created_at", "-id"]
+
+
+class TestCache:
+    """Historia limitów musi być wspólna dla procesów, nie procesowa."""
+
+    def test_domyslny_cache_jest_wspoldzielony(self):
+        backend = cache_settings.CACHES["default"]["BACKEND"]
+        assert backend == "django.core.cache.backends.redis.RedisCache"
+
 
 class TestFilterBackends:
     """`django-filter` i `SearchFilter` są domyślne — widoki ich nie powtarzają."""
@@ -134,11 +175,25 @@ class TestFilterBackends:
     def test_backendy_filtrow(self):
         assert settings.REST_FRAMEWORK["DEFAULT_FILTER_BACKENDS"] == (
             "django_filters.rest_framework.DjangoFilterBackend",
-            "rest_framework.filters.SearchFilter",
+            "core.api.filters.SearchFilter",
         )
 
     def test_django_filters_jest_zainstalowane(self):
         assert "django_filters" in settings.INSTALLED_APPS
+
+    def test_widok_bez_pol_nie_oglasza_parametru_search(self):
+        class ListWithoutSearch:
+            pass
+
+        assert SearchFilter().get_schema_operation_parameters(ListWithoutSearch()) == []
+
+    def test_widok_z_polami_oglasza_parametr_search(self):
+        class ListWithSearch:
+            search_fields = ("name",)
+
+        parameters = SearchFilter().get_schema_operation_parameters(ListWithSearch())
+
+        assert [parameter["name"] for parameter in parameters] == ["search"]
 
 
 class TestThrottling:

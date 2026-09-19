@@ -143,7 +143,7 @@ OAuth wymaga **Dev Client**, nie działa w Expo Go.
 
 ## Konwencje API (rozstrzygnięte 2026-09-19)
 
-**W kodzie globalnie** (`core/settings/components/auth.py`, `core/api/pagination.py`): paginacja, backendy filtrów, limity żądań i domyślna permisja. Reszta punktów niżej dotyczy widoków, które dopiero powstaną.
+**W kodzie globalnie** (`core/settings/components/auth.py`, `core/api/`): paginacja, backendy filtrów, limity żądań i domyślna permisja. Limity trzymają historię w cache'u — `CACHES` wskazuje Redisa (`components/cache.py`, `REDIS_CACHE_URL`, domyślnie baza 1), bo pamięć procesu mnoży limit przez liczbę workerów. Reszta punktów niżej dotyczy widoków, które dopiero powstaną.
 
 - Permisje: globalnie `IsAuthenticated` zostaje. `AllowAny` odczyt: products, categories, collections, aktywne promotions, shipping-methods. Koszyk gościa po `session_key`. Zapis własnych danych: zalogowany + queryset filtrowany po `request.user`. **Bez django-guardian.**
 - Mutacje katalogu, promocji, kursów kruszcu, metod dostawy — **wyłącznie Django admin** (ADR 0021). Zero POST/PUT/DELETE na te zasoby w API. Staff nie ma osobnego API.

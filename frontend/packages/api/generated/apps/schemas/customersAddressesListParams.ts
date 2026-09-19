@@ -15,8 +15,4 @@ page?: number;
  * Number of results to return per page.
  */
 pageSize?: number;
-/**
- * A search term.
- */
-search?: string;
 };

@@ -6,6 +6,7 @@ base_settings = [
     "components/apps.py",
     "components/middleware.py",
     "components/database.py",
+    "components/cache.py",
     "components/auth.py",
     "components/storage.py",
     "components/celery.py",

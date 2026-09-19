@@ -22,8 +22,7 @@ Actions:
  */
 export const CustomersAddressesListQueryParams = zod.object({
   "page": zod.coerce.number().optional().describe('A page number within the paginated result set.'),
-  "pageSize": zod.coerce.number().optional().describe('Number of results to return per page.'),
-  "search": zod.coerce.string().optional().describe('A search term.')
+  "pageSize": zod.coerce.number().optional().describe('Number of results to return per page.')
 })
 
 export const customersAddressesListResponseResultsItemStreetMax = 255;
