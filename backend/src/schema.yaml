@@ -627,6 +627,65 @@ paths:
               schema:
                 $ref: '#/components/schemas/HealthCheckResponse'
           description: ''
+  /products/:
+    get:
+      operationId: products_list
+      description: Zwraca wyłącznie produkty opublikowane. Każdy z nich reprezentuje
+        jego najtańszy wariant; produkt bez wariantów ma tu wartość pustą.
+      summary: Lista opublikowanych produktów
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Products
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductListList'
+          description: ''
+  /products/{slug}/:
+    get:
+      operationId: products_retrieve
+      description: Adresem jest slug. Szkic nie jest dostępny pod żadnym adresem —
+        odpowiedzią jest 404, tak samo jak dla produktu nieistniejącego.
+      summary: Produkt wraz z pełną listą wariantów
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z nazwy przy zapisie. Po publikacji nie da się go zmienić.
+        required: true
+      tags:
+      - Products
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+          description: ''
 components:
   schemas:
     Address:
@@ -1454,6 +1513,26 @@ components:
         * `YE` - Yemen
         * `ZM` - Zambia
         * `ZW` - Zimbabwe
+    FinenessEnum:
+      enum:
+      - '333'
+      - '375'
+      - '585'
+      - '750'
+      - '916'
+      - '925'
+      - '950'
+      - '999'
+      type: string
+      description: |-
+        * `333` - 333 (8 karatów)
+        * `375` - 375 (9 karatów)
+        * `585` - 585 (14 karatów)
+        * `750` - 750 (18 karatów)
+        * `916` - 916 (22 karaty)
+        * `925` - 925 (srebro próby 925)
+        * `950` - 950 (platyna)
+        * `999` - 999 (kruszec inwestycyjny)
     HealthCheckResponse:
       type: object
       properties:
@@ -1477,6 +1556,80 @@ components:
       - database
       - redis
       - storage
+    LengthEnum:
+      enum:
+      - '16'
+      - '18'
+      - '20'
+      - '36'
+      - '38'
+      - '40'
+      - '42'
+      - '45'
+      - '50'
+      - '55'
+      - '60'
+      - '70'
+      - '80'
+      type: string
+      description: |-
+        * `16` - 16 cm
+        * `18` - 18 cm
+        * `20` - 20 cm
+        * `36` - 36 cm
+        * `38` - 38 cm
+        * `40` - 40 cm
+        * `42` - 42 cm
+        * `45` - 45 cm
+        * `50` - 50 cm
+        * `55` - 55 cm
+        * `60` - 60 cm
+        * `70` - 70 cm
+        * `80` - 80 cm
+    MaterialEnum:
+      enum:
+      - gold
+      - silver
+      - platinum
+      - palladium
+      type: string
+      description: |-
+        * `gold` - Złoto
+        * `silver` - Srebro
+        * `platinum` - Platyna
+        * `palladium` - Pallad
+    MetalColorEnum:
+      enum:
+      - yellow
+      - white
+      - rose
+      - bicolor
+      type: string
+      description: |-
+        * `yellow` - Żółte
+        * `white` - Białe
+        * `rose` - Różowe
+        * `bicolor` - Dwukolorowe
+    Money:
+      type: object
+      description: |-
+        Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).
+
+        Kwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient
+        dostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc
+        nigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.
+      properties:
+        amount:
+          type: integer
+          readOnly: true
+          description: Kwota w najmniejszej jednostce waluty (grosze)
+        currency:
+          type: string
+          readOnly: true
+          description: Kod waluty ISO 4217
+      required:
+      - amount
+      - currency
     PaginatedAddressList:
       type: object
       required:
@@ -1500,6 +1653,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Address'
+    PaginatedProductListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductList'
     PaginatedProfileList:
       type: object
       required:
@@ -1846,6 +2022,286 @@ components:
           allOf:
           - $ref: '#/components/schemas/RoleEnum'
           readOnly: true
+    ProductDetail:
+      type: object
+      description: Strona produktu — pełna lista wariantów.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          description: Nazwa produktu po polsku
+        slug:
+          type: string
+          readOnly: true
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z nazwy przy zapisie. Po publikacji nie da się go zmienić.
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+          readOnly: true
+          description: Opis produktu po polsku
+        category:
+          type: string
+          description: Slug kategorii-liścia, do której należy produkt
+          readOnly: true
+        material:
+          allOf:
+          - $ref: '#/components/schemas/MaterialEnum'
+          readOnly: true
+          description: |-
+            Kruszec, z którego wykonany jest wyrób
+
+            * `gold` - Złoto
+            * `silver` - Srebro
+            * `platinum` - Platyna
+            * `palladium` - Pallad
+        fineness:
+          allOf:
+          - $ref: '#/components/schemas/FinenessEnum'
+          readOnly: true
+          description: |-
+            Próba kruszcu
+
+            * `333` - 333 (8 karatów)
+            * `375` - 375 (9 karatów)
+            * `585` - 585 (14 karatów)
+            * `750` - 750 (18 karatów)
+            * `916` - 916 (22 karaty)
+            * `925` - 925 (srebro próby 925)
+            * `950` - 950 (platyna)
+            * `999` - 999 (kruszec inwestycyjny)
+        isMadeToOrder:
+          type: boolean
+          readOnly: true
+          description: Wyrób wytwarzany po złożeniu zamówienia (ADR 0024). Nie ma
+            stanu magazynowego, ma za to czas realizacji.
+        productionTimeDays:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Czas realizacji w dniach; wymagany przy produkcie na zamówienie
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductVariant'
+          readOnly: true
+      required:
+      - category
+      - description
+      - fineness
+      - id
+      - isMadeToOrder
+      - material
+      - name
+      - productionTimeDays
+      - slug
+      - variants
+    ProductList:
+      type: object
+      description: Produkt na liście — reprezentuje go najtańszy wariant (`CONTEXT.md`).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          description: Nazwa produktu po polsku
+        slug:
+          type: string
+          readOnly: true
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z nazwy przy zapisie. Po publikacji nie da się go zmienić.
+          pattern: ^[-a-zA-Z0-9_]+$
+        category:
+          type: string
+          description: Slug kategorii-liścia, do której należy produkt
+          readOnly: true
+        material:
+          allOf:
+          - $ref: '#/components/schemas/MaterialEnum'
+          readOnly: true
+          description: |-
+            Kruszec, z którego wykonany jest wyrób
+
+            * `gold` - Złoto
+            * `silver` - Srebro
+            * `platinum` - Platyna
+            * `palladium` - Pallad
+        fineness:
+          allOf:
+          - $ref: '#/components/schemas/FinenessEnum'
+          readOnly: true
+          description: |-
+            Próba kruszcu
+
+            * `333` - 333 (8 karatów)
+            * `375` - 375 (9 karatów)
+            * `585` - 585 (14 karatów)
+            * `750` - 750 (18 karatów)
+            * `916` - 916 (22 karaty)
+            * `925` - 925 (srebro próby 925)
+            * `950` - 950 (platyna)
+            * `999` - 999 (kruszec inwestycyjny)
+        isMadeToOrder:
+          type: boolean
+          readOnly: true
+          description: Wyrób wytwarzany po złożeniu zamówienia (ADR 0024). Nie ma
+            stanu magazynowego, ma za to czas realizacji.
+        productionTimeDays:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Czas realizacji w dniach; wymagany przy produkcie na zamówienie
+        cheapestVariant:
+          allOf:
+          - $ref: '#/components/schemas/ProductVariant'
+          nullable: true
+          readOnly: true
+      required:
+      - category
+      - cheapestVariant
+      - fineness
+      - id
+      - isMadeToOrder
+      - material
+      - name
+      - productionTimeDays
+      - slug
+    ProductVariant:
+      type: object
+      description: |-
+        Wariant widziany przez klienta.
+
+        Cena jest tą, którą klient faktycznie zapłaci: ręczna ma pierwszeństwo
+        przed wyliczoną (ADR 0022). Klient nie musi wiedzieć, która to która.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        sku:
+          type: string
+          readOnly: true
+          description: Oznaczenie magazynowe wariantu, unikalne w całym katalogu
+        metalColor:
+          allOf:
+          - $ref: '#/components/schemas/MetalColorEnum'
+          readOnly: true
+          description: |-
+            Kolor kruszcu
+
+            * `yellow` - Żółte
+            * `white` - Białe
+            * `rose` - Różowe
+            * `bicolor` - Dwukolorowe
+        size:
+          allOf:
+          - $ref: '#/components/schemas/SizeEnum'
+          readOnly: true
+          description: |-
+            Rozmiar pierścionka; puste dla wyrobów bez rozmiaru
+
+            * `8` - 8
+            * `9` - 9
+            * `10` - 10
+            * `11` - 11
+            * `12` - 12
+            * `13` - 13
+            * `14` - 14
+            * `15` - 15
+            * `16` - 16
+            * `17` - 17
+            * `18` - 18
+            * `19` - 19
+            * `20` - 20
+            * `21` - 21
+            * `22` - 22
+            * `23` - 23
+            * `24` - 24
+            * `25` - 25
+            * `26` - 26
+        length:
+          allOf:
+          - $ref: '#/components/schemas/LengthEnum'
+          readOnly: true
+          description: |-
+            Długość w centymetrach; puste dla wyrobów bez długości
+
+            * `16` - 16 cm
+            * `18` - 18 cm
+            * `20` - 20 cm
+            * `36` - 36 cm
+            * `38` - 38 cm
+            * `40` - 40 cm
+            * `42` - 42 cm
+            * `45` - 45 cm
+            * `50` - 50 cm
+            * `55` - 55 cm
+            * `60` - 60 cm
+            * `70` - 70 cm
+            * `80` - 80 cm
+        stone:
+          allOf:
+          - $ref: '#/components/schemas/StoneEnum'
+          readOnly: true
+          description: |-
+            Rodzaj kamienia; puste dla wyrobu bez kamienia
+
+            * `diamond` - Diament
+            * `sapphire` - Szafir
+            * `ruby` - Rubin
+            * `emerald` - Szmaragd
+            * `pearl` - Perła
+            * `amber` - Bursztyn
+            * `topaz` - Topaz
+            * `amethyst` - Ametyst
+            * `cubic_zirconia` - Cyrkonia
+            * `moissanite` - Moissanit
+        metalWeightGrams:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,3})?$
+          readOnly: true
+          description: Masa kruszcu w gramach — podstawa składnika kruszcowego ceny
+        price:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        vatRate:
+          type: string
+          format: decimal
+          pattern: ^-?0?(?:\.\d{0,4})?$
+          readOnly: true
+          nullable: true
+          description: Stawka podatku jako ułamek, np. 0.2300. Pusta wyłącznie przy
+            zwolnieniu.
+        isVatExempt:
+          type: boolean
+          readOnly: true
+          description: Zwolnienie przedmiotowe — złoto inwestycyjne. Nie jest stawką
+            zerową, tylko osobnym bytem (ADR 0013).
+        vatExemptionBasis:
+          type: string
+          readOnly: true
+          description: Podstawa prawna zwolnienia; wymagana przy zwolnieniu
+      required:
+      - id
+      - isVatExempt
+      - length
+      - metalColor
+      - metalWeightGrams
+      - price
+      - size
+      - sku
+      - stone
+      - vatExemptionBasis
+      - vatRate
     Profile:
       type: object
       properties:
@@ -1897,6 +2353,48 @@ components:
       description: |-
         * `customer` - Customer
         * `admin` - Admin
+    SizeEnum:
+      enum:
+      - '8'
+      - '9'
+      - '10'
+      - '11'
+      - '12'
+      - '13'
+      - '14'
+      - '15'
+      - '16'
+      - '17'
+      - '18'
+      - '19'
+      - '20'
+      - '21'
+      - '22'
+      - '23'
+      - '24'
+      - '25'
+      - '26'
+      type: string
+      description: |-
+        * `8` - 8
+        * `9` - 9
+        * `10` - 10
+        * `11` - 11
+        * `12` - 12
+        * `13` - 13
+        * `14` - 14
+        * `15` - 15
+        * `16` - 16
+        * `17` - 17
+        * `18` - 18
+        * `19` - 19
+        * `20` - 20
+        * `21` - 21
+        * `22` - 22
+        * `23` - 23
+        * `24` - 24
+        * `25` - 25
+        * `26` - 26
     StatusEnum:
       enum:
       - healthy
@@ -1905,6 +2403,30 @@ components:
       description: |-
         * `healthy` - healthy
         * `unhealthy` - unhealthy
+    StoneEnum:
+      enum:
+      - diamond
+      - sapphire
+      - ruby
+      - emerald
+      - pearl
+      - amber
+      - topaz
+      - amethyst
+      - cubic_zirconia
+      - moissanite
+      type: string
+      description: |-
+        * `diamond` - Diament
+        * `sapphire` - Szafir
+        * `ruby` - Rubin
+        * `emerald` - Szmaragd
+        * `pearl` - Perła
+        * `amber` - Bursztyn
+        * `topaz` - Topaz
+        * `amethyst` - Ametyst
+        * `cubic_zirconia` - Cyrkonia
+        * `moissanite` - Moissanit
   securitySchemes:
     XSessionTokenAuth:
       type: apiKey
