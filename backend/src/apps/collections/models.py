@@ -5,7 +5,12 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from common import TimestampedModel
-from common.slugs import SLUG_MAX_LENGTH, slug_base, unique_slug
+from common.slugs import (
+    SLUG_MAX_LENGTH,
+    SlugSourceUnavailable,
+    english_slug,
+    unique_slug,
+)
 
 
 class Collection(TimestampedModel):
@@ -61,12 +66,25 @@ class Collection(TimestampedModel):
 
     def save(self, *args, **kwargs) -> None:
         if not self.slug:
-            self.slug = unique_slug(
-                type(self), slug_base(self.name, "collection"), self.pk
-            )
+            self.slug = self._slug_from_english_name()
         else:
             self._reject_slug_change()
         super().save(*args, **kwargs)
+
+    def _slug_from_english_name(self) -> str:
+        """Adres z angielskiego brzmienia nazwy (`.ai/project.md`)."""
+        try:
+            base = english_slug(self, "name", "collection")
+        except SlugSourceUnavailable as error:
+            raise ValidationError(
+                {
+                    "slug": (
+                        f"{error} Wpisz adres po angielsku ręcznie albo "
+                        "spróbuj ponownie, gdy silnik tłumaczeń odpowie."
+                    )
+                }
+            ) from error
+        return unique_slug(type(self), base, self.pk)
 
     def _reject_slug_change(self) -> None:
         if not self.pk:

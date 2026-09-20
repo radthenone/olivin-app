@@ -28,7 +28,7 @@ def _get(client: APIClient, url: str, **params: Any) -> tuple[int, Any]:
     return response.status_code, response.json()
 
 
-def _detail(slug: str) -> str:
+def _detail(slug: str | None) -> str:
     return reverse("product-detail", kwargs={"slug": slug})
 
 

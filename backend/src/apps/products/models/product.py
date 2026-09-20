@@ -6,7 +6,12 @@ from django.db import models, transaction
 
 from apps.products.models.choices import Fineness, Material, ProductStatus
 from common import TimestampedModel
-from common.slugs import SLUG_MAX_LENGTH, slug_base, unique_slug
+from common.slugs import (
+    SLUG_MAX_LENGTH,
+    SlugSourceUnavailable,
+    english_slug,
+    unique_slug,
+)
 
 
 class ProductQuerySet(models.QuerySet["Product"]):
@@ -21,9 +26,10 @@ class Product(TimestampedModel):
     on jest kupowany. Status rozstrzyga widoczność: szkic nie istnieje dla
     sklepu pod żadnym adresem.
 
-    Slug jest zamrażany dopiero przy publikacji, a nie przy pierwszym zapisie
-    jak w kategorii: szkic nie ma jeszcze adresu, pod którym ktoś mógłby wejść,
-    więc póki trwa przygotowanie, nazwę w adresie wolno poprawiać.
+    Slug powstaje dopiero przy publikacji i wtedy też jest zamrażany
+    (`.ai/project.md`). Szkic nie ma adresu, bo nie ma go pod czym wyświetlić —
+    a angielskie brzmienie nazwy, z którego adres się bierze, nie musi
+    istnieć, dopóki produkt nie wychodzi do sklepu.
     """
 
     name = models.CharField(
@@ -38,9 +44,11 @@ class Product(TimestampedModel):
         max_length=SLUG_MAX_LENGTH,
         unique=True,
         blank=True,
+        null=True,
         help_text=(
             "Angielski identyfikator w adresie. Puste pole zostanie wypełnione "
-            "z nazwy przy zapisie. Po publikacji nie da się go zmienić."
+            "z angielskiego brzmienia nazwy przy publikacji. Po publikacji "
+            "nie da się go zmienić."
         ),
     )
     category = models.ForeignKey(
@@ -124,12 +132,11 @@ class Product(TimestampedModel):
     def save(self, *args, **kwargs) -> None:
         self._reject_production_time_mismatch()
         just_published = self._is_becoming_published()
-        if not self.slug:
-            self.slug = unique_slug(
-                type(self), slug_base(self.name, "product"), self.pk
-            )
-        else:
+        if self.slug:
             self._reject_slug_change_after_publication()
+        elif self.is_published:
+            # Adres powstaje w chwili wyjścia do sklepu, nie wcześniej.
+            self.slug = self._slug_from_english_name()
         super().save(*args, **kwargs)
         if just_published:
             self._queue_translation()
@@ -207,6 +214,26 @@ class Product(TimestampedModel):
                     )
                 }
             )
+
+    def _slug_from_english_name(self) -> str:
+        """Adres z angielskiego brzmienia nazwy (`.ai/project.md`).
+
+        Produkt zamraża slug dopiero przy publikacji, ale adres powstaje już
+        przy pierwszym zapisie: szkic też ma go w panelu i nie ma powodu,
+        żeby po publikacji wyglądał inaczej.
+        """
+        try:
+            base = english_slug(self, "name", "product")
+        except SlugSourceUnavailable as error:
+            raise ValidationError(
+                {
+                    "slug": (
+                        f"{error} Wpisz adres po angielsku ręcznie albo "
+                        "spróbuj ponownie, gdy silnik tłumaczeń odpowie."
+                    )
+                }
+            ) from error
+        return unique_slug(type(self), base, self.pk)
 
     def _reject_slug_change_after_publication(self) -> None:
         if not self.pk:

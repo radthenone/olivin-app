@@ -34,6 +34,54 @@ def translated_value(obj, field: str, language: str | None) -> str:
     return source
 
 
+def english_name(obj, field: str, language: str = Language.EN) -> str:
+    """Angielskie brzmienie pola — z bazy, a w jej braku z silnika.
+
+    Używane przez warstwę slugów, która potrzebuje wyniku **teraz**, a nie
+    po przejściu zadania w tle: adres musi powstać razem z obiektem, bo po
+    zapisie jest już niezmienny.
+
+    Pusty łańcuch oznacza „nie udało się" — silnik nie odpowiedział albo
+    oddał pustkę. Wywołujący ma to potraktować jako brak, nie jako nazwę.
+    """
+    for translation in obj.translations.all():
+        if translation.field == field and translation.language == language:
+            if translation.text:
+                return translation.text
+
+    source = (getattr(obj, field, "") or "").strip()
+    if not source:
+        return ""
+
+    try:
+        translated = get_provider().translate(
+            [source], target_language=language, source_language=SOURCE_LANGUAGE
+        )
+    except Exception:
+        # Silnik bywa niedostępny — decyzję, co z tym zrobić, podejmuje
+        # wywołujący. Tutaj tylko mówimy, że nazwy nie ma.
+        return ""
+
+    text = (translated[0] if translated else "").strip()
+    if not text:
+        return ""
+
+    # Zapisujemy, co przyszło: inaczej zadanie w tle za chwilę zapytałoby
+    # silnik o dokładnie ten sam tekst drugi raz.
+    Translation.objects.get_or_create(
+        content_type=ContentType.objects.get_for_model(obj),
+        object_id=obj.pk,
+        field=field,
+        language=language,
+        defaults={
+            "text": text,
+            "source": TranslationSource.AUTO,
+            "translated_at": timezone.now(),
+        },
+    )
+    return text
+
+
 def missing_fields(obj, language: str = Language.EN) -> list[str]:
     """Pola, które nie mają jeszcze tłumaczenia i mają co tłumaczyć."""
     existing = {

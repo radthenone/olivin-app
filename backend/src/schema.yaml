@@ -986,7 +986,8 @@ paths:
         schema:
           type: string
           description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
-            z nazwy przy zapisie. Po publikacji nie da się go zmienić.
+            z angielskiego brzmienia nazwy przy publikacji. Po publikacji nie da się
+            go zmienić.
         required: true
       tags:
       - Products
@@ -2626,9 +2627,6 @@ components:
         slug:
           type: string
           readOnly: true
-          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
-            z nazwy przy zapisie. Po publikacji nie da się go zmienić.
-          pattern: ^[-a-zA-Z0-9_]+$
         description:
           type: string
           readOnly: true
@@ -2744,9 +2742,6 @@ components:
         slug:
           type: string
           readOnly: true
-          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
-            z nazwy przy zapisie. Po publikacji nie da się go zmienić.
-          pattern: ^[-a-zA-Z0-9_]+$
         category:
           type: string
           description: Slug kategorii-liścia, do której należy produkt

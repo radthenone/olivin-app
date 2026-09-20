@@ -8,7 +8,12 @@ from django.db import models
 
 from common import TimestampedModel
 from common.money import DEFAULT_CURRENCY, Money, MoneyAmountField
-from common.slugs import SLUG_MAX_LENGTH, slug_base, unique_slug
+from common.slugs import (
+    SLUG_MAX_LENGTH,
+    SlugSourceUnavailable,
+    english_slug,
+    unique_slug,
+)
 
 
 class Category(TimestampedModel):
@@ -152,9 +157,7 @@ class Category(TimestampedModel):
         # którego `save()` nie woła.
         self._reject_cycle()
         if not self.slug:
-            self.slug = unique_slug(
-                type(self), slug_base(self.name, "category"), self.pk
-            )
+            self.slug = self._slug_from_english_name()
         else:
             self._reject_slug_change()
         super().save(*args, **kwargs)
@@ -166,6 +169,25 @@ class Category(TimestampedModel):
             raise ValidationError(
                 {"parent": "Taki rodzic zamknąłby drzewo w pętlę."},
             )
+
+    def _slug_from_english_name(self) -> str:
+        """Adres z angielskiego brzmienia nazwy (`.ai/project.md`).
+
+        Kategoria nie ma publikacji, więc slug zamraża się przy pierwszym
+        zapisie — angielska nazwa musi istnieć właśnie wtedy.
+        """
+        try:
+            base = english_slug(self, "name", "category")
+        except SlugSourceUnavailable as error:
+            raise ValidationError(
+                {
+                    "slug": (
+                        f"{error} Wpisz adres po angielsku ręcznie albo "
+                        "spróbuj ponownie, gdy silnik tłumaczeń odpowie."
+                    )
+                }
+            ) from error
+        return unique_slug(type(self), base, self.pk)
 
     def _reject_slug_change(self) -> None:
         if not self.pk:
