@@ -41,11 +41,16 @@ def mock_s3_storage(request):
 
     try:
         with mock_aws():
-            # Czasami trzeba stworzyć na szybko mockowy bucket do użycia przez django-storages
+            # Trzy buckety z ADR 0025, żeby testy widziały ten sam układ,
+            # co bootstrap MinIO — inaczej zapis trafiałby w nieistniejący
+            # bucket i test padał na czymś innym niż sprawdza.
             import boto3
 
+            from core.storage.buckets import ALL_BUCKETS
+
             s3 = boto3.client("s3", region_name="us-east-1")
-            s3.create_bucket(Bucket="test-bucket")
+            for bucket in ALL_BUCKETS:
+                s3.create_bucket(Bucket=bucket.name)
             yield
     finally:
         for key, previous_value in previous_env.items():

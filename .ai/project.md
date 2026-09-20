@@ -137,8 +137,8 @@ OAuth wymaga **Dev Client**, nie działa w Expo Go.
 
 ## Storage
 
-- **Brak `apps/files`.** Storage w `backend/src/core/storage/` — MinIO w dev, S3 w prod przez `USE_AWS`.
-- Buckety dziś w kodzie: static, media, profiles, products, private-media. **Docelowo** (ADR 0025): `products` (public), `originals` (private), `documents` (private, presigned). Zdjęć profilowych nie ma.
+- **Brak `apps/files`.** Storage w `backend/src/core/storage/` — MinIO w dev, S3 w prod przez `USE_AWS`. Model trzyma **sam klucz obiektu**, bez hosta i bucketa; adres składa `core.storage.object_url` w warstwie serializacji.
+- Buckety (ADR 0025, `core/storage/buckets.py`): `products` (odczyt publiczny), `originals` (prywatny), `documents` (prywatny, adres podpisany na czas). Nazwy przez `S3_BUCKET_PRODUCTS` / `S3_BUCKET_ORIGINALS` / `S3_BUCKET_DOCUMENTS`, czas ważności podpisu przez `S3_SIGNED_URL_TTL`. Zdjęć profilowych nie ma; pliki statyczne Django nie mają bucketa. Bootstrap: `sync_buckets()` z `docker/scripts/backend/init-minio.sh` — zakłada i nakłada polityki, **niczego nie kasuje**.
 - Pipeline zdjęć (ADR 0025): klient wysyła oryginał (≤ ~2000 px, ≤ 10 MB) + kadr `{x,y,w,h}`; Celery + Pillow: crop → 400/800/1600 WebP q80–85; rekord ze statusem processing/ready; klucz bez hosta/bucketa, URL składa serializer.
 - PDF (ADR 0026): WeasyPrint z szablonu Django, bezpośrednio z taska; Pango/Cairo w obrazie workera. `django-weasyprint` — nie.
 
