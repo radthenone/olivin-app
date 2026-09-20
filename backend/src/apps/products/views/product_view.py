@@ -93,7 +93,11 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         return (
             Product.objects.published()
             .select_related("category")
-            .prefetch_related(Prefetch("variants", queryset=variants))
+            .prefetch_related(
+                Prefetch("variants", queryset=variants),
+                "images",
+                "variants__images",
+            )
             # Podzapytanie, a nie `Min()` po złączeniu: agregat liczyłby się
             # z wariantów już przyciętych filtrami cech, więc cena produktu
             # zmieniałaby się w zależności od tego, co jeszcze jest włączone.

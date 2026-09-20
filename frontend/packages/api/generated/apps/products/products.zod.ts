@@ -64,7 +64,14 @@ export const ProductsListResponse = zod.object({
 }).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
   "vatRate": zod.stringFormat('decimal', productsListResponseResultsItemCheapestVariantOneVatRateRegExp).nullable().describe('Stawka podatku jako ułamek, np. 0.2300. Pusta wyłącznie przy zwolnieniu.'),
   "isVatExempt": zod.boolean().describe('Zwolnienie przedmiotowe — złoto inwestycyjne. Nie jest stawką zerową, tylko osobnym bytem (ADR 0013).'),
-  "vatExemptionBasis": zod.string().describe('Podstawa prawna zwolnienia; wymagana przy zwolnieniu')
+  "vatExemptionBasis": zod.string().describe('Podstawa prawna zwolnienia; wymagana przy zwolnieniu'),
+  "images": zod.array(zod.object({
+  "id": zod.uuid(),
+  "position": zod.number().describe('Kolejność w galerii; mniejsza liczba wcześniej'),
+  "isPrimary": zod.boolean().describe('Zdjęcie główne produktu — jedno na produkt'),
+  "altText": zod.string().describe('Opis alternatywny po polsku, dla czytników ekranu i SEO'),
+  "urls": zod.record(zod.string(), zod.url()).describe('Adres zdjęcia dla każdej szerokości w pikselach')
+}).describe('Zdjęcie z adresami wszystkich rozmiarów.\n\nModel trzyma same klucze (ADR 0025), więc adresy powstają tutaj — host\ni bucket zmieniają się razem ze środowiskiem.'))
 }).describe('Wariant widziany przez klienta.\n\nCena jest tą, którą klient faktycznie zapłaci: ręczna ma pierwszeństwo\nprzed wyliczoną (ADR 0022). Klient nie musi wiedzieć, która to która.').nullable()
 }).describe('Produkt na liście — reprezentuje go najtańszy wariant (`CONTEXT.md`).'))
 })
@@ -92,6 +99,13 @@ export const ProductsRetrieveResponse = zod.object({
   "fineness": zod.enum(['333', '375', '585', '750', '916', '925', '950', '999']).describe('\* `333` - 333 (8 karatów)\n\* `375` - 375 (9 karatów)\n\* `585` - 585 (14 karatów)\n\* `750` - 750 (18 karatów)\n\* `916` - 916 (22 karaty)\n\* `925` - 925 (srebro próby 925)\n\* `950` - 950 (platyna)\n\* `999` - 999 (kruszec inwestycyjny)').describe('Próba kruszcu\n\n\* `333` - 333 (8 karatów)\n\* `375` - 375 (9 karatów)\n\* `585` - 585 (14 karatów)\n\* `750` - 750 (18 karatów)\n\* `916` - 916 (22 karaty)\n\* `925` - 925 (srebro próby 925)\n\* `950` - 950 (platyna)\n\* `999` - 999 (kruszec inwestycyjny)'),
   "isMadeToOrder": zod.boolean().describe('Wyrób wytwarzany po złożeniu zamówienia (ADR 0024). Nie ma stanu magazynowego, ma za to czas realizacji.'),
   "productionTimeDays": zod.number().nullable().describe('Czas realizacji w dniach; wymagany przy produkcie na zamówienie'),
+  "images": zod.array(zod.object({
+  "id": zod.uuid(),
+  "position": zod.number().describe('Kolejność w galerii; mniejsza liczba wcześniej'),
+  "isPrimary": zod.boolean().describe('Zdjęcie główne produktu — jedno na produkt'),
+  "altText": zod.string().describe('Opis alternatywny po polsku, dla czytników ekranu i SEO'),
+  "urls": zod.record(zod.string(), zod.url()).describe('Adres zdjęcia dla każdej szerokości w pikselach')
+}).describe('Zdjęcie z adresami wszystkich rozmiarów.\n\nModel trzyma same klucze (ADR 0025), więc adresy powstają tutaj — host\ni bucket zmieniają się razem ze środowiskiem.')),
   "variants": zod.array(zod.object({
   "id": zod.uuid(),
   "sku": zod.string().describe('Oznaczenie magazynowe wariantu, unikalne w całym katalogu'),
@@ -109,7 +123,14 @@ export const ProductsRetrieveResponse = zod.object({
 }).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
   "vatRate": zod.stringFormat('decimal', productsRetrieveResponseVariantsItemVatRateRegExp).nullable().describe('Stawka podatku jako ułamek, np. 0.2300. Pusta wyłącznie przy zwolnieniu.'),
   "isVatExempt": zod.boolean().describe('Zwolnienie przedmiotowe — złoto inwestycyjne. Nie jest stawką zerową, tylko osobnym bytem (ADR 0013).'),
-  "vatExemptionBasis": zod.string().describe('Podstawa prawna zwolnienia; wymagana przy zwolnieniu')
+  "vatExemptionBasis": zod.string().describe('Podstawa prawna zwolnienia; wymagana przy zwolnieniu'),
+  "images": zod.array(zod.object({
+  "id": zod.uuid(),
+  "position": zod.number().describe('Kolejność w galerii; mniejsza liczba wcześniej'),
+  "isPrimary": zod.boolean().describe('Zdjęcie główne produktu — jedno na produkt'),
+  "altText": zod.string().describe('Opis alternatywny po polsku, dla czytników ekranu i SEO'),
+  "urls": zod.record(zod.string(), zod.url()).describe('Adres zdjęcia dla każdej szerokości w pikselach')
+}).describe('Zdjęcie z adresami wszystkich rozmiarów.\n\nModel trzyma same klucze (ADR 0025), więc adresy powstają tutaj — host\ni bucket zmieniają się razem ze środowiskiem.'))
 }).describe('Wariant widziany przez klienta.\n\nCena jest tą, którą klient faktycznie zapłaci: ręczna ma pierwszeństwo\nprzed wyliczoną (ADR 0022). Klient nie musi wiedzieć, która to która.'))
 }).describe('Strona produktu — pełna lista wariantów.')
 

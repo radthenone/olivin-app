@@ -2398,6 +2398,11 @@ components:
           readOnly: true
           nullable: true
           description: Czas realizacji w dniach; wymagany przy produkcie na zamówienie
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImage'
+          readOnly: true
         variants:
           type: array
           items:
@@ -2408,12 +2413,50 @@ components:
       - description
       - fineness
       - id
+      - images
       - isMadeToOrder
       - material
       - name
       - productionTimeDays
       - slug
       - variants
+    ProductImage:
+      type: object
+      description: |-
+        Zdjęcie z adresami wszystkich rozmiarów.
+
+        Model trzyma same klucze (ADR 0025), więc adresy powstają tutaj — host
+        i bucket zmieniają się razem ze środowiskiem.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        position:
+          type: integer
+          readOnly: true
+          description: Kolejność w galerii; mniejsza liczba wcześniej
+        isPrimary:
+          type: boolean
+          readOnly: true
+          description: Zdjęcie główne produktu — jedno na produkt
+        altText:
+          type: string
+          readOnly: true
+          description: Opis alternatywny po polsku, dla czytników ekranu i SEO
+        urls:
+          type: object
+          additionalProperties:
+            type: string
+            format: uri
+          description: Adres zdjęcia dla każdej szerokości w pikselach
+          readOnly: true
+      required:
+      - altText
+      - id
+      - isPrimary
+      - position
+      - urls
     ProductList:
       type: object
       description: Produkt na liście — reprezentuje go najtańszy wariant (`CONTEXT.md`).
@@ -2617,9 +2660,15 @@ components:
           type: string
           readOnly: true
           description: Podstawa prawna zwolnienia; wymagana przy zwolnieniu
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImage'
+          readOnly: true
       required:
       - available
       - id
+      - images
       - isAvailable
       - isLowStock
       - isVatExempt

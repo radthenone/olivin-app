@@ -8,6 +8,7 @@
 import type { LengthEnum } from './lengthEnum';
 import type { MetalColorEnum } from './metalColorEnum';
 import type { Money } from './money';
+import type { ProductImage } from './productImage';
 import type { SizeEnum } from './sizeEnum';
 import type { StoneEnum } from './stoneEnum';
 
@@ -103,4 +104,5 @@ export interface ProductVariant {
   readonly isVatExempt: boolean;
   /** Podstawa prawna zwolnienia; wymagana przy zwolnieniu */
   readonly vatExemptionBasis: string;
+  readonly images: readonly ProductImage[];
 }

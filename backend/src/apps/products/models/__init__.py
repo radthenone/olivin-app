@@ -10,6 +10,12 @@ from apps.products.models.choices import (
     Stone,
 )
 from apps.products.models.cost_component import CostComponent
+from apps.products.models.image import (
+    RENDITION_WIDTHS,
+    ImageStatus,
+    ProductImage,
+    ProductImageQuerySet,
+)
 from apps.products.models.metal_rate import (
     MetalRate,
     MetalRateQuerySet,
@@ -25,7 +31,9 @@ from apps.products.models.variant import (
 __all__ = [
     "EFFECTIVE_PRICE",
     "CostComponent",
+    "RENDITION_WIDTHS",
     "Fineness",
+    "ImageStatus",
     "Length",
     "Material",
     "MetalColor",
@@ -33,6 +41,8 @@ __all__ = [
     "MetalRateQuerySet",
     "MetalRateStatus",
     "Product",
+    "ProductImage",
+    "ProductImageQuerySet",
     "ProductQuerySet",
     "ProductStatus",
     "ProductVariant",

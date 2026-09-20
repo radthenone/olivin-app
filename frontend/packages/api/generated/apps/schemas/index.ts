@@ -30,6 +30,8 @@ export * from './patchedAddress';
 export * from './patchedAddressCountry';
 export * from './patchedProfile';
 export * from './productDetail';
+export * from './productImage';
+export * from './productImageUrls';
 export * from './productList';
 export * from './productsListFineness';
 export * from './productsListLength';
