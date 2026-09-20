@@ -9,6 +9,12 @@ from apps.products.models.choices import (
     RingSize,
     Stone,
 )
+from apps.products.models.cost_component import CostComponent
+from apps.products.models.metal_rate import (
+    MetalRate,
+    MetalRateQuerySet,
+    MetalRateStatus,
+)
 from apps.products.models.product import Product, ProductQuerySet
 from apps.products.models.variant import (
     EFFECTIVE_PRICE,
@@ -18,10 +24,14 @@ from apps.products.models.variant import (
 
 __all__ = [
     "EFFECTIVE_PRICE",
+    "CostComponent",
     "Fineness",
     "Length",
     "Material",
     "MetalColor",
+    "MetalRate",
+    "MetalRateQuerySet",
+    "MetalRateStatus",
     "Product",
     "ProductQuerySet",
     "ProductStatus",
