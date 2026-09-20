@@ -5,6 +5,7 @@
  * API documentation
  * OpenAPI spec version: 1.0.0
  */
+import type { Gemstone } from './gemstone';
 import type { LengthEnum } from './lengthEnum';
 import type { MetalColorEnum } from './metalColorEnum';
 import type { Money } from './money';
@@ -105,4 +106,5 @@ export interface ProductVariant {
   /** Podstawa prawna zwolnienia; wymagana przy zwolnieniu */
   readonly vatExemptionBasis: string;
   readonly images: readonly ProductImage[];
+  readonly gemstones: readonly Gemstone[];
 }

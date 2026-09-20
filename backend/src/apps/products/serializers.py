@@ -3,7 +3,7 @@ from __future__ import annotations
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.products.models import Product, ProductImage, ProductVariant
+from apps.products.models import Gemstone, Product, ProductImage, ProductVariant
 from core.api.serializers import MoneySerializer
 
 
@@ -36,6 +36,48 @@ class ProductImageSerializer(serializers.ModelSerializer):
         }
 
 
+class GemstoneSerializer(serializers.ModelSerializer):
+    """Kamień z parametrami i adresem certyfikatu, jeśli jest.
+
+    Adres jest podpisany na czas, bo certyfikat leży w prywatnym buckecie
+    `documents` (ADR 0025). Stały odnośnik do dokumentu laboratorium byłby
+    dostępny dla każdego, kto go raz zobaczył.
+    """
+
+    certificate_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Gemstone
+        fields = [
+            "id",
+            "kind",
+            "carat",
+            "clarity",
+            "colour",
+            "cut",
+            "laboratory",
+            "certificate_number",
+            "certificate_url",
+        ]
+        read_only_fields = fields
+
+    @extend_schema_field(
+        serializers.URLField(
+            allow_null=True,
+            help_text=(
+                "Adres certyfikatu podpisany na czas; pusty, gdy kamień "
+                "nie ma certyfikatu."
+            ),
+        )
+    )
+    def get_certificate_url(self, obj: Gemstone) -> str | None:
+        if not obj.has_certificate:
+            return None
+        from core.storage import DOCUMENTS, object_url
+
+        return object_url(DOCUMENTS, obj.certificate_key)
+
+
 class ProductVariantSerializer(serializers.ModelSerializer):
     """Wariant widziany przez klienta.
 
@@ -58,6 +100,7 @@ class ProductVariantSerializer(serializers.ModelSerializer):
         help_text="Ostatnie sztuki — stan dodatni, ale nie większy niż trzy.",
     )
     images = serializers.SerializerMethodField()
+    gemstones = GemstoneSerializer(many=True, read_only=True)
 
     class Meta:
         model = ProductVariant
@@ -77,6 +120,7 @@ class ProductVariantSerializer(serializers.ModelSerializer):
             "is_vat_exempt",
             "vat_exemption_basis",
             "images",
+            "gemstones",
         ]
         read_only_fields = fields
 

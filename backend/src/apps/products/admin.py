@@ -4,6 +4,7 @@ from django.http import HttpRequest
 
 from apps.products.models import (
     CostComponent,
+    Gemstone,
     ProductImage,
     MetalRate,
     MetalRateStatus,
@@ -136,6 +137,23 @@ class ProductAdmin(admin.ModelAdmin):
         )
 
 
+class GemstoneInline(admin.TabularInline):
+    """Kamienie przy wariancie — parametry i certyfikat w jednym miejscu."""
+
+    model = Gemstone
+    extra = 1
+    fields = (
+        "kind",
+        "carat",
+        "clarity",
+        "colour",
+        "cut",
+        "laboratory",
+        "certificate_number",
+        "certificate",
+    )
+
+
 class CostComponentInline(admin.TabularInline):
     """Składniki kosztu przy wariancie — lista otwarta (ADR 0022)."""
 
@@ -148,7 +166,7 @@ class CostComponentInline(admin.TabularInline):
 class ProductVariantAdmin(admin.ModelAdmin):
     """Osobny ekran wariantu — potrzebny wyszukiwaniu po SKU i podglądowi ceny."""
 
-    inlines = [CostComponentInline]
+    inlines = [CostComponentInline, GemstoneInline]
     list_display = ("sku", "product", "metal_color", "price", "manual_price")
     list_filter = ("metal_color", "stone", "is_vat_exempt")
     search_fields = ("sku", "product__name")
@@ -161,7 +179,7 @@ class ProductVariantAdmin(admin.ModelAdmin):
             super()
             .get_queryset(request)
             .select_related("product", "product__category")
-            .prefetch_related("cost_components")
+            .prefetch_related("cost_components", "gemstones")
         )
 
     @admin.display(description="Próg kosztowy")

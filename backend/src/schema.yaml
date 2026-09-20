@@ -1265,6 +1265,32 @@ components:
       - id
       - name
       - slug
+    ClarityEnum:
+      enum:
+      - FL
+      - IF
+      - VVS1
+      - VVS2
+      - VS1
+      - VS2
+      - SI1
+      - SI2
+      - I1
+      - I2
+      - I3
+      type: string
+      description: |-
+        * `FL` - FL — bez skaz
+        * `IF` - IF — bez skaz wewnętrznych
+        * `VVS1` - VVS1
+        * `VVS2` - VVS2
+        * `VS1` - VS1
+        * `VS2` - VS2
+        * `SI1` - SI1
+        * `SI2` - SI2
+        * `I1` - I1
+        * `I2` - I2
+        * `I3` - I3
     Collection:
       type: object
       description: |-
@@ -1302,6 +1328,32 @@ components:
       - name
       - productCount
       - slug
+    ColourEnum:
+      enum:
+      - D
+      - E
+      - F
+      - G
+      - H
+      - I
+      - J
+      - K
+      - L
+      - M
+      - fancy
+      type: string
+      description: |-
+        * `D` - D — bezbarwny
+        * `E` - E
+        * `F` - F
+        * `G` - G
+        * `H` - H
+        * `I` - I
+        * `J` - J
+        * `K` - K
+        * `L` - L
+        * `M` - M
+        * `fancy` - Barwa fantazyjna
     CountryEnum:
       enum:
       - PL
@@ -1804,6 +1856,32 @@ components:
         * `YE` - Yemen
         * `ZM` - Zambia
         * `ZW` - Zimbabwe
+    CutEnum:
+      enum:
+      - brilliant
+      - princess
+      - emerald
+      - oval
+      - pear
+      - marquise
+      - cushion
+      - asscher
+      - radiant
+      - heart
+      - cabochon
+      type: string
+      description: |-
+        * `brilliant` - Brylantowy
+        * `princess` - Princessa
+        * `emerald` - Szmaragdowy
+        * `oval` - Owalny
+        * `pear` - Gruszka
+        * `marquise` - Markiza
+        * `cushion` - Poduszka
+        * `asscher` - Asscher
+        * `radiant` - Radiant
+        * `heart` - Serce
+        * `cabochon` - Kaboszon
     FinenessEnum:
       enum:
       - '333'
@@ -1824,6 +1902,121 @@ components:
         * `925` - 925 (srebro próby 925)
         * `950` - 950 (platyna)
         * `999` - 999 (kruszec inwestycyjny)
+    Gemstone:
+      type: object
+      description: |-
+        Kamień z parametrami i adresem certyfikatu, jeśli jest.
+
+        Adres jest podpisany na czas, bo certyfikat leży w prywatnym buckecie
+        `documents` (ADR 0025). Stały odnośnik do dokumentu laboratorium byłby
+        dostępny dla każdego, kto go raz zobaczył.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/KindEnum'
+          readOnly: true
+          description: |-
+            Rodzaj kamienia
+
+            * `diamond` - Diament
+            * `sapphire` - Szafir
+            * `ruby` - Rubin
+            * `emerald` - Szmaragd
+            * `pearl` - Perła
+            * `amber` - Bursztyn
+            * `topaz` - Topaz
+            * `amethyst` - Ametyst
+            * `cubic_zirconia` - Cyrkonia
+            * `moissanite` - Moissanit
+        carat:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+          readOnly: true
+          description: Masa w karatach
+        clarity:
+          allOf:
+          - $ref: '#/components/schemas/ClarityEnum'
+          readOnly: true
+          description: |-
+            Czystość; pusta, gdy nie była oznaczana
+
+            * `FL` - FL — bez skaz
+            * `IF` - IF — bez skaz wewnętrznych
+            * `VVS1` - VVS1
+            * `VVS2` - VVS2
+            * `VS1` - VS1
+            * `VS2` - VS2
+            * `SI1` - SI1
+            * `SI2` - SI2
+            * `I1` - I1
+            * `I2` - I2
+            * `I3` - I3
+        colour:
+          allOf:
+          - $ref: '#/components/schemas/ColourEnum'
+          readOnly: true
+          description: |-
+            Barwa; pusta, gdy nie była oznaczana
+
+            * `D` - D — bezbarwny
+            * `E` - E
+            * `F` - F
+            * `G` - G
+            * `H` - H
+            * `I` - I
+            * `J` - J
+            * `K` - K
+            * `L` - L
+            * `M` - M
+            * `fancy` - Barwa fantazyjna
+        cut:
+          allOf:
+          - $ref: '#/components/schemas/CutEnum'
+          readOnly: true
+          description: |-
+            Szlif; pusty, gdy nie był oznaczany
+
+            * `brilliant` - Brylantowy
+            * `princess` - Princessa
+            * `emerald` - Szmaragdowy
+            * `oval` - Owalny
+            * `pear` - Gruszka
+            * `marquise` - Markiza
+            * `cushion` - Poduszka
+            * `asscher` - Asscher
+            * `radiant` - Radiant
+            * `heart` - Serce
+            * `cabochon` - Kaboszon
+        laboratory:
+          type: string
+          readOnly: true
+          description: Laboratorium, które wystawiło certyfikat
+        certificateNumber:
+          type: string
+          readOnly: true
+          description: Numer certyfikatu nadany przez laboratorium
+        certificateUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Adres certyfikatu podpisany na czas; pusty, gdy kamień nie
+            ma certyfikatu.
+          readOnly: true
+      required:
+      - carat
+      - certificateNumber
+      - certificateUrl
+      - clarity
+      - colour
+      - cut
+      - id
+      - kind
+      - laboratory
     HealthCheckResponse:
       type: object
       properties:
@@ -1847,6 +2040,30 @@ components:
       - database
       - redis
       - storage
+    KindEnum:
+      enum:
+      - diamond
+      - sapphire
+      - ruby
+      - emerald
+      - pearl
+      - amber
+      - topaz
+      - amethyst
+      - cubic_zirconia
+      - moissanite
+      type: string
+      description: |-
+        * `diamond` - Diament
+        * `sapphire` - Szafir
+        * `ruby` - Rubin
+        * `emerald` - Szmaragd
+        * `pearl` - Perła
+        * `amber` - Bursztyn
+        * `topaz` - Topaz
+        * `amethyst` - Ametyst
+        * `cubic_zirconia` - Cyrkonia
+        * `moissanite` - Moissanit
     LengthEnum:
       enum:
       - '16'
@@ -2665,8 +2882,14 @@ components:
           items:
             $ref: '#/components/schemas/ProductImage'
           readOnly: true
+        gemstones:
+          type: array
+          items:
+            $ref: '#/components/schemas/Gemstone'
+          readOnly: true
       required:
       - available
+      - gemstones
       - id
       - images
       - isAvailable

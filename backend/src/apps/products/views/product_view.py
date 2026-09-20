@@ -81,7 +81,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         variants = (
             ProductVariant.objects.with_effective_price()
             .select_related("inventory")
-            .prefetch_related("inventory__movements")
+            .prefetch_related("inventory__movements", "gemstones")
             .order_by(EFFECTIVE_PRICE, "sku")
         )
         cheapest = (
