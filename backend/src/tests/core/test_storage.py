@@ -107,6 +107,7 @@ class TestStorageRegistry:
 
     def test_magazyn_zna_swoj_bucket(self):
         assert ProductStorage().bucket_name == PRODUCTS.name
+        assert ProductStorage.bucket_spec is PRODUCTS
 
     def test_zdjecia_katalogu_nie_podpisuja_adresu(self):
         assert ProductStorage.querystring_auth is False
@@ -120,6 +121,35 @@ class TestStorageRegistry:
 
         with pytest.raises(ValueError):
             storage_for(Bucket("nieznany", BucketAccess.PRIVATE, "—"))
+
+
+@pytest.mark.django_db
+class TestStorageReadsAndWrites:
+    """Przez magazyn da się zapisać i odczytać plik.
+
+    Wygląda na oczywiste, a nie jest: `S3Boto3Storage` ma własny atrybut
+    `bucket` — zasób boto3, przez który idzie całe wejście-wyjście. Nazwanie
+    tak samo naszego opisu bucketa przesłania go i wywraca każdy zapis,
+    nie ruszając przy tym żadnego testu na kształt polityki.
+    """
+
+    @pytest.mark.parametrize(
+        "storage_class", [ProductStorage, OriginalStorage, DocumentStorage]
+    )
+    def test_zapis_i_odczyt_wracaja_ta_sama_trescia(self, storage_class):
+        from django.core.files.base import ContentFile
+
+        storage = storage_class()
+        key = storage.save("probe/olivin.txt", ContentFile(b"olivin"))
+
+        with storage.open(key, "rb") as handle:
+            assert handle.read() == b"olivin"
+
+    @pytest.mark.parametrize(
+        "storage_class", [ProductStorage, OriginalStorage, DocumentStorage]
+    )
+    def test_magazyn_widzi_zasob_bucketa_z_boto3(self, storage_class):
+        assert hasattr(storage_class().bucket, "Object")
 
 
 @pytest.mark.django_db

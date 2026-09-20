@@ -15,9 +15,14 @@ from core.storage.buckets import DOCUMENTS, ORIGINALS, PRODUCTS, Bucket
 
 
 class BucketStorage(S3Boto3Storage):
-    """Magazyn związany z jednym bucketem i jego polityką."""
+    """Magazyn związany z jednym bucketem i jego polityką.
 
-    bucket: Bucket
+    Atrybut nazywa się `bucket_spec`, a nie `bucket`: `S3Boto3Storage` ma
+    własne `bucket` — zasób boto3, przez który idzie każdy zapis i odczyt.
+    Przesłonięcie go wywraca całe wejście-wyjście magazynu.
+    """
+
+    bucket_spec: Bucket
 
     @classmethod
     def _get_endpoint_url(cls) -> str | None:
@@ -36,20 +41,20 @@ class BucketStorage(S3Boto3Storage):
         ).rstrip("/")
 
     def __init__(self, **kwargs):
-        self.bucket_name = self.bucket.name
+        self.bucket_name = self.bucket_spec.name
         self.endpoint_url = self._get_endpoint_url()
         use_aws = getattr(
             settings,
             "USE_AWS",
             os.environ.get("USE_AWS", "False").lower() == "true",
         )
-        if self.bucket.is_public:
+        if self.bucket_spec.is_public:
             domain = self._get_custom_domain()
             # Na S3 host zawiera już bucket; MinIO adresuje ścieżką, więc
             # nazwa bucketa musi wejść do adresu. Bez ukośnika na końcu —
             # django-storages dokłada go sam i inaczej wychodzi `//`.
             self.custom_domain = (
-                domain if use_aws else f"{domain}/{self.bucket.name.strip('/')}"
+                domain if use_aws else f"{domain}/{self.bucket_spec.name.strip('/')}"
             )
             self.url_protocol = "https:" if use_aws else "http:"
         else:
@@ -64,7 +69,7 @@ class BucketStorage(S3Boto3Storage):
 class ProductStorage(BucketStorage):
     """Zdjęcia katalogu — odczyt publiczny, adres bez podpisu."""
 
-    bucket = PRODUCTS
+    bucket_spec = PRODUCTS
     location = ""
     default_acl = None
     file_overwrite = True
@@ -74,7 +79,7 @@ class ProductStorage(BucketStorage):
 class OriginalStorage(BucketStorage):
     """Oryginały zdjęć — prywatne, czytane wyłącznie przez zadania w tle."""
 
-    bucket = ORIGINALS
+    bucket_spec = ORIGINALS
     location = ""
     default_acl = None
     file_overwrite = False
@@ -84,7 +89,7 @@ class OriginalStorage(BucketStorage):
 class DocumentStorage(BucketStorage):
     """Dokumenty sprzedaży i certyfikaty — prywatne, adres podpisany na czas."""
 
-    bucket = DOCUMENTS
+    bucket_spec = DOCUMENTS
     location = ""
     default_acl = None
     file_overwrite = False

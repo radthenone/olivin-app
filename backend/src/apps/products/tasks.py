@@ -87,3 +87,20 @@ def propose_metal_rates() -> int:
         )
         created += 1
     return created
+
+
+@shared_task
+def render_product_image(image_id: str) -> int:
+    """Tnie oryginał do kadru i zapisuje trzy rozmiary WebP (ADR 0025).
+
+    Oryginał zostaje nietknięty w prywatnym buckecie, więc zmiana kadru
+    uruchamia to samo zadanie bez ponownego wgrywania. Dopiero gdy wszystkie
+    rozmiary są zapisane, zdjęcie przechodzi w `ready` i pojawia się w API.
+    """
+    from apps.products.images import render_renditions
+    from apps.products.models.image import ProductImage
+
+    image = ProductImage.objects.filter(pk=image_id).first()
+    if image is None:
+        return 0
+    return render_renditions(image)

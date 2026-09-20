@@ -3,8 +3,37 @@ from __future__ import annotations
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.products.models import Product, ProductVariant
+from apps.products.models import Product, ProductImage, ProductVariant
 from core.api.serializers import MoneySerializer
+
+
+class ProductImageSerializer(serializers.ModelSerializer):
+    """Zdjęcie z adresami wszystkich rozmiarów.
+
+    Model trzyma same klucze (ADR 0025), więc adresy powstają tutaj — host
+    i bucket zmieniają się razem ze środowiskiem.
+    """
+
+    urls = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductImage
+        fields = ["id", "position", "is_primary", "alt_text", "urls"]
+        read_only_fields = fields
+
+    @extend_schema_field(
+        serializers.DictField(
+            child=serializers.URLField(),
+            help_text="Adres zdjęcia dla każdej szerokości w pikselach",
+        )
+    )
+    def get_urls(self, obj: ProductImage) -> dict[str, str]:
+        from core.storage import PRODUCTS, object_url
+
+        return {
+            width: object_url(PRODUCTS, key)
+            for width, key in (obj.renditions or {}).items()
+        }
 
 
 class ProductVariantSerializer(serializers.ModelSerializer):
@@ -28,6 +57,7 @@ class ProductVariantSerializer(serializers.ModelSerializer):
         read_only=True,
         help_text="Ostatnie sztuki — stan dodatni, ale nie większy niż trzy.",
     )
+    images = serializers.SerializerMethodField()
 
     class Meta:
         model = ProductVariant
@@ -46,8 +76,19 @@ class ProductVariantSerializer(serializers.ModelSerializer):
             "vat_rate",
             "is_vat_exempt",
             "vat_exemption_basis",
+            "images",
         ]
         read_only_fields = fields
+
+    @extend_schema_field(ProductImageSerializer(many=True))
+    def get_images(self, obj: ProductVariant) -> list[dict]:
+        """Zdjęcia różnicujące wygląd tego wariantu; szkice pominięte."""
+        ready = [
+            image
+            for image in obj.images.all()  # type: ignore[missing-attribute]
+            if image.status == "ready"
+        ]
+        return list(ProductImageSerializer(ready, many=True, context=self.context).data)
 
 
 class ProductListSerializer(serializers.ModelSerializer):
@@ -98,6 +139,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         help_text="Slug kategorii-liścia, do której należy produkt",
     )
     variants = ProductVariantSerializer(many=True, read_only=True)
+    images = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -111,6 +153,18 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "fineness",
             "is_made_to_order",
             "production_time_days",
+            "images",
             "variants",
         ]
         read_only_fields = fields
+
+    @extend_schema_field(ProductImageSerializer(many=True))
+    def get_images(self, obj: Product) -> list[dict]:
+        """Galeria produktu. Zdjęcia w przetwarzaniu są pomijane — pół
+        galerii jest gorsze niż galeria o jedno zdjęcie krótsza."""
+        ready = [
+            image
+            for image in obj.images.all()  # type: ignore[missing-attribute]
+            if image.status == "ready"
+        ]
+        return list(ProductImageSerializer(ready, many=True, context=self.context).data)

@@ -4,6 +4,7 @@ from django.http import HttpRequest
 
 from apps.products.models import (
     CostComponent,
+    ProductImage,
     MetalRate,
     MetalRateStatus,
     Product,
@@ -38,11 +39,32 @@ class ProductVariantInline(admin.TabularInline):
     show_change_link = True
 
 
+class ProductImageInline(admin.TabularInline):
+    """Zdjęcia przy produkcie — wgranie oryginału i kadr w jednym miejscu.
+
+    Status i gotowe rozmiary są tylko do odczytu: powstają w zadaniu w tle,
+    a wpisane ręcznie wskazywałyby pliki, których nie ma.
+    """
+
+    model = ProductImage
+    extra = 1
+    fields = (
+        "original",
+        "crop",
+        "variant",
+        "position",
+        "is_primary",
+        "alt_text",
+        "status",
+    )
+    readonly_fields = ("status",)
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     """Panel katalogu — jedyne miejsce, w którym produkt powstaje (ADR 0021)."""
 
-    inlines = [ProductVariantInline]
+    inlines = [ProductVariantInline, ProductImageInline]
     list_display = ("name", "category", "material", "fineness", "status")
     list_filter = ("status", "material", "fineness", "is_made_to_order", "category")
     search_fields = ("name", "slug", "variants__sku")

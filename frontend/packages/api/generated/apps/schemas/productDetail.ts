@@ -7,6 +7,7 @@
  */
 import type { FinenessEnum } from './finenessEnum';
 import type { MaterialEnum } from './materialEnum';
+import type { ProductImage } from './productImage';
 import type { ProductVariant } from './productVariant';
 
 /**
@@ -50,5 +51,6 @@ export interface ProductDetail {
      * @nullable
      */
   readonly productionTimeDays: number | null;
+  readonly images: readonly ProductImage[];
   readonly variants: readonly ProductVariant[];
 }
