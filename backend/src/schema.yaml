@@ -10,6 +10,17 @@ paths:
       description: Zwraca korzenie taksonomii wraz z całym zagnieżdżeniem. Odpowiedź
         nie jest stronicowana — gałąź bez korzenia nie jest drzewem.
       summary: Drzewo kategorii
+      parameters:
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - pl
+        description: Język pól tekstowych. Bez tego parametru brany jest nagłówek
+          `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi
+          do tekstu polskiego; slug nie jest tłumaczony.
       tags:
       - Categories
       security:
@@ -32,6 +43,16 @@ paths:
         Adresem jest slug, nie identyfikator.
       summary: Gałąź drzewa od wskazanej kategorii
       parameters:
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - pl
+        description: Język pól tekstowych. Bez tego parametru brany jest nagłówek
+          `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi
+          do tekstu polskiego; slug nie jest tłumaczony.
       - in: path
         name: slug
         schema:
@@ -59,6 +80,16 @@ paths:
         produkt. Produkty kolekcji pobiera się przez `GET /products/?collection=<slug>`.
       summary: Lista kolekcji
       parameters:
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - pl
+        description: Język pól tekstowych. Bez tego parametru brany jest nagłówek
+          `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi
+          do tekstu polskiego; slug nie jest tłumaczony.
       - name: page
         required: false
         in: query
@@ -90,6 +121,16 @@ paths:
       description: Adresem jest slug. Pusta kolekcja to 404.
       summary: Pojedyncza kolekcja
       parameters:
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - pl
+        description: Język pól tekstowych. Bez tego parametru brany jest nagłówek
+          `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi
+          do tekstu polskiego; slug nie jest tłumaczony.
       - in: path
         name: slug
         schema:
@@ -727,6 +768,16 @@ paths:
           * `950` - 950 (platyna)
           * `999` - 999 (kruszec inwestycyjny)
       - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - pl
+        description: Język pól tekstowych. Bez tego parametru brany jest nagłówek
+          `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi
+          do tekstu polskiego; slug nie jest tłumaczony.
+      - in: query
         name: length
         schema:
           type: string
@@ -920,6 +971,16 @@ paths:
         odpowiedzią jest 404, tak samo jak dla produktu nieistniejącego.
       summary: Produkt wraz z pełną listą wariantów
       parameters:
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - pl
+        description: Język pól tekstowych. Bez tego parametru brany jest nagłówek
+          `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi
+          do tekstu polskiego; slug nie jest tłumaczony.
       - in: path
         name: slug
         schema:
@@ -1248,7 +1309,6 @@ components:
         name:
           type: string
           readOnly: true
-          description: Nazwa kategorii po polsku, widoczna w menu sklepu
         slug:
           type: string
           readOnly: true
@@ -1307,7 +1367,6 @@ components:
         name:
           type: string
           readOnly: true
-          description: Nazwa kolekcji po polsku, widoczna w sklepie
         slug:
           type: string
           readOnly: true
@@ -2564,7 +2623,6 @@ components:
         name:
           type: string
           readOnly: true
-          description: Nazwa produktu po polsku
         slug:
           type: string
           readOnly: true
@@ -2574,7 +2632,6 @@ components:
         description:
           type: string
           readOnly: true
-          description: Opis produktu po polsku
         category:
           type: string
           description: Slug kategorii-liścia, do której należy produkt
@@ -2660,7 +2717,6 @@ components:
         altText:
           type: string
           readOnly: true
-          description: Opis alternatywny po polsku, dla czytników ekranu i SEO
         urls:
           type: object
           additionalProperties:
@@ -2685,7 +2741,6 @@ components:
         name:
           type: string
           readOnly: true
-          description: Nazwa produktu po polsku
         slug:
           type: string
           readOnly: true

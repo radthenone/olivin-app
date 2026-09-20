@@ -4,6 +4,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.products.models import Gemstone, Product, ProductImage, ProductVariant
+from apps.translations.serializers import TranslatedCharField
 from core.api.serializers import MoneySerializer
 
 
@@ -15,6 +16,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
     """
 
     urls = serializers.SerializerMethodField()
+    alt_text = TranslatedCharField()
 
     class Meta:
         model = ProductImage
@@ -138,6 +140,7 @@ class ProductVariantSerializer(serializers.ModelSerializer):
 class ProductListSerializer(serializers.ModelSerializer):
     """Produkt na liście — reprezentuje go najtańszy wariant (`CONTEXT.md`)."""
 
+    name = TranslatedCharField()
     category = serializers.SlugRelatedField(
         slug_field="slug",
         read_only=True,
@@ -177,6 +180,8 @@ class ProductListSerializer(serializers.ModelSerializer):
 class ProductDetailSerializer(serializers.ModelSerializer):
     """Strona produktu — pełna lista wariantów."""
 
+    name = TranslatedCharField()
+    description = TranslatedCharField()
     category = serializers.SlugRelatedField(
         slug_field="slug",
         read_only=True,

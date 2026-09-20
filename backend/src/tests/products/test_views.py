@@ -249,6 +249,7 @@ class TestQueryBudget:
             ProductVariantFactory(product=product, sku=f"B-{index}", price=200000)
 
         # Budżet stały niezależnie od liczby produktów: lista, licznik
-        # paginacji, warianty i galerie (produktu oraz wariantów).
-        with django_assert_max_num_queries(6):
+        # paginacji, warianty, galerie (produktu oraz wariantów), kamienie,
+        # stany magazynowe i tłumaczenia.
+        with django_assert_max_num_queries(12):
             api_client.get(reverse("product-list"))

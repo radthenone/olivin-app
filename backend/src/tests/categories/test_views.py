@@ -126,14 +126,16 @@ class TestCategoryTreeShape:
 
         assert set(response.data[0]) == {"id", "name", "slug", "children"}  # type: ignore
 
-    def test_cale_drzewo_kosztuje_jedno_zapytanie(
+    def test_cale_drzewo_kosztuje_stala_liczbe_zapytan(
         self, api_client: APIClient, django_assert_num_queries
     ):
         root = CategoryFactory(name="Biżuteria")
         rings = CategoryFactory(name="Pierścionki", parent=root)
         CategoryFactory(name="Zaręczynowe", parent=rings)
 
-        with django_assert_num_queries(1):
+        # Dwa zapytania: drzewo i tłumaczenia do niego. Oba stałe —
+        # nie rosną wraz z liczbą węzłów.
+        with django_assert_num_queries(2):
             api_client.get(reverse("category-list"))
 
 

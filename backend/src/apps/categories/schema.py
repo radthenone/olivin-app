@@ -1,9 +1,11 @@
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from apps.categories.serializers import CategorySerializer
+from apps.translations.schema import LANGUAGE_PARAMETER
 
 category_schema = extend_schema_view(
     list=extend_schema(
+        parameters=[LANGUAGE_PARAMETER],
         tags=["Categories"],
         summary="Drzewo kategorii",
         description=(
@@ -14,6 +16,7 @@ category_schema = extend_schema_view(
         responses={200: CategorySerializer(many=True)},
     ),
     retrieve=extend_schema(
+        parameters=[LANGUAGE_PARAMETER],
         tags=["Categories"],
         summary="Gałąź drzewa od wskazanej kategorii",
         description=(

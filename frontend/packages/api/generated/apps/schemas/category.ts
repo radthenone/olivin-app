@@ -14,7 +14,6 @@ katalogu.
  */
 export interface Category {
   readonly id: string;
-  /** Nazwa kategorii po polsku, widoczna w menu sklepu */
   readonly name: string;
   /**
      * Angielski identyfikator w adresie. Puste pole zostanie wypełnione z nazwy przy zapisie. Po zapisaniu nie da się go zmienić.

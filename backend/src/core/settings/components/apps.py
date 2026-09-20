@@ -43,6 +43,7 @@ APPLICATION_APPS = [
     "apps.notifications",
     "apps.categories",
     "apps.collections",
+    "apps.translations",
     "apps.products",
 ]
 

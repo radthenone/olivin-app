@@ -5,8 +5,13 @@
  * API documentation
  * OpenAPI spec version: 1.0.0
  */
+import type { CollectionsListLang } from './collectionsListLang';
 
 export type CollectionsListParams = {
+/**
+ * Język pól tekstowych. Bez tego parametru brany jest nagłówek `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi do tekstu polskiego; slug nie jest tłumaczony.
+ */
+lang?: CollectionsListLang;
 /**
  * A page number within the paginated result set.
  */

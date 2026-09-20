@@ -23,6 +23,7 @@ import type {
 import type {
   Collection,
   CollectionsListParams,
+  CollectionsRetrieveParams,
   PaginatedCollectionList
 } from '../schemas';
 
@@ -166,21 +167,30 @@ export type collectionsRetrieveResponseSuccess = (collectionsRetrieveResponse200
 
 export type collectionsRetrieveResponse = (collectionsRetrieveResponseSuccess)
 
-export const getCollectionsRetrieveUrl = (slug: string,) => {
+export const getCollectionsRetrieveUrl = (slug: string,
+    params?: CollectionsRetrieveParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/collections/${slug}/`
+  return stringifiedParams.length > 0 ? `/collections/${slug}/?${stringifiedParams}` : `/collections/${slug}/`
 }
 
 /**
  * Adresem jest slug. Pusta kolekcja to 404.
  * @summary Pojedyncza kolekcja
  */
-export const collectionsRetrieve = async (slug: string, options?: RequestInit): Promise<collectionsRetrieveResponse> => {
+export const collectionsRetrieve = async (slug: string,
+    params?: CollectionsRetrieveParams, options?: RequestInit): Promise<collectionsRetrieveResponse> => {
 
-  return appInstance<collectionsRetrieveResponse>(getCollectionsRetrieveUrl(slug),
+  return appInstance<collectionsRetrieveResponse>(getCollectionsRetrieveUrl(slug,params),
   {
     ...options,
     method: 'GET'
@@ -193,23 +203,25 @@ export const collectionsRetrieve = async (slug: string, options?: RequestInit): 
 
 
 
-export const getCollectionsRetrieveQueryKey = (slug: string,) => {
+export const getCollectionsRetrieveQueryKey = (slug: string,
+    params?: CollectionsRetrieveParams,) => {
     return [
-    `/collections/${slug}/`
+    `/collections/${slug}/`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getCollectionsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof collectionsRetrieve>>, TError = ErrorType<unknown>>(slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof collectionsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+export const getCollectionsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof collectionsRetrieve>>, TError = ErrorType<unknown>>(slug: string,
+    params?: CollectionsRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof collectionsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getCollectionsRetrieveQueryKey(slug);
+  const queryKey =  queryOptions?.queryKey ?? getCollectionsRetrieveQueryKey(slug,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof collectionsRetrieve>>> = ({ signal }) => collectionsRetrieve(slug, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof collectionsRetrieve>>> = ({ signal }) => collectionsRetrieve(slug,params, { signal, ...requestOptions });
 
 
 
@@ -223,7 +235,8 @@ export type CollectionsRetrieveQueryError = ErrorType<unknown>
 
 
 export function useCollectionsRetrieve<TData = Awaited<ReturnType<typeof collectionsRetrieve>>, TError = ErrorType<unknown>>(
- slug: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof collectionsRetrieve>>, TError, TData>> & Pick<
+ slug: string,
+    params: undefined |  CollectionsRetrieveParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof collectionsRetrieve>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof collectionsRetrieve>>,
           TError,
@@ -233,7 +246,8 @@ export function useCollectionsRetrieve<TData = Awaited<ReturnType<typeof collect
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCollectionsRetrieve<TData = Awaited<ReturnType<typeof collectionsRetrieve>>, TError = ErrorType<unknown>>(
- slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof collectionsRetrieve>>, TError, TData>> & Pick<
+ slug: string,
+    params?: CollectionsRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof collectionsRetrieve>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof collectionsRetrieve>>,
           TError,
@@ -243,7 +257,8 @@ export function useCollectionsRetrieve<TData = Awaited<ReturnType<typeof collect
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCollectionsRetrieve<TData = Awaited<ReturnType<typeof collectionsRetrieve>>, TError = ErrorType<unknown>>(
- slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof collectionsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ slug: string,
+    params?: CollectionsRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof collectionsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -251,11 +266,12 @@ export function useCollectionsRetrieve<TData = Awaited<ReturnType<typeof collect
  */
 
 export function useCollectionsRetrieve<TData = Awaited<ReturnType<typeof collectionsRetrieve>>, TError = ErrorType<unknown>>(
- slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof collectionsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ slug: string,
+    params?: CollectionsRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof collectionsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getCollectionsRetrieveQueryOptions(slug,options)
+  const queryOptions = getCollectionsRetrieveQueryOptions(slug,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

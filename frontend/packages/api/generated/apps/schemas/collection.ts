@@ -15,7 +15,6 @@ Produkty pobiera się przez `GET /products/?collection=<slug>`.
  */
 export interface Collection {
   readonly id: string;
-  /** Nazwa kolekcji po polsku, widoczna w sklepie */
   readonly name: string;
   /**
      * Angielski identyfikator w adresie. Puste pole zostanie wypełnione z nazwy przy zapisie. Po zapisaniu nie da się go zmienić.

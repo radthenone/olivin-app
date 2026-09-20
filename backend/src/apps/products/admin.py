@@ -14,6 +14,8 @@ from apps.products.models import (
 )
 from apps.products.pricing import calculate_price, cost_floor
 from apps.products.services import activate_rate
+from apps.translations.admin import TranslationInline
+from apps.translations.warnings import stale_manual_fields
 
 
 class ProductVariantInline(admin.TabularInline):
@@ -65,7 +67,7 @@ class ProductImageInline(admin.TabularInline):
 class ProductAdmin(admin.ModelAdmin):
     """Panel katalogu — jedyne miejsce, w którym produkt powstaje (ADR 0021)."""
 
-    inlines = [ProductVariantInline, ProductImageInline]
+    inlines = [ProductVariantInline, ProductImageInline, TranslationInline]
     list_display = ("name", "category", "material", "fineness", "status")
     list_filter = ("status", "material", "fineness", "is_made_to_order", "category")
     search_fields = ("name", "slug", "variants__sku")
@@ -103,6 +105,21 @@ class ProductAdmin(admin.ModelAdmin):
         # Slug zamraża się dopiero przy publikacji — szkic wolno jeszcze
         # poprawiać, bo nikt nie wszedł jeszcze pod ten adres.
         return ("slug",) if obj is not None and obj.is_published else ()
+
+    def save_model(self, request: HttpRequest, obj, form, change) -> None:
+        super().save_model(request, obj, form, change)
+        stale = stale_manual_fields(obj)
+        if stale:
+            # Automat nie rusza poprawek ręcznych, więc bez tego ostrzeżenia
+            # zmieniony polski tekst zostałby po angielsku w poprzednim
+            # brzmieniu i nikt by się nie dowiedział.
+            self.message_user(
+                request,
+                "Tekst polski zmienił się, a tłumaczenie poprawione ręcznie "
+                f"zostało bez zmian: {', '.join(stale)}. Popraw je w sekcji "
+                "Tłumaczenia.",
+                messages.WARNING,
+            )
 
     def get_queryset(self, request: HttpRequest) -> QuerySet[Product]:
         return super().get_queryset(request).select_related("category")

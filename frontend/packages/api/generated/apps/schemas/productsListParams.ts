@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { ProductsListFineness } from './productsListFineness';
+import type { ProductsListLang } from './productsListLang';
 import type { ProductsListLength } from './productsListLength';
 import type { ProductsListMaterial } from './productsListMaterial';
 import type { ProductsListMetalColor } from './productsListMetalColor';
@@ -34,6 +35,10 @@ collection?: string;
 * `999` - 999 (kruszec inwestycyjny)
  */
 fineness?: ProductsListFineness;
+/**
+ * Język pól tekstowych. Bez tego parametru brany jest nagłówek `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi do tekstu polskiego; slug nie jest tłumaczony.
+ */
+lang?: ProductsListLang;
 /**
  * Długość w centymetrach
 

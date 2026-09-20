@@ -19,7 +19,6 @@ export interface ProductImage {
   readonly position: number;
   /** Zdjęcie główne produktu — jedno na produkt */
   readonly isPrimary: boolean;
-  /** Opis alternatywny po polsku, dla czytników ekranu i SEO */
   readonly altText: string;
   /** Adres zdjęcia dla każdej szerokości w pikselach */
   readonly urls: ProductImageUrls;

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -64,6 +65,14 @@ class Category(TimestampedModel):
             f"Domyślny narzut kwotowy w groszach ({DEFAULT_CURRENCY}). "
             "Wyklucza się z narzutem procentowym."
         ),
+    )
+
+    # Tłumaczenia jako relacja, żeby `prefetch_related` je pobrał
+    # razem z obiektem — inaczej każde pole dobijałoby bazę.
+    translations = GenericRelation(
+        "translations.Translation",
+        content_type_field="content_type",
+        object_id_field="object_id",
     )
 
     class Meta:

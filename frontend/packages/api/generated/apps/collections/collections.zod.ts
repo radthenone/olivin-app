@@ -13,6 +13,7 @@ import * as zod from 'zod';
  * @summary Lista kolekcji
  */
 export const CollectionsListQueryParams = zod.object({
+  "lang": zod.enum(['en', 'pl']).optional().describe('Język pól tekstowych. Bez tego parametru brany jest nagłówek `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi do tekstu polskiego; slug nie jest tłumaczony.'),
   "page": zod.coerce.number().optional().describe('A page number within the paginated result set.'),
   "pageSize": zod.coerce.number().optional().describe('Number of results to return per page.')
 })
@@ -26,7 +27,7 @@ export const CollectionsListResponse = zod.object({
   "previous": zod.url().nullish(),
   "results": zod.array(zod.object({
   "id": zod.uuid(),
-  "name": zod.string().describe('Nazwa kolekcji po polsku, widoczna w sklepie'),
+  "name": zod.string(),
   "slug": zod.string().regex(collectionsListResponseResultsItemSlugRegExp).describe('Angielski identyfikator w adresie. Puste pole zostanie wypełnione z nazwy przy zapisie. Po zapisaniu nie da się go zmienić.'),
   "description": zod.string().describe('Opis kampanii albo sezonu po polsku'),
   "productCount": zod.number().describe('Liczba opublikowanych produktów w kolekcji')
@@ -41,12 +42,16 @@ export const CollectionsRetrieveParams = zod.object({
   "slug": zod.coerce.string()
 })
 
+export const CollectionsRetrieveQueryParams = zod.object({
+  "lang": zod.enum(['en', 'pl']).optional().describe('Język pól tekstowych. Bez tego parametru brany jest nagłówek `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi do tekstu polskiego; slug nie jest tłumaczony.')
+})
+
 export const collectionsRetrieveResponseSlugRegExp = new RegExp('^[-a-zA-Z0-9_]+$');
 
 
 export const CollectionsRetrieveResponse = zod.object({
   "id": zod.uuid(),
-  "name": zod.string().describe('Nazwa kolekcji po polsku, widoczna w sklepie'),
+  "name": zod.string(),
   "slug": zod.string().regex(collectionsRetrieveResponseSlugRegExp).describe('Angielski identyfikator w adresie. Puste pole zostanie wypełnione z nazwy przy zapisie. Po zapisaniu nie da się go zmienić.'),
   "description": zod.string().describe('Opis kampanii albo sezonu po polsku'),
   "productCount": zod.number().describe('Liczba opublikowanych produktów w kolekcji')

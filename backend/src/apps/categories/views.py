@@ -25,7 +25,7 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [AllowAny]
     serializer_class = CategorySerializer
     lookup_field = "slug"
-    queryset = Category.objects.all()
+    queryset = Category.objects.prefetch_related("translations")
     # Drzewo dzielone na strony przestaje być drzewem: gałąź trafiłaby na
     # stronę bez swojego korzenia. Taksonomia liczy dziesiątki węzłów.
     pagination_class = None

@@ -37,5 +37,6 @@ class CollectionViewSet(viewsets.ReadOnlyModelViewSet):
                 **{PRODUCT_COUNT: Count("products", filter=published, distinct=True)}
             )
             .filter(**{f"{PRODUCT_COUNT}__gt": 0})
+            .prefetch_related("translations")
             .order_by("name", "id")
         )
