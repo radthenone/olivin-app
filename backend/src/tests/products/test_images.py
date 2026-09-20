@@ -314,7 +314,7 @@ class TestGalleryRules:
 class TestImagesInApi:
     """API produktu i wariantu zwraca adresy per rozmiar."""
 
-    def _detail(self, api_client, slug: str) -> dict[str, Any]:
+    def _detail(self, api_client, slug: str | None) -> dict[str, Any]:
         response: Any = api_client.get(reverse("product-detail", kwargs={"slug": slug}))
         assert response.status_code == 200, response.content
         return response.json()

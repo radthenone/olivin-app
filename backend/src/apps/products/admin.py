@@ -108,7 +108,7 @@ class ProductAdmin(admin.ModelAdmin):
 
     def save_model(self, request: HttpRequest, obj, form, change) -> None:
         super().save_model(request, obj, form, change)
-        stale = stale_manual_fields(obj)
+        stale = stale_manual_fields(obj, form.changed_data)
         if stale:
             # Automat nie rusza poprawek ręcznych, więc bez tego ostrzeżenia
             # zmieniony polski tekst zostałby po angielsku w poprzednim

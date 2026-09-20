@@ -6,8 +6,6 @@ from typing import Any
 
 import pytest
 from django.urls import reverse
-from datetime import timedelta
-
 from django.utils import timezone
 
 from apps.products.models import ProductStatus
@@ -62,16 +60,25 @@ def _get(client, url: str, **params: Any) -> dict[str, Any]:
 
 
 def add_translation(obj, field: str, text: str, source=TranslationSource.AUTO):
+    """Ustawia tłumaczenie, nadpisując istniejące.
+
+    Nadpisuje, a nie tworzy: publikacja produktu tłumaczy nazwę od razu,
+    żeby zbudować z niej adres, więc wpis dla `name` zwykle już jest.
+    """
     from django.contrib.contenttypes.models import ContentType
 
-    return Translation.objects.create(
+    translation, _ = Translation.objects.update_or_create(
         content_type=ContentType.objects.get_for_model(obj),
         object_id=obj.pk,
         field=field,
         language=Language.EN,
-        text=text,
-        source=source,
+        defaults={
+            "text": text,
+            "source": source,
+            "translated_at": timezone.now(),
+        },
     )
+    return translation
 
 
 class TestRegistry:
@@ -95,22 +102,29 @@ class TestTranslateObject:
     """Uzupełnianie brakujących tłumaczeń."""
 
     def test_tlumaczy_puste_pola(self):
-        product = PublishedProductFactory(name="Pierścionek", description="Złoty")
+        product = ProductFactory(name="Pierścionek", description="Złoty")
 
         created = translate_object(product)
 
         assert created == 2
         assert translated_value(product, "name", "en") == "EN:Pierścionek"
 
+    def test_publikacja_zostawia_juz_przetlumaczona_nazwe(self):
+        """Adres powstaje z nazwy angielskiej, więc publikacja tłumaczy ją
+        od razu — zadaniu w tle zostaje sam opis."""
+        product = PublishedProductFactory(name="Pierścionek", description="Złoty")
+
+        assert missing_fields(product) == ["description"]
+
     def test_nie_tlumaczy_pustego_tekstu(self):
-        product = PublishedProductFactory(name="Pierścionek", description="")
+        product = ProductFactory(name="Pierścionek", description="")
 
         translate_object(product)
 
         assert [t.field for t in product.translations.all()] == ["name"]
 
     def test_nie_nadpisuje_istniejacego(self):
-        product = PublishedProductFactory(name="Pierścionek", description="Złoty")
+        product = ProductFactory(name="Pierścionek", description="Złoty")
         add_translation(product, "name", "Ring")
 
         translate_object(product)
@@ -120,7 +134,7 @@ class TestTranslateObject:
 
     def test_nie_nadpisuje_poprawki_recznej(self):
         """Właściciel poprawia tłumaczenie, bo automat się pomylił."""
-        product = PublishedProductFactory(name="Pierścionek", description="Złoty")
+        product = ProductFactory(name="Pierścionek", description="Złoty")
         add_translation(product, "name", "Gold ring", TranslationSource.MANUAL)
 
         translate_object(product)
@@ -130,7 +144,7 @@ class TestTranslateObject:
         assert product.translations.get(field="name").is_manual
 
     def test_drugi_przebieg_nie_wola_silnika(self):
-        product = PublishedProductFactory(name="Pierścionek", description="Złoty")
+        product = ProductFactory(name="Pierścionek", description="Złoty")
         translate_object(product)
         FakeProvider.calls = []
 
@@ -139,23 +153,33 @@ class TestTranslateObject:
         assert FakeProvider.calls == []
 
     def test_nazwa_i_opis_ida_jednym_wywolaniem(self):
-        product = PublishedProductFactory(name="Pierścionek", description="Złoty")
+        product = ProductFactory(name="Pierścionek", description="Złoty")
+        # Kategoria produktu ma własny adres, więc jej nazwa poszła do silnika
+        # przy zakładaniu — liczymy tylko to, co robi `translate_object`.
+        FakeProvider.calls = []
 
         translate_object(product)
 
         assert len(FakeProvider.calls) == 1
 
     def test_jedno_tlumaczenie_na_pole_i_jezyk(self):
+        from django.contrib.contenttypes.models import ContentType
         from django.db.utils import IntegrityError
 
-        product = PublishedProductFactory(name="Pierścionek")
+        product = ProductFactory(name="Pierścionek")
         add_translation(product, "name", "Ring")
 
         with pytest.raises(IntegrityError):
-            add_translation(product, "name", "Inne")
+            Translation.objects.create(
+                content_type=ContentType.objects.get_for_model(product),
+                object_id=product.pk,
+                field="name",
+                language=Language.EN,
+                text="Inne",
+            )
 
     def test_brakujace_pola_widac_przed_tlumaczeniem(self):
-        product = PublishedProductFactory(name="Pierścionek", description="Złoty")
+        product = ProductFactory(name="Pierścionek", description="Złoty")
 
         assert sorted(missing_fields(product)) == ["description", "name"]
 
@@ -232,10 +256,20 @@ class TestPeriodicTrigger:
         assert draft.translations.count() == 0
 
     def test_obejmuje_kategorie_i_kolekcje(self):
+        """Nazwy są przetłumaczone już przy zakładaniu, bo z nich powstaje
+        adres — obchód ma wtedy jawnie nic do roboty."""
         CategoryFactory(name="Pierścionki")
         CollectionFactory(name="Zima", description="")
 
-        assert translate_published_catalog() == 2  # type: ignore[missing-argument]
+        assert translate_published_catalog() == 0  # type: ignore[missing-argument]
+
+    def test_obchod_doklada_tlumaczenie_dopisane_po_publikacji(self):
+        product = PublishedProductFactory(name="Pierścionek", description="")
+        product.description = "Złoty, próba 585"
+        product.save()
+
+        assert translate_published_catalog() == 1  # type: ignore[missing-argument]
+        assert translated_value(product, "description", "en").startswith(PREFIX)
 
     def test_drugi_obchod_niczego_nie_doklada(self):
         PublishedProductFactory(name="Pierścionek", description="Złoty")
@@ -311,7 +345,11 @@ class TestCatalogApi:
         assert body["description"] == "EN:Złoty"
 
     def test_fallback_na_polski_gdy_brak_tlumaczenia(self, api_client):
-        """Świeżo opublikowany produkt ma być czytelny, zanim zadanie skończy."""
+        """Świeżo opublikowany produkt ma być czytelny, zanim zadanie skończy.
+
+        Opis, a nie nazwa: nazwa jest tłumaczona już przy publikacji, bo
+        z niej powstaje adres. Opis czeka na zadanie w tle.
+        """
         product = PublishedProductFactory(name="Pierścionek", description="Złoty")
 
         body = _get(
@@ -320,7 +358,7 @@ class TestCatalogApi:
             lang="en",
         )
 
-        assert body["name"] == "Pierścionek"
+        assert body["description"] == "Złoty"
 
     def test_slug_nie_jest_tlumaczony(self, api_client):
         product = PublishedProductFactory(name="Pierścionek", description="Złoty")
@@ -422,16 +460,16 @@ class TestAdminMarksManual:
             {
                 f"{prefix}-TOTAL_FORMS": "1",
                 f"{prefix}-INITIAL_FORMS": "0",
-                f"{prefix}-0-field": "name",
+                f"{prefix}-0-field": "description",
                 f"{prefix}-0-language": "en",
-                f"{prefix}-0-text": "Gold ring",
+                f"{prefix}-0-text": "Gold, 585",
             },
         )
 
         assert formset.is_valid(), formset.errors
         formset.save()
 
-        assert product.translations.get(field="name").is_manual
+        assert product.translations.get(field="description").is_manual
 
     def test_poprawka_istniejacego_staje_sie_reczna(self):
         product = PublishedProductFactory(name="Pierścionek", description="Złoty")
@@ -473,35 +511,28 @@ class TestAdminMarksManual:
 class TestStaleManualWarning:
     """Zmiana tekstu polskiego przy poprawce ręcznej wymaga ostrzeżenia."""
 
-    def test_poprawka_starsza_od_zmiany_jest_zglaszana(self):
-        product = PublishedProductFactory(name="Pierścionek", description="Złoty")
-        translation = add_translation(
-            product, "name", "Gold ring", TranslationSource.MANUAL
-        )
-        Translation.objects.filter(pk=translation.pk).update(
-            translated_at=timezone.now() - timedelta(days=1)
-        )
-
-        product.name = "Pierścionek złoty"
-        product.save()
-
-        assert stale_manual_fields(product) == ["name"]
-
-    def test_swieza_poprawka_nie_jest_zglaszana(self):
+    def test_zmieniona_nazwa_przy_poprawce_recznej_jest_zglaszana(self):
         product = PublishedProductFactory(name="Pierścionek", description="Złoty")
         add_translation(product, "name", "Gold ring", TranslationSource.MANUAL)
 
-        assert stale_manual_fields(product) == []
+        assert stale_manual_fields(product, ["name"]) == ["name"]
+
+    def test_niezmieniona_nazwa_nie_jest_zglaszana(self):
+        """Ostrzeżenie przy każdym zapisie przestałoby cokolwiek znaczyć."""
+        product = PublishedProductFactory(name="Pierścionek", description="Złoty")
+        add_translation(product, "name", "Gold ring", TranslationSource.MANUAL)
+
+        assert stale_manual_fields(product, ["price"]) == []
 
     def test_tlumaczenie_automatyczne_nie_jest_zglaszane(self):
         """Automat i tak je poprawi przy następnym obchodzie."""
         product = PublishedProductFactory(name="Pierścionek", description="Złoty")
-        translation = add_translation(product, "name", "Ring")
-        Translation.objects.filter(pk=translation.pk).update(
-            translated_at=timezone.now() - timedelta(days=1)
-        )
+        add_translation(product, "name", "Ring")
 
-        product.name = "Pierścionek złoty"
-        product.save()
+        assert stale_manual_fields(product, ["name"]) == []
 
-        assert stale_manual_fields(product) == []
+    def test_pole_spoza_listy_nie_jest_zglaszane(self):
+        product = PublishedProductFactory(name="Pierścionek", description="Złoty")
+        add_translation(product, "name", "Gold ring", TranslationSource.MANUAL)
+
+        assert stale_manual_fields(product, ["slug", "status"]) == []

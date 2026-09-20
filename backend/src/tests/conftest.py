@@ -83,6 +83,20 @@ def mock_redis_connection(request):
 
 
 @pytest.fixture(autouse=True)
+def stub_translation_provider(settings):
+    """Silnik tłumaczeń dostępny w każdym teście.
+
+    Slug katalogu bierze się z angielskiego brzmienia nazwy, więc bez silnika
+    nie dałoby się założyć ani kategorii, ani opublikowanego produktu. To
+    odpowiednik działającego LibreTranslate w środowisku roboczym — testy,
+    które sprawdzają zachowanie przy niedostępnym silniku, podmieniają to
+    ustawienie u siebie.
+    """
+
+    settings.TRANSLATION_PROVIDER = "tests.shared.translation.StubProvider"
+
+
+@pytest.fixture(autouse=True)
 def clear_throttle_history():
     """Czyści cache między testami, żeby limity żądań się nie kumulowały.
 

@@ -30,7 +30,6 @@ export const ProductsListQueryParams = zod.object({
   "stone": zod.enum(['amber', 'amethyst', 'cubic_zirconia', 'diamond', 'emerald', 'moissanite', 'pearl', 'ruby', 'sapphire', 'topaz']).optional().describe('Rodzaj kamienia\n\n\* `diamond` - Diament\n\* `sapphire` - Szafir\n\* `ruby` - Rubin\n\* `emerald` - Szmaragd\n\* `pearl` - Perła\n\* `amber` - Bursztyn\n\* `topaz` - Topaz\n\* `amethyst` - Ametyst\n\* `cubic_zirconia` - Cyrkonia\n\* `moissanite` - Moissanit')
 })
 
-export const productsListResponseResultsItemSlugRegExp = new RegExp('^[-a-zA-Z0-9_]+$');
 export const productsListResponseResultsItemCheapestVariantOneMetalWeightGramsRegExp = new RegExp('^-?\\d{0,5}(?:\\.\\d{0,3})?$');
 export const productsListResponseResultsItemCheapestVariantOneVatRateRegExp = new RegExp('^-?0?(?:\\.\\d{0,4})?$');
 export const productsListResponseResultsItemCheapestVariantOneGemstonesItemCaratRegExp = new RegExp('^-?\\d{0,3}(?:\\.\\d{0,3})?$');
@@ -43,7 +42,7 @@ export const ProductsListResponse = zod.object({
   "results": zod.array(zod.object({
   "id": zod.uuid(),
   "name": zod.string(),
-  "slug": zod.string().regex(productsListResponseResultsItemSlugRegExp).describe('Angielski identyfikator w adresie. Puste pole zostanie wypełnione z nazwy przy zapisie. Po publikacji nie da się go zmienić.'),
+  "slug": zod.string(),
   "category": zod.string().describe('Slug kategorii-liścia, do której należy produkt'),
   "material": zod.enum(['gold', 'silver', 'platinum', 'palladium']).describe('\* `gold` - Złoto\n\* `silver` - Srebro\n\* `platinum` - Platyna\n\* `palladium` - Pallad').describe('Kruszec, z którego wykonany jest wyrób\n\n\* `gold` - Złoto\n\* `silver` - Srebro\n\* `platinum` - Platyna\n\* `palladium` - Pallad'),
   "fineness": zod.enum(['333', '375', '585', '750', '916', '925', '950', '999']).describe('\* `333` - 333 (8 karatów)\n\* `375` - 375 (9 karatów)\n\* `585` - 585 (14 karatów)\n\* `750` - 750 (18 karatów)\n\* `916` - 916 (22 karaty)\n\* `925` - 925 (srebro próby 925)\n\* `950` - 950 (platyna)\n\* `999` - 999 (kruszec inwestycyjny)').describe('Próba kruszcu\n\n\* `333` - 333 (8 karatów)\n\* `375` - 375 (9 karatów)\n\* `585` - 585 (14 karatów)\n\* `750` - 750 (18 karatów)\n\* `916` - 916 (22 karaty)\n\* `925` - 925 (srebro próby 925)\n\* `950` - 950 (platyna)\n\* `999` - 999 (kruszec inwestycyjny)'),
@@ -101,7 +100,6 @@ export const ProductsRetrieveQueryParams = zod.object({
   "lang": zod.enum(['en', 'pl']).optional().describe('Język pól tekstowych. Bez tego parametru brany jest nagłówek `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi do tekstu polskiego; slug nie jest tłumaczony.')
 })
 
-export const productsRetrieveResponseSlugRegExp = new RegExp('^[-a-zA-Z0-9_]+$');
 export const productsRetrieveResponseVariantsItemMetalWeightGramsRegExp = new RegExp('^-?\\d{0,5}(?:\\.\\d{0,3})?$');
 export const productsRetrieveResponseVariantsItemVatRateRegExp = new RegExp('^-?0?(?:\\.\\d{0,4})?$');
 export const productsRetrieveResponseVariantsItemGemstonesItemCaratRegExp = new RegExp('^-?\\d{0,3}(?:\\.\\d{0,3})?$');
@@ -110,7 +108,7 @@ export const productsRetrieveResponseVariantsItemGemstonesItemCaratRegExp = new 
 export const ProductsRetrieveResponse = zod.object({
   "id": zod.uuid(),
   "name": zod.string(),
-  "slug": zod.string().regex(productsRetrieveResponseSlugRegExp).describe('Angielski identyfikator w adresie. Puste pole zostanie wypełnione z nazwy przy zapisie. Po publikacji nie da się go zmienić.'),
+  "slug": zod.string(),
   "description": zod.string(),
   "category": zod.string().describe('Slug kategorii-liścia, do której należy produkt'),
   "material": zod.enum(['gold', 'silver', 'platinum', 'palladium']).describe('\* `gold` - Złoto\n\* `silver` - Srebro\n\* `platinum` - Platyna\n\* `palladium` - Pallad').describe('Kruszec, z którego wykonany jest wyrób\n\n\* `gold` - Złoto\n\* `silver` - Srebro\n\* `platinum` - Platyna\n\* `palladium` - Pallad'),

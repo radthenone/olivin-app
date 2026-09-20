@@ -25,7 +25,7 @@ from tests.factories.products import (
 )
 
 
-def _detail(client, slug: str) -> dict[str, Any]:
+def _detail(client, slug: str | None) -> dict[str, Any]:
     response: Any = client.get(reverse("product-detail", kwargs={"slug": slug}))
     assert response.status_code == 200, response.content
     return response.json()

@@ -141,6 +141,10 @@ class ProductListSerializer(serializers.ModelSerializer):
     """Produkt na liście — reprezentuje go najtańszy wariant (`CONTEXT.md`)."""
 
     name = TranslatedCharField()
+    # Pusty slug istnieje tylko na szkicu, a szkic nie wychodzi przez API
+    # (queryset zwraca wyłącznie opublikowane). Bez tego klient dostawałby
+    # `string | null` i musiałby sprawdzać coś, co nie może się zdarzyć.
+    slug = serializers.CharField(read_only=True)
     category = serializers.SlugRelatedField(
         slug_field="slug",
         read_only=True,
@@ -182,6 +186,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     name = TranslatedCharField()
     description = TranslatedCharField()
+    # Patrz komentarz przy `ProductListSerializer.slug` — ten sam powód.
+    slug = serializers.CharField(read_only=True)
     category = serializers.SlugRelatedField(
         slug_field="slug",
         read_only=True,

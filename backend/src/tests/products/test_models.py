@@ -27,30 +27,69 @@ from tests.factories.products import (
 class TestProductSlug:
     """Slug produktu zamraża się przy publikacji, nie przy pierwszym zapisie."""
 
-    def test_slug_powstaje_z_nazwy(self):
-        product = ProductFactory(name="Gold ring")
+    def test_szkic_nie_ma_jeszcze_adresu(self):
+        """Adres powstaje przy publikacji (`.ai/project.md`) — szkic nie ma
+        go pod czym wyświetlić, a angielska nazwa nie musi jeszcze istnieć."""
+        product = ProductFactory(name="Pierścionek")
 
-        assert product.slug == "gold-ring"
+        assert product.slug is None
 
-    def test_polskie_litery_nie_wypadaja_z_adresu(self):
-        product = ProductFactory(name="Łańcuszek złoty")
+    def test_wiele_szkicow_wspolistnieje_bez_adresow(self):
+        """Kolumna sluga jest unikalna, więc pusty adres musi być `NULL`,
+        a nie pustym łańcuchem — dwa puste łańcuchy by się zderzyły."""
+        first = ProductFactory(name="Pierwszy")
+        second = ProductFactory(name="Drugi")
 
-        assert product.slug == "lancuszek-zloty"
+        assert first.slug is None
+        assert second.slug is None
+        assert Product.objects.filter(slug__isnull=True).count() == 2
+
+    def test_publikacja_nadaje_adres_z_angielskiego_brzmienia(self):
+        product = PublishedProductFactory(name="Pierścionek")
+
+        assert product.slug == "en-pierscionek"
+
+    def test_nazwa_polska_nie_wchodzi_do_adresu_wprost(self):
+        product = PublishedProductFactory(name="Łańcuszek złoty")
+
+        assert product.slug != "lancuszek-zloty"
 
     def test_kolizja_dostaje_przyrostek(self):
-        ProductFactory(name="Gold ring")
-        second = ProductFactory(name="Gold ring")
+        PublishedProductFactory(name="Ring")
+        second = PublishedProductFactory(name="Ring")
 
-        assert second.slug == "gold-ring-2"
+        assert second.slug == "en-ring-2"
 
     def test_szkic_wolno_jeszcze_poprawic(self):
-        product = ProductFactory(name="Gold ring")
+        product = ProductFactory(name="Gold ring", slug="gold-ring")
 
         product.slug = "golden-ring"
         product.save()
 
         product.refresh_from_db()
         assert product.slug == "golden-ring"
+
+    def test_slug_wpisany_recznie_przezywa_publikacje(self, settings):
+        """Wpisany adres ma pierwszeństwo i nie rusza silnika — to jedyna
+        droga działająca bez sieci."""
+        product = ProductFactory(name="Pierścionek", slug="engagement-ring")
+        settings.TRANSLATION_PROVIDER = "tests.shared.translation.BrokenProvider"
+
+        product.status = ProductStatus.PUBLISHED
+        product.save()
+
+        product.refresh_from_db()
+        assert product.slug == "engagement-ring"
+
+    def test_publikacja_bez_silnika_jest_odrzucona(self, settings):
+        product = ProductFactory(name="Pierścionek")
+        settings.TRANSLATION_PROVIDER = "tests.shared.translation.BrokenProvider"
+
+        product.status = ProductStatus.PUBLISHED
+        with pytest.raises(ValidationError) as error:
+            product.save()
+
+        assert "slug" in error.value.message_dict
 
     def test_po_publikacji_slug_jest_zablokowany(self):
         product = PublishedProductFactory(name="Gold ring")

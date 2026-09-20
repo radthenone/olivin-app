@@ -14,11 +14,16 @@ from tests.factories.products import PublishedProductFactory
 class TestSlug:
     """Slug jest angielskim adresem kampanii — jeden, unikalny, niezmienny."""
 
-    def test_pusty_slug_powstaje_z_nazwy(self):
-        assert CollectionFactory(name="Winter sale").slug == "winter-sale"
+    def test_slug_powstaje_z_angielskiego_brzmienia_nazwy(self):
+        assert CollectionFactory(name="Zima").slug == "en-zima"
 
-    def test_polskie_litery_nie_wypadaja_z_adresu(self):
-        assert CollectionFactory(name="Łańcuszki zimą").slug == "lancuszki-zima"
+    def test_slug_nie_powstaje_bez_angielskiej_nazwy(self, settings):
+        settings.TRANSLATION_PROVIDER = "tests.shared.translation.BrokenProvider"
+
+        with pytest.raises(ValidationError) as error:
+            CollectionFactory(name="Zima")
+
+        assert "slug" in error.value.message_dict
 
     def test_wpisany_slug_zostaje_nietkniety(self):
         collection = CollectionFactory(name="Wyprzedaż zimowa", slug="winter-sale")
@@ -26,9 +31,9 @@ class TestSlug:
         assert collection.slug == "winter-sale"
 
     def test_kolizja_dostaje_przyrostek(self):
-        CollectionFactory(name="Winter sale")
+        CollectionFactory(name="Winter")
 
-        assert CollectionFactory(name="Winter sale").slug == "winter-sale-2"
+        assert CollectionFactory(name="Winter").slug == "en-winter-2"
 
     def test_zmiana_sluga_po_zapisie_jest_odrzucona(self):
         collection = CollectionFactory(name="Winter sale")
