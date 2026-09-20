@@ -27,11 +27,19 @@ CELERY_CACHE_BACKEND = "django-cache"
 CELERY_IMPORTS = (
     "core.services.mail.tasks",
     "core.services.allauth.tasks",
+    "apps.products.tasks",
 )
 
 CELERY_BEAT_SCHEDULE = {
     "cleanup-stale-unverified-users": {
         "task": "core.services.allauth.tasks.cleanup_stale_unverified_users",
         "schedule": schedule(run_every=timedelta(days=1)),  # 1 day
+    },
+    # Raz w miesiącu, pierwszego dnia rano. Zadanie wstawia notowania jako
+    # zaproponowane — cen nie zmienia, bo to robi dopiero aktywacja przez
+    # właściciela (ADR 0022).
+    "propose-metal-rates": {
+        "task": "apps.products.tasks.propose_metal_rates",
+        "schedule": crontab(minute=0, hour=6, day_of_month=1),
     },
 }

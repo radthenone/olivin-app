@@ -109,6 +109,24 @@ class ProductVariant(TimestampedModel):
         blank=True,
         help_text="Podstawa prawna zwolnienia; wymagana przy zwolnieniu",
     )
+    margin_percent = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text=(
+            "Narzut procentowy nadpisujący narzut kategorii (ADR 0022). "
+            "Pusty oznacza narzut odziedziczony."
+        ),
+    )
+    margin_amount = MoneyAmountField(
+        null=True,
+        blank=True,
+        help_text=(
+            "Narzut kwotowy w groszach nadpisujący narzut kategorii. "
+            "Wyklucza się z narzutem procentowym."
+        ),
+    )
 
     # Patrz komentarz przy `Product.objects` — ten sam powód.
     objects: ProductVariantQuerySet = ProductVariantQuerySet.as_manager()  # type: ignore[bad-assignment]
@@ -149,6 +167,11 @@ class ProductVariant(TimestampedModel):
                 condition=models.Q(metal_weight_grams__gt=0),
                 name="variant_metal_weight_is_positive",
             ),
+            models.CheckConstraint(
+                condition=models.Q(margin_percent__isnull=True)
+                | models.Q(margin_amount__isnull=True),
+                name="variant_margin_is_percent_or_amount",
+            ),
         ]
 
     def __str__(self) -> str:
@@ -168,10 +191,48 @@ class ProductVariant(TimestampedModel):
     def clean(self) -> None:
         super().clean()
         self._reject_vat_mismatch()
+        self._reject_double_margin()
+        self._reject_manual_price_below_floor()
 
     def save(self, *args, **kwargs) -> None:
         self._reject_vat_mismatch()
+        self._reject_double_margin()
         super().save(*args, **kwargs)
+
+    def _reject_double_margin(self) -> None:
+        if self.margin_percent is not None and self.margin_amount is not None:
+            raise ValidationError(
+                {
+                    "margin_amount": (
+                        "Narzut jest procentowy albo kwotowy — nie oba naraz."
+                    )
+                }
+            )
+
+    def _reject_manual_price_below_floor(self) -> None:
+        """Cena ręczna nie schodzi poniżej kosztu bez marży (ADR 0022).
+
+        Sprawdzane w `clean()`, a nie w `save()`: próg wymaga aktywnego kursu
+        kruszcu i wczytania składników kosztu, więc wariant zapisywany przed
+        ustaleniem kursu nie może się o to rozbić. Panel woła `clean()`,
+        więc właściciel dostaje komunikat tam, gdzie wpisuje cenę.
+        """
+        if self.manual_price is None or self.pk is None:
+            return
+
+        from apps.products.pricing import cost_floor
+
+        floor = cost_floor(self)
+        if floor is None:
+            return
+        if self.manual_price < floor.amount:
+            raise ValidationError(
+                {
+                    "manual_price": (
+                        f"Cena ręczna nie może zejść poniżej kosztu wariantu ({floor})."
+                    )
+                }
+            )
 
     def _reject_vat_mismatch(self) -> None:
         if self.is_vat_exempt:

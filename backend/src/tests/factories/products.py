@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
 
 from factory.declarations import Sequence, SubFactory, Trait
 from factory.django import DjangoModelFactory
 
 from apps.products.models import (
+    CostComponent,
     Fineness,
     Material,
     MetalColor,
+    MetalRate,
+    MetalRateStatus,
     Product,
     ProductStatus,
     ProductVariant,
@@ -75,3 +79,34 @@ class ProductVariantFactory(DjangoModelFactory):
     vat_rate = Decimal("0.2300")
     is_vat_exempt = False
     vat_exemption_basis = ""
+
+
+class MetalRateFactory(DjangoModelFactory):
+    """Fabryka dla modelu MetalRate — domyślnie kurs zaproponowany.
+
+    Aktywny kurs powstaje przez `activate_rate()`, a nie przez ustawienie
+    pola: inaczej test przechodziłby ścieżką, której w panelu nie ma.
+    """
+
+    class Meta:
+        model = MetalRate
+
+    metal = Material.GOLD
+    fineness = Fineness.F585
+    price_per_gram = 30000
+    currency = "PLN"
+    quoted_on = date(2026, 9, 1)
+    source = "manual"
+    status = MetalRateStatus.PROPOSED
+
+
+class CostComponentFactory(DjangoModelFactory):
+    """Fabryka dla modelu CostComponent."""
+
+    class Meta:
+        model = CostComponent
+
+    variant = SubFactory(ProductVariantFactory)
+    name = Sequence(lambda n: f"Robocizna {n}")
+    amount = 5000
+    currency = "PLN"
