@@ -16,6 +16,7 @@ export const ProductsListQueryParams = zod.object({
   "category": zod.coerce.string().optional().describe('Slug kategorii; obejmuje również jej podkategorie'),
   "collection": zod.coerce.string().optional().describe('Slug kolekcji marketingowej'),
   "fineness": zod.enum(['333', '375', '585', '750', '916', '925', '950', '999']).optional().describe('Próba kruszcu\n\n\* `333` - 333 (8 karatów)\n\* `375` - 375 (9 karatów)\n\* `585` - 585 (14 karatów)\n\* `750` - 750 (18 karatów)\n\* `916` - 916 (22 karaty)\n\* `925` - 925 (srebro próby 925)\n\* `950` - 950 (platyna)\n\* `999` - 999 (kruszec inwestycyjny)'),
+  "lang": zod.enum(['en', 'pl']).optional().describe('Język pól tekstowych. Bez tego parametru brany jest nagłówek `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi do tekstu polskiego; slug nie jest tłumaczony.'),
   "length": zod.enum(['16', '18', '20', '36', '38', '40', '42', '45', '50', '55', '60', '70', '80']).optional().describe('Długość w centymetrach\n\n\* `16` - 16 cm\n\* `18` - 18 cm\n\* `20` - 20 cm\n\* `36` - 36 cm\n\* `38` - 38 cm\n\* `40` - 40 cm\n\* `42` - 42 cm\n\* `45` - 45 cm\n\* `50` - 50 cm\n\* `55` - 55 cm\n\* `60` - 60 cm\n\* `70` - 70 cm\n\* `80` - 80 cm'),
   "material": zod.enum(['gold', 'palladium', 'platinum', 'silver']).optional().describe('Kruszec\n\n\* `gold` - Złoto\n\* `silver` - Srebro\n\* `platinum` - Platyna\n\* `palladium` - Pallad'),
   "metalColor": zod.enum(['bicolor', 'rose', 'white', 'yellow']).optional().describe('Kolor kruszcu\n\n\* `yellow` - Żółte\n\* `white` - Białe\n\* `rose` - Różowe\n\* `bicolor` - Dwukolorowe'),
@@ -41,7 +42,7 @@ export const ProductsListResponse = zod.object({
   "previous": zod.url().nullish(),
   "results": zod.array(zod.object({
   "id": zod.uuid(),
-  "name": zod.string().describe('Nazwa produktu po polsku'),
+  "name": zod.string(),
   "slug": zod.string().regex(productsListResponseResultsItemSlugRegExp).describe('Angielski identyfikator w adresie. Puste pole zostanie wypełnione z nazwy przy zapisie. Po publikacji nie da się go zmienić.'),
   "category": zod.string().describe('Slug kategorii-liścia, do której należy produkt'),
   "material": zod.enum(['gold', 'silver', 'platinum', 'palladium']).describe('\* `gold` - Złoto\n\* `silver` - Srebro\n\* `platinum` - Platyna\n\* `palladium` - Pallad').describe('Kruszec, z którego wykonany jest wyrób\n\n\* `gold` - Złoto\n\* `silver` - Srebro\n\* `platinum` - Platyna\n\* `palladium` - Pallad'),
@@ -70,7 +71,7 @@ export const ProductsListResponse = zod.object({
   "id": zod.uuid(),
   "position": zod.number().describe('Kolejność w galerii; mniejsza liczba wcześniej'),
   "isPrimary": zod.boolean().describe('Zdjęcie główne produktu — jedno na produkt'),
-  "altText": zod.string().describe('Opis alternatywny po polsku, dla czytników ekranu i SEO'),
+  "altText": zod.string(),
   "urls": zod.record(zod.string(), zod.url()).describe('Adres zdjęcia dla każdej szerokości w pikselach')
 }).describe('Zdjęcie z adresami wszystkich rozmiarów.\n\nModel trzyma same klucze (ADR 0025), więc adresy powstają tutaj — host\ni bucket zmieniają się razem ze środowiskiem.')),
   "gemstones": zod.array(zod.object({
@@ -96,6 +97,10 @@ export const ProductsRetrieveParams = zod.object({
   "slug": zod.coerce.string()
 })
 
+export const ProductsRetrieveQueryParams = zod.object({
+  "lang": zod.enum(['en', 'pl']).optional().describe('Język pól tekstowych. Bez tego parametru brany jest nagłówek `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi do tekstu polskiego; slug nie jest tłumaczony.')
+})
+
 export const productsRetrieveResponseSlugRegExp = new RegExp('^[-a-zA-Z0-9_]+$');
 export const productsRetrieveResponseVariantsItemMetalWeightGramsRegExp = new RegExp('^-?\\d{0,5}(?:\\.\\d{0,3})?$');
 export const productsRetrieveResponseVariantsItemVatRateRegExp = new RegExp('^-?0?(?:\\.\\d{0,4})?$');
@@ -104,9 +109,9 @@ export const productsRetrieveResponseVariantsItemGemstonesItemCaratRegExp = new 
 
 export const ProductsRetrieveResponse = zod.object({
   "id": zod.uuid(),
-  "name": zod.string().describe('Nazwa produktu po polsku'),
+  "name": zod.string(),
   "slug": zod.string().regex(productsRetrieveResponseSlugRegExp).describe('Angielski identyfikator w adresie. Puste pole zostanie wypełnione z nazwy przy zapisie. Po publikacji nie da się go zmienić.'),
-  "description": zod.string().describe('Opis produktu po polsku'),
+  "description": zod.string(),
   "category": zod.string().describe('Slug kategorii-liścia, do której należy produkt'),
   "material": zod.enum(['gold', 'silver', 'platinum', 'palladium']).describe('\* `gold` - Złoto\n\* `silver` - Srebro\n\* `platinum` - Platyna\n\* `palladium` - Pallad').describe('Kruszec, z którego wykonany jest wyrób\n\n\* `gold` - Złoto\n\* `silver` - Srebro\n\* `platinum` - Platyna\n\* `palladium` - Pallad'),
   "fineness": zod.enum(['333', '375', '585', '750', '916', '925', '950', '999']).describe('\* `333` - 333 (8 karatów)\n\* `375` - 375 (9 karatów)\n\* `585` - 585 (14 karatów)\n\* `750` - 750 (18 karatów)\n\* `916` - 916 (22 karaty)\n\* `925` - 925 (srebro próby 925)\n\* `950` - 950 (platyna)\n\* `999` - 999 (kruszec inwestycyjny)').describe('Próba kruszcu\n\n\* `333` - 333 (8 karatów)\n\* `375` - 375 (9 karatów)\n\* `585` - 585 (14 karatów)\n\* `750` - 750 (18 karatów)\n\* `916` - 916 (22 karaty)\n\* `925` - 925 (srebro próby 925)\n\* `950` - 950 (platyna)\n\* `999` - 999 (kruszec inwestycyjny)'),
@@ -116,7 +121,7 @@ export const ProductsRetrieveResponse = zod.object({
   "id": zod.uuid(),
   "position": zod.number().describe('Kolejność w galerii; mniejsza liczba wcześniej'),
   "isPrimary": zod.boolean().describe('Zdjęcie główne produktu — jedno na produkt'),
-  "altText": zod.string().describe('Opis alternatywny po polsku, dla czytników ekranu i SEO'),
+  "altText": zod.string(),
   "urls": zod.record(zod.string(), zod.url()).describe('Adres zdjęcia dla każdej szerokości w pikselach')
 }).describe('Zdjęcie z adresami wszystkich rozmiarów.\n\nModel trzyma same klucze (ADR 0025), więc adresy powstają tutaj — host\ni bucket zmieniają się razem ze środowiskiem.')),
   "variants": zod.array(zod.object({
@@ -141,7 +146,7 @@ export const ProductsRetrieveResponse = zod.object({
   "id": zod.uuid(),
   "position": zod.number().describe('Kolejność w galerii; mniejsza liczba wcześniej'),
   "isPrimary": zod.boolean().describe('Zdjęcie główne produktu — jedno na produkt'),
-  "altText": zod.string().describe('Opis alternatywny po polsku, dla czytników ekranu i SEO'),
+  "altText": zod.string(),
   "urls": zod.record(zod.string(), zod.url()).describe('Adres zdjęcia dla każdej szerokości w pikselach')
 }).describe('Zdjęcie z adresami wszystkich rozmiarów.\n\nModel trzyma same klucze (ADR 0025), więc adresy powstają tutaj — host\ni bucket zmieniają się razem ze środowiskiem.')),
   "gemstones": zod.array(zod.object({

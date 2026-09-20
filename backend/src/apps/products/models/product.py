@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 
 from apps.products.models.choices import Fineness, Material, ProductStatus
 from common import TimestampedModel
@@ -77,6 +78,14 @@ class Product(TimestampedModel):
         help_text="Czas realizacji w dniach; wymagany przy produkcie na zamówienie",
     )
 
+    # Tłumaczenia jako relacja, żeby `prefetch_related` je pobrał
+    # razem z obiektem — inaczej każde pole dobijałoby bazę.
+    translations = GenericRelation(
+        "translations.Translation",
+        content_type_field="content_type",
+        object_id_field="object_id",
+    )
+
     # `as_manager()` zwraca menedżera przekazującego metody queryu dalej, ale
     # stuby opisują `objects` jako `Manager[Self]` i gubią `published()`.
     # Adnotacja typem queryu jest drobną nieścisłością co do klasy obiektu,
@@ -114,6 +123,7 @@ class Product(TimestampedModel):
 
     def save(self, *args, **kwargs) -> None:
         self._reject_production_time_mismatch()
+        just_published = self._is_becoming_published()
         if not self.slug:
             self.slug = unique_slug(
                 type(self), slug_base(self.name, "product"), self.pk
@@ -121,6 +131,47 @@ class Product(TimestampedModel):
         else:
             self._reject_slug_change_after_publication()
         super().save(*args, **kwargs)
+        if just_published:
+            self._queue_translation()
+
+    def _is_becoming_published(self) -> bool:
+        """Czy ten zapis właśnie publikuje produkt.
+
+        Tylko przejście, nie każdy zapis opublikowanego: inaczej poprawka
+        literówki kolejkowałaby zadanie, które i tak nie ma czego dołożyć.
+        """
+        if not self.is_published:
+            return False
+        if self.pk is None:
+            return True
+        previous = (
+            type(self)
+            .objects.filter(pk=self.pk)
+            .values_list("status", flat=True)
+            .first()
+        )
+        return previous != ProductStatus.PUBLISHED
+
+    def _queue_translation(self) -> None:
+        """Publikacja kolejkuje uzupełnienie tłumaczeń (ADR 0027).
+
+        Razem ze zdjęciami produktu: ich opisy alternatywne są częścią tej
+        samej treści, a wychodzą tym samym żądaniem.
+        """
+        from apps.translations.tasks import translate_catalog_object
+
+        product_id = str(self.pk)
+        image_ids = [
+            str(pk)
+            for pk in self.images.values_list("pk", flat=True)  # type: ignore[missing-attribute]
+        ]
+
+        def queue() -> None:
+            translate_catalog_object.delay("products.Product", product_id)  # type: ignore[missing-attribute]
+            for image_id in image_ids:
+                translate_catalog_object.delay("products.ProductImage", image_id)  # type: ignore[missing-attribute]
+
+        transaction.on_commit(queue)
 
     def _reject_non_leaf_category(self) -> None:
         """Produkt należy do jednej kategorii liścia (`CONTEXT.md`, Category).

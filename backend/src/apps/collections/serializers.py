@@ -3,6 +3,7 @@ from __future__ import annotations
 from rest_framework import serializers
 
 from apps.collections.models import Collection
+from apps.translations.serializers import TranslatedCharField
 
 
 class CollectionSerializer(serializers.ModelSerializer):
@@ -13,6 +14,7 @@ class CollectionSerializer(serializers.ModelSerializer):
     Produkty pobiera się przez `GET /products/?collection=<slug>`.
     """
 
+    name = TranslatedCharField()
     product_count = serializers.IntegerField(
         read_only=True,
         help_text="Liczba opublikowanych produktów w kolekcji",

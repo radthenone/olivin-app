@@ -7,6 +7,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.categories.models import Category
+from apps.translations.serializers import TranslatedCharField
 
 BY_PARENT = "categories_by_parent"
 VISITED = "categories_visited"
@@ -31,6 +32,7 @@ class CategorySerializer(serializers.ModelSerializer):
     katalogu.
     """
 
+    name = TranslatedCharField()
     children = serializers.SerializerMethodField()
 
     class Meta:

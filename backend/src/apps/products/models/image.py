@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 
@@ -117,6 +118,14 @@ class ProductImage(TimestampedModel):
         default=ImageStatus.PROCESSING,
         editable=False,
         help_text="Zdjęcie w przetwarzaniu nie wychodzi przez API",
+    )
+
+    # Tłumaczenia jako relacja, żeby `prefetch_related` je pobrał
+    # razem z obiektem — inaczej każde pole dobijałoby bazę.
+    translations = GenericRelation(
+        "translations.Translation",
+        content_type_field="content_type",
+        object_id_field="object_id",
     )
 
     objects: ProductImageQuerySet = ProductImageQuerySet.as_manager()  # type: ignore[bad-assignment]

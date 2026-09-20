@@ -15,14 +15,12 @@ import type { ProductVariant } from './productVariant';
  */
 export interface ProductDetail {
   readonly id: string;
-  /** Nazwa produktu po polsku */
   readonly name: string;
   /**
      * Angielski identyfikator w adresie. Puste pole zostanie wypełnione z nazwy przy zapisie. Po publikacji nie da się go zmienić.
      * @pattern ^[-a-zA-Z0-9_]+$
      */
   readonly slug: string;
-  /** Opis produktu po polsku */
   readonly description: string;
   /** Slug kategorii-liścia, do której należy produkt */
   readonly category: string;

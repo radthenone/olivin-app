@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -40,6 +41,14 @@ class Collection(TimestampedModel):
         related_name="collections",
         blank=True,
         help_text="Produkty przypięte do kolekcji; mogą być z różnych kategorii",
+    )
+
+    # Tłumaczenia jako relacja, żeby `prefetch_related` je pobrał
+    # razem z obiektem — inaczej każde pole dobijałoby bazę.
+    translations = GenericRelation(
+        "translations.Translation",
+        content_type_field="content_type",
+        object_id_field="object_id",
     )
 
     class Meta:

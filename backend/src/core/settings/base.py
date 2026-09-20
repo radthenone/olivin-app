@@ -56,3 +56,21 @@ DJANGO_SUPERUSER_PASSWORD = str(os.environ.get("DJANGO_SUPERUSER_PASSWORD", "adm
 COUNTRIES_FIRST = ["PL", "US", "GB", "DE", "FR", "IT", "ES"]
 PHONENUMBER_DEFAULT_REGION = "PL"
 PHONENUMBER_DEFAULT_FORMAT = "INTERNATIONAL"
+
+# Tłumaczenia treści katalogu (ADR 0027). Domyślnie silnik deweloperski —
+# produkcja wskazuje DeepL jawnie, żeby pomyłka w konfiguracji kosztowała
+# gorsze tłumaczenie, a nie rachunek u dostawcy.
+TRANSLATION_PROVIDER = str(
+    os.environ.get(
+        "TRANSLATION_PROVIDER",
+        "core.integrations.translation.libre.LibreTranslateProvider",
+    )
+)
+LIBRETRANSLATE_URL = str(
+    os.environ.get("LIBRETRANSLATE_URL", "http://libretranslate:5000/translate")
+)
+LIBRETRANSLATE_API_KEY = str(os.environ.get("LIBRETRANSLATE_API_KEY", ""))
+DEEPL_API_KEY = str(os.environ.get("DEEPL_API_KEY", ""))
+DEEPL_API_URL = str(
+    os.environ.get("DEEPL_API_URL", "https://api-free.deepl.com/v2/translate")
+)

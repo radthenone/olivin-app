@@ -21,6 +21,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CategoriesListParams,
+  CategoriesRetrieveParams,
   Category
 } from '../schemas';
 
@@ -44,21 +46,28 @@ export type categoriesListResponseSuccess = (categoriesListResponse200) & {
 
 export type categoriesListResponse = (categoriesListResponseSuccess)
 
-export const getCategoriesListUrl = () => {
+export const getCategoriesListUrl = (params?: CategoriesListParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/categories/`
+  return stringifiedParams.length > 0 ? `/categories/?${stringifiedParams}` : `/categories/`
 }
 
 /**
  * Zwraca korzenie taksonomii wraz z całym zagnieżdżeniem. Odpowiedź nie jest stronicowana — gałąź bez korzenia nie jest drzewem.
  * @summary Drzewo kategorii
  */
-export const categoriesList = async ( options?: RequestInit): Promise<categoriesListResponse> => {
+export const categoriesList = async (params?: CategoriesListParams, options?: RequestInit): Promise<categoriesListResponse> => {
 
-  return appInstance<categoriesListResponse>(getCategoriesListUrl(),
+  return appInstance<categoriesListResponse>(getCategoriesListUrl(params),
   {
     ...options,
     method: 'GET'
@@ -71,23 +80,23 @@ export const categoriesList = async ( options?: RequestInit): Promise<categories
 
 
 
-export const getCategoriesListQueryKey = () => {
+export const getCategoriesListQueryKey = (params?: CategoriesListParams,) => {
     return [
-    `/categories/`
+    `/categories/`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getCategoriesListQueryOptions = <TData = Awaited<ReturnType<typeof categoriesList>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+export const getCategoriesListQueryOptions = <TData = Awaited<ReturnType<typeof categoriesList>>, TError = ErrorType<unknown>>(params?: CategoriesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getCategoriesListQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getCategoriesListQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof categoriesList>>> = ({ signal }) => categoriesList({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof categoriesList>>> = ({ signal }) => categoriesList(params, { signal, ...requestOptions });
 
 
 
@@ -101,7 +110,7 @@ export type CategoriesListQueryError = ErrorType<unknown>
 
 
 export function useCategoriesList<TData = Awaited<ReturnType<typeof categoriesList>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesList>>, TError, TData>> & Pick<
+ params: undefined |  CategoriesListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof categoriesList>>,
           TError,
@@ -111,7 +120,7 @@ export function useCategoriesList<TData = Awaited<ReturnType<typeof categoriesLi
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCategoriesList<TData = Awaited<ReturnType<typeof categoriesList>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesList>>, TError, TData>> & Pick<
+ params?: CategoriesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof categoriesList>>,
           TError,
@@ -121,7 +130,7 @@ export function useCategoriesList<TData = Awaited<ReturnType<typeof categoriesLi
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCategoriesList<TData = Awaited<ReturnType<typeof categoriesList>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ params?: CategoriesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -129,11 +138,11 @@ export function useCategoriesList<TData = Awaited<ReturnType<typeof categoriesLi
  */
 
 export function useCategoriesList<TData = Awaited<ReturnType<typeof categoriesList>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ params?: CategoriesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getCategoriesListQueryOptions(options)
+  const queryOptions = getCategoriesListQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -157,21 +166,30 @@ export type categoriesRetrieveResponseSuccess = (categoriesRetrieveResponse200) 
 
 export type categoriesRetrieveResponse = (categoriesRetrieveResponseSuccess)
 
-export const getCategoriesRetrieveUrl = (slug: string,) => {
+export const getCategoriesRetrieveUrl = (slug: string,
+    params?: CategoriesRetrieveParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/categories/${slug}/`
+  return stringifiedParams.length > 0 ? `/categories/${slug}/?${stringifiedParams}` : `/categories/${slug}/`
 }
 
 /**
  * Zwraca wskazaną kategorię wraz z jej zagnieżdżonymi potomkami. Adresem jest slug, nie identyfikator.
  * @summary Gałąź drzewa od wskazanej kategorii
  */
-export const categoriesRetrieve = async (slug: string, options?: RequestInit): Promise<categoriesRetrieveResponse> => {
+export const categoriesRetrieve = async (slug: string,
+    params?: CategoriesRetrieveParams, options?: RequestInit): Promise<categoriesRetrieveResponse> => {
 
-  return appInstance<categoriesRetrieveResponse>(getCategoriesRetrieveUrl(slug),
+  return appInstance<categoriesRetrieveResponse>(getCategoriesRetrieveUrl(slug,params),
   {
     ...options,
     method: 'GET'
@@ -184,23 +202,25 @@ export const categoriesRetrieve = async (slug: string, options?: RequestInit): P
 
 
 
-export const getCategoriesRetrieveQueryKey = (slug: string,) => {
+export const getCategoriesRetrieveQueryKey = (slug: string,
+    params?: CategoriesRetrieveParams,) => {
     return [
-    `/categories/${slug}/`
+    `/categories/${slug}/`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getCategoriesRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof categoriesRetrieve>>, TError = ErrorType<unknown>>(slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+export const getCategoriesRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof categoriesRetrieve>>, TError = ErrorType<unknown>>(slug: string,
+    params?: CategoriesRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getCategoriesRetrieveQueryKey(slug);
+  const queryKey =  queryOptions?.queryKey ?? getCategoriesRetrieveQueryKey(slug,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof categoriesRetrieve>>> = ({ signal }) => categoriesRetrieve(slug, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof categoriesRetrieve>>> = ({ signal }) => categoriesRetrieve(slug,params, { signal, ...requestOptions });
 
 
 
@@ -214,7 +234,8 @@ export type CategoriesRetrieveQueryError = ErrorType<unknown>
 
 
 export function useCategoriesRetrieve<TData = Awaited<ReturnType<typeof categoriesRetrieve>>, TError = ErrorType<unknown>>(
- slug: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesRetrieve>>, TError, TData>> & Pick<
+ slug: string,
+    params: undefined |  CategoriesRetrieveParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesRetrieve>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof categoriesRetrieve>>,
           TError,
@@ -224,7 +245,8 @@ export function useCategoriesRetrieve<TData = Awaited<ReturnType<typeof categori
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCategoriesRetrieve<TData = Awaited<ReturnType<typeof categoriesRetrieve>>, TError = ErrorType<unknown>>(
- slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesRetrieve>>, TError, TData>> & Pick<
+ slug: string,
+    params?: CategoriesRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesRetrieve>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof categoriesRetrieve>>,
           TError,
@@ -234,7 +256,8 @@ export function useCategoriesRetrieve<TData = Awaited<ReturnType<typeof categori
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCategoriesRetrieve<TData = Awaited<ReturnType<typeof categoriesRetrieve>>, TError = ErrorType<unknown>>(
- slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ slug: string,
+    params?: CategoriesRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -242,11 +265,12 @@ export function useCategoriesRetrieve<TData = Awaited<ReturnType<typeof categori
  */
 
 export function useCategoriesRetrieve<TData = Awaited<ReturnType<typeof categoriesRetrieve>>, TError = ErrorType<unknown>>(
- slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ slug: string,
+    params?: CategoriesRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof categoriesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getCategoriesRetrieveQueryOptions(slug,options)
+  const queryOptions = getCategoriesRetrieveQueryOptions(slug,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

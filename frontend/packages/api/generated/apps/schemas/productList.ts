@@ -14,7 +14,6 @@ import type { ProductVariant } from './productVariant';
  */
 export interface ProductList {
   readonly id: string;
-  /** Nazwa produktu po polsku */
   readonly name: string;
   /**
      * Angielski identyfikator w adresie. Puste pole zostanie wypełnione z nazwy przy zapisie. Po publikacji nie da się go zmienić.

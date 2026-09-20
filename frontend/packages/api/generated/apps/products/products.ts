@@ -23,7 +23,8 @@ import type {
 import type {
   PaginatedProductListList,
   ProductDetail,
-  ProductsListParams
+  ProductsListParams,
+  ProductsRetrieveParams
 } from '../schemas';
 
 import { appInstance } from '../../../src/app-mutator';
@@ -166,21 +167,30 @@ export type productsRetrieveResponseSuccess = (productsRetrieveResponse200) & {
 
 export type productsRetrieveResponse = (productsRetrieveResponseSuccess)
 
-export const getProductsRetrieveUrl = (slug: string,) => {
+export const getProductsRetrieveUrl = (slug: string,
+    params?: ProductsRetrieveParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/products/${slug}/`
+  return stringifiedParams.length > 0 ? `/products/${slug}/?${stringifiedParams}` : `/products/${slug}/`
 }
 
 /**
  * Adresem jest slug. Szkic nie jest dostępny pod żadnym adresem — odpowiedzią jest 404, tak samo jak dla produktu nieistniejącego.
  * @summary Produkt wraz z pełną listą wariantów
  */
-export const productsRetrieve = async (slug: string, options?: RequestInit): Promise<productsRetrieveResponse> => {
+export const productsRetrieve = async (slug: string,
+    params?: ProductsRetrieveParams, options?: RequestInit): Promise<productsRetrieveResponse> => {
 
-  return appInstance<productsRetrieveResponse>(getProductsRetrieveUrl(slug),
+  return appInstance<productsRetrieveResponse>(getProductsRetrieveUrl(slug,params),
   {
     ...options,
     method: 'GET'
@@ -193,23 +203,25 @@ export const productsRetrieve = async (slug: string, options?: RequestInit): Pro
 
 
 
-export const getProductsRetrieveQueryKey = (slug: string,) => {
+export const getProductsRetrieveQueryKey = (slug: string,
+    params?: ProductsRetrieveParams,) => {
     return [
-    `/products/${slug}/`
+    `/products/${slug}/`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getProductsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof productsRetrieve>>, TError = ErrorType<unknown>>(slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof productsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+export const getProductsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof productsRetrieve>>, TError = ErrorType<unknown>>(slug: string,
+    params?: ProductsRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof productsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getProductsRetrieveQueryKey(slug);
+  const queryKey =  queryOptions?.queryKey ?? getProductsRetrieveQueryKey(slug,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof productsRetrieve>>> = ({ signal }) => productsRetrieve(slug, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof productsRetrieve>>> = ({ signal }) => productsRetrieve(slug,params, { signal, ...requestOptions });
 
 
 
@@ -223,7 +235,8 @@ export type ProductsRetrieveQueryError = ErrorType<unknown>
 
 
 export function useProductsRetrieve<TData = Awaited<ReturnType<typeof productsRetrieve>>, TError = ErrorType<unknown>>(
- slug: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof productsRetrieve>>, TError, TData>> & Pick<
+ slug: string,
+    params: undefined |  ProductsRetrieveParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof productsRetrieve>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof productsRetrieve>>,
           TError,
@@ -233,7 +246,8 @@ export function useProductsRetrieve<TData = Awaited<ReturnType<typeof productsRe
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useProductsRetrieve<TData = Awaited<ReturnType<typeof productsRetrieve>>, TError = ErrorType<unknown>>(
- slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof productsRetrieve>>, TError, TData>> & Pick<
+ slug: string,
+    params?: ProductsRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof productsRetrieve>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof productsRetrieve>>,
           TError,
@@ -243,7 +257,8 @@ export function useProductsRetrieve<TData = Awaited<ReturnType<typeof productsRe
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useProductsRetrieve<TData = Awaited<ReturnType<typeof productsRetrieve>>, TError = ErrorType<unknown>>(
- slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof productsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ slug: string,
+    params?: ProductsRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof productsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -251,11 +266,12 @@ export function useProductsRetrieve<TData = Awaited<ReturnType<typeof productsRe
  */
 
 export function useProductsRetrieve<TData = Awaited<ReturnType<typeof productsRetrieve>>, TError = ErrorType<unknown>>(
- slug: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof productsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ slug: string,
+    params?: ProductsRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof productsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getProductsRetrieveQueryOptions(slug,options)
+  const queryOptions = getProductsRetrieveQueryOptions(slug,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

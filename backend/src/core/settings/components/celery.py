@@ -28,6 +28,7 @@ CELERY_IMPORTS = (
     "core.services.mail.tasks",
     "core.services.allauth.tasks",
     "apps.products.tasks",
+    "apps.translations.tasks",
 )
 
 CELERY_BEAT_SCHEDULE = {
@@ -38,6 +39,12 @@ CELERY_BEAT_SCHEDULE = {
     # Raz w miesiącu, pierwszego dnia rano. Zadanie wstawia notowania jako
     # zaproponowane — cen nie zmienia, bo to robi dopiero aktywacja przez
     # właściciela (ADR 0022).
+    # Drugi wyzwalacz obok publikacji: wyłapuje to, czego tamten nie
+    # dowiózł — padnięte zadanie, tekst dopisany po publikacji, nowy język.
+    "translate-published-catalog": {
+        "task": "apps.translations.tasks.translate_published_catalog",
+        "schedule": schedule(run_every=timedelta(hours=24)),
+    },
     "propose-metal-rates": {
         "task": "apps.products.tasks.propose_metal_rates",
         "schedule": crontab(minute=0, hour=6, day_of_month=1),

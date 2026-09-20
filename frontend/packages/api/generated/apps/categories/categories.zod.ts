@@ -12,12 +12,16 @@ import * as zod from 'zod';
  * Zwraca korzenie taksonomii wraz z całym zagnieżdżeniem. Odpowiedź nie jest stronicowana — gałąź bez korzenia nie jest drzewem.
  * @summary Drzewo kategorii
  */
+export const CategoriesListQueryParams = zod.object({
+  "lang": zod.enum(['en', 'pl']).optional().describe('Język pól tekstowych. Bez tego parametru brany jest nagłówek `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi do tekstu polskiego; slug nie jest tłumaczony.')
+})
+
 export const categoriesListResponseSlugRegExp = new RegExp('^[-a-zA-Z0-9_]+$');
 
 
 export const CategoriesListResponseItem = zod.object({
   "id": zod.uuid(),
-  "name": zod.string().describe('Nazwa kategorii po polsku, widoczna w menu sklepu'),
+  "name": zod.string(),
   "slug": zod.string().regex(categoriesListResponseSlugRegExp).describe('Angielski identyfikator w adresie. Puste pole zostanie wypełnione z nazwy przy zapisie. Po zapisaniu nie da się go zmienić.'),
   "children": zod.array(zod.unknown())
 }).describe('Węzeł drzewa wraz z potomkami.\n\nNarzut nie wychodzi na zewnątrz: to dana cenotwórcza panelu, nie treść\nkatalogu.')
@@ -31,12 +35,16 @@ export const CategoriesRetrieveParams = zod.object({
   "slug": zod.coerce.string()
 })
 
+export const CategoriesRetrieveQueryParams = zod.object({
+  "lang": zod.enum(['en', 'pl']).optional().describe('Język pól tekstowych. Bez tego parametru brany jest nagłówek `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi do tekstu polskiego; slug nie jest tłumaczony.')
+})
+
 export const categoriesRetrieveResponseSlugRegExp = new RegExp('^[-a-zA-Z0-9_]+$');
 
 
 export const CategoriesRetrieveResponse = zod.object({
   "id": zod.uuid(),
-  "name": zod.string().describe('Nazwa kategorii po polsku, widoczna w menu sklepu'),
+  "name": zod.string(),
   "slug": zod.string().regex(categoriesRetrieveResponseSlugRegExp).describe('Angielski identyfikator w adresie. Puste pole zostanie wypełnione z nazwy przy zapisie. Po zapisaniu nie da się go zmienić.'),
   "children": zod.array(zod.unknown())
 }).describe('Węzeł drzewa wraz z potomkami.\n\nNarzut nie wychodzi na zewnątrz: to dana cenotwórcza panelu, nie treść\nkatalogu.')

@@ -1,9 +1,11 @@
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from apps.products.serializers import ProductDetailSerializer, ProductListSerializer
+from apps.translations.schema import LANGUAGE_PARAMETER
 
 product_schema = extend_schema_view(
     list=extend_schema(
+        parameters=[LANGUAGE_PARAMETER],
         tags=["Products"],
         summary="Lista opublikowanych produktów",
         description=(
@@ -13,6 +15,7 @@ product_schema = extend_schema_view(
         responses={200: ProductListSerializer(many=True)},
     ),
     retrieve=extend_schema(
+        parameters=[LANGUAGE_PARAMETER],
         tags=["Products"],
         summary="Produkt wraz z pełną listą wariantów",
         description=(
