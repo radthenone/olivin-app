@@ -7,6 +7,7 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import AllowAny
 from rest_framework.settings import api_settings
 
+from apps.inventory.models import has_available_variant
 from apps.products.filters import MIN_PRICE, ProductFilterSet
 from apps.products.models import EFFECTIVE_PRICE, Product, ProductVariant
 from apps.products.schema import product_schema
@@ -20,6 +21,11 @@ ORDERING_FIELDS = {
     "-name": F("name").desc(),
 }
 DEFAULT_ORDERING = "newest"
+
+# Produkt, którego nie da się kupić, schodzi na koniec listy przy **każdym**
+# sortowaniu (`CONTEXT.md`, InventoryItem). Nie znika — wariant bez stanu
+# zostaje widoczny jako niedostępny.
+HAS_AVAILABLE = "has_available_variant"
 
 
 class ProductOrderingFilter(OrderingFilter):
@@ -45,7 +51,7 @@ class ProductOrderingFilter(OrderingFilter):
         expression = ORDERING_FIELDS.get(requested, ORDERING_FIELDS[DEFAULT_ORDERING])
         # Rozstrzygnięcie remisu identyfikatorem: bez niego strona druga
         # potrafi powtórzyć pozycję ze strony pierwszej.
-        return queryset.order_by(expression, "-id")
+        return queryset.order_by(F(HAS_AVAILABLE).desc(), expression, "-id")
 
 
 @product_schema
@@ -72,8 +78,11 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     ]
 
     def get_queryset(self) -> QuerySet[Product]:
-        variants = ProductVariant.objects.with_effective_price().order_by(
-            EFFECTIVE_PRICE, "sku"
+        variants = (
+            ProductVariant.objects.with_effective_price()
+            .select_related("inventory")
+            .prefetch_related("inventory__movements")
+            .order_by(EFFECTIVE_PRICE, "sku")
         )
         cheapest = (
             ProductVariant.objects.with_effective_price()
@@ -89,6 +98,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             # z wariantów już przyciętych filtrami cech, więc cena produktu
             # zmieniałaby się w zależności od tego, co jeszcze jest włączone.
             .annotate(**{MIN_PRICE: Subquery(cheapest)})
+            .annotate(**{HAS_AVAILABLE: has_available_variant()})
         )
 
     def get_serializer_class(self):

@@ -15,12 +15,28 @@ class ProductVariantSerializer(serializers.ModelSerializer):
     """
 
     price = MoneySerializer(source="effective_price", read_only=True)
+    available = serializers.IntegerField(
+        read_only=True,
+        allow_null=True,
+        help_text=(
+            "Liczba sztuk do kupienia; pusta dla produktu na zamówienie, "
+            "który nie ma stanu magazynowego."
+        ),
+    )
+    is_available = serializers.BooleanField(read_only=True)
+    is_low_stock = serializers.BooleanField(
+        read_only=True,
+        help_text="Ostatnie sztuki — stan dodatni, ale nie większy niż trzy.",
+    )
 
     class Meta:
         model = ProductVariant
         fields = [
             "id",
             "sku",
+            "available",
+            "is_available",
+            "is_low_stock",
             "metal_color",
             "size",
             "length",

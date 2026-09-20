@@ -17,6 +17,11 @@ from apps.products.models import (
     ProductStatus,
     ProductVariant,
 )
+from apps.inventory.models import (
+    InventoryItem,
+    StockMovement,
+    StockMovementReason,
+)
 from tests.factories.categories import CategoryFactory
 
 
@@ -110,3 +115,33 @@ class CostComponentFactory(DjangoModelFactory):
     name = Sequence(lambda n: f"Robocizna {n}")
     amount = 5000
     currency = "PLN"
+
+
+class InventoryItemFactory(DjangoModelFactory):
+    """Fabryka stanu magazynowego. Stan ustawia się ruchem, nie polem."""
+
+    class Meta:
+        model = InventoryItem
+
+    variant = SubFactory(ProductVariantFactory)
+    reserved = 0
+
+
+class StockMovementFactory(DjangoModelFactory):
+    """Fabryka ruchu magazynowego."""
+
+    class Meta:
+        model = StockMovement
+
+    item = SubFactory(InventoryItemFactory)
+    quantity = 10
+    reason = StockMovementReason.DELIVERY
+    note = ""
+
+
+def stock(variant, quantity: int, reserved: int = 0) -> InventoryItem:
+    """Wariant ze stanem: jeden ruch przyjęcia i ewentualna rezerwacja."""
+    item = InventoryItemFactory(variant=variant, reserved=reserved)
+    if quantity:
+        StockMovementFactory(item=item, quantity=quantity)
+    return item

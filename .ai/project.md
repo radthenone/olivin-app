@@ -21,6 +21,7 @@ Zweryfikowano: 2026-09-11.
 - `backend/src/apps/categories` — `Category` jako drzewo (rodzic jako klucz obcy do siebie, bez mptt), slug niezmienny, narzut domyślny. Panel do edycji, API **tylko do odczytu**: `GET /categories/` (drzewo zagnieżdżone, bez stronicowania) i `GET /categories/<slug>/`, oba `AllowAny`. Testy w `backend/src/tests/categories/`.
 - `backend/src/apps/collections` — `Collection` (nazwa PL, slug niezmienny, relacja wiele-do-wielu z produktami). Panel z `filter_horizontal`, API **tylko do odczytu**: `GET /collections/` i `GET /collections/<slug>/`, `AllowAny`, wyłącznie kolekcje z co najmniej jednym opublikowanym produktem. Produkty kolekcji przez `GET /products/?collection=<slug>`. Testy w `backend/src/tests/collections/`.
 - `backend/src/apps/products` — `Product` (status `draft`/`published`, kategoria-liść, materiał i próba jako `choices`, flaga produktu na zamówienie z czasem realizacji) oraz `ProductVariant` (SKU, kolor kruszcu, rozmiar/długość, kamień, masa kruszcu, `price` i `manual_price` jako grosze, stawka VAT albo zwolnienie z podstawą prawną). Panel z wariantami inline i akcją publikacji; API **tylko do odczytu**: `GET /products/` (opublikowane, każdy z najtańszym wariantem; filtry cech, zakres ceny, kategoria z potomkami, sortowanie `?ordering=`, wyszukiwarka `?search=`) i `GET /products/<slug>/`, oba `AllowAny`. Wycena ze wzoru (ADR 0022) w `apps/products/pricing.py`: `MetalRate` z cyklem `proposed`/`active`/`archived`, `CostComponent` przy wariancie, marża wariantu nadpisująca marżę kategorii, próg kosztowy. Aktywacja kursu jest akcją w panelu — archiwizuje poprzedni kurs, kolejkuje przeliczenie cen i wysyła wiadomość do właściciela. Testy w `backend/src/tests/products/`.
+- `backend/src/apps/inventory` — `InventoryItem` (rezerwacje) i `StockMovement` (zmiana z przyczyną). Stan to **suma ruchów**, nie kolumna; ruch zapisany jest nieedytowalny, korektę robi się kolejnym ruchem. Panel prowadzi magazyn, API go nie wystawia — dostępność wychodzi tylko jako `available` / `isAvailable` / `isLowStock` na wariancie. Produkt na zamówienie nie ma stanu i jest dostępny zawsze (ADR 0024). Testy w `backend/src/tests/products/test_inventory.py`.
 - `backend/src/core/` — settings (django-split-settings), integracje, storage, utils. Health check: **`GET /health/`** (nie pod `/api/`), zwraca stan bazy, Redisa i storage.
 - `backend/src/common/` — pola, modele bazowe w tym `TranslatableModel`, lokalizacja, pieniądze (`money/`) i slugi katalogu (`slugs.py`).
 - `frontend/mobile/` — aplikacja Expo: ekrany auth (logowanie, rejestracja, MFA, weryfikacja e-mail, reset hasła, logowanie kodem), konto, profil.
@@ -29,7 +30,7 @@ Zweryfikowano: 2026-09-11.
 
 **Puste szkielety po `startapp` — dziewięć linii kodu każdy, zero modeli, zero migracji:**
 
-`orders`, `payments`, `discounts`, `inventory`, `shipping`, `reviews`, `notifications`
+`orders`, `payments`, `discounts`, `shipping`, `reviews`, `notifications`
 
 Nie zakładaj, że którakolwiek z nich cokolwiek zawiera. Nie ma modelu Order, nie ma Cart, nie ma stanu magazynowego.
 

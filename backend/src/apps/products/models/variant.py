@@ -183,6 +183,36 @@ class ProductVariant(TimestampedModel):
         return Money(self.price, self.currency)
 
     @property
+    def available(self) -> int | None:
+        """Ile sztuk klient może dziś kupić.
+
+        `None` dla produktu na zamówienie: taki wyrób nie ma stanu, bo
+        powstaje po złożeniu zamówienia (ADR 0024), więc liczba byłaby
+        zmyślona.
+        """
+        if self.product.is_made_to_order:
+            return None
+        inventory = getattr(self, "inventory", None)
+        return inventory.available if inventory is not None else 0
+
+    @property
+    def is_available(self) -> bool:
+        """Produkt na zamówienie jest dostępny zawsze; magazynowy gdy ma stan."""
+        if self.product.is_made_to_order:
+            return True
+        return (self.available or 0) > 0
+
+    @property
+    def is_low_stock(self) -> bool:
+        """„Ostatnie sztuki" — stan dodatni, ale nie większy niż próg."""
+        from apps.inventory.models import LOW_STOCK_THRESHOLD
+
+        available = self.available
+        if available is None:
+            return False
+        return 0 < available <= LOW_STOCK_THRESHOLD
+
+    @property
     def effective_price(self) -> Money:
         """Cena, którą widzi klient — ręczna ma pierwszeństwo (ADR 0022)."""
         amount = self.price if self.manual_price is None else self.manual_price

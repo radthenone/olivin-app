@@ -2503,6 +2503,19 @@ components:
           type: string
           readOnly: true
           description: Oznaczenie magazynowe wariantu, unikalne w całym katalogu
+        available:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Liczba sztuk do kupienia; pusta dla produktu na zamówienie,
+            który nie ma stanu magazynowego.
+        isAvailable:
+          type: boolean
+          readOnly: true
+        isLowStock:
+          type: boolean
+          readOnly: true
+          description: Ostatnie sztuki — stan dodatni, ale nie większy niż trzy.
         metalColor:
           allOf:
           - $ref: '#/components/schemas/MetalColorEnum'
@@ -2605,7 +2618,10 @@ components:
           readOnly: true
           description: Podstawa prawna zwolnienia; wymagana przy zwolnieniu
       required:
+      - available
       - id
+      - isAvailable
+      - isLowStock
       - isVatExempt
       - length
       - metalColor

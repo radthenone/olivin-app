@@ -21,6 +21,14 @@ export interface ProductVariant {
   readonly id: string;
   /** Oznaczenie magazynowe wariantu, unikalne w całym katalogu */
   readonly sku: string;
+  /**
+     * Liczba sztuk do kupienia; pusta dla produktu na zamówienie, który nie ma stanu magazynowego.
+     * @nullable
+     */
+  readonly available: number | null;
+  readonly isAvailable: boolean;
+  /** Ostatnie sztuki — stan dodatni, ale nie większy niż trzy. */
+  readonly isLowStock: boolean;
   /** Kolor kruszcu
 
   * `yellow` - Żółte
