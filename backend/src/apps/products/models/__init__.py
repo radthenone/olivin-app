@@ -10,6 +10,12 @@ from apps.products.models.choices import (
     Stone,
 )
 from apps.products.models.cost_component import CostComponent
+from apps.products.models.gemstone import (
+    Clarity,
+    Colour,
+    Cut,
+    Gemstone,
+)
 from apps.products.models.image import (
     RENDITION_WIDTHS,
     ImageStatus,
@@ -32,7 +38,11 @@ __all__ = [
     "EFFECTIVE_PRICE",
     "CostComponent",
     "RENDITION_WIDTHS",
+    "Clarity",
+    "Colour",
+    "Cut",
     "Fineness",
+    "Gemstone",
     "ImageStatus",
     "Length",
     "Material",

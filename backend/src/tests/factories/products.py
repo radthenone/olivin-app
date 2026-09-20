@@ -7,8 +7,12 @@ from factory.declarations import Sequence, SubFactory, Trait
 from factory.django import DjangoModelFactory
 
 from apps.products.models import (
+    Clarity,
+    Colour,
     CostComponent,
+    Cut,
     Fineness,
+    Gemstone,
     Material,
     MetalColor,
     MetalRate,
@@ -16,6 +20,7 @@ from apps.products.models import (
     Product,
     ProductStatus,
     ProductVariant,
+    Stone,
 )
 from apps.inventory.models import (
     InventoryItem,
@@ -145,3 +150,19 @@ def stock(variant, quantity: int, reserved: int = 0) -> InventoryItem:
     if quantity:
         StockMovementFactory(item=item, quantity=quantity)
     return item
+
+
+class GemstoneFactory(DjangoModelFactory):
+    """Fabryka kamienia. Certyfikat dokłada się osobno — bywa, że go nie ma."""
+
+    class Meta:
+        model = Gemstone
+
+    variant = SubFactory(ProductVariantFactory)
+    kind = Stone.DIAMOND
+    carat = Decimal("0.500")
+    clarity = Clarity.VS1
+    colour = Colour.G
+    cut = Cut.BRILLIANT
+    laboratory = ""
+    certificate_number = ""

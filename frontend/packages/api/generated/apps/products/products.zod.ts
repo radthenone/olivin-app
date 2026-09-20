@@ -32,6 +32,7 @@ export const ProductsListQueryParams = zod.object({
 export const productsListResponseResultsItemSlugRegExp = new RegExp('^[-a-zA-Z0-9_]+$');
 export const productsListResponseResultsItemCheapestVariantOneMetalWeightGramsRegExp = new RegExp('^-?\\d{0,5}(?:\\.\\d{0,3})?$');
 export const productsListResponseResultsItemCheapestVariantOneVatRateRegExp = new RegExp('^-?0?(?:\\.\\d{0,4})?$');
+export const productsListResponseResultsItemCheapestVariantOneGemstonesItemCaratRegExp = new RegExp('^-?\\d{0,3}(?:\\.\\d{0,3})?$');
 
 
 export const ProductsListResponse = zod.object({
@@ -71,7 +72,18 @@ export const ProductsListResponse = zod.object({
   "isPrimary": zod.boolean().describe('Zdjęcie główne produktu — jedno na produkt'),
   "altText": zod.string().describe('Opis alternatywny po polsku, dla czytników ekranu i SEO'),
   "urls": zod.record(zod.string(), zod.url()).describe('Adres zdjęcia dla każdej szerokości w pikselach')
-}).describe('Zdjęcie z adresami wszystkich rozmiarów.\n\nModel trzyma same klucze (ADR 0025), więc adresy powstają tutaj — host\ni bucket zmieniają się razem ze środowiskiem.'))
+}).describe('Zdjęcie z adresami wszystkich rozmiarów.\n\nModel trzyma same klucze (ADR 0025), więc adresy powstają tutaj — host\ni bucket zmieniają się razem ze środowiskiem.')),
+  "gemstones": zod.array(zod.object({
+  "id": zod.uuid(),
+  "kind": zod.enum(['diamond', 'sapphire', 'ruby', 'emerald', 'pearl', 'amber', 'topaz', 'amethyst', 'cubic_zirconia', 'moissanite']).describe('\* `diamond` - Diament\n\* `sapphire` - Szafir\n\* `ruby` - Rubin\n\* `emerald` - Szmaragd\n\* `pearl` - Perła\n\* `amber` - Bursztyn\n\* `topaz` - Topaz\n\* `amethyst` - Ametyst\n\* `cubic_zirconia` - Cyrkonia\n\* `moissanite` - Moissanit').describe('Rodzaj kamienia\n\n\* `diamond` - Diament\n\* `sapphire` - Szafir\n\* `ruby` - Rubin\n\* `emerald` - Szmaragd\n\* `pearl` - Perła\n\* `amber` - Bursztyn\n\* `topaz` - Topaz\n\* `amethyst` - Ametyst\n\* `cubic_zirconia` - Cyrkonia\n\* `moissanite` - Moissanit'),
+  "carat": zod.stringFormat('decimal', productsListResponseResultsItemCheapestVariantOneGemstonesItemCaratRegExp).describe('Masa w karatach'),
+  "clarity": zod.enum(['FL', 'IF', 'VVS1', 'VVS2', 'VS1', 'VS2', 'SI1', 'SI2', 'I1', 'I2', 'I3']).describe('\* `FL` - FL — bez skaz\n\* `IF` - IF — bez skaz wewnętrznych\n\* `VVS1` - VVS1\n\* `VVS2` - VVS2\n\* `VS1` - VS1\n\* `VS2` - VS2\n\* `SI1` - SI1\n\* `SI2` - SI2\n\* `I1` - I1\n\* `I2` - I2\n\* `I3` - I3').describe('Czystość; pusta, gdy nie była oznaczana\n\n\* `FL` - FL — bez skaz\n\* `IF` - IF — bez skaz wewnętrznych\n\* `VVS1` - VVS1\n\* `VVS2` - VVS2\n\* `VS1` - VS1\n\* `VS2` - VS2\n\* `SI1` - SI1\n\* `SI2` - SI2\n\* `I1` - I1\n\* `I2` - I2\n\* `I3` - I3'),
+  "colour": zod.enum(['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'fancy']).describe('\* `D` - D — bezbarwny\n\* `E` - E\n\* `F` - F\n\* `G` - G\n\* `H` - H\n\* `I` - I\n\* `J` - J\n\* `K` - K\n\* `L` - L\n\* `M` - M\n\* `fancy` - Barwa fantazyjna').describe('Barwa; pusta, gdy nie była oznaczana\n\n\* `D` - D — bezbarwny\n\* `E` - E\n\* `F` - F\n\* `G` - G\n\* `H` - H\n\* `I` - I\n\* `J` - J\n\* `K` - K\n\* `L` - L\n\* `M` - M\n\* `fancy` - Barwa fantazyjna'),
+  "cut": zod.enum(['brilliant', 'princess', 'emerald', 'oval', 'pear', 'marquise', 'cushion', 'asscher', 'radiant', 'heart', 'cabochon']).describe('\* `brilliant` - Brylantowy\n\* `princess` - Princessa\n\* `emerald` - Szmaragdowy\n\* `oval` - Owalny\n\* `pear` - Gruszka\n\* `marquise` - Markiza\n\* `cushion` - Poduszka\n\* `asscher` - Asscher\n\* `radiant` - Radiant\n\* `heart` - Serce\n\* `cabochon` - Kaboszon').describe('Szlif; pusty, gdy nie był oznaczany\n\n\* `brilliant` - Brylantowy\n\* `princess` - Princessa\n\* `emerald` - Szmaragdowy\n\* `oval` - Owalny\n\* `pear` - Gruszka\n\* `marquise` - Markiza\n\* `cushion` - Poduszka\n\* `asscher` - Asscher\n\* `radiant` - Radiant\n\* `heart` - Serce\n\* `cabochon` - Kaboszon'),
+  "laboratory": zod.string().describe('Laboratorium, które wystawiło certyfikat'),
+  "certificateNumber": zod.string().describe('Numer certyfikatu nadany przez laboratorium'),
+  "certificateUrl": zod.url().nullable().describe('Adres certyfikatu podpisany na czas; pusty, gdy kamień nie ma certyfikatu.')
+}).describe('Kamień z parametrami i adresem certyfikatu, jeśli jest.\n\nAdres jest podpisany na czas, bo certyfikat leży w prywatnym buckecie\n`documents` (ADR 0025). Stały odnośnik do dokumentu laboratorium byłby\ndostępny dla każdego, kto go raz zobaczył.'))
 }).describe('Wariant widziany przez klienta.\n\nCena jest tą, którą klient faktycznie zapłaci: ręczna ma pierwszeństwo\nprzed wyliczoną (ADR 0022). Klient nie musi wiedzieć, która to która.').nullable()
 }).describe('Produkt na liście — reprezentuje go najtańszy wariant (`CONTEXT.md`).'))
 })
@@ -87,6 +99,7 @@ export const ProductsRetrieveParams = zod.object({
 export const productsRetrieveResponseSlugRegExp = new RegExp('^[-a-zA-Z0-9_]+$');
 export const productsRetrieveResponseVariantsItemMetalWeightGramsRegExp = new RegExp('^-?\\d{0,5}(?:\\.\\d{0,3})?$');
 export const productsRetrieveResponseVariantsItemVatRateRegExp = new RegExp('^-?0?(?:\\.\\d{0,4})?$');
+export const productsRetrieveResponseVariantsItemGemstonesItemCaratRegExp = new RegExp('^-?\\d{0,3}(?:\\.\\d{0,3})?$');
 
 
 export const ProductsRetrieveResponse = zod.object({
@@ -130,7 +143,18 @@ export const ProductsRetrieveResponse = zod.object({
   "isPrimary": zod.boolean().describe('Zdjęcie główne produktu — jedno na produkt'),
   "altText": zod.string().describe('Opis alternatywny po polsku, dla czytników ekranu i SEO'),
   "urls": zod.record(zod.string(), zod.url()).describe('Adres zdjęcia dla każdej szerokości w pikselach')
-}).describe('Zdjęcie z adresami wszystkich rozmiarów.\n\nModel trzyma same klucze (ADR 0025), więc adresy powstają tutaj — host\ni bucket zmieniają się razem ze środowiskiem.'))
+}).describe('Zdjęcie z adresami wszystkich rozmiarów.\n\nModel trzyma same klucze (ADR 0025), więc adresy powstają tutaj — host\ni bucket zmieniają się razem ze środowiskiem.')),
+  "gemstones": zod.array(zod.object({
+  "id": zod.uuid(),
+  "kind": zod.enum(['diamond', 'sapphire', 'ruby', 'emerald', 'pearl', 'amber', 'topaz', 'amethyst', 'cubic_zirconia', 'moissanite']).describe('\* `diamond` - Diament\n\* `sapphire` - Szafir\n\* `ruby` - Rubin\n\* `emerald` - Szmaragd\n\* `pearl` - Perła\n\* `amber` - Bursztyn\n\* `topaz` - Topaz\n\* `amethyst` - Ametyst\n\* `cubic_zirconia` - Cyrkonia\n\* `moissanite` - Moissanit').describe('Rodzaj kamienia\n\n\* `diamond` - Diament\n\* `sapphire` - Szafir\n\* `ruby` - Rubin\n\* `emerald` - Szmaragd\n\* `pearl` - Perła\n\* `amber` - Bursztyn\n\* `topaz` - Topaz\n\* `amethyst` - Ametyst\n\* `cubic_zirconia` - Cyrkonia\n\* `moissanite` - Moissanit'),
+  "carat": zod.stringFormat('decimal', productsRetrieveResponseVariantsItemGemstonesItemCaratRegExp).describe('Masa w karatach'),
+  "clarity": zod.enum(['FL', 'IF', 'VVS1', 'VVS2', 'VS1', 'VS2', 'SI1', 'SI2', 'I1', 'I2', 'I3']).describe('\* `FL` - FL — bez skaz\n\* `IF` - IF — bez skaz wewnętrznych\n\* `VVS1` - VVS1\n\* `VVS2` - VVS2\n\* `VS1` - VS1\n\* `VS2` - VS2\n\* `SI1` - SI1\n\* `SI2` - SI2\n\* `I1` - I1\n\* `I2` - I2\n\* `I3` - I3').describe('Czystość; pusta, gdy nie była oznaczana\n\n\* `FL` - FL — bez skaz\n\* `IF` - IF — bez skaz wewnętrznych\n\* `VVS1` - VVS1\n\* `VVS2` - VVS2\n\* `VS1` - VS1\n\* `VS2` - VS2\n\* `SI1` - SI1\n\* `SI2` - SI2\n\* `I1` - I1\n\* `I2` - I2\n\* `I3` - I3'),
+  "colour": zod.enum(['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'fancy']).describe('\* `D` - D — bezbarwny\n\* `E` - E\n\* `F` - F\n\* `G` - G\n\* `H` - H\n\* `I` - I\n\* `J` - J\n\* `K` - K\n\* `L` - L\n\* `M` - M\n\* `fancy` - Barwa fantazyjna').describe('Barwa; pusta, gdy nie była oznaczana\n\n\* `D` - D — bezbarwny\n\* `E` - E\n\* `F` - F\n\* `G` - G\n\* `H` - H\n\* `I` - I\n\* `J` - J\n\* `K` - K\n\* `L` - L\n\* `M` - M\n\* `fancy` - Barwa fantazyjna'),
+  "cut": zod.enum(['brilliant', 'princess', 'emerald', 'oval', 'pear', 'marquise', 'cushion', 'asscher', 'radiant', 'heart', 'cabochon']).describe('\* `brilliant` - Brylantowy\n\* `princess` - Princessa\n\* `emerald` - Szmaragdowy\n\* `oval` - Owalny\n\* `pear` - Gruszka\n\* `marquise` - Markiza\n\* `cushion` - Poduszka\n\* `asscher` - Asscher\n\* `radiant` - Radiant\n\* `heart` - Serce\n\* `cabochon` - Kaboszon').describe('Szlif; pusty, gdy nie był oznaczany\n\n\* `brilliant` - Brylantowy\n\* `princess` - Princessa\n\* `emerald` - Szmaragdowy\n\* `oval` - Owalny\n\* `pear` - Gruszka\n\* `marquise` - Markiza\n\* `cushion` - Poduszka\n\* `asscher` - Asscher\n\* `radiant` - Radiant\n\* `heart` - Serce\n\* `cabochon` - Kaboszon'),
+  "laboratory": zod.string().describe('Laboratorium, które wystawiło certyfikat'),
+  "certificateNumber": zod.string().describe('Numer certyfikatu nadany przez laboratorium'),
+  "certificateUrl": zod.url().nullable().describe('Adres certyfikatu podpisany na czas; pusty, gdy kamień nie ma certyfikatu.')
+}).describe('Kamień z parametrami i adresem certyfikatu, jeśli jest.\n\nAdres jest podpisany na czas, bo certyfikat leży w prywatnym buckecie\n`documents` (ADR 0025). Stały odnośnik do dokumentu laboratorium byłby\ndostępny dla każdego, kto go raz zobaczył.'))
 }).describe('Wariant widziany przez klienta.\n\nCena jest tą, którą klient faktycznie zapłaci: ręczna ma pierwszeństwo\nprzed wyliczoną (ADR 0022). Klient nie musi wiedzieć, która to która.'))
 }).describe('Strona produktu — pełna lista wariantów.')
 
