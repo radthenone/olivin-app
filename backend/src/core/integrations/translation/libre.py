@@ -3,7 +3,7 @@ from __future__ import annotations
 import requests
 from django.conf import settings
 
-API_URL = "http://libretranslate:5000/translate"
+API_URL = "http://olivin-libretranslate:5000/translate"
 TIMEOUT_SECONDS = 30
 
 

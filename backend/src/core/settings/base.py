@@ -67,7 +67,7 @@ TRANSLATION_PROVIDER = str(
     )
 )
 LIBRETRANSLATE_URL = str(
-    os.environ.get("LIBRETRANSLATE_URL", "http://libretranslate:5000/translate")
+    os.environ.get("LIBRETRANSLATE_URL", "http://olivin-libretranslate:5000/translate")
 )
 LIBRETRANSLATE_API_KEY = str(os.environ.get("LIBRETRANSLATE_API_KEY", ""))
 DEEPL_API_KEY = str(os.environ.get("DEEPL_API_KEY", ""))

@@ -88,9 +88,9 @@ Zmienne ładowane z `.env` oraz `.envs/dev/**` przez `dotenv:` w `Taskfile.yml`.
 
 ## Docker Compose (dev)
 
-`docker-compose.yml` definiuje **osiem** usług:
+`docker-compose.yml` definiuje **dziewięć** usług backendu (plus `olivin-web`):
 
-`olivin-postgres` (PostgreSQL 16), `olivin-redis` (cache + broker), `olivin-minio` (S3-compatible), `olivin-mailhog` (SMTP dev), `olivin-django`, `olivin-celery-worker`, `olivin-celery-beat`, `olivin-celery-flower`.
+`olivin-postgres` (PostgreSQL 16), `olivin-redis` (cache + broker), `olivin-minio` (S3-compatible), `olivin-mailhog` (SMTP dev), `olivin-libretranslate` (silnik tłumaczeń, `LT_LOAD_ONLY=pl,en`), `olivin-django`, `olivin-celery-worker`, `olivin-celery-beat`, `olivin-celery-flower`.
 
 Profile: `dev`, `backend`, `full`, `local`, `test`.
 
@@ -153,7 +153,7 @@ OAuth wymaga **Dev Client**, nie działa w Expo Go.
 - Paginacja: `PageNumberPagination`, `page_size=24`, max 100. Mobile: `useInfiniteQuery` po `?page=N`; web: strony numerowane z URL. Cursor — nie, dopóki katalog nie liczy dziesiątek tysięcy.
 - Filtry: `django-filter` po cechach z `choices` (material, fineness na Product; metal_color, size/length, stone na Variant), cena min/max, kategoria z potomkami, kolekcja; sort: cena / nowość / nazwa. Wyszukiwarka: Postgres `SearchVector`. **Bez tagów, bez Elasticsearch.** Testy jednostkowe chodzą na SQLite, więc wyszukiwarka ma szew (`apps/products/search.py`): pełny tekst na PostgreSQL, dopasowanie po fragmencie poza nim. Gałąź postgresową pokrywa test z markerem `integration`.
 - Slug: jeden, angielski, z nazwy EN przy publikacji, niezmienny (zmiana = 301) — **w kodzie**: `common/slugs.py` bierze angielskie brzmienie z `Translation`, a nie z nazwy polskiej bez ogonków. Slug wpisany w panelu ma pierwszeństwo i nie rusza silnika. Bez angielskiej nazwy zapis jest odrzucany, nigdy nie ma cichego odwrotu do polskiego. Produkt dostaje adres dopiero przy publikacji — szkic ma `slug = NULL`. Web: Next i18n routing `/pl/` `/en/`, `NEXT_LOCALE`, hreflang, sitemap z API, OG, schema.org Product, robots.txt. Mobile: język z urządzenia, deep link `olivin://product/<slug>`.
-- i18n interfejsu: pliki tłumaczeń web/mobile, poza bazą. Tłumaczenia treści katalogu: baza (`Translation`, ADR 0027) — **w kodzie**, silnik przez `TRANSLATION_PROVIDER` (domyślnie LibreTranslate, produkcja DeepL).
+- i18n interfejsu: pliki tłumaczeń web/mobile, poza bazą. Tłumaczenia treści katalogu: baza (`Translation`, ADR 0027) — **w kodzie**, silnik przez `TRANSLATION_PROVIDER` (domyślnie LibreTranslate — usługa jest w `docker-compose.yml`; produkcja DeepL).
 - Throttling DRF (wbudowany): anon 60/min, user 300/min; osobny scope `auth` 10/min, włączany na widoku przez `throttle_scope` — czeka na logowanie i walidację kuponu. Stripe webhook: podpis + idempotencja przez `WebhookEvent`. Stripe Radar włączony. Limity: max 5 szt. na pozycję, gość max 10 000 zł (powyżej wymaga konta).
 - Staff: TOTP obowiązkowe dla `is_staff` (allauth); e-mail do właściciela po aktywacji `MetalRate`; `LogEntry` admina jako audyt.
 - Celery beat (`DatabaseScheduler` jest; aplikacja Celery ładowana z `core/__init__.py`): `propose_metal_rates` pierwszego dnia miesiąca i `translate_published_catalog` co 24 h — **w kodzie**; rezerwacje co 5 min (TTL 30 min od Payment Intent); `pending` > 24 h → `cancelled` co 1 h; MetalRate miesięcznie → proposed; NBP dziennie; porzucone koszyki e-mail po 24 h (opt-in). `Watch` zdarzeniowo, nie cyklicznie.
