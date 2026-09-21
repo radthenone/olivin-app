@@ -38,6 +38,19 @@ trzema kanałami do klientów ze zgodą marketingową i potwierdzonych subskrypc
 newslettera. Osobny byt kampanii — harmonogram, segmenty (premium / wszyscy),
 statystyki otwarć — wraca, gdy ręczny przycisk przestanie wystarczać.
 
+### Interfejs kasy na webie i mobile
+
+Seria sprzedażowa (#144–#157) buduje wyłącznie backend: modele, panel, API
+i testy. Interfejs kasy przychodzi po niej, gdy powstanie interfejs katalogu,
+a klient Orval i MSW dostaną stabilne API. Zapisany kierunek: ikonka koszyka
+z licznikiem pozycji, rozwijana lista, pełny widok koszyka jako krok pierwszy,
+cztery ekrany kasy (koszyk → dane i adres → dostawa → płatność) z arkuszem
+operatora wysuwanym od dołu na mobile i osadzonym elementem na webie
+([ADR 0012](adr/0012-payment-intents-z-gotowymi-elementami.md),
+[ADR 0030](adr/0030-koszyk-na-backendzie-gosc-przez-token-kasa-w-czterech-krokach.md)).
+Każdy bilet backendowy niesie sekcję „kontrakt API musi umożliwić", żeby tej
+drogi nie zamknąć. Tracker: #158.
+
 ### Świadomie poza zakresem pierwszej wersji
 
 Zapisane, żeby nie wracały jako „a może by”: waluty poza złotym i euro,

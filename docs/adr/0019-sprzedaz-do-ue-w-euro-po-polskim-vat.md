@@ -41,6 +41,18 @@ dokąd sklep sprzedaje.
 
 ## Uzupełnienie (2026-09-19)
 
-Ceny źródłowe są w złotych. Kurs euro pochodzi z Narodowego Banku Polskiego,
-pobierany codziennie; klient z kraju Unii widzi euro w katalogu i w kasie,
-płaci w euro, a kurs z chwili złożenia zamówienia zostaje w nim zapisany.
+Ceny źródłowe są w złotych. Kurs euro pochodzi z Narodowego Banku Polskiego;
+klient z kraju Unii widzi euro w katalogu i w kasie, płaci w euro, a kurs
+z chwili złożenia zamówienia zostaje w nim zapisany.
+
+## Uzupełnienie (2026-09-22)
+
+Kurs euro jest odświeżany raz na 30 dni, nie codziennie — żeby cena w euro
+nie zmieniała się klientowi z dnia na dzień między obejrzeniem produktu
+a zakupem. Nowy kurs jest aktywowany automatycznie, bez ręcznego
+zatwierdzania przez właściciela; to celowa różnica wobec kursu kruszcu
+([ADR 0022](0022-cena-skladnikowa-z-przeliczeniem-po-zatwierdzeniu-kursu.md)),
+bo kurs walutowy nie zmienia ceny źródłowej, a jedynie jej przedstawienie.
+Cena w euro jest zaokrąglana w górę do końcówki ,00 albo ,50 — odpowiednik
+zaokrąglania do pełnych złotych — i nigdy nie schodzi poniżej kosztu
+wariantu przeliczonego tym samym kursem.

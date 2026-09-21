@@ -77,7 +77,7 @@ _Unikaj_: Tax, TaxRate
 ## Koszyk i zamówienie
 
 **Cart**:
-Zbiór wariantów wybranych przez klienta przed złożeniem zamówienia. Należy do użytkownika albo do sesji gościa.
+Zbiór wariantów wybranych przez klienta przed złożeniem zamówienia, przechowywany po stronie sklepu. Należy do użytkownika albo do gościa identyfikowanego tokenem wydanym przez sklep; po zalogowaniu koszyk gościa zostaje scalony z koszykiem konta, a anonimowy znika. Koszyk gościa bez aktywności przez 30 dni jest kasowany.
 _Unikaj_: Basket, Bag, Koszyk zakupowy
 
 **CartItem**:
@@ -85,11 +85,11 @@ Pozycja koszyka: wariant, ilość i parametry personalizacji. Nie zamraża ceny 
 _Unikaj_: LineItem, CartLine
 
 **Order**:
-Zamówienie złożone przez klienta — zalogowanego albo gościa podającego e-mail i adres; zamówienia gościa zostają podpięte do konta założonego później na ten sam e-mail. Niemutowalne co do treści: zawiera kopię kosztu dostawy i kursu waluty z chwili złożenia; zmienia się wyłącznie jego status. Klient sam anuluje tylko zamówienie `pending` albo `paid`; później wyłącznie przez zwrot.
+Zamówienie złożone przez klienta — zalogowanego albo gościa podającego e-mail i adres; zamówienia gościa zostają podpięte do konta założonego później na ten sam e-mail. Powstaje z koszyka po wyborze adresu i metody dostawy, przed płatnością, w statusie `pending`; kwota intencji płatniczej pochodzi z zamówienia, nie z koszyka. Niemutowalne co do treści: zawiera kopię kosztu dostawy i kursu waluty z chwili złożenia; zmienia się wyłącznie jego status. Klient sam anuluje tylko zamówienie `pending` albo `paid`; później wyłącznie przez zwrot.
 _Unikaj_: Purchase, Transaction, Sale
 
 **ExchangeRate**:
-Dzienny kurs złotego do euro z Narodowego Banku Polskiego, użyty do pokazania cen i pobrania zapłaty w euro od klienta z kraju Unii. Ceny źródłowe są zawsze w złotych.
+Kurs złotego do euro z Narodowego Banku Polskiego, odświeżany raz na 30 dni i aktywowany automatycznie, użyty do pokazania cen i pobrania zapłaty w euro od klienta z kraju Unii. Cena w euro jest zaokrąglana w górę do końcówki ,00 albo ,50. Ceny źródłowe są zawsze w złotych.
 _Unikaj_: Rate, Currency, Przelicznik
 
 **OrderItem**:

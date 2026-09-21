@@ -29,3 +29,12 @@ ani cena ręczna, ani żadna promocja nie schodzą poniżej niego, a panel ostrz
 przy próbie. Aktywacja kursu wysyła wiadomość do właściciela i zostaje w
 dzienniku zmian panelu. Dostawca kursu jest wymienny przez adapter — patrz
 [ADR 0027](0027-integracje-zewnetrzne-przez-adapter.md).
+
+## Uzupełnienie (2026-09-22)
+
+Cykl życia z ręczną aktywacją dotyczy wyłącznie kursu kruszcu. Kurs euro
+([ADR 0019](0019-sprzedaz-do-ue-w-euro-po-polskim-vat.md)) nie zmienia ceny
+zapisanej w kolumnie — jest przelicznikiem stosowanym przy odczycie i przy
+składaniu zamówienia — więc aktywuje się automatycznie, raz na 30 dni. Cena
+w euro po zaokrągleniu w górę do końcówki ,00 albo ,50 podlega temu samemu
+progowi: nie schodzi poniżej kosztu wariantu.
