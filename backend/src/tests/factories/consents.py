@@ -30,8 +30,16 @@ class ConsentFactory(DjangoModelFactory):
     document = SubFactory(ConsentDocumentFactory)
 
 
-class GuestConsentFactory(ConsentFactory):
-    """Zgoda gościa — po e-mailu, bez konta."""
+class GuestConsentFactory(DjangoModelFactory):
+    """Zgoda gościa — po e-mailu, bez konta.
+
+    Osobna fabryka, nie podklasa `ConsentFactory`: nadpisanie `SubFactory`
+    wartością `None` nie przechodzi kontroli typów.
+    """
+
+    class Meta:
+        model = Consent
 
     user = None
     email = Sequence(lambda n: f"guest{n}@test.com")
+    document = SubFactory(ConsentDocumentFactory)

@@ -57,12 +57,14 @@ class TestCurrentDocuments:
             version="2099-01", effective_from=datetime.date(2099, 1, 1)
         )
 
-        body = api_client.get(_documents_url()).json()
+        response: Any = api_client.get(_documents_url())
 
-        assert [row["version"] for row in body] == ["2026-01"]
+        assert [row["version"] for row in response.json()] == ["2026-01"]
 
     def test_bez_dokumentow_lista_jest_pusta(self, api_client: APIClient):
-        assert api_client.get(_documents_url()).json() == []
+        response: Any = api_client.get(_documents_url())
+
+        assert response.json() == []
 
 
 @pytest.mark.django_db
@@ -146,13 +148,19 @@ class TestRecordConsent:
     def test_odpowiedz_nie_zdradza_emaila_ani_uzytkownika(self, api_client: APIClient):
         document = ConsentDocumentFactory()
 
-        body = api_client.post(
+        response: Any = api_client.post(
             _consents_url(),
             {"document": str(document.pk), "email": "anna@example.com"},
             format="json",
-        ).json()
+        )
 
-        assert set(body) == {"id", "document", "kind", "version", "grantedAt"}
+        assert set(response.json()) == {
+            "id",
+            "document",
+            "kind",
+            "version",
+            "grantedAt",
+        }
 
     def test_listy_zgod_nie_ma(self, authenticated_client: APIClient):
         """Zgody nie są zasobem do przeglądania przez API — panel je widzi."""
