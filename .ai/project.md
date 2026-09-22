@@ -25,6 +25,7 @@ Zweryfikowano: 2026-09-11.
 - `backend/src/apps/consents` — `ConsentDocument` (rodzaj `terms`/`privacy`/`marketing`, wersja unikalna w rodzaju, data obowiązywania; bieżąca = najnowsza już obowiązująca) i `Consent` (użytkownik XOR e-mail gościa, dokument, kopia wersji, data; constraint w bazie). `Consent.objects.has_current_consent(kind, user=|email=)` zwraca `False` po nowej wersji dokumentu. API: `GET /consents/documents/` (bieżące wersje, `AllowAny`, bez stronicowania) i `POST /consents/` (zalogowany na konto, gość po `email`; dokument musi być bieżący). Rejestracja **nie** wymaga zgody — wymuszenie przyjdzie z zamówieniem i osobnym biletem dla rejestracji. Testy w `backend/src/tests/consents/`.
 - `backend/src/apps/inventory` — `InventoryItem` (rezerwacje) i `StockMovement` (zmiana z przyczyną). Stan to **suma ruchów**, nie kolumna; ruch zapisany jest nieedytowalny, korektę robi się kolejnym ruchem. Panel prowadzi magazyn, API go nie wystawia — dostępność wychodzi tylko jako `available` / `isAvailable` / `isLowStock` na wariancie. Produkt na zamówienie nie ma stanu i jest dostępny zawsze (ADR 0024). Testy w `backend/src/tests/products/test_inventory.py`.
 - `backend/src/core/` — settings (django-split-settings), integracje, storage, utils. Health check: **`GET /health/`** (nie pod `/api/`), zwraca stan bazy, Redisa i storage.
+- `backend/src/apps/orders` — `Cart` (użytkownik **albo** `session_key` gościa, ograniczenie w bazie; token wydawany przy pierwszym dodaniu pozycji w polu `cartToken` odpowiedzi, a klient podaje go z powrotem w nagłówku żądania `X-Cart-Token`) i `CartItem` (wariant, ilość ≤ 5, grawerunek, `second_size`/`second_engraving_text` dla pary). Koszyk **nie** zamraża ceny — wycena idzie z wariantu przy odczycie. Para tylko z wyrobu na zamówienie (ADR 0024). API `AllowAny`, bez stronicowania: `GET /cart/`, `POST /cart/items/`, `PATCH`/`DELETE /cart/items/{id}/`, `POST /cart/merge/` (tylko zalogowany); każda odpowiedź to cały koszyk z `discountAmount`/`couponAmount` (na razie zerowe). Sam odczyt koszyka też odświeża znacznik aktywności, najwyżej raz na dobę. Zadanie beat `purge_stale_guest_carts` co dobę kasuje koszyki gości bez aktywności 30 dni. Testy w `backend/src/tests/orders/`.
 - `backend/src/apps/shipping` — `ShippingMethod` (rodzaj `parcel_locker`/`courier`/`pickup`/`eu`, strefa `PL`/`EU`, stała stawka, górna wartość zamówienia jako `max_order_value`, aktywność). Ubezpieczenia nie ma w modelu — jest wliczone w stawkę (ADR 0028). Odbiór osobisty bez limitu pilnuje ograniczenie w bazie. Próg darmowej dostawy to **ustawienie** `FREE_SHIPPING_THRESHOLD` (grosze, `core/settings/components/shop.py`), nie model. API **tylko do odczytu**: `GET /shipping-methods/?order_value=&zone=`, `AllowAny`, bez stronicowania — metody z kosztem policzonym dla wartości koszyka; metoda w innej walucie niż koszyk jest odfiltrowana, nie zgłaszana błędem. Mutacje wyłącznie w panelu (ADR 0021). Testy w `backend/src/tests/shipping/`.
 - `backend/src/common/` — pola, modele bazowe w tym `TranslatableModel`, lokalizacja, pieniądze (`money/`) i slugi katalogu (`slugs.py`).
 - `frontend/mobile/` — aplikacja Expo: ekrany auth (logowanie, rejestracja, MFA, weryfikacja e-mail, reset hasła, logowanie kodem), konto, profil.
@@ -33,9 +34,9 @@ Zweryfikowano: 2026-09-11.
 
 **Puste szkielety po `startapp` — dziewięć linii kodu każdy, zero modeli, zero migracji:**
 
-`orders`, `payments`, `discounts`, `reviews`, `notifications`
+`payments`, `discounts`, `reviews`, `notifications`
 
-Nie zakładaj, że którakolwiek z nich cokolwiek zawiera. Nie ma modelu Order, nie ma Cart, nie ma stanu magazynowego.
+Nie zakładaj, że którakolwiek z nich cokolwiek zawiera. Nie ma modelu `Order` ani `Payment`; `Cart` i stan magazynowy już są.
 
 **Nie istnieje po stronie frontendu:** `features/catalog`, `features/cart`, `features/checkout`, `features/orders`, `features/payments`. Są tylko `auth`, `account`, `profile`.
 
@@ -121,7 +122,7 @@ Testy integracyjne: `docker-compose.test.yml`, próg pokrycia **60%**.
 
 Generowane są też schematy Zod (`.zod.ts`) dla obu wejść.
 
-`APPS_TAGS` w `frontend/packages/api/orval.config.js` (obecnie): **`Addresses`, `Categories`, `Collections`, `Consents`, `Products`, `Profiles`, `Shipping`, `Health`**. Nowy viewset domenowy bez dopisania tagu nie trafi do klienta — cichy błąd.
+`APPS_TAGS` w `frontend/packages/api/orval.config.js` (obecnie): **`Addresses`, `Cart`, `Categories`, `Collections`, `Consents`, `Products`, `Profiles`, `Shipping`, `Health`**. Nowy viewset domenowy bez dopisania tagu nie trafi do klienta — cichy błąd.
 
 Sekwencja po zmianie API: backend → migracje → regeneracja `schema.yaml` → tag w `APPS_TAGS` → `task ovral:generate` → `task lints:frontend:typecheck`. Bramka: `task ovral:check` (offline, w CI).
 
@@ -159,7 +160,7 @@ OAuth wymaga **Dev Client**, nie działa w Expo Go.
 - i18n interfejsu: pliki tłumaczeń web/mobile, poza bazą. Tłumaczenia treści katalogu: baza (`Translation`, ADR 0027) — **w kodzie**, silnik przez `TRANSLATION_PROVIDER` (domyślnie LibreTranslate — usługa jest w `docker-compose.yml`; produkcja DeepL).
 - Throttling DRF (wbudowany): anon 60/min, user 300/min; osobny scope `auth` 10/min, włączany na widoku przez `throttle_scope` — czeka na logowanie i walidację kuponu. Stripe webhook: podpis + idempotencja przez `WebhookEvent`. Stripe Radar włączony. Limity: max 5 szt. na pozycję, gość max 10 000 zł (powyżej wymaga konta).
 - Staff: TOTP obowiązkowe dla `is_staff` (allauth); e-mail do właściciela po aktywacji `MetalRate`; `LogEntry` admina jako audyt.
-- Celery beat (`DatabaseScheduler` jest; aplikacja Celery ładowana z `core/__init__.py`): `propose_metal_rates` pierwszego dnia miesiąca i `translate_published_catalog` co 24 h — **w kodzie**; rezerwacje co 5 min (TTL 30 min od Payment Intent); `pending` > 24 h → `cancelled` co 1 h; MetalRate miesięcznie → proposed; NBP dziennie; porzucone koszyki e-mail po 24 h (opt-in). `Watch` zdarzeniowo, nie cyklicznie.
+- Celery beat (`DatabaseScheduler` jest; aplikacja Celery ładowana z `core/__init__.py`): `propose_metal_rates` pierwszego dnia miesiąca i `translate_published_catalog` co 24 h — **w kodzie**; sprzątanie koszyków gości co dobę — **w kodzie**; rezerwacje co 5 min (TTL 30 min od Payment Intent); `pending` > 24 h → `cancelled` co 1 h; MetalRate miesięcznie → proposed; NBP dziennie; porzucone koszyki e-mail po 24 h (opt-in). `Watch` zdarzeniowo, nie cyklicznie.
 - Analityka: Umami self-hosted (kontener + baza na tym samym Postgresie), bez cookies; baner web: „niezbędne” + „marketing” (off), bez „analityczne”. `apps/analytics` usunięta. Mobile: nic.
 - Testy: backend pytest per app + factory_boy, markery, 60%; MSW w `packages/api` wspólny web+mobile; Playwright smoke web; Maestro smoke mobile (ADR 0020). Kolejność: backend → MSW → Playwright → Maestro.
 - Paczki instalowane przy bilecie, nie z góry: backend `weasyprint`, `deepl`; frontend `msw`, `expo-notifications`, `expo-file-system`, `expo-sharing`, widget InPost (web script, mobile WebView). **Nie**: guardian, django-weasyprint, elasticsearch, GA, Plausible CE.

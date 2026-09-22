@@ -4,6 +4,182 @@ info:
   version: 1.0.0
   description: API documentation
 paths:
+  /cart/:
+    get:
+      operationId: cart_retrieve
+      description: Pozycje z ceną aktualną (koszyk nie zamraża cen), cena grawerunku
+        osobno, liczba pozycji i suma. Klient bez koszyka dostaje pusty koszyk, a
+        nie 404 — odczyt nie zakłada wiersza.
+      summary: Koszyk klienta albo gościa
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany
+          klient go nie wysyła — koszyk wynika z uwierzytelnienia.
+      tags:
+      - Cart
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+  /cart/items/:
+    post:
+      operationId: cart_items_create
+      description: Żądanie bez tokenu zakłada koszyk gościa i zwraca jego token w
+        polu `cartToken`. Pozycja o tej samej personalizacji dolicza sztuki; inny
+        grawerunek zakłada osobną pozycję.
+      summary: Dodanie pozycji do koszyka
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany
+          klient go nie wysyła — koszyk wynika z uwierzytelnienia.
+      tags:
+      - Cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CartItemWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CartItemWrite'
+        required: true
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+  /cart/items/{id}/:
+    patch:
+      operationId: cart_items_partial_update
+      description: Zero usuwa pozycję z koszyka.
+      summary: Zmiana liczby sztuk pozycji
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany
+          klient go nie wysyła — koszyk wynika z uwierzytelnienia.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Pozycja koszyka.
+        required: true
+      tags:
+      - Cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemQuantity'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemQuantity'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemQuantity'
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+    delete:
+      operationId: cart_items_destroy
+      description: |-
+        Pozycje koszyka.
+
+        Actions:
+        - create:  POST /cart/items/        — dodaje pozycję; gość dostaje token
+        - partial_update: PATCH /cart/items/{id}/ — zmienia liczbę sztuk
+        - destroy: DELETE /cart/items/{id}/ — usuwa pozycję
+
+        Każda odpowiedź to cały koszyk, nie sama pozycja: po zmianie ilości
+        klient i tak potrzebuje nowej sumy, a osobne wywołanie po nią umiałoby
+        się rozjechać z tym, co właśnie zapisał.
+      summary: Usunięcie pozycji z koszyka
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany
+          klient go nie wysyła — koszyk wynika z uwierzytelnienia.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Pozycja koszyka.
+        required: true
+      tags:
+      - Cart
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+  /cart/merge/:
+    post:
+      operationId: cart_merge_create
+      description: 'Pozycje gościa trafiają do koszyka konta: te o tej samej personalizacji
+        sumują ilości w granicach limitu sztuk, pozostałe stają obok. Koszyk gościa
+        i jego token przestają istnieć.'
+      summary: Scalenie koszyka gościa z koszykiem konta
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany
+          klient go nie wysyła — koszyk wynika z uwierzytelnienia.
+      tags:
+      - Cart
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
   /categories/:
     get:
       operationId: categories_list
@@ -1392,6 +1568,298 @@ components:
     BlankEnum:
       enum:
       - ''
+    Cart:
+      type: object
+      description: |-
+        Pełny widok koszyka — krok pierwszy kasy (ADR 0030).
+
+        Rabat i kupon są w odpowiedzi od początku, choć dziś zawsze zerowe:
+        kontrakt ma nie zmieniać kształtu, gdy dojdą promocje i kupony.
+      properties:
+        cartToken:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Token koszyka gościa do odesłania nagłówkiem `X-Cart-Token`;
+            pusty przy koszyku zalogowanego klienta
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+          readOnly: true
+        itemCount:
+          type: integer
+          readOnly: true
+          description: Liczba pozycji, nie sztuk — para obrączek jest jedną pozycją
+        subtotal:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        discountAmount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        couponAmount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        total:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+      required:
+      - cartToken
+      - couponAmount
+      - discountAmount
+      - itemCount
+      - items
+      - subtotal
+      - total
+    CartItem:
+      type: object
+      description: |-
+        Pozycja koszyka z wyceną liczoną przy odczycie, nie zamrożoną.
+
+        Cena idzie prosto z wariantu, bo koszyk ma pokazywać dzisiejszy cennik
+        (`CONTEXT.md`, CartItem). Kopia powstaje dopiero w pozycji zamówienia
+        (ADR 0010).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        variant:
+          allOf:
+          - $ref: '#/components/schemas/CartVariant'
+          readOnly: true
+        quantity:
+          type: integer
+          readOnly: true
+          description: Liczba sztuk pozycji, najwyżej 5
+        engravingText:
+          type: string
+          readOnly: true
+          description: Treść grawerunku; przy parze trafia na oba egzemplarze, o ile
+            drugi nie ma własnej. Puste oznacza wyrób bez grawerunku.
+        secondSize:
+          allOf:
+          - $ref: '#/components/schemas/SizeEnum'
+          readOnly: true
+          description: |-
+            Rozmiar drugiego egzemplarza pary. Wypełniony zamienia pozycję w parę; pierwszy rozmiar bierze się z wariantu.
+
+            * `8` - 8
+            * `9` - 9
+            * `10` - 10
+            * `11` - 11
+            * `12` - 12
+            * `13` - 13
+            * `14` - 14
+            * `15` - 15
+            * `16` - 16
+            * `17` - 17
+            * `18` - 18
+            * `19` - 19
+            * `20` - 20
+            * `21` - 21
+            * `22` - 22
+            * `23` - 23
+            * `24` - 24
+            * `25` - 25
+            * `26` - 26
+        secondEngravingText:
+          type: string
+          readOnly: true
+          description: Grawerunek drugiego egzemplarza, gdy ma być inny niż pierwszego
+        isPair:
+          type: boolean
+          readOnly: true
+        unitPrice:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        goodsPrice:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        engravingPrice:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        lineTotal:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+      required:
+      - engravingPrice
+      - engravingText
+      - goodsPrice
+      - id
+      - isPair
+      - lineTotal
+      - quantity
+      - secondEngravingText
+      - secondSize
+      - unitPrice
+      - variant
+    CartItemWrite:
+      type: object
+      description: |-
+        Dodanie pozycji do koszyka.
+
+        Wariant wskazuje się identyfikatorem i musi pochodzić z opublikowanego
+        produktu: szkic nie istnieje dla sklepu pod żadnym adresem, więc nie może
+        wejść do koszyka bocznymi drzwiami.
+      properties:
+        variant:
+          type: string
+          format: uuid
+          description: Identyfikator kupowanego wariantu
+        quantity:
+          type: integer
+          maximum: 5
+          minimum: 1
+          default: 1
+          description: Liczba sztuk pozycji, najwyżej 5
+        engravingText:
+          type: string
+          default: ''
+          description: Treść grawerunku; wymaga produktu grawerowalnego
+          maxLength: 50
+        secondSize:
+          default: ''
+          description: |-
+            Rozmiar drugiego egzemplarza pary (wyrób na zamówienie)
+
+            * `8` - 8
+            * `9` - 9
+            * `10` - 10
+            * `11` - 11
+            * `12` - 12
+            * `13` - 13
+            * `14` - 14
+            * `15` - 15
+            * `16` - 16
+            * `17` - 17
+            * `18` - 18
+            * `19` - 19
+            * `20` - 20
+            * `21` - 21
+            * `22` - 22
+            * `23` - 23
+            * `24` - 24
+            * `25` - 25
+            * `26` - 26
+          oneOf:
+          - $ref: '#/components/schemas/SizeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        secondEngravingText:
+          type: string
+          default: ''
+          description: Grawerunek drugiego egzemplarza, gdy ma być inny
+          maxLength: 50
+      required:
+      - variant
+    CartVariant:
+      type: object
+      description: |-
+        Tyle o wariancie, ile potrzebuje wiersz koszyka — nie cała karta produktu.
+
+        Miniatura jest tu, a nie po stronie klienta: bez niej rozwijana lista
+        koszyka musiałaby dociągać `GET /products/` po jednym żądaniu na wiersz,
+        żeby pokazać, co klient właściwie kupuje.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        sku:
+          type: string
+          readOnly: true
+          description: Oznaczenie magazynowe wariantu, unikalne w całym katalogu
+        productName:
+          type: string
+          readOnly: true
+        productSlug:
+          type: string
+          readOnly: true
+        metalColor:
+          allOf:
+          - $ref: '#/components/schemas/MetalColorEnum'
+          readOnly: true
+          description: |-
+            Kolor kruszcu
+
+            * `yellow` - Żółte
+            * `white` - Białe
+            * `rose` - Różowe
+            * `bicolor` - Dwukolorowe
+        size:
+          allOf:
+          - $ref: '#/components/schemas/SizeEnum'
+          readOnly: true
+          description: |-
+            Rozmiar pierścionka; puste dla wyrobów bez rozmiaru
+
+            * `8` - 8
+            * `9` - 9
+            * `10` - 10
+            * `11` - 11
+            * `12` - 12
+            * `13` - 13
+            * `14` - 14
+            * `15` - 15
+            * `16` - 16
+            * `17` - 17
+            * `18` - 18
+            * `19` - 19
+            * `20` - 20
+            * `21` - 21
+            * `22` - 22
+            * `23` - 23
+            * `24` - 24
+            * `25` - 25
+            * `26` - 26
+        length:
+          allOf:
+          - $ref: '#/components/schemas/LengthEnum'
+          readOnly: true
+          description: |-
+            Długość w centymetrach; puste dla wyrobów bez długości
+
+            * `16` - 16 cm
+            * `18` - 18 cm
+            * `20` - 20 cm
+            * `36` - 36 cm
+            * `38` - 38 cm
+            * `40` - 40 cm
+            * `42` - 42 cm
+            * `45` - 45 cm
+            * `50` - 50 cm
+            * `55` - 55 cm
+            * `60` - 60 cm
+            * `70` - 70 cm
+            * `80` - 80 cm
+        isMadeToOrder:
+          type: boolean
+          readOnly: true
+        thumbnailUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Najwęższy gotowy rozmiar zdjęcia wariantu, a gdy wariant swojego
+            nie ma — zdjęcia produktu. Pusty, gdy żadne zdjęcie nie jest jeszcze przetworzone.
+          readOnly: true
+      required:
+      - id
+      - isMadeToOrder
+      - length
+      - metalColor
+      - productName
+      - productSlug
+      - size
+      - sku
+      - thumbnailUrl
     Category:
       type: object
       description: |-
@@ -2734,6 +3202,15 @@ components:
         isDefault:
           type: boolean
           description: Is this the default address?
+    PatchedCartItemQuantity:
+      type: object
+      description: Zmiana liczby sztuk pozycji; zero usuwa ją z koszyka.
+      properties:
+        quantity:
+          type: integer
+          maximum: 5
+          minimum: 0
+          description: Nowa liczba sztuk, najwyżej 5; 0 usuwa pozycję
     PatchedProfile:
       type: object
       properties:

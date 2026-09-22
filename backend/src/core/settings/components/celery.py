@@ -29,6 +29,7 @@ CELERY_IMPORTS = (
     "core.services.allauth.tasks",
     "apps.products.tasks",
     "apps.translations.tasks",
+    "apps.orders.tasks",
 )
 
 CELERY_BEAT_SCHEDULE = {
@@ -48,5 +49,11 @@ CELERY_BEAT_SCHEDULE = {
     "propose-metal-rates": {
         "task": "apps.products.tasks.propose_metal_rates",
         "schedule": crontab(minute=0, hour=6, day_of_month=1),
+    },
+    # Raz na dobę, nad ranem: koszyk gościa bez aktywności przez 30 dni nie
+    # ma już komu się pokazać, bo dostęp do niego daje wyłącznie token.
+    "purge-stale-guest-carts": {
+        "task": "apps.orders.tasks.purge_stale_guest_carts",
+        "schedule": crontab(minute=30, hour=3),
     },
 }

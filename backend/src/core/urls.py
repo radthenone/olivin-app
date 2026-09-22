@@ -36,6 +36,7 @@ urlpatterns = [
     path("health/", HealthCheckView.as_view(), name="health_check"),
     # API
     path("customers/", include("apps.accounts.urls")),
+    path("cart/", include("apps.orders.urls")),
     path("categories/", include("apps.categories.urls")),
     path("collections/", include("apps.collections.urls")),
     path("consents/", include("apps.consents.urls")),
