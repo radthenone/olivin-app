@@ -16,6 +16,7 @@ from apps.products.models import (
 from common.money import Money
 from tests.factories.categories import CategoryFactory
 from tests.factories.products import (
+    EngravableProductFactory,
     MadeToOrderProductFactory,
     ProductFactory,
     ProductVariantFactory,
@@ -176,6 +177,71 @@ class TestMadeToOrder:
                         fineness="585",
                         is_made_to_order=True,
                         production_time_days=None,
+                    )
+                ]
+            )
+
+
+@pytest.mark.django_db
+class TestEngraving:
+    """Grawer jest flagą na produkcie z osobną ceną (ADR 0018); jedno bez
+    drugiego nie ma sensu — flaga bez ceny nie da się wycenić, cena bez flagi
+    nie da się kupić."""
+
+    def test_produkt_grawerowalny_ma_cene_grawerunku(self):
+        product = EngravableProductFactory()
+
+        assert product.is_engravable
+        assert product.engraving_price_money == Money(4900, "PLN")
+
+    def test_produkt_bez_grawerunku_nie_ma_ceny(self):
+        product = ProductFactory()
+
+        assert not product.is_engravable
+        assert product.engraving_price_money is None
+
+    def test_flaga_bez_ceny_jest_odrzucona(self):
+        with pytest.raises(ValidationError) as error:
+            ProductFactory(is_engravable=True, engraving_price=None)
+
+        assert "engraving_price" in error.value.message_dict
+
+    def test_cena_bez_flagi_jest_odrzucona(self):
+        with pytest.raises(ValidationError) as error:
+            ProductFactory(is_engravable=False, engraving_price=4900)
+
+        assert "engraving_price" in error.value.message_dict
+
+    def test_ujemna_cena_grawerunku_jest_odrzucona(self):
+        category = CategoryFactory()
+
+        with pytest.raises(IntegrityError):
+            Product.objects.bulk_create(
+                [
+                    Product(
+                        name="Sygnet",
+                        category=category,
+                        material="gold",
+                        fineness="585",
+                        is_engravable=True,
+                        engraving_price=-1,
+                    )
+                ]
+            )
+
+    def test_baza_tez_nie_przepusci_niespojnosci(self):
+        category = CategoryFactory()
+
+        with pytest.raises(IntegrityError):
+            Product.objects.bulk_create(
+                [
+                    Product(
+                        name="Sygnet",
+                        category=category,
+                        material="gold",
+                        fineness="585",
+                        is_engravable=False,
+                        engraving_price=4900,
                     )
                 ]
             )

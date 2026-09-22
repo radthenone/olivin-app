@@ -69,7 +69,14 @@ class ProductAdmin(admin.ModelAdmin):
 
     inlines = [ProductVariantInline, ProductImageInline, TranslationInline]
     list_display = ("name", "category", "material", "fineness", "status")
-    list_filter = ("status", "material", "fineness", "is_made_to_order", "category")
+    list_filter = (
+        "status",
+        "material",
+        "fineness",
+        "is_made_to_order",
+        "is_engravable",
+        "category",
+    )
     search_fields = ("name", "slug", "variants__sku")
     ordering = ("-created_at",)
     autocomplete_fields = ("category",)
@@ -94,6 +101,17 @@ class ProductAdmin(admin.ModelAdmin):
                 "description": (
                     "Wyrób wytwarzany po złożeniu zamówienia nie ma stanu "
                     "magazynowego, ma za to czas realizacji (ADR 0024)."
+                ),
+            },
+        ),
+        (
+            "Grawer",
+            {
+                "fields": ("is_engravable", "engraving_price"),
+                "description": (
+                    "Grawer jest osobną pozycją ceny doliczaną do wariantu "
+                    "i wyłącza prawo odstąpienia (ADR 0018). Cena brutto "
+                    "w groszach; wymagana, gdy produkt można grawerować."
                 ),
             },
         ),
