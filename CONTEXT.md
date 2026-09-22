@@ -230,6 +230,10 @@ _Unikaj_: Token, Device (bez określenia)
 Adres e-mail zapisany do wiadomości marketingowych bez konta, aktywny dopiero po potwierdzeniu linkiem. Każda wiadomość pozwala się wypisać bez logowania. Po założeniu konta na ten adres subskrypcja przechodzi w preferencje konta. Ogłoszenie promocji trafia do klientów z kontem i zgodą oraz do potwierdzonych subskrypcji, bez powtórzeń.
 _Unikaj_: Mailing list, Lead, Kontakt
 
+**ConsentDocument**:
+Wersja regulaminu, polityki prywatności albo zgody marketingowej: rodzaj, oznaczenie wersji i dzień, od którego obowiązuje. Bieżąca wersja to najnowsza już obowiązująca; treść dokumentu żyje na stronie sklepu, nie w modelu.
+_Unikaj_: Terms, Policy, Regulamin jako treść
+
 **Consent**:
-Wersjonowana zgoda klienta albo gościa na regulamin, politykę prywatności lub komunikację marketingową, z datą. Nowa wersja dokumentu wymaga ponownej akceptacji. Zgody na pliki cookie żyją wyłącznie w przeglądarce i nie są tu zapisywane.
+Wersjonowana zgoda klienta albo gościa na regulamin, politykę prywatności lub komunikację marketingową, z datą. Podmiotem jest użytkownik albo e-mail gościa — dokładnie jedno; zgoda gościa nie przechodzi na konto założone później. Nowa wersja dokumentu wymaga ponownej akceptacji. Zgody na pliki cookie żyją wyłącznie w przeglądarce i nie są tu zapisywane.
 _Unikaj_: Agreement, Terms accepted (jako flaga), Cookie consent

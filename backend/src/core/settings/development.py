@@ -74,6 +74,13 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "CAMELIZE_NAMES": False,
+    # Dwa modele mają pole `kind` z różnymi wartościami; bez jawnych nazw
+    # spectacular nadałby jednemu z nich losowy przyrostek (`Kind0b9Enum`),
+    # który zmieniałby się z każdą kolejną kolizją i psuł klient Orval.
+    "ENUM_NAME_OVERRIDES": {
+        "StoneEnum": "apps.products.models.choices.Stone",
+        "ConsentKindEnum": "apps.consents.models.ConsentKind",
+    },
     "POSTPROCESSING_HOOKS": [
         "drf_spectacular.hooks.postprocess_schema_enums",
         "drf_spectacular.contrib.djangorestframework_camel_case.camelize_serializer_fields",
