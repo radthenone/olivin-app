@@ -17,6 +17,7 @@ from apps.inventory.models import (
 )
 from apps.inventory.services import (
     InsufficientStock,
+    ReservationNotActive,
     consume,
     release,
     reserve,
@@ -204,8 +205,20 @@ class TestZwolnienie:
         reservation = _reserve(variant, 2)
         consume(reservation)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ReservationNotActive):
             release(reservation)
+
+    def test_zwolnienie_przeterminowanej_przechodzi(self):
+        """To samo, co robi hurtem zadanie okresowe — tylko dla jednej sztuki."""
+        variant = ProductVariantFactory()
+        stock(variant, 5)
+        with freeze_time(NOW):
+            reservation = _reserve(variant, 2)
+
+        with freeze_time(timezone.datetime.fromisoformat(NOW) + RESERVATION_TTL):
+            release(reservation)
+
+        assert reservation.status == ReservationStatus.RELEASED
 
 
 @pytest.mark.django_db
@@ -235,13 +248,28 @@ class TestRozliczenie:
         assert reservation.status == ReservationStatus.CONSUMED
         assert variant.available == 3
 
+    def test_rozliczenie_po_terminie_jest_odrzucone(self):
+        """Stan wrócił do sprzedaży i mógł zejść komu innemu — drugie zdjęcie
+        zeszłoby poniżej zera."""
+        variant = ProductVariantFactory()
+        item = stock(variant, 1)
+        with freeze_time(NOW):
+            reservation = _reserve(variant, 1)
+
+        with freeze_time(timezone.datetime.fromisoformat(NOW) + RESERVATION_TTL):
+            with pytest.raises(ReservationNotActive):
+                consume(reservation)
+
+        item.refresh_from_db()
+        assert item.on_hand == 1
+
     def test_rozliczenie_dwa_razy_jest_odrzucone(self):
         variant = ProductVariantFactory()
         stock(variant, 5)
         reservation = _reserve(variant, 2)
         consume(reservation)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ReservationNotActive):
             consume(reservation)
 
     def test_rozliczenie_zwolnionej_rezerwacji_jest_odrzucone(self):
@@ -250,7 +278,7 @@ class TestRozliczenie:
         reservation = _reserve(variant, 2)
         release(reservation)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ReservationNotActive):
             consume(reservation)
 
 

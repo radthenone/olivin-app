@@ -16,8 +16,21 @@ from apps.inventory.models import (
 from apps.products.models import ProductVariant
 
 
-class InsufficientStock(Exception):
+class ReservationError(Exception):
+    """Wspólny rodzic odmów magazynu — jeden wyjątek do złapania w kasie."""
+
+
+class InsufficientStock(ReservationError):
     """Żądana ilość przekracza to, co dziś da się zarezerwować."""
+
+
+class ReservationNotActive(ReservationError):
+    """Rezerwacja już nie trzyma stanu: zwolniona, rozliczona albo po terminie.
+
+    Przy rozliczaniu to sytuacja do obsłużenia, a nie do zignorowania:
+    zapłata doszła do skutku, ale towar wrócił w międzyczasie do sprzedaży
+    i mógł zostać sprzedany komu innemu.
+    """
 
 
 @transaction.atomic
@@ -40,7 +53,15 @@ def reserve(
     if variant.product.is_made_to_order:
         return None
 
-    item = InventoryItem.objects.select_for_update().filter(variant=variant).first()
+    # `order_by()` czyści domyślne `Meta.ordering = ["variant__sku"]`:
+    # sortowanie po kolumnie ze złączenia kazałoby `FOR UPDATE` zablokować
+    # także wiersz wariantu, czyli znacznie więcej, niż tu potrzeba.
+    item = (
+        InventoryItem.objects.select_for_update()
+        .order_by()
+        .filter(variant=variant)
+        .first()
+    )
     if item is None:
         raise InsufficientStock(
             f"{variant.sku} nie ma stanu magazynowego, więc nie ma czego rezerwować."
@@ -66,7 +87,7 @@ def release(reservation: Reservation) -> Reservation:
     Zwolnienie nie zmienia stanu z ruchów, bo towar nigdy magazynu nie
     opuścił — zmienia się tylko to, ile z niego wolno sprzedać.
     """
-    _reject_unless_active(reservation, "zwolnić")
+    _reject_unless_active(reservation, "zwolnić", allow_expired=True)
     reservation.status = ReservationStatus.RELEASED
     reservation.save(update_fields=["status", "updated_at"])
     return reservation
@@ -84,6 +105,7 @@ def consume(reservation: Reservation) -> StockMovement:
 
     item = (
         InventoryItem.objects.select_for_update()
+        .order_by()
         .filter(variant_id=reservation.variant_id)  # type: ignore[missing-attribute]
         .first()
     )
@@ -103,14 +125,23 @@ def consume(reservation: Reservation) -> StockMovement:
     return movement
 
 
-def _reject_unless_active(reservation: Reservation, action: str) -> None:
-    """Zwolnienie i rozliczenie dotyczą wyłącznie rezerwacji aktywnej.
+def _reject_unless_active(
+    reservation: Reservation, action: str, *, allow_expired: bool = False
+) -> None:
+    """Sprawdza, czy rezerwacja jest jeszcze w stanie, w którym wolno ją ruszyć.
 
-    Przeterminowana rezerwacja jest tu jeszcze do zwolnienia — zadanie
-    okresowe robi dokładnie to samo, tylko hurtowo.
+    Zwolnienie przepuszcza rezerwację po terminie — robi wtedy dokładnie to,
+    co hurtem robi zadanie okresowe. Rozliczenie **nie**: po terminie stan
+    wrócił już do sprzedaży i mógł zostać sprzedany komu innemu, więc
+    zdjęcie go drugi raz zeszłoby poniżej zera.
     """
     if reservation.status != ReservationStatus.ACTIVE:
-        raise ValueError(
+        raise ReservationNotActive(
             f"Rezerwacji ze statusem „{reservation.get_status_display()}” "  # type: ignore[missing-attribute]
             f"nie da się {action}."
+        )
+    if not allow_expired and not reservation.is_active:
+        raise ReservationNotActive(
+            f"Rezerwacja wygasła {reservation.expires_at:%Y-%m-%d %H:%M} — "
+            f"stan wrócił do sprzedaży, więc nie da się jej {action}."
         )

@@ -7,6 +7,7 @@ from django.db import models
 from django.db.models import Exists, F, IntegerField, OuterRef, Q, Subquery, Sum
 from django.db.models.functions import Coalesce
 from django.utils import timezone
+from django.utils.functional import cached_property
 
 from common import TimestampedModel
 
@@ -52,7 +53,7 @@ class StockMovementReason(models.TextChoices):
     LOSS = "loss", "Ubytek"
 
 
-def _movement_total(outer: str = "pk"):
+def _movement_total(outer: str = "pk") -> Subquery:
     """Suma ruchów magazynowych jako podzapytanie."""
     return Subquery(
         StockMovement.objects.filter(item=OuterRef(outer))
@@ -63,7 +64,7 @@ def _movement_total(outer: str = "pk"):
     )
 
 
-def _reservation_total(outer: str):
+def _reservation_total(outer: str) -> Subquery:
     """Suma aktywnych rezerwacji wariantu jako podzapytanie."""
     return Subquery(
         Reservation.objects.filter(
@@ -102,7 +103,7 @@ class Reservation(TimestampedModel):
 
     variant = models.ForeignKey(
         "products.ProductVariant",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="reservations",
         help_text="Wariant, którego ilość jest wyłączona z dostępności",
     )
@@ -139,6 +140,13 @@ class Reservation(TimestampedModel):
 
     @property
     def is_active(self) -> bool:
+        """Czy rezerwacja **teraz** trzyma stan.
+
+        Sam status nie wystarcza: po terminie stan jest już z powrotem
+        w sprzedaży, choć wiersz do najbliższego obchodu wciąż ma status
+        `active`. Ten odpowiednik `active_reservations_filter()` po stronie
+        obiektu jest jedyną definicją, z której wolno korzystać w serwisie.
+        """
         return (
             self.status == ReservationStatus.ACTIVE and self.expires_at > timezone.now()
         )
@@ -187,13 +195,26 @@ class InventoryItem(TimestampedModel):
     def __str__(self) -> str:
         return f"{self.variant.sku}: {self.available} dostępnych"
 
-    @property
+    def refresh_from_db(self, *args, **kwargs) -> None:
+        # Zapamiętane sumy są migawką sprzed odświeżenia — po nim muszą
+        # policzyć się na nowo, inaczej test albo panel pokazałby stan
+        # sprzed ruchu, który właśnie zapisał.
+        super().refresh_from_db(*args, **kwargs)
+        self.__dict__.pop("on_hand", None)
+        self.__dict__.pop("reserved", None)
+
+    @cached_property
     def on_hand(self) -> int:
-        """Stan jako suma ruchów — nigdy pole nadpisywane."""
+        """Stan jako suma ruchów — nigdy pole nadpisywane.
+
+        Zapamiętywane na czas życia obiektu: `available`, `is_available`
+        i `is_low_stock` czytają tę samą liczbę jedno po drugim, a lista
+        katalogu robi to dla każdego wariantu na stronie.
+        """
         total = self.movements.aggregate(total=Sum("quantity"))["total"]  # type: ignore[missing-attribute]
         return total or 0
 
-    @property
+    @cached_property
     def reserved(self) -> int:
         """Ilość wyłączona z dostępności jako suma aktywnych rezerwacji.
 
@@ -262,8 +283,6 @@ def available_variants_subquery():
     między sumą ruchów a ilością zarezerwowaną.
     """
     from apps.products.models import ProductVariant
-
-    from apps.products.models import ProductVariant  # noqa: F811
 
     return (
         ProductVariant.objects.filter(product=OuterRef("pk"))
