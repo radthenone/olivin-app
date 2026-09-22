@@ -151,6 +151,58 @@ paths:
               schema:
                 $ref: '#/components/schemas/Collection'
           description: ''
+  /consents/:
+    post:
+      operationId: consents_create
+      description: Zalogowany klient udziela zgody na konto, gość — na podany e-mail.
+        Dokument musi być bieżącą wersją z `GET /consents/documents/`.
+      summary: Zapis zgody
+      tags:
+      - Consents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Consent'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Consent'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Consent'
+        required: true
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consent'
+          description: ''
+  /consents/documents/:
+    get:
+      operationId: consents_documents_list
+      description: Po jednej obowiązującej wersji regulaminu, polityki prywatności
+        i zgody marketingowej. Rodzaj bez dokumentu jest pominięty.
+      summary: Bieżące wersje dokumentów
+      tags:
+      - Consents
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConsentDocument'
+          description: ''
   /csrf/:
     get:
       operationId: csrf_list
@@ -1414,6 +1466,91 @@ components:
         * `L` - L
         * `M` - M
         * `fancy` - Barwa fantazyjna
+    Consent:
+      type: object
+      description: |-
+        Zapis zgody: dokument z listy bieżących wersji plus podmiot.
+
+        Podmiot bierze się z żądania — zalogowany klient z uwierzytelnienia,
+        gość z pola `email`. Klient nie wskazuje użytkownika jawnie, więc nie
+        da się zapisać zgody w cudzym imieniu.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        document:
+          type: string
+          format: uuid
+          description: Wersja dokumentu, której dotyczy zgoda
+        email:
+          type: string
+          format: email
+          writeOnly: true
+          description: E-mail gościa; pomijany przy zalogowanym kliencie
+        kind:
+          type: string
+          readOnly: true
+        version:
+          type: string
+          readOnly: true
+          description: Kopia wersji dokumentu z chwili udzielenia zgody
+        grantedAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Chwila udzielenia zgody
+      required:
+      - document
+      - grantedAt
+      - id
+      - kind
+      - version
+    ConsentDocument:
+      type: object
+      description: |-
+        Bieżąca wersja dokumentu — tyle, ile klient potrzebuje, żeby ją
+        pokazać i odesłać w zgodzie.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/ConsentKindEnum'
+          readOnly: true
+          description: |-
+            Rodzaj dokumentu
+
+            * `terms` - Regulamin
+            * `privacy` - Polityka prywatności
+            * `marketing` - Komunikacja marketingowa
+        version:
+          type: string
+          readOnly: true
+          description: Oznaczenie wersji, np. 2026-09; unikalne w obrębie rodzaju
+        effectiveFrom:
+          type: string
+          format: date
+          readOnly: true
+          description: Dzień, od którego wersja obowiązuje. Najnowsza obowiązująca
+            wersja jest bieżącą; wcześniejsze zgody przestają być aktualne.
+      required:
+      - effectiveFrom
+      - id
+      - kind
+      - version
+    ConsentKindEnum:
+      enum:
+      - terms
+      - privacy
+      - marketing
+      type: string
+      description: |-
+        * `terms` - Regulamin
+        * `privacy` - Polityka prywatności
+        * `marketing` - Komunikacja marketingowa
     CountryEnum:
       enum:
       - PL
@@ -1977,7 +2114,7 @@ components:
           readOnly: true
         kind:
           allOf:
-          - $ref: '#/components/schemas/KindEnum'
+          - $ref: '#/components/schemas/StoneEnum'
           readOnly: true
           description: |-
             Rodzaj kamienia
@@ -2100,30 +2237,6 @@ components:
       - database
       - redis
       - storage
-    KindEnum:
-      enum:
-      - diamond
-      - sapphire
-      - ruby
-      - emerald
-      - pearl
-      - amber
-      - topaz
-      - amethyst
-      - cubic_zirconia
-      - moissanite
-      type: string
-      description: |-
-        * `diamond` - Diament
-        * `sapphire` - Szafir
-        * `ruby` - Rubin
-        * `emerald` - Szmaragd
-        * `pearl` - Perła
-        * `amber` - Bursztyn
-        * `topaz` - Topaz
-        * `amethyst` - Ametyst
-        * `cubic_zirconia` - Cyrkonia
-        * `moissanite` - Moissanit
     LengthEnum:
       enum:
       - '16'
