@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models, transaction
 
 from apps.products.models.choices import Fineness, Material, ProductStatus
 from common import TimestampedModel
+from common.money import DEFAULT_CURRENCY, Money, MoneyAmountField
 from common.slugs import (
     SLUG_MAX_LENGTH,
     SlugSourceUnavailable,
@@ -85,6 +87,22 @@ class Product(TimestampedModel):
         blank=True,
         help_text="Czas realizacji w dniach; wymagany przy produkcie na zamówienie",
     )
+    is_engravable = models.BooleanField(
+        default=False,
+        help_text=(
+            "Wyrób można grawerować (ADR 0018). Grawer jest osobną pozycją "
+            "ceny doliczaną do wariantu i wyłącza prawo odstąpienia."
+        ),
+    )
+    engraving_price = MoneyAmountField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0)],
+        help_text=(
+            f"Cena grawerunku brutto w groszach ({DEFAULT_CURRENCY}); "
+            "wymagana przy produkcie grawerowalnym"
+        ),
+    )
 
     # Tłumaczenia jako relacja, żeby `prefetch_related` je pobrał
     # razem z obiektem — inaczej każde pole dobijałoby bazę.
@@ -114,7 +132,19 @@ class Product(TimestampedModel):
                     )
                 ),
                 name="product_made_to_order_has_production_time",
-            )
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(is_engravable=True, engraving_price__isnull=False)
+                    | models.Q(is_engravable=False, engraving_price__isnull=True)
+                ),
+                name="product_engravable_has_engraving_price",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(engraving_price__isnull=True)
+                | models.Q(engraving_price__gte=0),
+                name="product_engraving_price_is_not_negative",
+            ),
         ]
 
     def __str__(self) -> str:
@@ -124,13 +154,22 @@ class Product(TimestampedModel):
     def is_published(self) -> bool:
         return self.status == ProductStatus.PUBLISHED
 
+    @property
+    def engraving_price_money(self) -> Money | None:
+        """Cena grawerunku jako `Money`; `None`, gdy produktu nie da się grawerować."""
+        if self.engraving_price is None:
+            return None
+        return Money(self.engraving_price, DEFAULT_CURRENCY)
+
     def clean(self) -> None:
         super().clean()
         self._reject_non_leaf_category()
         self._reject_production_time_mismatch()
+        self._reject_engraving_mismatch()
 
     def save(self, *args, **kwargs) -> None:
         self._reject_production_time_mismatch()
+        self._reject_engraving_mismatch()
         just_published = self._is_becoming_published()
         if self.slug:
             self._reject_slug_change_after_publication()
@@ -211,6 +250,26 @@ class Product(TimestampedModel):
                     "production_time_days": (
                         "Czas realizacji ma sens wyłącznie przy produkcie "
                         "na zamówienie."
+                    )
+                }
+            )
+
+    def _reject_engraving_mismatch(self) -> None:
+        """Flaga i cena grawerunku idą w parze (ADR 0018).
+
+        Flaga bez ceny nie da się wycenić w koszyku; cena bez flagi to
+        pozostałość po wyłączeniu grawerunku, którą lepiej usunąć świadomie.
+        """
+        if self.is_engravable and self.engraving_price is None:
+            raise ValidationError(
+                {"engraving_price": "Produkt grawerowalny musi mieć cenę grawerunku."}
+            )
+        if not self.is_engravable and self.engraving_price is not None:
+            raise ValidationError(
+                {
+                    "engraving_price": (
+                        "Cena grawerunku ma sens wyłącznie przy produkcie "
+                        "grawerowalnym."
                     )
                 }
             )
