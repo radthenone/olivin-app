@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.db.models import QuerySet
 from django.http import HttpRequest
 
-from apps.inventory.models import InventoryItem, StockMovement
+from apps.inventory.models import InventoryItem, Reservation, StockMovement
 
 
 class StockMovementInline(admin.TabularInline):
@@ -70,4 +70,27 @@ class StockMovementAdmin(admin.ModelAdmin):
         return False
 
     def has_delete_permission(self, request: HttpRequest, obj=None) -> bool:
+        return False
+
+
+@admin.register(Reservation)
+class ReservationAdmin(admin.ModelAdmin):
+    """Rezerwacje do wglądu — zakłada je kasa, zwalnia zadanie okresowe.
+
+    Panel ich nie zakłada i nie edytuje: rezerwacja bez zamówienia, które ją
+    uzasadnia, trzymałaby stan bez powodu i nikt by jej nie zwolnił.
+    """
+
+    list_display = ("variant", "quantity", "status", "expires_at", "created_at")
+    list_filter = ("status",)
+    search_fields = ("variant__sku",)
+    ordering = ("-created_at",)
+
+    def get_queryset(self, request: HttpRequest) -> QuerySet[Reservation]:
+        return super().get_queryset(request).select_related("variant")
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
+
+    def has_change_permission(self, request: HttpRequest, obj=None) -> bool:
         return False
