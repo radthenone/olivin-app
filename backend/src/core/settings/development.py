@@ -79,6 +79,10 @@ SPECTACULAR_SETTINGS = {
     # który zmieniałby się z każdą kolejną kolizją i psuł klient Orval.
     "ENUM_NAME_OVERRIDES": {
         "StoneEnum": "apps.products.models.choices.Stone",
+        # Rozmiar pierścionka wychodzi jako `size` na wariancie i `second_size`
+        # w pozycji koszyka — bez tej pozycji spectacular nazwałby ten sam
+        # zbiór wartości dwa razy i klient dostałby dwa nietożsame typy.
+        "SizeEnum": "apps.products.models.choices.RingSize",
         "ConsentKindEnum": "apps.consents.models.ConsentKind",
         "ShippingMethodKindEnum": "apps.shipping.models.ShippingMethodKind",
         "ShippingZoneEnum": "apps.shipping.models.ShippingZone",
