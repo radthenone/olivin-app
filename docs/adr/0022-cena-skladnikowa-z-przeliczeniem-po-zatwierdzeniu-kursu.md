@@ -29,3 +29,13 @@ ani cena ręczna, ani żadna promocja nie schodzą poniżej niego, a panel ostrz
 przy próbie. Aktywacja kursu wysyła wiadomość do właściciela i zostaje w
 dzienniku zmian panelu. Dostawca kursu jest wymienny przez adapter — patrz
 [ADR 0027](0027-integracje-zewnetrzne-przez-adapter.md).
+
+## Uzupełnienie (2026-09-22)
+
+Cykl życia z zaproponowaniem i aktywacją dotyczy wyłącznie kursu kruszcu.
+Kurs euro, którym cena złotowa jest przeliczana dla klienta z Unii
+([ADR 0019](0019-sprzedaz-do-ue-w-euro-po-polskim-vat.md)), jest odświeżany
+co 30 dni i wchodzi w życie bez aktywacji. Cena w euro jest zaokrąglana w górę
+do końcówki ,00 albo ,50, a próg minimalny — koszt wariantu bez marży —
+obowiązuje także po przeliczeniu: cena w euro nigdy nie spada poniżej kosztu
+przeliczonego tym samym kursem.

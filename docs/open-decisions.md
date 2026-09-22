@@ -38,6 +38,15 @@ trzema kanałami do klientów ze zgodą marketingową i potwierdzonych subskrypc
 newslettera. Osobny byt kampanii — harmonogram, segmenty (premium / wszyscy),
 statystyki otwarć — wraca, gdy ręczny przycisk przestanie wystarczać.
 
+### Checkout UI web + mobile
+
+Ekrany kasy — koszyk, dane i adres, dostawa, płatność — dla web i aplikacji
+mobilnej. Model kasy jest rozstrzygnięty w
+[ADR 0030](adr/0030-koszyk-po-stronie-backendu-i-kasa-w-czterech-krokach.md):
+koszyk na backendzie, gość z tokenem, cztery kroki, koszt dostawy znany przed
+intencją płatniczą. Interfejs czeka, aż backend koszyka i kasy istnieje —
+projektowanie ekranów przed kontraktem API oznaczałoby rysowanie ich dwa razy.
+
 ### Świadomie poza zakresem pierwszej wersji
 
 Zapisane, żeby nie wracały jako „a może by”: waluty poza złotym i euro,
@@ -110,3 +119,7 @@ wiążącej wpłatę z zamówieniem ([0026](adr/0026-dokument-sprzedazy-generowa
 
 Decyzje właściciela z 18–19 września 2026 (przegląd całej wizji sklepu)
 zapisane w ADR 0022–0029 i w `CONTEXT.md`; ADR 0017 zastąpiony przez 0022.
+
+Grillowanie serii sprzedażowej z 21–22 września 2026: model kasy w
+[ADR 0030](adr/0030-koszyk-po-stronie-backendu-i-kasa-w-czterech-krokach.md),
+kurs euro jako uzupełnienia ADR 0019 i 0022.
