@@ -38,6 +38,7 @@ urlpatterns = [
     path("customers/", include("apps.accounts.urls")),
     path("cart/", include("apps.orders.urls")),
     path("categories/", include("apps.categories.urls")),
+    path("orders/", include("apps.orders.order_urls")),
     path("collections/", include("apps.collections.urls")),
     path("consents/", include("apps.consents.urls")),
     path("products/", include("apps.products.urls")),

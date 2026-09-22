@@ -954,6 +954,144 @@ paths:
               schema:
                 $ref: '#/components/schemas/HealthCheckResponse'
           description: ''
+  /orders/:
+    get:
+      operationId: orders_list
+      description: Historia zamówień wymaga zalogowania. Gość otwiera pojedyncze zamówienie
+        numerem i adresem e-mail.
+      summary: Własne zamówienia zalogowanego klienta
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Orders
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderList'
+          description: ''
+    post:
+      operationId: orders_create
+      description: Zamówienie powstaje w statusie `pending` z kopią cen, kosztu dostawy
+        i grawerunku, zakłada rezerwacje stanu i czyści koszyk. Wymaga akceptacji
+        bieżącej wersji regulaminu; gość ponad 10 000 zł jest odrzucany.
+      summary: Złożenie zamówienia z koszyka
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany
+          klient go nie wysyła — koszyk wynika z uwierzytelnienia.
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderCreate'
+        required: true
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /orders/{number}/:
+    get:
+      operationId: orders_retrieve
+      description: Zalogowany klient widzi wyłącznie własne zamówienia. Gość podaje
+        dodatkowo `email` — sam numer zamówienia go nie otwiera.
+      summary: Zamówienie po numerze
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+          format: email
+          minLength: 1
+        description: Adres podany przy składaniu zamówienia
+        required: true
+      - in: path
+        name: number
+        schema:
+          type: string
+          pattern: ^[A-Z0-9]+$
+        required: true
+      tags:
+      - Orders
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /orders/{number}/cancel/:
+    post:
+      operationId: orders_cancel_create
+      description: Zwalnia rezerwacje stanu. Zamówienie w innym statusie jest odrzucane
+        — anulowanie opłaconego pociąga zwrot u operatora.
+      summary: Anulowanie zamówienia oczekującego na zapłatę
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+          format: email
+          minLength: 1
+        description: Adres podany przy składaniu zamówienia
+        required: true
+      - in: path
+        name: number
+        schema:
+          type: string
+          pattern: ^[A-Z0-9]+$
+        required: true
+      tags:
+      - Orders
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
   /products/:
     get:
       operationId: products_list
@@ -2731,12 +2869,20 @@ components:
       type: object
       properties:
         status:
-          $ref: '#/components/schemas/StatusEnum'
+          $ref: '#/components/schemas/HealthCheckResponseStatusEnum'
         services:
           $ref: '#/components/schemas/HealthCheckServices'
       required:
       - services
       - status
+    HealthCheckResponseStatusEnum:
+      enum:
+      - healthy
+      - unhealthy
+      type: string
+      description: |-
+        * `healthy` - healthy
+        * `unhealthy` - unhealthy
     HealthCheckServices:
       type: object
       properties:
@@ -2824,6 +2970,557 @@ components:
       required:
       - amount
       - currency
+    Order:
+      type: object
+      description: |-
+        Zamówienie w postaci, w jakiej ogląda je klient.
+
+        Kwoty wychodzą policzone: klient nie składa sumy z pozycji, bo to
+        backend rozstrzyga, ile jest do zapłaty (ADR 0012).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+          description: Numer, którym klient posługuje się w kontakcie ze sklepem
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          readOnly: true
+          description: |-
+            Etap cyklu życia zamówienia
+
+            * `pending` - Oczekuje na zapłatę
+            * `paid` - Opłacone
+            * `in_production` - W produkcji
+            * `packed` - Spakowane
+            * `shipped` - Wysłane
+            * `delivered` - Dostarczone
+            * `cancelled` - Anulowane
+            * `returned` - Zwrócone
+        email:
+          type: string
+          format: email
+          readOnly: true
+          description: Adres, pod który idzie potwierdzenie. Zawsze wypełniony — także
+            dla klienta z kontem, bo zamówienie ma zostać czytelne po anonimizacji
+            konta.
+        recipientName:
+          type: string
+          readOnly: true
+          description: Imię i nazwisko odbiorcy z chwili złożenia zamówienia
+        street:
+          type: string
+          readOnly: true
+        street2:
+          type: string
+          readOnly: true
+        city:
+          type: string
+          readOnly: true
+        postalCode:
+          type: string
+          readOnly: true
+        country:
+          type: string
+          readOnly: true
+          description: Kod kraju ISO 3166-1 alfa-2 z chwili złożenia zamówienia
+        shippingMethodName:
+          type: string
+          readOnly: true
+          description: Nazwa metody z chwili złożenia — cennik wolno potem zmienić
+        currency:
+          type: string
+          readOnly: true
+          description: Kod waluty ISO 4217
+        exchangeRate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,6})?$
+          readOnly: true
+          description: Kurs, po którym przeliczono ceny źródłowe na walutę zamówienia.
+            Jeden przy sprzedaży w złotych (ADR 0019).
+        termsVersion:
+          type: string
+          readOnly: true
+          description: Kopia oznaczenia wersji regulaminu z chwili złożenia
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+          readOnly: true
+        goodsTotal:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        shippingCost:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        discountAmount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        couponAmount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        total:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when the record was created
+      required:
+      - city
+      - country
+      - couponAmount
+      - createdAt
+      - currency
+      - discountAmount
+      - email
+      - exchangeRate
+      - goodsTotal
+      - id
+      - items
+      - number
+      - postalCode
+      - recipientName
+      - shippingCost
+      - shippingMethodName
+      - status
+      - street
+      - street2
+      - termsVersion
+      - total
+    OrderCreate:
+      type: object
+      description: |-
+        Złożenie zamówienia: adres, metoda dostawy i — dla gościa — e-mail.
+
+        Pozycji tu nie ma: biorą się z koszyka, który klient już zbudował
+        (ADR 0030). Przysłanie ich w żądaniu pozwalałoby zamówić coś innego niż
+        to, co klient widział w koszyku.
+      properties:
+        email:
+          description: Adres gościa; pomijany przy zalogowanym kliencie
+          oneOf:
+          - type: string
+            format: email
+            default: ''
+          - type: string
+            maxLength: 0
+        recipientName:
+          type: string
+          maxLength: 200
+        street:
+          type: string
+          maxLength: 255
+        street2:
+          type: string
+          default: ''
+          maxLength: 255
+        city:
+          type: string
+          maxLength: 100
+        postalCode:
+          type: string
+          maxLength: 20
+        country:
+          allOf:
+          - $ref: '#/components/schemas/CountryEnum'
+          description: |-
+            Kod kraju ISO 3166-1 alfa-2; sklep wysyła do Polski i Unii
+
+            * `PL` - Poland
+            * `US` - United States of America
+            * `GB` - United Kingdom
+            * `DE` - Germany
+            * `FR` - France
+            * `IT` - Italy
+            * `ES` - Spain
+            * `AF` - Afghanistan
+            * `AX` - Åland Islands
+            * `AL` - Albania
+            * `DZ` - Algeria
+            * `AS` - American Samoa
+            * `AD` - Andorra
+            * `AO` - Angola
+            * `AI` - Anguilla
+            * `AQ` - Antarctica
+            * `AG` - Antigua and Barbuda
+            * `AR` - Argentina
+            * `AM` - Armenia
+            * `AW` - Aruba
+            * `AU` - Australia
+            * `AT` - Austria
+            * `AZ` - Azerbaijan
+            * `BS` - Bahamas (The)
+            * `BH` - Bahrain
+            * `BD` - Bangladesh
+            * `BB` - Barbados
+            * `BY` - Belarus
+            * `BE` - Belgium
+            * `BZ` - Belize
+            * `BJ` - Benin
+            * `BM` - Bermuda
+            * `BT` - Bhutan
+            * `BO` - Bolivia
+            * `BQ` - Bonaire, Sint Eustatius and Saba
+            * `BA` - Bosnia and Herzegovina
+            * `BW` - Botswana
+            * `BV` - Bouvet Island
+            * `BR` - Brazil
+            * `IO` - British Indian Ocean Territory
+            * `BN` - Brunei
+            * `BG` - Bulgaria
+            * `BF` - Burkina Faso
+            * `BI` - Burundi
+            * `CV` - Cabo Verde
+            * `KH` - Cambodia
+            * `CM` - Cameroon
+            * `CA` - Canada
+            * `KY` - Cayman Islands
+            * `CF` - Central African Republic
+            * `TD` - Chad
+            * `CL` - Chile
+            * `CN` - China
+            * `CX` - Christmas Island
+            * `CC` - Cocos (Keeling) Islands
+            * `CO` - Colombia
+            * `KM` - Comoros
+            * `CG` - Congo
+            * `CK` - Cook Islands
+            * `CR` - Costa Rica
+            * `CI` - Côte d'Ivoire
+            * `HR` - Croatia
+            * `CU` - Cuba
+            * `CW` - Curaçao
+            * `CY` - Cyprus
+            * `CZ` - Czechia
+            * `CD` - Democratic Republic of the Congo
+            * `DK` - Denmark
+            * `DJ` - Djibouti
+            * `DM` - Dominica
+            * `DO` - Dominican Republic
+            * `EC` - Ecuador
+            * `EG` - Egypt
+            * `SV` - El Salvador
+            * `GQ` - Equatorial Guinea
+            * `ER` - Eritrea
+            * `EE` - Estonia
+            * `SZ` - Eswatini
+            * `ET` - Ethiopia
+            * `FK` - Falkland Islands (Malvinas)
+            * `FO` - Faroe Islands
+            * `FJ` - Fiji
+            * `FI` - Finland
+            * `GF` - French Guiana
+            * `PF` - French Polynesia
+            * `TF` - French Southern Territories
+            * `GA` - Gabon
+            * `GM` - Gambia
+            * `GE` - Georgia
+            * `GH` - Ghana
+            * `GI` - Gibraltar
+            * `GR` - Greece
+            * `GL` - Greenland
+            * `GD` - Grenada
+            * `GP` - Guadeloupe
+            * `GU` - Guam
+            * `GT` - Guatemala
+            * `GG` - Guernsey
+            * `GN` - Guinea
+            * `GW` - Guinea-Bissau
+            * `GY` - Guyana
+            * `HT` - Haiti
+            * `HM` - Heard Island and McDonald Islands
+            * `HN` - Honduras
+            * `HK` - Hong Kong
+            * `HU` - Hungary
+            * `IS` - Iceland
+            * `IN` - India
+            * `ID` - Indonesia
+            * `IR` - Iran
+            * `IQ` - Iraq
+            * `IE` - Ireland
+            * `IM` - Isle of Man
+            * `IL` - Israel
+            * `JM` - Jamaica
+            * `JP` - Japan
+            * `JE` - Jersey
+            * `JO` - Jordan
+            * `KZ` - Kazakhstan
+            * `KE` - Kenya
+            * `KI` - Kiribati
+            * `KW` - Kuwait
+            * `KG` - Kyrgyzstan
+            * `LA` - Laos
+            * `LV` - Latvia
+            * `LB` - Lebanon
+            * `LS` - Lesotho
+            * `LR` - Liberia
+            * `LY` - Libya
+            * `LI` - Liechtenstein
+            * `LT` - Lithuania
+            * `LU` - Luxembourg
+            * `MO` - Macao
+            * `MG` - Madagascar
+            * `MW` - Malawi
+            * `MY` - Malaysia
+            * `MV` - Maldives
+            * `ML` - Mali
+            * `MT` - Malta
+            * `MH` - Marshall Islands
+            * `MQ` - Martinique
+            * `MR` - Mauritania
+            * `MU` - Mauritius
+            * `YT` - Mayotte
+            * `MX` - Mexico
+            * `FM` - Micronesia
+            * `MD` - Moldova
+            * `MC` - Monaco
+            * `MN` - Mongolia
+            * `ME` - Montenegro
+            * `MS` - Montserrat
+            * `MA` - Morocco
+            * `MZ` - Mozambique
+            * `MM` - Myanmar
+            * `NA` - Namibia
+            * `NR` - Nauru
+            * `NP` - Nepal
+            * `NL` - Netherlands
+            * `NC` - New Caledonia
+            * `NZ` - New Zealand
+            * `NI` - Nicaragua
+            * `NE` - Niger
+            * `NG` - Nigeria
+            * `NU` - Niue
+            * `NF` - Norfolk Island
+            * `KP` - North Korea
+            * `MK` - North Macedonia
+            * `MP` - Northern Mariana Islands
+            * `NO` - Norway
+            * `OM` - Oman
+            * `PK` - Pakistan
+            * `PW` - Palau
+            * `PS` - Palestine
+            * `PA` - Panama
+            * `PG` - Papua New Guinea
+            * `PY` - Paraguay
+            * `PE` - Peru
+            * `PH` - Philippines
+            * `PN` - Pitcairn
+            * `PT` - Portugal
+            * `PR` - Puerto Rico
+            * `QA` - Qatar
+            * `RE` - Réunion
+            * `RO` - Romania
+            * `RU` - Russia
+            * `RW` - Rwanda
+            * `BL` - Saint Barthélemy
+            * `SH` - Saint Helena
+            * `KN` - Saint Kitts and Nevis
+            * `LC` - Saint Lucia
+            * `MF` - Saint Martin (French part)
+            * `PM` - Saint Pierre and Miquelon
+            * `VC` - Saint Vincent and the Grenadines
+            * `WS` - Samoa
+            * `SM` - San Marino
+            * `ST` - Sao Tome and Principe
+            * `SA` - Saudi Arabia
+            * `SN` - Senegal
+            * `RS` - Serbia
+            * `SC` - Seychelles
+            * `SL` - Sierra Leone
+            * `SG` - Singapore
+            * `SX` - Sint Maarten (Dutch part)
+            * `SK` - Slovakia
+            * `SI` - Slovenia
+            * `SB` - Solomon Islands
+            * `SO` - Somalia
+            * `ZA` - South Africa
+            * `GS` - South Georgia
+            * `KR` - South Korea
+            * `SS` - South Sudan
+            * `LK` - Sri Lanka
+            * `SD` - Sudan
+            * `SR` - Suriname
+            * `SJ` - Svalbard and Jan Mayen
+            * `SE` - Sweden
+            * `CH` - Switzerland
+            * `SY` - Syria
+            * `TW` - Taiwan
+            * `TJ` - Tajikistan
+            * `TZ` - Tanzania
+            * `TH` - Thailand
+            * `TL` - Timor-Leste
+            * `TG` - Togo
+            * `TK` - Tokelau
+            * `TO` - Tonga
+            * `TT` - Trinidad and Tobago
+            * `TN` - Tunisia
+            * `TR` - Türkiye
+            * `TM` - Turkmenistan
+            * `TC` - Turks and Caicos Islands
+            * `TV` - Tuvalu
+            * `UG` - Uganda
+            * `UA` - Ukraine
+            * `AE` - United Arab Emirates
+            * `UM` - United States Minor Outlying Islands
+            * `UY` - Uruguay
+            * `UZ` - Uzbekistan
+            * `VU` - Vanuatu
+            * `VA` - Vatican City
+            * `VE` - Venezuela
+            * `VN` - Vietnam
+            * `VG` - Virgin Islands (British)
+            * `VI` - Virgin Islands (U.S.)
+            * `WF` - Wallis and Futuna
+            * `EH` - Western Sahara
+            * `YE` - Yemen
+            * `ZM` - Zambia
+            * `ZW` - Zimbabwe
+        shippingMethod:
+          type: string
+          format: uuid
+          description: Metoda dostawy wybrana w trzecim kroku kasy
+      required:
+      - city
+      - country
+      - postalCode
+      - recipientName
+      - shippingMethod
+      - street
+    OrderItem:
+      type: object
+      description: |-
+        Pozycja zamówienia — wyłącznie kopie z chwili złożenia (ADR 0010).
+
+        Nie ma tu odwołania do dzisiejszej ceny wariantu ani do jego stanu:
+        zamówienie ma pokazywać to, co klient kupił, a nie to, co jest w sklepie
+        teraz.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        variant:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Kupiony wariant — do odnalezienia karty produktu, nie do wyceny
+        productName:
+          type: string
+          readOnly: true
+        sku:
+          type: string
+          readOnly: true
+        quantity:
+          type: integer
+          readOnly: true
+          description: Liczba sztuk pozycji, najwyżej 5
+        size:
+          type: string
+          readOnly: true
+          description: Rozmiar pierwszego egzemplarza, skopiowany z wariantu
+        secondSize:
+          allOf:
+          - $ref: '#/components/schemas/SizeEnum'
+          readOnly: true
+          description: |-
+            Rozmiar drugiego egzemplarza pary (ADR 0024)
+
+            * `8` - 8
+            * `9` - 9
+            * `10` - 10
+            * `11` - 11
+            * `12` - 12
+            * `13` - 13
+            * `14` - 14
+            * `15` - 15
+            * `16` - 16
+            * `17` - 17
+            * `18` - 18
+            * `19` - 19
+            * `20` - 20
+            * `21` - 21
+            * `22` - 22
+            * `23` - 23
+            * `24` - 24
+            * `25` - 25
+            * `26` - 26
+        engravingText:
+          type: string
+          readOnly: true
+        secondEngravingText:
+          type: string
+          readOnly: true
+        isPair:
+          type: boolean
+          readOnly: true
+        isMadeToOrder:
+          type: boolean
+          readOnly: true
+          description: Czy wyrób powstaje dopiero po złożeniu zamówienia (ADR 0024)
+        unitPrice:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        goodsPrice:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        engravingTotal:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        lineTotal:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+      required:
+      - engravingText
+      - engravingTotal
+      - goodsPrice
+      - id
+      - isMadeToOrder
+      - isPair
+      - lineTotal
+      - productName
+      - quantity
+      - secondEngravingText
+      - secondSize
+      - size
+      - sku
+      - unitPrice
+      - variant
+    OrderStatusEnum:
+      enum:
+      - pending
+      - paid
+      - in_production
+      - packed
+      - shipped
+      - delivered
+      - cancelled
+      - returned
+      type: string
+      description: |-
+        * `pending` - Oczekuje na zapłatę
+        * `paid` - Opłacone
+        * `in_production` - W produkcji
+        * `packed` - Spakowane
+        * `shipped` - Wysłane
+        * `delivered` - Dostarczone
+        * `cancelled` - Anulowane
+        * `returned` - Zwrócone
     PaginatedAddressList:
       type: object
       required:
@@ -2870,6 +3567,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Collection'
+    PaginatedOrderList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
     PaginatedProductListList:
       type: object
       required:
@@ -3768,14 +4488,6 @@ components:
         * `24` - 24
         * `25` - 25
         * `26` - 26
-    StatusEnum:
-      enum:
-      - healthy
-      - unhealthy
-      type: string
-      description: |-
-        * `healthy` - healthy
-        * `unhealthy` - unhealthy
     StoneEnum:
       enum:
       - diamond

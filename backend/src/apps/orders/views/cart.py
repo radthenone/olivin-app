@@ -68,11 +68,13 @@ def _payload_of(cart: Cart) -> CartPayload:
     )
 
 
-def _token(request: Request | HttpRequest) -> str | None:
+def token_of(request: Request | HttpRequest) -> str | None:
+    """Token koszyka gościa z nagłówka; `None`, gdy go nie przysłał."""
     return request.META.get(_META_KEY) or None
 
 
-def _user(request: Request | HttpRequest):
+def user_of(request: Request | HttpRequest):
+    """Zalogowany klient albo `None` — gość nie jest tu błędem."""
     return request.user if request.user.is_authenticated else None
 
 
@@ -98,7 +100,7 @@ class CartDetailView(APIView):
     serializer_class = CartSerializer
 
     def get(self, request: Request) -> Response:
-        cart = get_cart(user=_user(request), token=_token(request))
+        cart = get_cart(user=user_of(request), token=token_of(request))
         if cart is None:
             return Response(CartSerializer(_empty_payload()).data)
 
@@ -121,7 +123,7 @@ class CartMergeView(APIView):
     serializer_class = CartSerializer
 
     def post(self, request: Request) -> Response:
-        token = _token(request)
+        token = token_of(request)
         guest = get_cart(user=None, token=token) if token else None
         if guest is None:
             raise ValidationError(
@@ -158,7 +160,7 @@ class CartItemViewSet(viewsets.GenericViewSet):
     queryset = CartItem.objects.none()
 
     def get_queryset(self):
-        cart = get_cart(user=_user(self.request), token=_token(self.request))
+        cart = get_cart(user=user_of(self.request), token=token_of(self.request))
         if cart is None:
             return CartItem.objects.none()
         return CartItem.objects.filter(cart=cart).select_related(
@@ -169,7 +171,7 @@ class CartItemViewSet(viewsets.GenericViewSet):
         payload = CartItemWriteSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
 
-        cart = get_or_create_cart(user=_user(request), token=_token(request))
+        cart = get_or_create_cart(user=user_of(request), token=token_of(request))
         try:
             add_item(cart, **payload.validated_data)
         except DjangoValidationError as error:

@@ -26,6 +26,7 @@ const APPS_TAGS = [
   "Categories",
   "Collections",
   "Consents",
+  "Orders",
   "Products",
   "Profiles",
   "Shipping",

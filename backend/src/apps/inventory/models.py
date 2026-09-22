@@ -111,6 +111,17 @@ class Reservation(TimestampedModel):
         validators=[MinValueValidator(1)],
         help_text="Liczba sztuk wyłączona z dostępności",
     )
+    order = models.ForeignKey(
+        "orders.Order",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="reservations",
+        help_text=(
+            "Zamówienie, które trzyma ten stan. Puste tylko dla rezerwacji "
+            "założonej poza kasą — w normalnym przepływie zawsze wypełnione."
+        ),
+    )
     expires_at = models.DateTimeField(
         help_text="Chwila, po której rezerwacja przestaje trzymać stan",
     )

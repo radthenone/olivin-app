@@ -38,6 +38,7 @@ def reserve(
     variant: ProductVariant,
     quantity: int,
     ttl: timedelta = RESERVATION_TTL,
+    order=None,
 ) -> Reservation | None:
     """Wyłącza ilość wariantu z dostępności na czas płatności.
 
@@ -76,6 +77,7 @@ def reserve(
     return Reservation.objects.create(
         variant=variant,
         quantity=quantity,
+        order=order,
         expires_at=timezone.now() + ttl,
     )
 

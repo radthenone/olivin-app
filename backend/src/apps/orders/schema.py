@@ -8,6 +8,9 @@ from apps.orders.serializers import (
     CartItemQuantitySerializer,
     CartItemWriteSerializer,
     CartSerializer,
+    OrderCreateSerializer,
+    OrderLookupSerializer,
+    OrderSerializer,
 )
 
 CART_TOKEN_PARAMETER = OpenApiParameter(
@@ -77,5 +80,52 @@ cart_item_schema = extend_schema_view(
         summary="Usunięcie pozycji z koszyka",
         parameters=[CART_TOKEN_PARAMETER],
         responses={200: CartSerializer},
+    ),
+)
+
+
+order_schema = extend_schema_view(
+    list=extend_schema(
+        tags=["Orders"],
+        summary="Własne zamówienia zalogowanego klienta",
+        description=(
+            "Historia zamówień wymaga zalogowania. Gość otwiera pojedyncze "
+            "zamówienie numerem i adresem e-mail."
+        ),
+        responses={200: OrderSerializer(many=True)},
+    ),
+    retrieve=extend_schema(
+        tags=["Orders"],
+        summary="Zamówienie po numerze",
+        description=(
+            "Zalogowany klient widzi wyłącznie własne zamówienia. Gość podaje "
+            "dodatkowo `email` — sam numer zamówienia go nie otwiera."
+        ),
+        parameters=[OrderLookupSerializer],
+        responses={200: OrderSerializer},
+    ),
+    create=extend_schema(
+        tags=["Orders"],
+        summary="Złożenie zamówienia z koszyka",
+        description=(
+            "Zamówienie powstaje w statusie `pending` z kopią cen, kosztu "
+            "dostawy i grawerunku, zakłada rezerwacje stanu i czyści koszyk. "
+            "Wymaga akceptacji bieżącej wersji regulaminu; gość ponad "
+            "10 000 zł jest odrzucany."
+        ),
+        parameters=[CART_TOKEN_PARAMETER],
+        request=OrderCreateSerializer,
+        responses={201: OrderSerializer},
+    ),
+    cancel=extend_schema(
+        tags=["Orders"],
+        summary="Anulowanie zamówienia oczekującego na zapłatę",
+        description=(
+            "Zwalnia rezerwacje stanu. Zamówienie w innym statusie jest "
+            "odrzucane — anulowanie opłaconego pociąga zwrot u operatora."
+        ),
+        parameters=[OrderLookupSerializer],
+        request=None,
+        responses={200: OrderSerializer},
     ),
 )
