@@ -64,4 +64,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.orders.tasks.purge_stale_guest_carts",
         "schedule": crontab(minute=30, hour=3),
     },
+    # Co godzinę: zamówienie bez zapłaty przez dobę anuluje się samo
+    # i zwalnia rezerwacje (`CONTEXT.md`, Order).
+    "cancel-stale-orders": {
+        "task": "apps.orders.tasks.cancel_stale_orders",
+        "schedule": crontab(minute=15),
+    },
 }

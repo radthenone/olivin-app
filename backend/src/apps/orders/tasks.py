@@ -5,7 +5,8 @@ from datetime import timedelta
 from celery import shared_task
 from django.utils import timezone
 
-from apps.orders.models import GUEST_CART_TTL_DAYS, Cart
+from apps.orders.models import GUEST_CART_TTL_DAYS, UNPAID_ORDER_TTL, Cart
+from apps.orders.services.order import expire_unpaid_orders
 
 
 @shared_task
@@ -19,3 +20,14 @@ def purge_stale_guest_carts() -> int:
     cutoff = timezone.now() - timedelta(days=GUEST_CART_TTL_DAYS)
     deleted, _ = Cart.objects.guest().inactive_since(cutoff).delete()
     return deleted
+
+
+@shared_task
+def cancel_stale_orders() -> int:
+    """Anuluje zamówienia bez zapłaty przez dobę (`CONTEXT.md`, Order).
+
+    Zwalnia przy tym rezerwacje: zamówienie, które nie zostanie opłacone,
+    nie może w nieskończoność trzymać towaru poza sprzedażą. Rezerwacje
+    i tak wygasają po pół godziny — to zadanie domyka samo zamówienie.
+    """
+    return expire_unpaid_orders(older_than=timezone.now() - UNPAID_ORDER_TTL)

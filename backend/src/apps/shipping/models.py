@@ -160,3 +160,60 @@ class ShippingMethod(TimestampedModel):
                     )
                 }
             )
+
+
+class Shipment(TimestampedModel):
+    """Konkretna przesyłka wysłana w ramach zamówienia (`CONTEXT.md`, Shipment).
+
+    Wpisywana ręcznie w panelu: etykiety i numery śledzenia idą na razie
+    z serwisu przewoźnika, a adapter przewoźnika to późniejszy bilet
+    (ADR 0027). Wartość zadeklarowana jest tu, a nie na metodzie dostawy —
+    ubezpieczenie jest sprawą sklepu i przewoźnika, a nie pozycją kasy
+    (ADR 0028), więc klient tej kwoty nigdy nie widzi.
+
+    Dla wyrobu na zamówienie przesyłka powstaje dopiero po zakończeniu
+    produkcji (ADR 0024), czyli po etapie `in_production`.
+    """
+
+    order = models.ForeignKey(
+        "orders.Order",
+        on_delete=models.PROTECT,
+        related_name="shipments",
+        help_text="Zamówienie, w ramach którego idzie przesyłka",
+    )
+    tracking_number = models.CharField(
+        max_length=64,
+        blank=True,
+        help_text="Numer śledzenia u przewoźnika; pusty do chwili nadania",
+    )
+    declared_value = MoneyAmountField(
+        validators=[MinValueValidator(0)],
+        help_text=(
+            "Wartość zadeklarowana przewoźnikowi w groszach. Nie wychodzi "
+            "przez API — ubezpieczenie jest wliczone w stawkę (ADR 0028)."
+        ),
+    )
+    currency = CurrencyField()
+    pickup_point_code = models.CharField(
+        max_length=32,
+        blank=True,
+        help_text="Kod punktu odbioru; wypełniany wyłącznie dla paczkomatu",
+    )
+
+    class Meta:
+        verbose_name = "Przesyłka"
+        verbose_name_plural = "Przesyłki"
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(declared_value__gte=0),
+                name="shipment_declared_value_is_not_negative",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return self.tracking_number or f"Przesyłka do {self.order_id}"  # type: ignore[missing-attribute]
+
+    @property
+    def declared_value_money(self) -> Money:
+        return Money(self.declared_value, self.currency)
