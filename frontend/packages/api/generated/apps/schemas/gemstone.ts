@@ -8,7 +8,7 @@
 import type { ClarityEnum } from './clarityEnum';
 import type { ColourEnum } from './colourEnum';
 import type { CutEnum } from './cutEnum';
-import type { KindEnum } from './kindEnum';
+import type { StoneEnum } from './stoneEnum';
 
 /**
  * Kamień z parametrami i adresem certyfikatu, jeśli jest.
@@ -31,7 +31,7 @@ export interface Gemstone {
   * `amethyst` - Ametyst
   * `cubic_zirconia` - Cyrkonia
   * `moissanite` - Moissanit */
-  readonly kind: KindEnum;
+  readonly kind: StoneEnum;
   /**
      * Masa w karatach
      * @pattern ^-?\d{0,3}(?:\.\d{0,3})?$

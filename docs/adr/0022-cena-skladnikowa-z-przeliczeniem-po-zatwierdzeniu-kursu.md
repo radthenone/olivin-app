@@ -32,9 +32,10 @@ dzienniku zmian panelu. Dostawca kursu jest wymienny przez adapter — patrz
 
 ## Uzupełnienie (2026-09-22)
 
-Cykl życia z ręczną aktywacją dotyczy wyłącznie kursu kruszcu. Kurs euro
-([ADR 0019](0019-sprzedaz-do-ue-w-euro-po-polskim-vat.md)) nie zmienia ceny
-zapisanej w kolumnie — jest przelicznikiem stosowanym przy odczycie i przy
-składaniu zamówienia — więc aktywuje się automatycznie, raz na 30 dni. Cena
-w euro po zaokrągleniu w górę do końcówki ,00 albo ,50 podlega temu samemu
-progowi: nie schodzi poniżej kosztu wariantu.
+Cykl życia z zaproponowaniem i aktywacją dotyczy wyłącznie kursu kruszcu.
+Kurs euro, którym cena złotowa jest przeliczana dla klienta z Unii
+([ADR 0019](0019-sprzedaz-do-ue-w-euro-po-polskim-vat.md)), jest odświeżany
+co 30 dni i wchodzi w życie bez aktywacji. Cena w euro jest zaokrąglana w górę
+do końcówki ,00 albo ,50, a próg minimalny — koszt wariantu bez marży —
+obowiązuje także po przeliczeniu: cena w euro nigdy nie spada poniżej kosztu
+przeliczonego tym samym kursem.

@@ -16,6 +16,7 @@ from rest_framework.test import APIClient
 
 from tests.factories.categories import CategoryFactory
 from tests.factories.products import (
+    EngravableProductFactory,
     MadeToOrderProductFactory,
     ProductFactory,
     ProductVariantFactory,
@@ -205,6 +206,36 @@ class TestProductDetail:
 
         assert body["isMadeToOrder"] is False
         assert body["productionTimeDays"] is None
+
+    def test_produkt_grawerowalny_niesie_cene_grawerunku(self, api_client: APIClient):
+        """Koszyk bierze stąd zgodę na grawer i jego cenę (ADR 0018)."""
+        product = EngravableProductFactory(name="Sygnet")
+
+        _, body = _get(api_client, _detail(product.slug))
+
+        assert body["isEngravable"] is True
+        assert body["engravingPrice"] == {"amount": 4900, "currency": "PLN"}
+
+    def test_produkt_bez_grawerunku_nie_ma_ceny_grawerunku(self, api_client: APIClient):
+        product = PublishedProductFactory()
+
+        _, body = _get(api_client, _detail(product.slug))
+
+        assert body["isEngravable"] is False
+        assert body["engravingPrice"] is None
+
+    def test_lista_tez_niesie_grawer(self, api_client: APIClient):
+        """Karta produktu na liście ma pokazać „z grawerem” bez wchodzenia
+        w szczegół."""
+        EngravableProductFactory()
+
+        _, body = _get(api_client, reverse("product-list"))
+
+        assert body["results"][0]["isEngravable"] is True
+        assert body["results"][0]["engravingPrice"] == {
+            "amount": 4900,
+            "currency": "PLN",
+        }
 
     def test_odpowiedz_nie_zdradza_statusu_ani_ceny_wyliczonej(
         self, api_client: APIClient

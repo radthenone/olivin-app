@@ -38,18 +38,20 @@ trzema kanałami do klientów ze zgodą marketingową i potwierdzonych subskrypc
 newslettera. Osobny byt kampanii — harmonogram, segmenty (premium / wszyscy),
 statystyki otwarć — wraca, gdy ręczny przycisk przestanie wystarczać.
 
-### Interfejs kasy na webie i mobile
+### Checkout UI web + mobile
 
-Seria sprzedażowa (#144–#157) buduje wyłącznie backend: modele, panel, API
-i testy. Interfejs kasy przychodzi po niej, gdy powstanie interfejs katalogu,
-a klient Orval i MSW dostaną stabilne API. Zapisany kierunek: ikonka koszyka
-z licznikiem pozycji, rozwijana lista, pełny widok koszyka jako krok pierwszy,
-cztery ekrany kasy (koszyk → dane i adres → dostawa → płatność) z arkuszem
-operatora wysuwanym od dołu na mobile i osadzonym elementem na webie
-([ADR 0012](adr/0012-payment-intents-z-gotowymi-elementami.md),
-[ADR 0030](adr/0030-koszyk-na-backendzie-gosc-przez-token-kasa-w-czterech-krokach.md)).
-Każdy bilet backendowy niesie sekcję „kontrakt API musi umożliwić", żeby tej
-drogi nie zamknąć. Tracker: #158.
+Ekrany kasy — koszyk, dane i adres, dostawa, płatność — dla web i aplikacji
+mobilnej. Model kasy jest rozstrzygnięty w
+[ADR 0030](adr/0030-koszyk-po-stronie-backendu-i-kasa-w-czterech-krokach.md):
+koszyk na backendzie, gość z tokenem, cztery kroki, koszt dostawy znany przed
+intencją płatniczą. Interfejs czeka, aż backend koszyka i kasy istnieje —
+projektowanie ekranów przed kontraktem API oznaczałoby rysowanie ich dwa razy.
+Zapisany kierunek: ikonka koszyka z licznikiem pozycji, rozwijana lista, pełny
+widok koszyka jako krok pierwszy, arkusz operatora wysuwany od dołu na mobile
+i osadzony element na webie
+([ADR 0012](adr/0012-payment-intents-z-gotowymi-elementami.md)). Każdy bilet
+backendowy serii #144–#157 niesie sekcję „kontrakt API musi umożliwić", żeby
+tej drogi nie zamknąć. Tracker: #158.
 
 ### Świadomie poza zakresem pierwszej wersji
 
@@ -123,3 +125,7 @@ wiążącej wpłatę z zamówieniem ([0026](adr/0026-dokument-sprzedazy-generowa
 
 Decyzje właściciela z 18–19 września 2026 (przegląd całej wizji sklepu)
 zapisane w ADR 0022–0029 i w `CONTEXT.md`; ADR 0017 zastąpiony przez 0022.
+
+Grillowanie serii sprzedażowej z 21–22 września 2026: model kasy w
+[ADR 0030](adr/0030-koszyk-po-stronie-backendu-i-kasa-w-czterech-krokach.md),
+kurs euro jako uzupełnienia ADR 0019 i 0022.

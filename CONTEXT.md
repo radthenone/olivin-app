@@ -77,7 +77,7 @@ _Unikaj_: Tax, TaxRate
 ## Koszyk i zamówienie
 
 **Cart**:
-Zbiór wariantów wybranych przez klienta przed złożeniem zamówienia, przechowywany po stronie sklepu. Należy do użytkownika albo do gościa identyfikowanego tokenem wydanym przez sklep; po zalogowaniu koszyk gościa zostaje scalony z koszykiem konta, a anonimowy znika. Koszyk gościa bez aktywności przez 30 dni jest kasowany.
+Zbiór wariantów wybranych przez klienta przed złożeniem zamówienia, przechowywany na backendzie dla każdego klienta — web i mobile. Należy do użytkownika albo do gościa identyfikowanego tokenem koszyka wydanym przez backend, nigdy do obu. Przy logowaniu koszyk gościa jest scalany z koszykiem konta, a token gościa przestaje działać. Koszyk gościa bez aktywności przez 30 dni jest kasowany.
 _Unikaj_: Basket, Bag, Koszyk zakupowy
 
 **CartItem**:
@@ -85,11 +85,11 @@ Pozycja koszyka: wariant, ilość i parametry personalizacji. Nie zamraża ceny 
 _Unikaj_: LineItem, CartLine
 
 **Order**:
-Zamówienie złożone przez klienta — zalogowanego albo gościa podającego e-mail i adres; zamówienia gościa zostają podpięte do konta założonego później na ten sam e-mail. Powstaje z koszyka po wyborze adresu i metody dostawy, przed płatnością, w statusie `pending`; kwota intencji płatniczej pochodzi z zamówienia, nie z koszyka. Niemutowalne co do treści: zawiera kopię kosztu dostawy i kursu waluty z chwili złożenia; zmienia się wyłącznie jego status. Klient sam anuluje tylko zamówienie `pending` albo `paid`; później wyłącznie przez zwrot.
+Zamówienie złożone przez klienta — zalogowanego albo gościa podającego e-mail i adres; zamówienia gościa zostają podpięte do konta założonego później na ten sam e-mail. Powstaje na początku kroku płatności — przed zapłatą — w statusie `pending`, a zdarzenie od operatora przenosi je do `paid`; nieopłacone wygasa samo. Niemutowalne co do treści: zawiera kopię kosztu dostawy i kursu waluty z chwili złożenia; zmienia się wyłącznie jego status. Klient sam anuluje tylko zamówienie `pending` albo `paid`; później wyłącznie przez zwrot.
 _Unikaj_: Purchase, Transaction, Sale
 
 **ExchangeRate**:
-Kurs złotego do euro z Narodowego Banku Polskiego, odświeżany raz na 30 dni i aktywowany automatycznie, użyty do pokazania cen i pobrania zapłaty w euro od klienta z kraju Unii. Cena w euro jest zaokrąglana w górę do końcówki ,00 albo ,50. Ceny źródłowe są zawsze w złotych.
+Kurs złotego do euro z Narodowego Banku Polskiego, odświeżany co 30 dni i działający bez ręcznej aktywacji, użyty do pokazania cen i pobrania zapłaty w euro od klienta z kraju Unii. Cena w euro jest zaokrąglana w górę do końcówki ,00 albo ,50 i nigdy nie schodzi poniżej kosztu wariantu. Ceny źródłowe są zawsze w złotych.
 _Unikaj_: Rate, Currency, Przelicznik
 
 **OrderItem**:
@@ -230,6 +230,10 @@ _Unikaj_: Token, Device (bez określenia)
 Adres e-mail zapisany do wiadomości marketingowych bez konta, aktywny dopiero po potwierdzeniu linkiem. Każda wiadomość pozwala się wypisać bez logowania. Po założeniu konta na ten adres subskrypcja przechodzi w preferencje konta. Ogłoszenie promocji trafia do klientów z kontem i zgodą oraz do potwierdzonych subskrypcji, bez powtórzeń.
 _Unikaj_: Mailing list, Lead, Kontakt
 
+**ConsentDocument**:
+Wersja regulaminu, polityki prywatności albo zgody marketingowej: rodzaj, oznaczenie wersji i dzień, od którego obowiązuje. Bieżąca wersja to najnowsza już obowiązująca; treść dokumentu żyje na stronie sklepu, nie w modelu.
+_Unikaj_: Terms, Policy, Regulamin jako treść
+
 **Consent**:
-Wersjonowana zgoda klienta albo gościa na regulamin, politykę prywatności lub komunikację marketingową, z datą. Nowa wersja dokumentu wymaga ponownej akceptacji. Zgody na pliki cookie żyją wyłącznie w przeglądarce i nie są tu zapisywane.
+Wersjonowana zgoda klienta albo gościa na regulamin, politykę prywatności lub komunikację marketingową, z datą. Podmiotem jest użytkownik albo e-mail gościa — dokładnie jedno; zgoda gościa nie przechodzi na konto założone później. Nowa wersja dokumentu wymaga ponownej akceptacji. Zgody na pliki cookie żyją wyłącznie w przeglądarce i nie są tu zapisywane.
 _Unikaj_: Agreement, Terms accepted (jako flaga), Cookie consent

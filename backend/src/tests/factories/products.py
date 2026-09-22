@@ -44,10 +44,20 @@ class ProductFactory(DjangoModelFactory):
     status = ProductStatus.DRAFT
     is_made_to_order = False
     production_time_days = None
+    is_engravable = False
+    engraving_price = None
 
 
 class PublishedProductFactory(ProductFactory):
     status = ProductStatus.PUBLISHED
+
+
+class EngravableProductFactory(ProductFactory):
+    """Sygnet: opublikowany, z grawerem wycenionym osobno (ADR 0018)."""
+
+    status = ProductStatus.PUBLISHED
+    is_engravable = True
+    engraving_price = 4900
 
 
 class MadeToOrderProductFactory(ProductFactory):

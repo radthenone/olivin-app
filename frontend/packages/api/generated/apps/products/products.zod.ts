@@ -48,6 +48,11 @@ export const ProductsListResponse = zod.object({
   "fineness": zod.enum(['333', '375', '585', '750', '916', '925', '950', '999']).describe('\* `333` - 333 (8 karatów)\n\* `375` - 375 (9 karatów)\n\* `585` - 585 (14 karatów)\n\* `750` - 750 (18 karatów)\n\* `916` - 916 (22 karaty)\n\* `925` - 925 (srebro próby 925)\n\* `950` - 950 (platyna)\n\* `999` - 999 (kruszec inwestycyjny)').describe('Próba kruszcu\n\n\* `333` - 333 (8 karatów)\n\* `375` - 375 (9 karatów)\n\* `585` - 585 (14 karatów)\n\* `750` - 750 (18 karatów)\n\* `916` - 916 (22 karaty)\n\* `925` - 925 (srebro próby 925)\n\* `950` - 950 (platyna)\n\* `999` - 999 (kruszec inwestycyjny)'),
   "isMadeToOrder": zod.boolean().describe('Wyrób wytwarzany po złożeniu zamówienia (ADR 0024). Nie ma stanu magazynowego, ma za to czas realizacji.'),
   "productionTimeDays": zod.number().nullable().describe('Czas realizacji w dniach; wymagany przy produkcie na zamówienie'),
+  "isEngravable": zod.boolean().describe('Wyrób można grawerować (ADR 0018). Grawer jest osobną pozycją ceny doliczaną do wariantu i wyłącza prawo odstąpienia.'),
+  "engravingPrice": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.').nullable().describe('Cena grawerunku brutto; pusta, gdy produktu nie da się grawerować.'),
   "cheapestVariant": zod.object({
   "id": zod.uuid(),
   "sku": zod.string().describe('Oznaczenie magazynowe wariantu, unikalne w całym katalogu'),
@@ -115,6 +120,11 @@ export const ProductsRetrieveResponse = zod.object({
   "fineness": zod.enum(['333', '375', '585', '750', '916', '925', '950', '999']).describe('\* `333` - 333 (8 karatów)\n\* `375` - 375 (9 karatów)\n\* `585` - 585 (14 karatów)\n\* `750` - 750 (18 karatów)\n\* `916` - 916 (22 karaty)\n\* `925` - 925 (srebro próby 925)\n\* `950` - 950 (platyna)\n\* `999` - 999 (kruszec inwestycyjny)').describe('Próba kruszcu\n\n\* `333` - 333 (8 karatów)\n\* `375` - 375 (9 karatów)\n\* `585` - 585 (14 karatów)\n\* `750` - 750 (18 karatów)\n\* `916` - 916 (22 karaty)\n\* `925` - 925 (srebro próby 925)\n\* `950` - 950 (platyna)\n\* `999` - 999 (kruszec inwestycyjny)'),
   "isMadeToOrder": zod.boolean().describe('Wyrób wytwarzany po złożeniu zamówienia (ADR 0024). Nie ma stanu magazynowego, ma za to czas realizacji.'),
   "productionTimeDays": zod.number().nullable().describe('Czas realizacji w dniach; wymagany przy produkcie na zamówienie'),
+  "isEngravable": zod.boolean().describe('Wyrób można grawerować (ADR 0018). Grawer jest osobną pozycją ceny doliczaną do wariantu i wyłącza prawo odstąpienia.'),
+  "engravingPrice": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.').nullable().describe('Cena grawerunku brutto; pusta, gdy produktu nie da się grawerować.'),
   "images": zod.array(zod.object({
   "id": zod.uuid(),
   "position": zod.number().describe('Kolejność w galerii; mniejsza liczba wcześniej'),
