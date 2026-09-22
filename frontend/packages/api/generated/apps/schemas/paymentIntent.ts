@@ -16,7 +16,7 @@ kluczem do konta sklepu i nie pozwala niczego obciążyć bez klienta.
 Kwota wraca, żeby klient pokazał dokładnie tę, którą obciąży operator.
  */
 export interface PaymentIntent {
-  readonly id: number;
+  readonly id: string;
   readonly status: PaymentStatusEnum;
   readonly amount: Money;
   /** Sekret intencji dla arkusza płatności (mobile) i elementu (web) */

@@ -51,6 +51,7 @@ class TestRozpoczecieZaplaty:
         assert body["clientSecret"]
         assert body["amount"] == {"amount": order.total.amount, "currency": "PLN"}
         assert body["status"] == PaymentStatus.PENDING
+        assert Payment.objects.filter(pk=body["id"], order=order).exists()
 
     def test_cudze_zamowienie_to_404(self, authenticated_client: APIClient):
         order = placed_order(user=UserFactory())

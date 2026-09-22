@@ -323,6 +323,27 @@ class TestAnulowanieOplaconego:
         assert order.status == OrderStatus.PAID
         assert payment.status == PaymentStatus.REFUND_FAILED
 
+    def test_odrzucony_zwrot_mozna_zlecic_ponownie_nowym_kluczem(
+        self, fake_payment_provider
+    ):
+        order, payment = _paid_order(quantity=1, on_hand=5)
+        request_cancellation(order)
+        handle_event(_event(EventKind.REFUND_FAILED, payment.intent_id))
+
+        request_cancellation(order)
+
+        payment.refresh_from_db()
+        assert payment.status == PaymentStatus.REFUNDING
+        keys = [refund["idempotency_key"] for refund in fake_payment_provider.refunds]
+        assert len(keys) == 2
+        assert len(set(keys)) == 2
+
+        handle_event(_event(EventKind.REFUNDED, payment.intent_id, "evt_refund_ok"))
+
+        order.refresh_from_db()
+        assert order.status == OrderStatus.CANCELLED
+        assert _on_hand(order) == 5
+
     def test_zamowienie_pending_nie_idzie_przez_zwrot(self):
         order = placed_order()
 

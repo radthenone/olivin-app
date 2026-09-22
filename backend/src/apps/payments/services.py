@@ -16,6 +16,7 @@ from apps.inventory.services import (
     restock,
 )
 from apps.orders.models import Order, OrderStatus
+from apps.orders.services import release_reservations
 from apps.payments.models import Payment, PaymentStatus, RefundReason, WebhookEvent
 from core.integrations.payments import (
     EventKind,
@@ -104,7 +105,15 @@ def request_cancellation(order: Order) -> Payment:
         status=PaymentStatus.REFUNDING, refund_reason=RefundReason.CANCELLATION
     ).exists():
         raise PaymentError({"status": "Zwrot za to zamówienie jest już w toku."})
-    payment = payments.filter(status=PaymentStatus.SUCCEEDED).first()
+    # Zwrot odrzucony u operatora (np. zamknięta karta) wolno zlecić ponownie
+    # — inaczej zamówienie utknęłoby jako opłacone bez wyjścia.
+    payment = (
+        payments.filter(status=PaymentStatus.SUCCEEDED).first()
+        or payments.filter(
+            status=PaymentStatus.REFUND_FAILED,
+            refund_reason=RefundReason.CANCELLATION,
+        ).first()
+    )
     if payment is None:
         raise PaymentError({"payment": "Zamówienie nie ma zapłaty do zwrotu."})
 
@@ -207,21 +216,24 @@ def _complete_refund(payment: Payment) -> None:
     elif payment.refund_reason == RefundReason.OUT_OF_STOCK:
         if order.status != OrderStatus.PENDING:
             return
-        _release_active(order)
+        release_reservations(order)
         order.transition_to(OrderStatus.CANCELLED)
 
 
-def _refund(payment: Payment, reason: str) -> None:
-    refund_id = get_provider().refund(
-        payment.intent_id, idempotency_key=f"refund-{payment.intent_id}"
-    )
+def _refund(payment: Payment, reason: RefundReason) -> None:
+    # Klucz idempotencji zmienia się po odrzuconym zwrocie: ten sam klucz
+    # oddałby u operatora ten sam, odrzucony zwrot zamiast zlecić nowy.
+    key = f"refund-{payment.intent_id}"
+    if payment.refund_id:
+        key = f"{key}-after-{payment.refund_id}"
+    refund_id = get_provider().refund(payment.intent_id, idempotency_key=key)
     payment.status = PaymentStatus.REFUNDING
     payment.refund_reason = reason
     payment.refund_id = refund_id
     payment.save(update_fields=["status", "refund_reason", "refund_id", "updated_at"])
 
 
-def _set_status(payment: Payment, status: str) -> None:
+def _set_status(payment: Payment, status: PaymentStatus) -> None:
     payment.status = status
     payment.save(update_fields=["status", "updated_at"])
 
@@ -235,13 +247,6 @@ def _needed_stock(order: Order) -> Counter[int]:
     return needed
 
 
-def _release_active(order: Order) -> None:
-    for reservation in order.reservations.filter(  # type: ignore[missing-attribute]
-        status=ReservationStatus.ACTIVE
-    ):
-        release(reservation)
-
-
 def _renew_reservations(order: Order) -> None:
     """Zwalnia rezerwacje zamówienia i zakłada je od nowa na pełny czas.
 
@@ -250,7 +255,7 @@ def _renew_reservations(order: Order) -> None:
     Odmowa znaczy, że po wygaśnięciu ktoś kupił towar — wtedy zapłaty nie
     zaczynamy.
     """
-    _release_active(order)
+    release_reservations(order)
     items = order.items.select_related("variant__product")  # type: ignore[missing-attribute]
     for item in items:
         try:

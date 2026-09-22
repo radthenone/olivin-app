@@ -55,7 +55,36 @@ class TestStripe:
         assert event.kind == EventKind.PAYMENT_SUCCEEDED
         assert event.intent_id == "pi_1"
 
-    def test_zwrot_wskazuje_intencje_polem_obciazenia(self):
+    @pytest.mark.parametrize(
+        ("event_type", "refund_status", "kind"),
+        [
+            ("refund.created", "succeeded", EventKind.REFUNDED),
+            ("refund.updated", "succeeded", EventKind.REFUNDED),
+            ("refund.created", "pending", EventKind.OTHER),
+            ("refund.updated", "failed", EventKind.REFUND_FAILED),
+        ],
+    )
+    def test_zwrot_konczy_dopiero_status_succeeded(
+        self, event_type, refund_status, kind
+    ):
+        payload = _stripe_event(
+            event_type,
+            {
+                "id": "re_1",
+                "object": "refund",
+                "status": refund_status,
+                "payment_intent": "pi_1",
+            },
+        )
+
+        event = StripeProvider("sk_test", SECRET).verify_signature(
+            payload, _stripe_signature(payload)
+        )
+
+        assert event.kind == kind
+        assert event.intent_id == "pi_1"
+
+    def test_charge_refunded_nie_konczy_zwrotu(self):
         payload = _stripe_event(
             "charge.refunded",
             {"id": "ch_1", "object": "charge", "payment_intent": "pi_1"},
@@ -65,8 +94,7 @@ class TestStripe:
             payload, _stripe_signature(payload)
         )
 
-        assert event.kind == EventKind.REFUNDED
-        assert event.intent_id == "pi_1"
+        assert event.kind == EventKind.OTHER
 
     def test_nieznane_zdarzenie_to_other(self):
         payload = _stripe_event("customer.created", {"id": "cus_1"})

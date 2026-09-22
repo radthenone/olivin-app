@@ -4032,7 +4032,8 @@ components:
         Kwota wraca, żeby klient pokazał dokładnie tę, którą obciąży operator.
       properties:
         id:
-          type: integer
+          type: string
+          format: uuid
           readOnly: true
         status:
           allOf:

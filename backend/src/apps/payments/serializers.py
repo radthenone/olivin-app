@@ -14,7 +14,7 @@ class PaymentIntentSerializer(serializers.Serializer):
     Kwota wraca, żeby klient pokazał dokładnie tę, którą obciąży operator.
     """
 
-    id = serializers.IntegerField(source="payment.id", read_only=True)
+    id = serializers.UUIDField(source="payment.id", read_only=True)
     status = serializers.ChoiceField(
         source="payment.status", choices=PaymentStatus.choices, read_only=True
     )

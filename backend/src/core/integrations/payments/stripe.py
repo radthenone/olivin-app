@@ -15,8 +15,17 @@ from core.integrations.payments.base import (
 _EVENT_KINDS = {
     "payment_intent.succeeded": EventKind.PAYMENT_SUCCEEDED,
     "payment_intent.payment_failed": EventKind.PAYMENT_FAILED,
-    "charge.refunded": EventKind.REFUNDED,
     "refund.failed": EventKind.REFUND_FAILED,
+}
+
+# Zwrot kończy się dopiero stanem `succeeded` na obiekcie zwrotu. Nie
+# `charge.refunded`: to przychodzi już przy zleceniu, także gdy zwrot przez
+# Przelewy24 czy BLIK dopiero czeka — zamówienie anulowałoby się, zanim
+# pieniądze faktycznie wróciły.
+_REFUND_EVENTS = {"refund.created", "refund.updated"}
+_REFUND_STATUS_KINDS = {
+    "succeeded": EventKind.REFUNDED,
+    "failed": EventKind.REFUND_FAILED,
 }
 
 
@@ -30,7 +39,9 @@ class StripeProvider:
 
     signature_header = "Stripe-Signature"
 
-    def __init__(self, api_key: str | None = None, webhook_secret: str | None = None):
+    def __init__(
+        self, api_key: str | None = None, webhook_secret: str | None = None
+    ) -> None:
         self.api_key = api_key or getattr(settings, "STRIPE_SECRET_KEY", "")
         self.webhook_secret = webhook_secret or getattr(
             settings, "STRIPE_WEBHOOK_SECRET", ""
@@ -83,6 +94,8 @@ class StripeProvider:
         data = event.to_dict()
         obj = data.get("data", {}).get("object", {})
         kind = _EVENT_KINDS.get(event.type, EventKind.OTHER)
+        if event.type in _REFUND_EVENTS:
+            kind = _REFUND_STATUS_KINDS.get(obj.get("status", ""), EventKind.OTHER)
         return ProviderEvent(
             id=event.id,
             kind=kind,
