@@ -19,6 +19,7 @@ from apps.orders.serializers import (
     CartSerializer,
 )
 from apps.orders.services import (
+    CartTotals,
     add_item,
     cart_items,
     get_cart,
@@ -28,7 +29,6 @@ from apps.orders.services import (
     set_quantity,
     totals,
 )
-from common.money import DEFAULT_CURRENCY, Money
 
 # Gość nosi swój koszyk w tym nagłówku — nie w ciasteczku, bo aplikacja
 # mobilna ciasteczek nie ma (ADR 0030).
@@ -38,46 +38,33 @@ _META_KEY = "HTTP_X_CART_TOKEN"
 
 @dataclass(frozen=True, slots=True)
 class CartPayload:
-    """Koszyk gotowy do serializacji — pozycje, token i podsumowanie razem."""
+    """Koszyk gotowy do serializacji: token, pozycje i podsumowanie razem.
+
+    Podsumowanie zostaje osobnym obiektem z serwisu, zamiast być tu
+    przepisane pole po polu — jedno miejsce liczy sumy, jedno je pokazuje.
+    """
 
     cart_token: str | None
     items: list[CartItem]
-    item_count: int
-    subtotal: Money
-    discount_amount: Money
-    coupon_amount: Money
-    total: Money
+    totals: CartTotals
 
 
-def _empty_view() -> CartPayload:
+def _empty_payload() -> CartPayload:
     """Klient bez koszyka widzi pusty koszyk, nie 404.
 
     Odczyt nie zakłada wiersza: koszyk powstaje dopiero przy pierwszym
     dodaniu pozycji, inaczej każdy robot indeksujący zostawiałby po sobie
     pusty koszyk do posprzątania.
     """
-    zero = Money.zero(DEFAULT_CURRENCY)
-    return CartPayload(
-        cart_token=None,
-        items=[],
-        item_count=0,
-        subtotal=zero,
-        discount_amount=zero,
-        coupon_amount=zero,
-        total=zero,
-    )
+    return CartPayload(cart_token=None, items=[], totals=totals([]))
 
 
-def _view_of(cart: Cart) -> CartPayload:
-    summary = totals(cart)
+def _payload_of(cart: Cart) -> CartPayload:
+    items = list(cart_items(cart))
     return CartPayload(
         cart_token=cart.session_key or None,
-        items=list(cart_items(cart)),
-        item_count=summary.item_count,
-        subtotal=summary.subtotal,
-        discount_amount=summary.discount_amount,
-        coupon_amount=summary.coupon_amount,
-        total=summary.total,
+        items=items,
+        totals=totals(items),
     )
 
 
@@ -112,8 +99,11 @@ class CartDetailView(APIView):
 
     def get(self, request: Request) -> Response:
         cart = get_cart(user=_user(request), token=_token(request))
-        view = _empty_view() if cart is None else _view_of(cart)
-        return Response(CartSerializer(view).data)
+        if cart is None:
+            return Response(CartSerializer(_empty_payload()).data)
+
+        cart.touch_on_read()
+        return Response(CartSerializer(_payload_of(cart)).data)
 
 
 @cart_merge_schema
@@ -144,7 +134,7 @@ class CartMergeView(APIView):
 
         target = get_or_create_cart(user=request.user)
         merged = merge_carts(guest=guest, target=target)
-        return Response(CartSerializer(_view_of(merged)).data)
+        return Response(CartSerializer(_payload_of(merged)).data)
 
 
 @cart_item_schema
@@ -186,7 +176,7 @@ class CartItemViewSet(viewsets.GenericViewSet):
             raise _as_drf_error(error) from error
 
         return Response(
-            CartSerializer(_view_of(cart)).data, status=status.HTTP_201_CREATED
+            CartSerializer(_payload_of(cart)).data, status=status.HTTP_201_CREATED
         )
 
     def partial_update(self, request: Request, *args, **kwargs) -> Response:
@@ -199,10 +189,10 @@ class CartItemViewSet(viewsets.GenericViewSet):
         except DjangoValidationError as error:
             raise _as_drf_error(error) from error
 
-        return Response(CartSerializer(_view_of(item.cart)).data)
+        return Response(CartSerializer(_payload_of(item.cart)).data)
 
     def destroy(self, request: Request, *args, **kwargs) -> Response:
         item = self.get_object()
         cart = item.cart
         remove_item(item)
-        return Response(CartSerializer(_view_of(cart)).data)
+        return Response(CartSerializer(_payload_of(cart)).data)

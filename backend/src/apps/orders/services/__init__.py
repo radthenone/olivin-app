@@ -3,8 +3,10 @@
 from apps.orders.services.cart import (
     CartError,
     CartTotals,
+    Personalisation,
     add_item,
     cart_items,
+    find_item,
     get_cart,
     get_or_create_cart,
     merge_carts,
@@ -17,8 +19,10 @@ from apps.orders.services.cart import (
 __all__ = [
     "CartError",
     "CartTotals",
+    "Personalisation",
     "add_item",
     "cart_items",
+    "find_item",
     "get_cart",
     "get_or_create_cart",
     "merge_carts",

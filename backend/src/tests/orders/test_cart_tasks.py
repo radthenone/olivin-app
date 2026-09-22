@@ -36,6 +36,26 @@ class TestSprzataniaKoszykowGosci:
 
         assert Cart.objects.filter(pk=fresh.pk).exists() is True
 
+    def test_ogladany_koszyk_goscia_nie_jest_porzucony(self):
+        """Odczyt też jest aktywnością — inaczej klient traci koszyk, z którego korzysta."""
+        cart = _inactive_for(GuestCartFactory(), GUEST_CART_TTL_DAYS - 1)
+
+        cart.refresh_from_db()
+        cart.touch_on_read()
+        purge_stale_guest_carts()  # type: ignore[missing-argument]
+
+        assert Cart.objects.filter(pk=cart.pk).exists() is True
+        cart.refresh_from_db()
+        assert timezone.now() - cart.last_activity_at < timedelta(minutes=1)
+
+    def test_odczyt_tuz_po_zmianie_nie_kosztuje_zapisu(self):
+        cart = GuestCartFactory()
+        before = Cart.objects.get(pk=cart.pk).last_activity_at
+
+        cart.touch_on_read()
+
+        assert Cart.objects.get(pk=cart.pk).last_activity_at == before
+
     def test_koszyk_konta_nie_jest_sprzatany(self):
         """Klient ma prawo wrócić po roku i zastać to, co zostawił."""
         owned = _inactive_for(CartFactory(), GUEST_CART_TTL_DAYS * 12)

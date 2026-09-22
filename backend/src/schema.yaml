@@ -1762,8 +1762,12 @@ components:
       - variant
     CartVariant:
       type: object
-      description: Tyle o wariancie, ile potrzebuje wiersz koszyka — nie cała karta
-        produktu.
+      description: |-
+        Tyle o wariancie, ile potrzebuje wiersz koszyka — nie cała karta produktu.
+
+        Miniatura jest tu, a nie po stronie klienta: bez niej rozwijana lista
+        koszyka musiałaby dociągać `GET /products/` po jednym żądaniu na wiersz,
+        żeby pokazać, co klient właściwie kupuje.
       properties:
         id:
           type: string
@@ -1839,6 +1843,13 @@ components:
         isMadeToOrder:
           type: boolean
           readOnly: true
+        thumbnailUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Najwęższy gotowy rozmiar zdjęcia wariantu, a gdy wariant swojego
+            nie ma — zdjęcia produktu. Pusty, gdy żadne zdjęcie nie jest jeszcze przetworzone.
+          readOnly: true
       required:
       - id
       - isMadeToOrder
@@ -1848,6 +1859,7 @@ components:
       - productSlug
       - size
       - sku
+      - thumbnailUrl
     Category:
       type: object
       description: |-

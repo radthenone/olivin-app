@@ -11,6 +11,10 @@ import type { SizeEnum } from './sizeEnum';
 
 /**
  * Tyle o wariancie, ile potrzebuje wiersz koszyka — nie cała karta produktu.
+
+Miniatura jest tu, a nie po stronie klienta: bez niej rozwijana lista
+koszyka musiałaby dociągać `GET /products/` po jednym żądaniu na wiersz,
+żeby pokazać, co klient właściwie kupuje.
  */
 export interface CartVariant {
   readonly id: string;
@@ -64,4 +68,9 @@ export interface CartVariant {
   * `80` - 80 cm */
   readonly length: LengthEnum;
   readonly isMadeToOrder: boolean;
+  /**
+     * Najwęższy gotowy rozmiar zdjęcia wariantu, a gdy wariant swojego nie ma — zdjęcia produktu. Pusty, gdy żadne zdjęcie nie jest jeszcze przetworzone.
+     * @nullable
+     */
+  readonly thumbnailUrl: string | null;
 }

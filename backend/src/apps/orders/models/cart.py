@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -21,6 +21,10 @@ ENGRAVING_MAX_LENGTH = 50
 
 # Koszyk gościa bez aktywności przez miesiąc znika razem z tokenem.
 GUEST_CART_TTL_DAYS = 30
+
+# Jak rzadko sam odczyt koszyka odświeża znacznik aktywności. Termin liczy
+# się w dniach, więc zapis przy każdym `GET /cart/` byłby czystym kosztem.
+READ_TOUCH_INTERVAL = timedelta(days=1)
 
 
 class CartQuerySet(models.QuerySet["Cart"]):
@@ -103,6 +107,18 @@ class Cart(TimestampedModel):
         """Odsuwa termin sprzątania koszyka gościa o kolejne dni bezczynności."""
         self.last_activity_at = timezone.now()
         self.save(update_fields=["last_activity_at", "updated_at"])
+
+    def touch_on_read(self) -> None:
+        """Oglądanie koszyka też jest aktywnością — ale nie kosztuje zapisu za każdym razem.
+
+        Bez tego klient, który przez miesiąc tylko zaglądał do koszyka, bez
+        zmieniania czegokolwiek, traciłby go mimo że z niego korzystał. Zapis
+        idzie najwyżej raz na dobę, bo do terminu liczonego w dniach dokładna
+        godzina i tak nic nie wnosi, a odczyt koszyka jest częsty.
+        """
+        if timezone.now() - self.last_activity_at < READ_TOUCH_INTERVAL:
+            return
+        self.touch()
 
     def clean(self) -> None:
         super().clean()
@@ -235,10 +251,16 @@ class CartItem(TimestampedModel):
         Wspólna treść na parze nie jest tańsza od dwóch różnych: grawer to
         robota przy każdej obrączce z osobna, a nie przy zamówieniu.
         """
-        price = self.variant.product.engraving_price_money
-        if price is None or not self.engraving_text:
+        amount = self.variant.product.engraving_price
+        if amount is None or not self.engraving_text:
             return Money.zero(self.unit_price.currency)
-        return price * (self.specimen_count * self.quantity)
+        # Kwota jest brana w walucie wariantu, a nie w domyślnej walucie
+        # sklepu: grawer i wyrób są wyceniane w jednej walucie źródłowej
+        # (ADR 0019), a stemplowanie jej na sztywno robiłoby z `GET /cart/`
+        # błąd serwera, gdyby kiedykolwiek pojawił się wariant w innej.
+        return Money(amount, self.unit_price.currency) * (
+            self.specimen_count * self.quantity
+        )
 
     @property
     def line_total(self) -> Money:

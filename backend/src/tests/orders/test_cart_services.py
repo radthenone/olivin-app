@@ -10,6 +10,7 @@ from apps.orders.services import (
     add_item,
     get_cart,
     get_or_create_cart,
+    cart_items,
     merge_carts,
     set_quantity,
     totals,
@@ -207,6 +208,41 @@ class TestScalanie:
 
         assert merged.items.get().quantity == MAX_ITEM_QUANTITY
 
+    def test_scalanie_przycina_ilosc_do_stanu(self):
+        """Koszyk gościa mógł leżeć tygodniami — jego ilości wymagają sprawdzenia na nowo."""
+        guest = GuestCartFactory()
+        target = CartFactory()
+        variant = _variant()
+        stock(variant, 2)
+        CartItemFactory(cart=guest, variant=variant, quantity=2)
+        CartItemFactory(cart=target, variant=variant, quantity=2)
+
+        merged = merge_carts(guest=guest, target=target)
+
+        assert merged.items.get().quantity == 2
+
+    def test_pozycja_przenoszona_tez_jest_sprawdzana_wzgledem_stanu(self):
+        guest = GuestCartFactory()
+        target = CartFactory()
+        variant = _variant()
+        stock(variant, 1)
+        CartItemFactory(cart=guest, variant=variant, quantity=4)
+
+        merged = merge_carts(guest=guest, target=target)
+
+        assert merged.items.get().quantity == 1
+
+    def test_pozycja_bez_stanu_zostaje_widoczna_zamiast_zniknac(self):
+        guest = GuestCartFactory()
+        target = CartFactory()
+        variant = _variant()
+        stock(variant, 0)
+        CartItemFactory(cart=guest, variant=variant, quantity=3)
+
+        merged = merge_carts(guest=guest, target=target)
+
+        assert merged.items.get().quantity == 1
+
     def test_rozny_grawer_zostaje_osobna_pozycja(self):
         guest = GuestCartFactory()
         target = CartFactory()
@@ -230,7 +266,7 @@ class TestPodsumowanie:
         stock(variant, 10)
         add_item(cart, variant=variant, quantity=2, engraving_text="Ania")
 
-        summary = totals(cart)
+        summary = totals(cart_items(cart))
 
         assert summary.item_count == 1
         assert summary.subtotal == Money(209800)
@@ -242,13 +278,13 @@ class TestPodsumowanie:
         stock(variant, 10)
         add_item(cart, variant=variant, quantity=1)
 
-        summary = totals(cart)
+        summary = totals(cart_items(cart))
 
         assert summary.discount_amount == Money(0)
         assert summary.coupon_amount == Money(0)
 
     def test_pusty_koszyk_ma_zerowa_sume(self):
-        summary = totals(CartFactory())
+        summary = totals(cart_items(CartFactory()))
 
         assert summary.item_count == 0
         assert summary.total == Money(0)
@@ -261,6 +297,6 @@ class TestPodsumowanie:
 
         add_item(cart, variant=variant, quantity=1, second_size=RingSize.S20)
 
-        summary = totals(cart)
+        summary = totals(cart_items(cart))
         assert summary.item_count == 1
         assert summary.total == Money(200000)

@@ -1,9 +1,11 @@
 from django.urls import include, path
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import SimpleRouter
 
 from apps.orders.views import CartDetailView, CartItemViewSet, CartMergeView
 
-router = DefaultRouter()
+# `SimpleRouter`, nie `DefaultRouter`: korzeń `/cart/` należy do widoku
+# koszyka, więc api-root generowany przez ten drugi i tak byłby przykryty.
+router = SimpleRouter()
 router.register(r"items", CartItemViewSet, basename="cart-item")
 
 urlpatterns = [
