@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from apps.shipping.models import ShippingZone
+from apps.shipping.models import ShippingMethodKind, ShippingZone
 from core.api.serializers import MoneySerializer
 
 
@@ -39,10 +39,24 @@ class ShippingOfferSerializer(serializers.Serializer):
 
     id = serializers.UUIDField(source="method.id", read_only=True)
     name = serializers.CharField(source="method.name", read_only=True)
-    kind = serializers.CharField(source="method.kind", read_only=True)
-    zone = serializers.CharField(source="method.zone", read_only=True)
+    # `ChoiceField`, a nie `CharField`: bez listy wartości schemat ogłasza goły
+    # `string`, a wygenerowany klient traci typ, po którym kasa rozgałęzia się
+    # na kod paczkomatu (ADR 0028).
+    kind = serializers.ChoiceField(
+        choices=ShippingMethodKind.choices,
+        source="method.kind",
+        read_only=True,
+    )
+    zone = serializers.ChoiceField(
+        choices=ShippingZone.choices,
+        source="method.zone",
+        read_only=True,
+    )
     cost = MoneySerializer(read_only=True)
     is_free = serializers.BooleanField(
         read_only=True,
-        help_text="Czy koszyk przekroczył próg darmowej dostawy",
+        help_text=(
+            "Czy klient nie zapłaci za tę dostawę — z progu darmowej dostawy "
+            "albo ze stawki zero, jak przy odbiorze osobistym"
+        ),
     )

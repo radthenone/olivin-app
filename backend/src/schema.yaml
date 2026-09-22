@@ -3189,6 +3189,18 @@ components:
       description: |-
         * `customer` - Customer
         * `admin` - Admin
+    ShippingMethodKindEnum:
+      enum:
+      - parcel_locker
+      - courier
+      - pickup
+      - eu
+      type: string
+      description: |-
+        * `parcel_locker` - Paczkomat
+        * `courier` - Kurier
+        * `pickup` - Odbiór osobisty
+        * `eu` - Przesyłka do Unii
     ShippingOffer:
       type: object
       description: |-
@@ -3206,10 +3218,12 @@ components:
           type: string
           readOnly: true
         kind:
-          type: string
+          allOf:
+          - $ref: '#/components/schemas/ShippingMethodKindEnum'
           readOnly: true
         zone:
-          type: string
+          allOf:
+          - $ref: '#/components/schemas/ShippingZoneEnum'
           readOnly: true
         cost:
           allOf:
@@ -3218,7 +3232,8 @@ components:
         isFree:
           type: boolean
           readOnly: true
-          description: Czy koszyk przekroczył próg darmowej dostawy
+          description: Czy klient nie zapłaci za tę dostawę — z progu darmowej dostawy
+            albo ze stawki zero, jak przy odbiorze osobistym
       required:
       - cost
       - id
@@ -3226,6 +3241,14 @@ components:
       - kind
       - name
       - zone
+    ShippingZoneEnum:
+      enum:
+      - PL
+      - EU
+      type: string
+      description: |-
+        * `PL` - Polska
+        * `EU` - Unia Europejska
     SizeEnum:
       enum:
       - '8'

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from rest_framework import mixins, viewsets
+from rest_framework import viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -16,7 +16,7 @@ from common.money import Money
 
 
 @shipping_method_schema
-class ShippingMethodViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+class ShippingMethodViewSet(viewsets.GenericViewSet):
     """Metody dostawy dostępne dla koszyka o podanej wartości.
 
     Actions:
@@ -25,12 +25,18 @@ class ShippingMethodViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     Dla każdego, bo gość wybiera dostawę przed założeniem konta. Tylko
     odczyt: cennik prowadzi panel (ADR 0021). Bez stronicowania — metod jest
     kilka, a krok trzeci kasy potrzebuje ich wszystkich naraz.
+
+    Bez `ListModelMixin`: odpowiedzią nie jest queryset, tylko lista ofert
+    policzonych dla wartości koszyka, więc mixin byłby odziedziczony po to,
+    żeby nadpisać go w całości.
     """
 
     permission_classes = [AllowAny]
     serializer_class = ShippingOfferSerializer
     pagination_class = None
     filter_backends: list = []
+    # Pusty queryset wyłącznie po to, żeby generator schematu rozpoznał model
+    # widoku — dane bierze serwis, nie ta wartość.
     queryset = ShippingMethod.objects.none()
 
     def list(self, request: Request, *args, **kwargs) -> Response:

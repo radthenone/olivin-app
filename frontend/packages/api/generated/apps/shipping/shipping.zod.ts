@@ -25,13 +25,13 @@ export const ShippingMethodsListQueryParams = zod.object({
 export const ShippingMethodsListResponseItem = zod.object({
   "id": zod.uuid(),
   "name": zod.string(),
-  "kind": zod.string(),
-  "zone": zod.string(),
+  "kind": zod.enum(['parcel_locker', 'courier', 'pickup', 'eu']).describe('\* `parcel_locker` - Paczkomat\n\* `courier` - Kurier\n\* `pickup` - Odbiór osobisty\n\* `eu` - Przesyłka do Unii'),
+  "zone": zod.enum(['PL', 'EU']).describe('\* `PL` - Polska\n\* `EU` - Unia Europejska'),
   "cost": zod.object({
   "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
   "currency": zod.string().describe('Kod waluty ISO 4217')
 }).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
-  "isFree": zod.boolean().describe('Czy koszyk przekroczył próg darmowej dostawy')
+  "isFree": zod.boolean().describe('Czy klient nie zapłaci za tę dostawę — z progu darmowej dostawy albo ze stawki zero, jak przy odbiorze osobistym')
 }).describe('Metoda dostawy z kosztem policzonym dla konkretnej wartości koszyka.\n\nGórna wartość zamówienia nie wychodzi na zewnątrz: klient nie ma jej po\nco znać, bo metoda, której limit przekroczył, po prostu nie ma go na\nliście. Ubezpieczenia też tu nie ma — jest wliczone w stawkę (ADR 0028).')
 export const ShippingMethodsListResponse = zod.array(ShippingMethodsListResponseItem)
 

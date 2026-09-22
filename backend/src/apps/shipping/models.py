@@ -35,6 +35,15 @@ class ShippingMethodQuerySet(models.QuerySet["ShippingMethod"]):
     def for_zone(self, zone: str) -> ShippingMethodQuerySet:
         return self.filter(zone=zone)
 
+    def in_currency(self, currency: str) -> ShippingMethodQuerySet:
+        """Metody wycenione w walucie, którą płaci klient.
+
+        Stawki nie da się porównać z wartością koszyka ani do niej dodać,
+        gdy waluty się różnią. Metoda w obcej walucie nie jest więc błędem
+        do zgłoszenia, tylko metodą, której dziś nie da się zaoferować.
+        """
+        return self.filter(currency=currency)
+
     def within_value_limit(self, order_value: Money) -> ShippingMethodQuerySet:
         """Metody, których górna wartość zamówienia nie została przekroczona.
 

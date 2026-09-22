@@ -82,6 +82,25 @@ class TestListaMetod:
 
         assert [row["name"] for row in response.json()] == ["Kurier PL"]
 
+    def test_odbior_osobisty_jest_darmowy_ponizej_progu(
+        self, api_client: APIClient, settings
+    ):
+        settings.FREE_SHIPPING_THRESHOLD = 50000
+        PickupMethodFactory(name="Odbiór w pracowni")
+
+        response: Any = api_client.get(_url(), {"order_value": 1000})
+
+        assert response.json()[0]["isFree"] is True
+
+    def test_metoda_w_obcej_walucie_nie_wywraca_odczytu(self, api_client: APIClient):
+        """Publiczny odczyt nie może paść przez jeden wiersz wpisany w panelu."""
+        ShippingMethodFactory(name="Kurier EUR", currency="EUR")
+
+        response: Any = api_client.get(_url(), {"order_value": 10000})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == []
+
     def test_lista_nie_jest_stronicowana(self, api_client: APIClient):
         ShippingMethodFactory()
 

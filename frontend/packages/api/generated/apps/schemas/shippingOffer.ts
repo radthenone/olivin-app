@@ -6,6 +6,8 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { Money } from './money';
+import type { ShippingMethodKindEnum } from './shippingMethodKindEnum';
+import type { ShippingZoneEnum } from './shippingZoneEnum';
 
 /**
  * Metoda dostawy z kosztem policzonym dla konkretnej wartości koszyka.
@@ -17,9 +19,9 @@ liście. Ubezpieczenia też tu nie ma — jest wliczone w stawkę (ADR 0028).
 export interface ShippingOffer {
   readonly id: string;
   readonly name: string;
-  readonly kind: string;
-  readonly zone: string;
+  readonly kind: ShippingMethodKindEnum;
+  readonly zone: ShippingZoneEnum;
   readonly cost: Money;
-  /** Czy koszyk przekroczył próg darmowej dostawy */
+  /** Czy klient nie zapłaci za tę dostawę — z progu darmowej dostawy albo ze stawki zero, jak przy odbiorze osobistym */
   readonly isFree: boolean;
 }

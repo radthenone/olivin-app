@@ -11,12 +11,7 @@ class ShippingMethodAdmin(admin.ModelAdmin):
     list_filter = ("zone", "kind", "is_active")
     search_fields = ("name",)
     ordering = ("zone", "rate", "name")
-    fields = (
-        "name",
-        "kind",
-        "zone",
-        "rate",
-        "currency",
-        "max_order_value",
-        "is_active",
-    )
+    # Waluty nie ma w formularzu: ceny źródłowe są złotowe (ADR 0019), a metoda
+    # wyceniona w euro dziś nie wyszłaby do żadnego klienta — przeliczenie
+    # stawek przyjdzie razem ze sprzedażą do Unii.
+    fields = ("name", "kind", "zone", "rate", "max_order_value", "is_active")

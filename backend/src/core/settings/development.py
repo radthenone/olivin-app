@@ -80,6 +80,8 @@ SPECTACULAR_SETTINGS = {
     "ENUM_NAME_OVERRIDES": {
         "StoneEnum": "apps.products.models.choices.Stone",
         "ConsentKindEnum": "apps.consents.models.ConsentKind",
+        "ShippingMethodKindEnum": "apps.shipping.models.ShippingMethodKind",
+        "ShippingZoneEnum": "apps.shipping.models.ShippingZone",
     },
     "POSTPROCESSING_HOOKS": [
         "drf_spectacular.hooks.postprocess_schema_enums",
