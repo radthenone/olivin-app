@@ -15,6 +15,7 @@ from apps.inventory.models import (
     StockMovementReason,
 )
 from tests.factories.categories import CategoryFactory
+from tests.factories.inventory import ReservationFactory
 from tests.factories.products import (
     InventoryItemFactory,
     MadeToOrderProductFactory,
@@ -59,8 +60,9 @@ class TestStockIsSumOfMovements:
         assert InventoryItemFactory().on_hand == 0
 
     def test_dostepne_to_stan_minus_rezerwacje(self):
-        item = InventoryItemFactory(reserved=2)
+        item = InventoryItemFactory()
         StockMovementFactory(item=item, quantity=10)
+        ReservationFactory(variant=item.variant, quantity=2)
 
         assert item.available == 8
 
@@ -85,8 +87,9 @@ class TestStockIsSumOfMovements:
     def test_adnotacja_liczy_to_samo_co_wlasciwosc(self):
         from apps.inventory.models import InventoryItem
 
-        item = InventoryItemFactory(reserved=1)
+        item = InventoryItemFactory()
         StockMovementFactory(item=item, quantity=5)
+        ReservationFactory(variant=item.variant, quantity=1)
 
         annotated = InventoryItem.objects.with_stock().get(pk=item.pk)
 
