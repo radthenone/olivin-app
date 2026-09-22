@@ -82,6 +82,13 @@ backend/.schema-check.yaml
 # Taskfile cache ignore
 .task/
 
+# Graphify — commit graph.json + GRAPH_REPORT.md, ignore cache/intermediate
+graphify-out/.graphify_*
+graphify-out/cost.json
+graphify-out/graph.html
+graphify-out/.graphify_python
+graphify-out/.graphify_root
+
 # bruno space
 bruno
 bruno/*
