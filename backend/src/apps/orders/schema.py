@@ -12,6 +12,7 @@ from apps.orders.serializers import (
     OrderLookupSerializer,
     OrderSerializer,
 )
+from apps.payments.serializers import PaymentIntentSerializer
 
 CART_TOKEN_PARAMETER = OpenApiParameter(
     name="X-Cart-Token",
@@ -119,13 +120,30 @@ order_schema = extend_schema_view(
     ),
     cancel=extend_schema(
         tags=["Orders"],
-        summary="Anulowanie zamówienia oczekującego na zapłatę",
+        summary="Anulowanie zamówienia",
         description=(
-            "Zwalnia rezerwacje stanu. Zamówienie w innym statusie jest "
-            "odrzucane — anulowanie opłaconego pociąga zwrot u operatora."
+            "Zamówienie `pending` jest anulowane od razu i zwalnia rezerwacje "
+            "(200). Zamówienie `paid` zleca zwrot u operatora i odpowiada 202 "
+            "w statusie `paid` — do `cancelled` przechodzi po zdarzeniu "
+            "zwrotu, a towar wraca wtedy na stan. Pozostałe statusy są "
+            "odrzucane."
         ),
         parameters=[OrderLookupSerializer],
         request=None,
-        responses={200: OrderSerializer},
+        responses={200: OrderSerializer, 202: OrderSerializer},
+    ),
+    payment=extend_schema(
+        tags=["Orders"],
+        summary="Rozpoczęcie zapłaty za zamówienie",
+        description=(
+            "Zakłada intencję płatniczą na kwotę do zapłaty z zamówienia "
+            "i zwraca `clientSecret` dla arkusza płatności (mobile) albo "
+            "elementu (web). Każde wywołanie to nowa próba; rezerwacje stanu "
+            "są odnawiane na 30 minut. O zapłacie rozstrzyga wyłącznie "
+            "zdarzenie od operatora — status zamówienia trzeba odpytać."
+        ),
+        parameters=[OrderLookupSerializer],
+        request=None,
+        responses={201: PaymentIntentSerializer},
     ),
 )

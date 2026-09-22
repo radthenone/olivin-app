@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -141,7 +142,7 @@ def cancel_order(order: Order) -> Order:
     """Anuluje zamówienie i zwalnia rezerwacje.
 
     Tylko `pending`: anulowanie zamówienia opłaconego pociąga zwrot pieniędzy
-    u operatora i należy do biletu płatności, a nie tutaj.
+    u operatora — `apps.payments.services.request_cancellation`.
     """
     if order.status != OrderStatus.PENDING:
         raise OrderError(
@@ -153,8 +154,7 @@ def cancel_order(order: Order) -> Order:
             }
         )
 
-    release_reservations(order)
-    order.transition_to(OrderStatus.CANCELLED)
+    _close_unpaid(order)
     return order
 
 
@@ -192,13 +192,24 @@ def attach_guest_orders(user, email: str | None = None) -> int:
     )
 
 
+def _is_customer(user) -> bool:
+    """Czy zamawia zalogowany klient — gość przychodzi jako `None` albo anonim."""
+    return user is not None and user.is_authenticated
+
+
+def _close_unpaid(order: Order) -> None:
+    """Zamyka nieopłacone zamówienie: rezerwacje wracają, status `cancelled`."""
+    release_reservations(order)
+    order.transition_to(OrderStatus.CANCELLED)
+
+
 def _resolve_email(*, user, email: str) -> str:
     """E-mail zamówienia: z konta albo podany przez gościa.
 
     Zawsze wypełniony, także dla zalogowanego — zamówienie ma zostać czytelne
     po anonimizacji konta (`CONTEXT.md`, Account anonymisation).
     """
-    if user is not None and user.is_authenticated:
+    if _is_customer(user):
         return user.email
     if not email:
         raise OrderError({"email": "Gość podaje adres, pod który idzie potwierdzenie."})
@@ -238,7 +249,7 @@ def _reject_unavailable_items(items: list[CartItem]) -> None:
 
 def _reject_without_terms_consent(*, user, email: str) -> None:
     """Bez akceptacji bieżącej wersji regulaminu nie ma zamówienia."""
-    subject = {"user": user} if user is not None and user.is_authenticated else {}
+    subject = {"user": user} if _is_customer(user) else {}
     if not subject:
         subject = {"email": email}
     if not Consent.objects.has_current_consent(ConsentKind.TERMS, **subject):
@@ -252,7 +263,7 @@ def _reject_without_terms_consent(*, user, email: str) -> None:
 
 
 def _reject_guest_above_limit(*, user, total: Money) -> None:
-    if user is not None and user.is_authenticated:
+    if _is_customer(user):
         return
     if total.amount > GUEST_ORDER_LIMIT:
         limit = Money(GUEST_ORDER_LIMIT, total.currency)
@@ -311,7 +322,7 @@ def _build_order(
         raise OrderError({"terms": "Sklep nie ma obowiązującej wersji regulaminu."})
 
     return Order.objects.create(
-        user=user if user is not None and user.is_authenticated else None,
+        user=user if _is_customer(user) else None,
         email=email,
         recipient_name=address.recipient_name,
         street=address.street,
@@ -373,12 +384,11 @@ def _reserve_items(order: Order, items: list[CartItem]) -> None:
             raise OrderError({"items": str(error)}) from error
 
 
-def expire_unpaid_orders(*, older_than) -> int:
+def expire_unpaid_orders(*, older_than: datetime) -> int:
     """Anuluje zamówienia `pending` starsze niż podana chwila; zwraca ich liczbę."""
     stale = Order.objects.unpaid_since(older_than)
     cancelled = 0
     for order in stale:
-        release_reservations(order)
-        order.transition_to(OrderStatus.CANCELLED)
+        _close_unpaid(order)
         cancelled += 1
     return cancelled

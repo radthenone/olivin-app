@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import secrets
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
@@ -82,7 +82,7 @@ class OrderQuerySet(models.QuerySet["Order"]):
             return self.filter(user__isnull=True, email__iexact=email)
         return self.none()
 
-    def unpaid_since(self, moment) -> OrderQuerySet:
+    def unpaid_since(self, moment: datetime) -> OrderQuerySet:
         return self.filter(status=OrderStatus.PENDING, created_at__lt=moment)
 
 

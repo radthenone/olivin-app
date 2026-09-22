@@ -9,7 +9,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from apps.orders.models import Order, OrderItem
+from apps.orders.models import Order, OrderItem, OrderStatus
 from apps.orders.schema import order_schema
 from apps.orders.serializers import (
     OrderCreateSerializer,
@@ -23,6 +23,8 @@ from apps.orders.services import (
     get_cart,
 )
 from apps.orders.views.cart import token_of, user_of
+from apps.payments.serializers import PaymentIntentSerializer
+from apps.payments.services import request_cancellation, start_payment
 
 
 @order_schema
@@ -38,7 +40,8 @@ class OrderViewSet(
     - list:     GET  /orders/                  — własne zamówienia zalogowanego
     - retrieve: GET  /orders/{number}/         — zalogowany własne, gość po `?email=`
     - create:   POST /orders/                  — złożenie zamówienia z koszyka
-    - cancel:   POST /orders/{number}/cancel/  — anulowanie zamówienia `pending`
+    - cancel:   POST /orders/{number}/cancel/  — anulowanie `pending` albo zwrot `paid`
+    - payment:  POST /orders/{number}/payment/ — intencja płatnicza (ADR 0012)
 
     Adresem jest numer zamówienia, nie identyfikator: to jego klient ma
     w wiadomości i to nim posługuje się w kontakcie ze sklepem. Gość
@@ -110,12 +113,35 @@ class OrderViewSet(
 
     @action(detail=True, methods=["post"])
     def cancel(self, request: Request, *args, **kwargs) -> Response:
+        """Anulowanie: `pending` od razu, `paid` przez zwrot u operatora.
+
+        Opłacone zamówienie odpowiada 202 i zostaje `paid` — do `cancelled`
+        przenosi je dopiero zdarzenie zwrotu (ADR 0012).
+        """
         order = self.get_object()
         try:
+            if order.status == OrderStatus.PAID:
+                request_cancellation(order)
+                order.refresh_from_db()
+                return Response(
+                    OrderSerializer(order).data, status=status.HTTP_202_ACCEPTED
+                )
             cancel_order(order)
         except DjangoValidationError as error:
             raise ValidationError(error.message_dict) from error
         return Response(OrderSerializer(order).data)
+
+    @action(detail=True, methods=["post"])
+    def payment(self, request: Request, *args, **kwargs) -> Response:
+        """Rozpoczęcie zapłaty — kolejne wywołanie to nowa próba."""
+        order = self.get_object()
+        try:
+            started = start_payment(order)
+        except DjangoValidationError as error:
+            raise ValidationError(error.message_dict) from error
+        return Response(
+            PaymentIntentSerializer(started).data, status=status.HTTP_201_CREATED
+        )
 
     def _guest_email(self) -> str:
         """E-mail gościa z parametru zapytania; pusty, gdy go nie podał."""

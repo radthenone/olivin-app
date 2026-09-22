@@ -41,6 +41,7 @@ urlpatterns = [
     path("orders/", include("apps.orders.order_urls")),
     path("collections/", include("apps.collections.urls")),
     path("consents/", include("apps.consents.urls")),
+    path("payments/", include("apps.payments.urls")),
     path("products/", include("apps.products.urls")),
     path("shipping-methods/", include("apps.shipping.urls")),
     # Headless API

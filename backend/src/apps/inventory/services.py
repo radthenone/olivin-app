@@ -127,6 +127,26 @@ def consume(reservation: Reservation) -> StockMovement:
     return movement
 
 
+@transaction.atomic
+def restock(reservation: Reservation, note: str = "") -> StockMovement:
+    """Przywraca na stan towar rozliczonej rezerwacji ruchem `return`.
+
+    Rezerwacja zostaje `consumed` — sprzedaż się odbyła, a zwrot jest
+    osobnym ruchem, żeby historia pokazała oba zdarzenia, a nie ich sumę.
+    """
+    if reservation.status != ReservationStatus.CONSUMED:
+        raise ReservationNotActive(
+            "Na stan wraca wyłącznie towar z rozliczonej rezerwacji."
+        )
+    item = InventoryItem.objects.get(variant_id=reservation.variant_id)  # type: ignore[missing-attribute]
+    return StockMovement.objects.create(
+        item=item,
+        quantity=reservation.quantity,
+        reason=StockMovementReason.RETURN,
+        note=note or f"Rezerwacja {reservation.pk}",
+    )
+
+
 def _reject_unless_active(
     reservation: Reservation, action: str, *, allow_expired: bool = False
 ) -> None:

@@ -29,8 +29,10 @@ import type {
   OrderCreate,
   OrdersCancelCreateParams,
   OrdersListParams,
+  OrdersPaymentCreateParams,
   OrdersRetrieveParams,
-  PaginatedOrderList
+  PaginatedOrderList,
+  PaymentIntent
 } from '../schemas';
 
 import { appInstance } from '../../../src/app-mutator';
@@ -376,7 +378,12 @@ export type ordersCancelCreateResponse200 = {
   status: 200
 }
 
-export type ordersCancelCreateResponseSuccess = (ordersCancelCreateResponse200) & {
+export type ordersCancelCreateResponse202 = {
+  data: Order
+  status: 202
+}
+
+export type ordersCancelCreateResponseSuccess = (ordersCancelCreateResponse200 | ordersCancelCreateResponse202) & {
   headers: Headers;
 };
 ;
@@ -400,8 +407,8 @@ export const getOrdersCancelCreateUrl = (number: string,
 }
 
 /**
- * Zwalnia rezerwacje stanu. Zamówienie w innym statusie jest odrzucane — anulowanie opłaconego pociąga zwrot u operatora.
- * @summary Anulowanie zamówienia oczekującego na zapłatę
+ * Zamówienie `pending` jest anulowane od razu i zwalnia rezerwacje (200). Zamówienie `paid` zleca zwrot u operatora i odpowiada 202 w statusie `paid` — do `cancelled` przechodzi po zdarzeniu zwrotu, a towar wraca wtedy na stan. Pozostałe statusy są odrzucane.
+ * @summary Anulowanie zamówienia
  */
 export const ordersCancelCreate = async (number: string,
     params: OrdersCancelCreateParams, options?: RequestInit): Promise<ordersCancelCreateResponse> => {
@@ -450,7 +457,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type OrdersCancelCreateMutationError = ErrorType<unknown>
 
     /**
- * @summary Anulowanie zamówienia oczekującego na zapłatę
+ * @summary Anulowanie zamówienia
  */
 export const useOrdersCancelCreate = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ordersCancelCreate>>, TError,{number: string;params: OrdersCancelCreateParams}, TContext>, request?: SecondParameter<typeof appInstance>}
@@ -461,4 +468,95 @@ export const useOrdersCancelCreate = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getOrdersCancelCreateMutationOptions(options), queryClient);
+    }
+    export type ordersPaymentCreateResponse201 = {
+  data: PaymentIntent
+  status: 201
+}
+
+export type ordersPaymentCreateResponseSuccess = (ordersPaymentCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type ordersPaymentCreateResponse = (ordersPaymentCreateResponseSuccess)
+
+export const getOrdersPaymentCreateUrl = (number: string,
+    params: OrdersPaymentCreateParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/orders/${number}/payment/?${stringifiedParams}` : `/orders/${number}/payment/`
+}
+
+/**
+ * Zakłada intencję płatniczą na kwotę do zapłaty z zamówienia i zwraca `clientSecret` dla arkusza płatności (mobile) albo elementu (web). Każde wywołanie to nowa próba; rezerwacje stanu są odnawiane na 30 minut. O zapłacie rozstrzyga wyłącznie zdarzenie od operatora — status zamówienia trzeba odpytać.
+ * @summary Rozpoczęcie zapłaty za zamówienie
+ */
+export const ordersPaymentCreate = async (number: string,
+    params: OrdersPaymentCreateParams, options?: RequestInit): Promise<ordersPaymentCreateResponse> => {
+
+  return appInstance<ordersPaymentCreateResponse>(getOrdersPaymentCreateUrl(number,params),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getOrdersPaymentCreateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ordersPaymentCreate>>, TError,{number: string;params: OrdersPaymentCreateParams}, TContext>, request?: SecondParameter<typeof appInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof ordersPaymentCreate>>, TError,{number: string;params: OrdersPaymentCreateParams}, TContext> => {
+
+const mutationKey = ['ordersPaymentCreate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof ordersPaymentCreate>>, {number: string;params: OrdersPaymentCreateParams}> = (props) => {
+          const {number,params} = props ?? {};
+
+          return  ordersPaymentCreate(number,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type OrdersPaymentCreateMutationResult = NonNullable<Awaited<ReturnType<typeof ordersPaymentCreate>>>
+
+    export type OrdersPaymentCreateMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Rozpoczęcie zapłaty za zamówienie
+ */
+export const useOrdersPaymentCreate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ordersPaymentCreate>>, TError,{number: string;params: OrdersPaymentCreateParams}, TContext>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof ordersPaymentCreate>>,
+        TError,
+        {number: string;params: OrdersPaymentCreateParams},
+        TContext
+      > => {
+      return useMutation(getOrdersPaymentCreateMutationOptions(options), queryClient);
     }

@@ -296,11 +296,14 @@ class TestAnulowanie:
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["status"] == "cancelled"
 
-    def test_anulowanie_oplaconego_jest_odrzucone(
+    def test_anulowanie_wyslanego_jest_odrzucone(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        # Opłacone anuluje się zwrotem (`tests/payments/`); wysłanego klient
+        # sam nie anuluje — dalej wyłącznie przez zwrot towaru.
         order = self._order(authenticated_client, user)
-        order.transition_to(OrderStatus.PAID)
+        for step in (OrderStatus.PAID, OrderStatus.PACKED, OrderStatus.SHIPPED):
+            order.transition_to(step)
 
         response: Any = authenticated_client.post(_cancel_url(order.number))
 

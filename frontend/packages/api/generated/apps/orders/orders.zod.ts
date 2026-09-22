@@ -216,8 +216,8 @@ export const OrdersRetrieveResponse = zod.object({
 }).describe('Zamówienie w postaci, w jakiej ogląda je klient.\n\nKwoty wychodzą policzone: klient nie składa sumy z pozycji, bo to\nbackend rozstrzyga, ile jest do zapłaty (ADR 0012).')
 
 /**
- * Zwalnia rezerwacje stanu. Zamówienie w innym statusie jest odrzucane — anulowanie opłaconego pociąga zwrot u operatora.
- * @summary Anulowanie zamówienia oczekującego na zapłatę
+ * Zamówienie `pending` jest anulowane od razu i zwalnia rezerwacje (200). Zamówienie `paid` zleca zwrot u operatora i odpowiada 202 w statusie `paid` — do `cancelled` przechodzi po zdarzeniu zwrotu, a towar wraca wtedy na stan. Pozostałe statusy są odrzucane.
+ * @summary Anulowanie zamówienia
  */
 export const ordersCancelCreatePathNumberRegExp = new RegExp('^[A-Z0-9]+$');
 
@@ -302,4 +302,22 @@ export const OrdersCancelCreateResponse = zod.object({
 }).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
   "createdAt": zod.iso.datetime({"offset":true}).describe('Timestamp when the record was created')
 }).describe('Zamówienie w postaci, w jakiej ogląda je klient.\n\nKwoty wychodzą policzone: klient nie składa sumy z pozycji, bo to\nbackend rozstrzyga, ile jest do zapłaty (ADR 0012).')
+
+/**
+ * Zakłada intencję płatniczą na kwotę do zapłaty z zamówienia i zwraca `clientSecret` dla arkusza płatności (mobile) albo elementu (web). Każde wywołanie to nowa próba; rezerwacje stanu są odnawiane na 30 minut. O zapłacie rozstrzyga wyłącznie zdarzenie od operatora — status zamówienia trzeba odpytać.
+ * @summary Rozpoczęcie zapłaty za zamówienie
+ */
+export const ordersPaymentCreatePathNumberRegExp = new RegExp('^[A-Z0-9]+$');
+
+
+export const OrdersPaymentCreateParams = zod.object({
+  "number": zod.coerce.string().regex(ordersPaymentCreatePathNumberRegExp)
+})
+
+
+
+
+export const OrdersPaymentCreateQueryParams = zod.object({
+  "email": zod.email().min(1).describe('Adres podany przy składaniu zamówienia')
+})
 
