@@ -141,7 +141,7 @@ def cancel_order(order: Order) -> Order:
     """Anuluje zamówienie i zwalnia rezerwacje.
 
     Tylko `pending`: anulowanie zamówienia opłaconego pociąga zwrot pieniędzy
-    u operatora i należy do biletu płatności, a nie tutaj.
+    u operatora — `apps.payments.services.request_cancellation`.
     """
     if order.status != OrderStatus.PENDING:
         raise OrderError(

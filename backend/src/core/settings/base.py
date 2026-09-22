@@ -74,3 +74,14 @@ DEEPL_API_KEY = str(os.environ.get("DEEPL_API_KEY", ""))
 DEEPL_API_URL = str(
     os.environ.get("DEEPL_API_URL", "https://api-free.deepl.com/v2/translate")
 )
+
+# Operator płatności (ADR 0012, ADR 0027). Kwoty i status zapłaty liczy
+# backend; klient dostaje wyłącznie sekret intencji dla komponentu operatora.
+PAYMENT_PROVIDER = str(
+    os.environ.get(
+        "PAYMENT_PROVIDER",
+        "core.integrations.payments.stripe.StripeProvider",
+    )
+)
+STRIPE_SECRET_KEY = str(os.environ.get("STRIPE_SECRET_KEY", ""))
+STRIPE_WEBHOOK_SECRET = str(os.environ.get("STRIPE_WEBHOOK_SECRET", ""))

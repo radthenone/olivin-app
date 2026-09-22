@@ -97,6 +97,22 @@ def stub_translation_provider(settings):
 
 
 @pytest.fixture(autouse=True)
+def fake_payment_provider(settings):
+    """Atrapa operatora płatności zamiast Stripe w każdym teście.
+
+    Test nie może obciążyć prawdziwej karty ani wymagać klucza w ciągłej
+    integracji. Atrapa pamięta intencje i zwroty na poziomie klasy, więc
+    czyści się je przed każdym testem.
+    """
+    from core.integrations.payments.fake import FakePaymentProvider
+
+    settings.PAYMENT_PROVIDER = "core.integrations.payments.fake.FakePaymentProvider"
+    FakePaymentProvider.reset()
+    yield FakePaymentProvider
+    FakePaymentProvider.reset()
+
+
+@pytest.fixture(autouse=True)
 def clear_throttle_history():
     """Czyści cache między testami, żeby limity żądań się nie kumulowały.
 

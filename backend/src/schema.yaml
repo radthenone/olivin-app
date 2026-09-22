@@ -1061,9 +1061,11 @@ paths:
   /orders/{number}/cancel/:
     post:
       operationId: orders_cancel_create
-      description: Zwalnia rezerwacje stanu. Zamówienie w innym statusie jest odrzucane
-        — anulowanie opłaconego pociąga zwrot u operatora.
-      summary: Anulowanie zamówienia oczekującego na zapłatę
+      description: Zamówienie `pending` jest anulowane od razu i zwalnia rezerwacje
+        (200). Zamówienie `paid` zleca zwrot u operatora i odpowiada 202 w statusie
+        `paid` — do `cancelled` przechodzi po zdarzeniu zwrotu, a towar wraca wtedy
+        na stan. Pozostałe statusy są odrzucane.
+      summary: Anulowanie zamówienia
       parameters:
       - in: query
         name: email
@@ -1091,6 +1093,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Order'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /orders/{number}/payment/:
+    post:
+      operationId: orders_payment_create
+      description: Zakłada intencję płatniczą na kwotę do zapłaty z zamówienia i zwraca
+        `clientSecret` dla arkusza płatności (mobile) albo elementu (web). Każde wywołanie
+        to nowa próba; rezerwacje stanu są odnawiane na 30 minut. O zapłacie rozstrzyga
+        wyłącznie zdarzenie od operatora — status zamówienia trzeba odpytać.
+      summary: Rozpoczęcie zapłaty za zamówienie
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+          format: email
+          minLength: 1
+        description: Adres podany przy składaniu zamówienia
+        required: true
+      - in: path
+        name: number
+        schema:
+          type: string
+          pattern: ^[A-Z0-9]+$
+        required: true
+      tags:
+      - Orders
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentIntent'
+          description: ''
+  /payments/webhook/:
+    post:
+      operationId: payments_webhook_create
+      description: 'Wywoływane przez operatora, nie przez aplikację. Podpis zdarzenia
+        jest weryfikowany; to samo zdarzenie dostarczone ponownie zwraca `processed:
+        false` i niczego nie zmienia.'
+      summary: Zdarzenie od operatora płatności
+      tags:
+      - Payments
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookAck'
           description: ''
   /products/:
     get:
@@ -3960,6 +4022,51 @@ components:
           allOf:
           - $ref: '#/components/schemas/RoleEnum'
           readOnly: true
+    PaymentIntent:
+      type: object
+      description: |-
+        Rozpoczęta zapłata (`StartedPayment`): sekret i kwota intencji.
+
+        Sekret otwiera komponent płatności u klienta (ADR 0012) — nie jest
+        kluczem do konta sklepu i nie pozwala niczego obciążyć bez klienta.
+        Kwota wraca, żeby klient pokazał dokładnie tę, którą obciąży operator.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PaymentStatusEnum'
+          readOnly: true
+        amount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        clientSecret:
+          type: string
+          readOnly: true
+          description: Sekret intencji dla arkusza płatności (mobile) i elementu (web)
+      required:
+      - amount
+      - clientSecret
+      - id
+      - status
+    PaymentStatusEnum:
+      enum:
+      - pending
+      - succeeded
+      - failed
+      - refunding
+      - refunded
+      - refund_failed
+      type: string
+      description: |-
+        * `pending` - Oczekuje na operatora
+        * `succeeded` - Zapłacona
+        * `failed` - Nieudana
+        * `refunding` - Zwrot w toku
+        * `refunded` - Zwrócona
+        * `refund_failed` - Zwrot odrzucony
     ProductDetail:
       type: object
       description: Strona produktu — pełna lista wariantów.
@@ -4512,6 +4619,15 @@ components:
         * `amethyst` - Ametyst
         * `cubic_zirconia` - Cyrkonia
         * `moissanite` - Moissanit
+    WebhookAck:
+      type: object
+      description: Potwierdzenie odbioru zdarzenia; `processed` fałszywe przy powtórce.
+      properties:
+        processed:
+          type: boolean
+          readOnly: true
+      required:
+      - processed
   securitySchemes:
     XSessionTokenAuth:
       type: apiKey
