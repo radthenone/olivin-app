@@ -25,6 +25,7 @@ Zweryfikowano: 2026-09-11.
 - `backend/src/apps/consents` — `ConsentDocument` (rodzaj `terms`/`privacy`/`marketing`, wersja unikalna w rodzaju, data obowiązywania; bieżąca = najnowsza już obowiązująca) i `Consent` (użytkownik XOR e-mail gościa, dokument, kopia wersji, data; constraint w bazie). `Consent.objects.has_current_consent(kind, user=|email=)` zwraca `False` po nowej wersji dokumentu. API: `GET /consents/documents/` (bieżące wersje, `AllowAny`, bez stronicowania) i `POST /consents/` (zalogowany na konto, gość po `email`; dokument musi być bieżący). Rejestracja **nie** wymaga zgody — wymuszenie przyjdzie z zamówieniem i osobnym biletem dla rejestracji. Testy w `backend/src/tests/consents/`.
 - `backend/src/apps/inventory` — `InventoryItem` (rezerwacje) i `StockMovement` (zmiana z przyczyną). Stan to **suma ruchów**, nie kolumna; ruch zapisany jest nieedytowalny, korektę robi się kolejnym ruchem. Panel prowadzi magazyn, API go nie wystawia — dostępność wychodzi tylko jako `available` / `isAvailable` / `isLowStock` na wariancie. Produkt na zamówienie nie ma stanu i jest dostępny zawsze (ADR 0024). Testy w `backend/src/tests/products/test_inventory.py`.
 - `backend/src/core/` — settings (django-split-settings), integracje, storage, utils. Health check: **`GET /health/`** (nie pod `/api/`), zwraca stan bazy, Redisa i storage.
+- `backend/src/apps/shipping` — `ShippingMethod` (rodzaj `parcel_locker`/`courier`/`pickup`/`eu`, strefa `PL`/`EU`, stała stawka, górna wartość zamówienia jako `max_order_value`, aktywność). Ubezpieczenia nie ma w modelu — jest wliczone w stawkę (ADR 0028). Odbiór osobisty bez limitu pilnuje ograniczenie w bazie. Próg darmowej dostawy to **ustawienie** `FREE_SHIPPING_THRESHOLD` (grosze, `core/settings/components/shop.py`), nie model. API **tylko do odczytu**: `GET /shipping-methods/?order_value=&zone=`, `AllowAny`, bez stronicowania — metody z kosztem policzonym dla wartości koszyka; metoda w innej walucie niż koszyk jest odfiltrowana, nie zgłaszana błędem. Mutacje wyłącznie w panelu (ADR 0021). Testy w `backend/src/tests/shipping/`.
 - `backend/src/common/` — pola, modele bazowe w tym `TranslatableModel`, lokalizacja, pieniądze (`money/`) i slugi katalogu (`slugs.py`).
 - `frontend/mobile/` — aplikacja Expo: ekrany auth (logowanie, rejestracja, MFA, weryfikacja e-mail, reset hasła, logowanie kodem), konto, profil.
 - `frontend/web/` — aplikacja Next.js 16 (App Router, Tailwind v4). **Jedna trasa**: strona główna ze stanem zdrowia backendu. Zero ekranów sklepu.
@@ -32,7 +33,7 @@ Zweryfikowano: 2026-09-11.
 
 **Puste szkielety po `startapp` — dziewięć linii kodu każdy, zero modeli, zero migracji:**
 
-`orders`, `payments`, `discounts`, `shipping`, `reviews`, `notifications`
+`orders`, `payments`, `discounts`, `reviews`, `notifications`
 
 Nie zakładaj, że którakolwiek z nich cokolwiek zawiera. Nie ma modelu Order, nie ma Cart, nie ma stanu magazynowego.
 
@@ -84,6 +85,7 @@ Komendy w **bash** (Git Bash na Windowsie). Nie PowerShell.
 | `EXPO_PUBLIC_EMULATOR_URL` | `10.0.2.2:8020` (emulator Androida) |
 | `EXPO_PUBLIC_VERSION` | `v1` — wersjonowanie API (`URLPathVersioning`) |
 | Sieć Docker | **`olivin-network`** — musi istnieć przed `docker compose up` |
+| `FREE_SHIPPING_THRESHOLD` | **50000** groszy — próg darmowej dostawy wspólny dla sklepu (`components/shop.py`); pusta wartość wyłącza |
 
 Zmienne ładowane z `.env` oraz `.envs/dev/**` przez `dotenv:` w `Taskfile.yml`.
 
@@ -119,7 +121,7 @@ Testy integracyjne: `docker-compose.test.yml`, próg pokrycia **60%**.
 
 Generowane są też schematy Zod (`.zod.ts`) dla obu wejść.
 
-`APPS_TAGS` w `frontend/packages/api/orval.config.js` (obecnie): **`Addresses`, `Categories`, `Collections`, `Products`, `Profiles`, `Health`**. Nowy viewset domenowy bez dopisania tagu nie trafi do klienta — cichy błąd.
+`APPS_TAGS` w `frontend/packages/api/orval.config.js` (obecnie): **`Addresses`, `Categories`, `Collections`, `Consents`, `Products`, `Profiles`, `Shipping`, `Health`**. Nowy viewset domenowy bez dopisania tagu nie trafi do klienta — cichy błąd.
 
 Sekwencja po zmianie API: backend → migracje → regeneracja `schema.yaml` → tag w `APPS_TAGS` → `task ovral:generate` → `task lints:frontend:typecheck`. Bramka: `task ovral:check` (offline, w CI).
 
