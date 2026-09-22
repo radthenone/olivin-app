@@ -2869,20 +2869,12 @@ components:
       type: object
       properties:
         status:
-          $ref: '#/components/schemas/HealthCheckResponseStatusEnum'
+          $ref: '#/components/schemas/StatusEnum'
         services:
           $ref: '#/components/schemas/HealthCheckServices'
       required:
       - services
       - status
-    HealthCheckResponseStatusEnum:
-      enum:
-      - healthy
-      - unhealthy
-      type: string
-      description: |-
-        * `healthy` - healthy
-        * `unhealthy` - unhealthy
     HealthCheckServices:
       type: object
       properties:
@@ -4488,6 +4480,14 @@ components:
         * `24` - 24
         * `25` - 25
         * `26` - 26
+    StatusEnum:
+      enum:
+      - healthy
+      - unhealthy
+      type: string
+      description: |-
+        * `healthy` - healthy
+        * `unhealthy` - unhealthy
     StoneEnum:
       enum:
       - diamond

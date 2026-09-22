@@ -70,11 +70,16 @@ def new_order_number() -> str:
 
 class OrderQuerySet(models.QuerySet["Order"]):
     def for_subject(self, *, user=None, email: str | None = None) -> OrderQuerySet:
-        """Zamówienia klienta albo gościa po e-mailu — nigdy obu naraz."""
+        """Zamówienia klienta albo gościa po e-mailu — nigdy obu naraz.
+
+        Ścieżka gościa obejmuje wyłącznie zamówienia bez konta. Inaczej sam
+        adres plus numer otwierałby — i pozwalał anulować — zamówienie
+        zalogowanego klienta, mimo że to jego konto nim zarządza.
+        """
         if user is not None and user.is_authenticated:
             return self.filter(user=user)
         if email:
-            return self.filter(email__iexact=email)
+            return self.filter(user__isnull=True, email__iexact=email)
         return self.none()
 
     def unpaid_since(self, moment) -> OrderQuerySet:

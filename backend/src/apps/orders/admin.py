@@ -1,8 +1,9 @@
+from django import forms
 from django.contrib import admin
 from django.db.models import Count, QuerySet
 from django.http import HttpRequest
 
-from apps.orders.models import Cart, CartItem, Order, OrderItem
+from apps.orders.models import Cart, CartItem, Order, OrderItem, OrderStatus
 
 
 class CartItemInline(admin.TabularInline):
@@ -79,15 +80,42 @@ class OrderItemInline(admin.TabularInline):
         return False
 
 
+class OrderAdminForm(forms.ModelForm):
+    """Formularz zamówienia, który odrzuca niedozwolone przejście statusu.
+
+    Sprawdzenie jest w `clean_status`, a nie dopiero w `save_model`: wyjątek
+    rzucony przy zapisie wychodzi w panelu jako błąd serwera, a obsługa ma
+    zobaczyć komunikat przy polu, tak jak przy każdej innej pomyłce.
+    """
+
+    class Meta:
+        model = Order
+        fields = "__all__"
+
+    def clean_status(self) -> str:
+        status = self.cleaned_data["status"]
+        if self.instance.pk is None or status == self.instance.status:
+            return status
+        previous = Order.objects.get(pk=self.instance.pk)
+        if not previous.can_transition_to(status):
+            raise forms.ValidationError(
+                f"Ze statusu „{previous.get_status_display()}” nie da się "
+                f"przejść do „{OrderStatus(status).label}”."
+            )
+        return status
+
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     """Obsługa zamówień w panelu (ADR 0021).
 
-    Edytowalny jest wyłącznie status, i to przez akcje odpowiadające
-    dozwolonym przejściom — pole wyboru pozwalałoby cofnąć wysłane
-    zamówienie do `pending`, czego cykl życia nie przewiduje.
+    Edytowalny jest wyłącznie status, i to w granicach cyklu życia: formularz
+    odrzuca przejście, którego `ALLOWED_TRANSITIONS` nie przewiduje, więc nie
+    da się cofnąć wysłanego zamówienia do `pending`. Te same reguły obowiązują
+    z panelu i z API — nakładka nie przejmuje logiki domenowej (ADR 0021).
     """
 
+    form = OrderAdminForm
     inlines = [OrderItemInline]
     list_display = ("number", "status", "email", "total_display", "created_at")
     list_filter = ("status", "created_at")
@@ -114,19 +142,3 @@ class OrderAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request: HttpRequest, obj=None) -> bool:
         return False
-
-    def save_model(self, request: HttpRequest, obj: Order, form, change) -> None:
-        """Zmiana statusu idzie przez `transition_to`, nie przez zapis pola.
-
-        Dzięki temu ograniczenia cyklu życia obowiązują tak samo z panelu,
-        jak z API — nakładka panelu nie przejmuje logiki domenowej (ADR 0021).
-        """
-        if not change:
-            super().save_model(request, obj, form, change)
-            return
-        previous = Order.objects.get(pk=obj.pk)
-        if previous.status != obj.status:
-            obj.status = previous.status
-            obj.transition_to(form.cleaned_data["status"])
-            return
-        super().save_model(request, obj, form, change)

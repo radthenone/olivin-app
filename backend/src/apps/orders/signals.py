@@ -1,19 +1,23 @@
 from __future__ import annotations
 
-from django.db.models.signals import post_save
+from allauth.account.signals import email_confirmed
 from django.dispatch import receiver
 
-from apps.accounts.models import CustomUser
 from apps.orders.services.order import attach_guest_orders
 
 
-@receiver(post_save, sender=CustomUser, dispatch_uid="orders_attach_guest_orders")
-def attach_guest_orders_to_new_account(sender, instance, created, **kwargs) -> None:
-    """Zamówienia gościa trafiają do konta założonego później na ten sam e-mail.
+@receiver(email_confirmed, dispatch_uid="orders_attach_guest_orders")
+def attach_guest_orders_on_email_confirmed(
+    sender, request, email_address, **kwargs
+) -> None:
+    """Zamówienia gościa trafiają do konta dopiero po potwierdzeniu adresu.
 
-    Sygnał, a nie krok w rejestracji: konto powstaje też przez logowanie
-    społecznościowe i przez panel, a klient w każdym z tych przypadków ma
-    zastać swoją historię zakupów.
+    Nie przy zakładaniu konta: samo wpisanie cudzego adresu w rejestracji
+    otworzyłoby obcej osobie historię zakupów wraz z adresem dostawy.
+    Potwierdzenie jest dowodem, że to ten sam człowiek — a weryfikacja jest
+    w tym sklepie obowiązkowa (`ACCOUNT_EMAIL_VERIFICATION = "mandatory"`).
+
+    Sygnał, a nie krok w rejestracji: adres potwierdza się też po zmianie
+    e-maila i po dodaniu drugiego adresu do konta.
     """
-    if created:
-        attach_guest_orders(instance)
+    attach_guest_orders(email_address.user, email=email_address.email)

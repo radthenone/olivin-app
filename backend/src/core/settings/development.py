@@ -86,6 +86,12 @@ SPECTACULAR_SETTINGS = {
         "ConsentKindEnum": "apps.consents.models.ConsentKind",
         "ShippingMethodKindEnum": "apps.shipping.models.ShippingMethodKind",
         "ShippingZoneEnum": "apps.shipping.models.ShippingZone",
+        "OrderStatusEnum": "apps.orders.models.order.OrderStatus",
+        # Stan zdrowia to `ChoiceField` z listą wartości, bez klasy `Choices`,
+        # więc wpisujemy same wartości. Bez tego kolizja z `Order.status`
+        # przemianowała go na `HealthCheckResponseStatusEnum` i zmieniła
+        # kontrakt klienta przy okazji zupełnie innego modelu.
+        "StatusEnum": ["healthy", "unhealthy"],
     },
     "POSTPROCESSING_HOOKS": [
         "drf_spectacular.hooks.postprocess_schema_enums",

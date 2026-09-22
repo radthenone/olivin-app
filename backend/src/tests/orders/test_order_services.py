@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import timedelta
 
 import pytest
+from allauth.account.models import EmailAddress
+from allauth.account.signals import email_confirmed
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
@@ -339,6 +341,44 @@ class TestWalidacje:
 
         assert "email" in error.value.message_dict
 
+    def test_limit_goscia_obejmuje_koszt_dostawy(self, settings):
+        """Próg dotyczy kwoty, którą gość zostawia w sklepie — z dostawą włącznie."""
+        settings.FREE_SHIPPING_THRESHOLD = None
+        email = "gosc@test.com"
+        _terms_for(email=email)
+        cart = GuestCartFactory()
+        variant = _variant(price=GUEST_ORDER_LIMIT)
+        stock(variant, 5)
+        add_item(cart, variant=variant, quantity=1)
+
+        with pytest.raises(OrderError) as error:
+            create_order(
+                cart=cart,
+                address=ADDRESS,
+                shipping_method=ShippingMethodFactory(rate=1990),
+                email=email,
+            )
+
+        assert "email" in error.value.message_dict
+
+    def test_gosc_dokladnie_na_progu_przechodzi(self, settings):
+        settings.FREE_SHIPPING_THRESHOLD = None
+        email = "gosc@test.com"
+        _terms_for(email=email)
+        cart = GuestCartFactory()
+        variant = _variant(price=GUEST_ORDER_LIMIT - 1990)
+        stock(variant, 5)
+        add_item(cart, variant=variant, quantity=1)
+
+        order = create_order(
+            cart=cart,
+            address=ADDRESS,
+            shipping_method=ShippingMethodFactory(rate=1990),
+            email=email,
+        )
+
+        assert order.total == Money(GUEST_ORDER_LIMIT)
+
     def test_zalogowany_nie_ma_progu(self):
         user = UserFactory()
         _terms_for(user=user)
@@ -589,40 +629,58 @@ class TestZadanieSprzatajace:
 
 @pytest.mark.django_db
 class TestZamowieniaGoscia:
-    def test_zamowienie_goscia_trafia_do_konta_na_ten_sam_adres(self):
-        email = "gosc@test.com"
+    def _guest_order(self, email: str):
         _terms_for(email=email)
         cart = GuestCartFactory()
         variant = _variant()
         stock(variant, 5)
         add_item(cart, variant=variant, quantity=1)
-        order = create_order(
+        return create_order(
             cart=cart,
             address=ADDRESS,
             shipping_method=ShippingMethodFactory(),
             email=email,
         )
 
+    def test_samo_zalozenie_konta_nie_przejmuje_zamowien(self):
+        """Wpisanie cudzego adresu w rejestracji nie otwiera jego historii zakupów."""
+        email = "gosc@test.com"
+        order = self._guest_order(email)
+
+        UserFactory(email=email)
+
+        order.refresh_from_db()
+        assert order.user_id is None  # type: ignore[missing-attribute]
+
+    def test_potwierdzenie_adresu_podpina_zamowienia(self):
+        email = "gosc@test.com"
+        order = self._guest_order(email)
         user = UserFactory(email=email)
+        address = EmailAddress.objects.create(
+            user=user, email=email, primary=True, verified=True
+        )
+
+        email_confirmed.send(sender=EmailAddress, request=None, email_address=address)
 
         order.refresh_from_db()
         assert order.user_id == user.pk  # type: ignore[missing-attribute]
 
-    def test_cudze_zamowienie_nie_trafia_do_konta(self):
-        email = "gosc@test.com"
-        _terms_for(email=email)
-        cart = GuestCartFactory()
-        variant = _variant()
-        stock(variant, 5)
-        add_item(cart, variant=variant, quantity=1)
-        order = create_order(
-            cart=cart,
-            address=ADDRESS,
-            shipping_method=ShippingMethodFactory(),
-            email=email,
+    def test_potwierdzenie_cudzego_adresu_nie_podpina(self):
+        order = self._guest_order("gosc@test.com")
+        other = UserFactory(email="ktos.inny@test.com")
+        address = EmailAddress.objects.create(
+            user=other, email=other.email, primary=True, verified=True
         )
 
+        email_confirmed.send(sender=EmailAddress, request=None, email_address=address)
+
+        order.refresh_from_db()
+        assert order.user_id is None  # type: ignore[missing-attribute]
+
+    def test_serwis_podpina_tylko_wskazany_adres(self):
+        order = self._guest_order("gosc@test.com")
         other = UserFactory(email="ktos.inny@test.com")
+
         attach_guest_orders(other)
 
         order.refresh_from_db()

@@ -239,6 +239,18 @@ class TestOdczytZamowien:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
+    def test_gosc_nie_otwiera_zamowienia_zalogowanego_klienta(
+        self, api_client: APIClient, user: CustomUser
+    ):
+        """Adres i numer to klucz do zamówień bez konta, nie do cudzego konta."""
+        api_client.force_authenticate(user=user)
+        order = self._order_for(api_client, user)
+        api_client.force_authenticate(user=None)
+
+        response: Any = api_client.get(_order_url(order.number), {"email": user.email})
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
     def test_cudzy_adres_nie_otwiera_zamowienia_goscia(self, api_client: APIClient):
         email = "gosc@test.com"
         _terms_for(email=email)
@@ -294,6 +306,21 @@ class TestAnulowanie:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "status" in response.json()
+
+    def test_gosc_nie_anuluje_zamowienia_zalogowanego_klienta(
+        self, api_client: APIClient, user: CustomUser
+    ):
+        api_client.force_authenticate(user=user)
+        order = self._order(api_client, user)
+        api_client.force_authenticate(user=None)
+
+        response: Any = api_client.post(
+            _cancel_url(order.number), {"email": user.email}
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        order.refresh_from_db()
+        assert order.status == OrderStatus.PENDING
 
     def test_klient_nie_anuluje_cudzego_zamowienia(
         self, api_client: APIClient, user: CustomUser

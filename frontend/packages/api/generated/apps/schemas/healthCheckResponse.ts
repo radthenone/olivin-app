@@ -5,10 +5,10 @@
  * API documentation
  * OpenAPI spec version: 1.0.0
  */
-import type { HealthCheckResponseStatusEnum } from './healthCheckResponseStatusEnum';
 import type { HealthCheckServices } from './healthCheckServices';
+import type { StatusEnum } from './statusEnum';
 
 export interface HealthCheckResponse {
-  status: HealthCheckResponseStatusEnum;
+  status: StatusEnum;
   services: HealthCheckServices;
 }

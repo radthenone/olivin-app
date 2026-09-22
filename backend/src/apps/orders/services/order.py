@@ -114,13 +114,17 @@ def create_order(
 
     _reject_unavailable_items(items)
     _reject_without_terms_consent(user=user, email=subject_email)
-    _reject_guest_above_limit(user=user, total=summary.subtotal)
     _reject_unavailable_method(shipping_method, order_value=summary.subtotal, zone=zone)
+
+    shipping_cost = cost_for(shipping_method, summary.subtotal)
+    # Limit liczony od kwoty do zapłaty, a nie od samego towaru: próg z
+    # `.ai/project.md` dotyczy tego, ile gość zostawia w sklepie.
+    _reject_guest_above_limit(user=user, total=summary.subtotal + shipping_cost)
 
     order = _build_order(
         address=address,
         shipping_method=shipping_method,
-        shipping_cost=cost_for(shipping_method, summary.subtotal),
+        shipping_cost=shipping_cost,
         user=user,
         email=subject_email,
     )
@@ -171,15 +175,19 @@ def release_reservations(order: Order) -> int:
     return released
 
 
-def attach_guest_orders(user) -> int:
-    """Podpina zamówienia gościa do konta założonego później na ten sam e-mail.
+def attach_guest_orders(user, email: str | None = None) -> int:
+    """Podpina zamówienia gościa do konta na ten sam, **potwierdzony** adres.
 
     Adres jest jedynym łącznikiem, jaki mamy — gość nie ma konta, a token
     koszyka znika razem z koszykiem. Zgoda gościa **nie** przechodzi na konto
     (`CONTEXT.md`, Consent), ale zamówienie owszem: to jego zakup, nie jego
     oświadczenie woli.
+
+    Adres podaje się osobno, bo konto może mieć ich kilka i podpinać wolno
+    tylko ten, który klient właśnie potwierdził.
     """
-    return Order.objects.filter(user__isnull=True, email__iexact=user.email).update(
+    address = email or user.email
+    return Order.objects.filter(user__isnull=True, email__iexact=address).update(
         user=user
     )
 
