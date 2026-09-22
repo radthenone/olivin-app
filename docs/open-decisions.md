@@ -46,6 +46,12 @@ mobilnej. Model kasy jest rozstrzygnięty w
 koszyk na backendzie, gość z tokenem, cztery kroki, koszt dostawy znany przed
 intencją płatniczą. Interfejs czeka, aż backend koszyka i kasy istnieje —
 projektowanie ekranów przed kontraktem API oznaczałoby rysowanie ich dwa razy.
+Zapisany kierunek: ikonka koszyka z licznikiem pozycji, rozwijana lista, pełny
+widok koszyka jako krok pierwszy, arkusz operatora wysuwany od dołu na mobile
+i osadzony element na webie
+([ADR 0012](adr/0012-payment-intents-z-gotowymi-elementami.md)). Każdy bilet
+backendowy serii #144–#157 niesie sekcję „kontrakt API musi umożliwić", żeby
+tej drogi nie zamknąć. Tracker: #158.
 
 ### Świadomie poza zakresem pierwszej wersji
 

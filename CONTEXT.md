@@ -77,7 +77,7 @@ _Unikaj_: Tax, TaxRate
 ## Koszyk i zamówienie
 
 **Cart**:
-Zbiór wariantów wybranych przez klienta przed złożeniem zamówienia, przechowywany na backendzie dla każdego klienta — web i mobile. Należy do użytkownika albo do gościa identyfikowanego tokenem koszyka wydanym przez backend, nigdy do obu. Przy logowaniu koszyk gościa jest scalany z koszykiem konta, a token gościa przestaje działać.
+Zbiór wariantów wybranych przez klienta przed złożeniem zamówienia, przechowywany na backendzie dla każdego klienta — web i mobile. Należy do użytkownika albo do gościa identyfikowanego tokenem koszyka wydanym przez backend, nigdy do obu. Przy logowaniu koszyk gościa jest scalany z koszykiem konta, a token gościa przestaje działać. Koszyk gościa bez aktywności przez 30 dni jest kasowany.
 _Unikaj_: Basket, Bag, Koszyk zakupowy
 
 **CartItem**:

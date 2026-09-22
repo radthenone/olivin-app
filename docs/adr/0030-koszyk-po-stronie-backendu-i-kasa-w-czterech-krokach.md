@@ -6,7 +6,9 @@ wydaje backend przy pierwszym dodaniu pozycji; klient przechowuje wyłącznie te
 token i przesyła go w nagłówku każdego wywołania koszyka. Przy logowaniu albo
 rejestracji koszyk gościa jest scalany z koszykiem konta: pozycje o tym samym
 wariancie i tych samych parametrach personalizacji sumują ilości, pozostałe
-trafiają obok siebie, a token gościa przestaje działać.
+trafiają obok siebie, a token gościa przestaje działać. Wycena pozycji — cena
+wariantu, grawer, para obrączek, przeliczenie na euro — odbywa się wyłącznie
+na backendzie; klient pyta o sumę, nie liczy jej sam.
 
 Kasa ma cztery kroki w stałej kolejności: **koszyk → dane i adres → dostawa →
 płatność**. Każdy krok jest osobnym wywołaniem API i zapisuje swój wynik na
@@ -45,8 +47,9 @@ zamówienia.
 ## Consequences
 
 `Cart` dostaje właściciela: użytkownika **albo** token gościa, nigdy oba.
-Token jest losowy, wydawany i unieważniany przez backend; wygasa po okresie
-bezczynności, a jego przedstawienie po scaleniu z kontem zwraca pusty koszyk.
+Token jest losowy, wydawany i unieważniany przez backend; koszyk gościa bez
+aktywności przez 30 dni jest kasowany zadaniem okresowym, a przedstawienie
+tokenu po scaleniu z kontem zwraca pusty koszyk.
 
 Scalenie przy logowaniu jest jedynym momentem, w którym dwa koszyki stają się
 jednym. Pozycje z grawerunkiem nie są sumowane — obowiązuje zasada z
@@ -61,6 +64,12 @@ adresu po wyborze dostawy cofa kasę do kroku dostawy.
 Zamówienie `pending` istnieje zanim pieniądze wpłyną, więc historia zamówień
 i panel muszą je odróżniać od zamówień opłaconych; nieopłacone zamówienia
 znikają automatycznie po upływie terminu, bez udziału obsługi.
+
+Koszyk i zamówienie mieszkają w jednej aplikacji, bo dzielą reguły pozycji:
+grawer jako osobna pozycja ceny, para obrączek jako jedna pozycja z dwoma
+rozmiarami ([ADR 0024](0024-produkt-na-zamowienie-i-para-jako-jedna-pozycja.md)),
+snapshot ceny przy złożeniu. Osobna aplikacja koszyka ma sens dopiero, gdy
+koszyk dostanie własne API poza kasą.
 
 Ekrany kasy dla web i mobile są osobnym zadaniem — zapisane jako pomysł na
 przyszłość w rejestrze otwartych decyzji, dopóki backend kasy nie istnieje.
