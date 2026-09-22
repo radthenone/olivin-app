@@ -7,6 +7,7 @@
  */
 import type { FinenessEnum } from './finenessEnum';
 import type { MaterialEnum } from './materialEnum';
+import type { Money } from './money';
 import type { ProductImage } from './productImage';
 import type { ProductVariant } from './productVariant';
 
@@ -45,6 +46,10 @@ export interface ProductDetail {
      * @nullable
      */
   readonly productionTimeDays: number | null;
+  /** Wyrób można grawerować (ADR 0018). Grawer jest osobną pozycją ceny doliczaną do wariantu i wyłącza prawo odstąpienia. */
+  readonly isEngravable: boolean;
+  /** Cena grawerunku brutto; pusta, gdy produktu nie da się grawerować. */
+  readonly engravingPrice: Money | null;
   readonly images: readonly ProductImage[];
   readonly variants: readonly ProductVariant[];
 }

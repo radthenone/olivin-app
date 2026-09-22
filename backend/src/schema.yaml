@@ -2670,6 +2670,17 @@ components:
           readOnly: true
           nullable: true
           description: Czas realizacji w dniach; wymagany przy produkcie na zamówienie
+        isEngravable:
+          type: boolean
+          readOnly: true
+          description: Wyrób można grawerować (ADR 0018). Grawer jest osobną pozycją
+            ceny doliczaną do wariantu i wyłącza prawo odstąpienia.
+        engravingPrice:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+          nullable: true
+          description: Cena grawerunku brutto; pusta, gdy produktu nie da się grawerować.
         images:
           type: array
           items:
@@ -2683,9 +2694,11 @@ components:
       required:
       - category
       - description
+      - engravingPrice
       - fineness
       - id
       - images
+      - isEngravable
       - isMadeToOrder
       - material
       - name
@@ -2782,6 +2795,17 @@ components:
           readOnly: true
           nullable: true
           description: Czas realizacji w dniach; wymagany przy produkcie na zamówienie
+        isEngravable:
+          type: boolean
+          readOnly: true
+          description: Wyrób można grawerować (ADR 0018). Grawer jest osobną pozycją
+            ceny doliczaną do wariantu i wyłącza prawo odstąpienia.
+        engravingPrice:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+          nullable: true
+          description: Cena grawerunku brutto; pusta, gdy produktu nie da się grawerować.
         cheapestVariant:
           allOf:
           - $ref: '#/components/schemas/ProductVariant'
@@ -2790,8 +2814,10 @@ components:
       required:
       - category
       - cheapestVariant
+      - engravingPrice
       - fineness
       - id
+      - isEngravable
       - isMadeToOrder
       - material
       - name

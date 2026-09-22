@@ -150,6 +150,12 @@ class ProductListSerializer(serializers.ModelSerializer):
         read_only=True,
         help_text="Slug kategorii-liścia, do której należy produkt",
     )
+    engraving_price = MoneySerializer(
+        source="engraving_price_money",
+        read_only=True,
+        allow_null=True,
+        help_text="Cena grawerunku brutto; pusta, gdy produktu nie da się grawerować.",
+    )
     cheapest_variant = serializers.SerializerMethodField()
 
     class Meta:
@@ -163,6 +169,8 @@ class ProductListSerializer(serializers.ModelSerializer):
             "fineness",
             "is_made_to_order",
             "production_time_days",
+            "is_engravable",
+            "engraving_price",
             "cheapest_variant",
         ]
         read_only_fields = fields
@@ -193,6 +201,12 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         read_only=True,
         help_text="Slug kategorii-liścia, do której należy produkt",
     )
+    engraving_price = MoneySerializer(
+        source="engraving_price_money",
+        read_only=True,
+        allow_null=True,
+        help_text="Cena grawerunku brutto; pusta, gdy produktu nie da się grawerować.",
+    )
     variants = ProductVariantSerializer(many=True, read_only=True)
     images = serializers.SerializerMethodField()
 
@@ -208,6 +222,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "fineness",
             "is_made_to_order",
             "production_time_days",
+            "is_engravable",
+            "engraving_price",
             "images",
             "variants",
         ]
