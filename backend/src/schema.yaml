@@ -1054,6 +1054,51 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProductDetail'
           description: ''
+  /shipping-methods/:
+    get:
+      operationId: shipping_methods_list
+      description: Zwraca metody właściwe dla strefy, których górna wartość zamówienia
+        nie została przekroczona, wraz z kosztem policzonym dla podanej wartości koszyka.
+        Powyżej progu darmowej dostawy koszt wynosi zero. Odbiór osobisty nie ma górnej
+        wartości zamówienia, więc jest na liście zawsze.
+      summary: Metody dostawy dostępne dla koszyka
+      parameters:
+      - in: query
+        name: orderValue
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+        description: Wartość koszyka w groszach; domyślnie pusty koszyk
+      - in: query
+        name: zone
+        schema:
+          enum:
+          - PL
+          - EU
+          type: string
+          default: PL
+          minLength: 1
+        description: |-
+          Strefa dostawy wynikająca z adresu klienta
+
+          * `PL` - Polska
+          * `EU` - Unia Europejska
+      tags:
+      - Shipping
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShippingOffer'
+          description: ''
 components:
   schemas:
     Address:
@@ -3144,6 +3189,43 @@ components:
       description: |-
         * `customer` - Customer
         * `admin` - Admin
+    ShippingOffer:
+      type: object
+      description: |-
+        Metoda dostawy z kosztem policzonym dla konkretnej wartości koszyka.
+
+        Górna wartość zamówienia nie wychodzi na zewnątrz: klient nie ma jej po
+        co znać, bo metoda, której limit przekroczył, po prostu nie ma go na
+        liście. Ubezpieczenia też tu nie ma — jest wliczone w stawkę (ADR 0028).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        kind:
+          type: string
+          readOnly: true
+        zone:
+          type: string
+          readOnly: true
+        cost:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        isFree:
+          type: boolean
+          readOnly: true
+          description: Czy koszyk przekroczył próg darmowej dostawy
+      required:
+      - cost
+      - id
+      - isFree
+      - kind
+      - name
+      - zone
     SizeEnum:
       enum:
       - '8'

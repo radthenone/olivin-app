@@ -40,6 +40,7 @@ urlpatterns = [
     path("collections/", include("apps.collections.urls")),
     path("consents/", include("apps.consents.urls")),
     path("products/", include("apps.products.urls")),
+    path("shipping-methods/", include("apps.shipping.urls")),
     # Headless API
     path("accounts/", include("allauth.urls")),
     path("_allauth/", include("allauth.headless.urls")),

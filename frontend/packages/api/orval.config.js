@@ -27,6 +27,7 @@ const APPS_TAGS = [
   "Consents",
   "Products",
   "Profiles",
+  "Shipping",
   "Health",
 ];
 
