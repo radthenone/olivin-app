@@ -13,6 +13,7 @@ base_settings = [
     "components/email.py",
     "components/security.py",
     "components/session.py",
+    "components/shop.py",
     "components/allauth/__init__.py",
     "base.py",
 ]

@@ -139,7 +139,6 @@ class InventoryItemFactory(DjangoModelFactory):
         model = InventoryItem
 
     variant = SubFactory(ProductVariantFactory)
-    reserved = 0
 
 
 class StockMovementFactory(DjangoModelFactory):
@@ -155,10 +154,18 @@ class StockMovementFactory(DjangoModelFactory):
 
 
 def stock(variant, quantity: int, reserved: int = 0) -> InventoryItem:
-    """Wariant ze stanem: jeden ruch przyjęcia i ewentualna rezerwacja."""
-    item = InventoryItemFactory(variant=variant, reserved=reserved)
+    """Wariant ze stanem: jeden ruch przyjęcia i ewentualna rezerwacja.
+
+    Rezerwacja jest wierszem `Reservation`, a nie kolumną na stanie —
+    `InventoryItem.reserved` liczy się z aktywnych rezerwacji.
+    """
+    from tests.factories.inventory import ReservationFactory
+
+    item = InventoryItemFactory(variant=variant)
     if quantity:
         StockMovementFactory(item=item, quantity=quantity)
+    if reserved:
+        ReservationFactory(variant=variant, quantity=reserved)
     return item
 
 

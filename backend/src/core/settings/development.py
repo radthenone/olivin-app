@@ -79,7 +79,20 @@ SPECTACULAR_SETTINGS = {
     # który zmieniałby się z każdą kolejną kolizją i psuł klient Orval.
     "ENUM_NAME_OVERRIDES": {
         "StoneEnum": "apps.products.models.choices.Stone",
+        # Rozmiar pierścionka wychodzi jako `size` na wariancie i `second_size`
+        # w pozycji koszyka — bez tej pozycji spectacular nazwałby ten sam
+        # zbiór wartości dwa razy i klient dostałby dwa nietożsame typy.
+        "SizeEnum": "apps.products.models.choices.RingSize",
         "ConsentKindEnum": "apps.consents.models.ConsentKind",
+        "ShippingMethodKindEnum": "apps.shipping.models.ShippingMethodKind",
+        "ShippingZoneEnum": "apps.shipping.models.ShippingZone",
+        "OrderStatusEnum": "apps.orders.models.order.OrderStatus",
+        "PaymentStatusEnum": "apps.payments.models.PaymentStatus",
+        # Stan zdrowia to `ChoiceField` z listą wartości, bez klasy `Choices`,
+        # więc wpisujemy same wartości. Bez tego kolizja z `Order.status`
+        # przemianowała go na `HealthCheckResponseStatusEnum` i zmieniła
+        # kontrakt klienta przy okazji zupełnie innego modelu.
+        "StatusEnum": ["healthy", "unhealthy"],
     },
     "POSTPROCESSING_HOOKS": [
         "drf_spectacular.hooks.postprocess_schema_enums",

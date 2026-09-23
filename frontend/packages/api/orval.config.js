@@ -22,11 +22,14 @@ const ALLAUTH_TAGS = [
 
 const APPS_TAGS = [
   "Addresses",
+  "Cart",
   "Categories",
   "Collections",
   "Consents",
+  "Orders",
   "Products",
   "Profiles",
+  "Shipping",
   "Health",
 ];
 
