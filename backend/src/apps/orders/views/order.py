@@ -17,7 +17,6 @@ from apps.orders.serializers import (
     OrderSerializer,
 )
 from apps.orders.services import (
-    ShippingAddress,
     cancel_order,
     create_order,
     get_cart,
@@ -94,14 +93,7 @@ class OrderViewSet(
         try:
             order = create_order(
                 cart=cart,
-                address=ShippingAddress(
-                    recipient_name=data["recipient_name"],
-                    street=data["street"],
-                    street2=data["street2"],
-                    city=data["city"],
-                    postal_code=data["postal_code"],
-                    country=str(data["country"]),
-                ),
+                address=payload.to_address(),
                 shipping_method=data["shipping_method"],
                 user=user,
                 email=data["email"],
