@@ -4,6 +4,7 @@ from django_countries.serializer_fields import CountryField
 from rest_framework import serializers
 
 from apps.orders.models import Order, OrderItem
+from apps.orders.services import ShippingAddress
 from apps.shipping.models import ShippingMethod
 from core.api.serializers import MoneySerializer
 
@@ -114,6 +115,18 @@ class OrderCreateSerializer(serializers.Serializer):
         queryset=ShippingMethod.objects.active(),
         help_text="Metoda dostawy wybrana w trzecim kroku kasy",
     )
+
+    def to_address(self) -> ShippingAddress:
+        """Adres ze zwalidowanych danych jako typ domeny; kraj jako kod ISO."""
+        data = self.validated_data
+        return ShippingAddress(
+            recipient_name=data["recipient_name"],
+            street=data["street"],
+            street2=data["street2"],
+            city=data["city"],
+            postal_code=data["postal_code"],
+            country=str(data["country"]),
+        )
 
 
 class OrderLookupSerializer(serializers.Serializer):
