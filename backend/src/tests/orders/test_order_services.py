@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import timedelta
 
 import pytest
@@ -25,7 +26,6 @@ from apps.orders.services import (
     cancel_order,
     create_order,
     expire_unpaid_orders,
-    resolve_zone,
 )
 from apps.orders.services.cart import add_item
 from apps.shipping.models import ShippingZone
@@ -68,21 +68,6 @@ def _terms_for(user=None, email: str = ""):
     else:
         GuestConsentFactory(email=email, document=document)
     return document
-
-
-@pytest.mark.django_db
-class TestStrefaDostawy:
-    def test_polska_to_strefa_krajowa(self):
-        assert resolve_zone("PL") == ShippingZone.PL
-
-    def test_kraj_unii_to_strefa_unijna(self):
-        assert resolve_zone("DE") == ShippingZone.EU
-
-    def test_kraj_spoza_unii_jest_odrzucony(self):
-        with pytest.raises(OrderError) as error:
-            resolve_zone("US")
-
-        assert "country" in error.value.message_dict
 
 
 @pytest.mark.django_db
@@ -193,6 +178,24 @@ class TestSkladanieZamowienia:
             )
 
         assert "cart" in error.value.message_dict
+
+    def test_kraj_spoza_unii_jest_odrzucony(self):
+        user = UserFactory()
+        _terms_for(user=user)
+        cart = CartFactory(user=user)
+        variant = _variant()
+        stock(variant, 5)
+        add_item(cart, variant=variant, quantity=1)
+
+        with pytest.raises(OrderError) as error:
+            create_order(
+                cart=cart,
+                address=replace(ADDRESS, country="US"),
+                shipping_method=ShippingMethodFactory(),
+                user=user,
+            )
+
+        assert "country" in error.value.message_dict
 
 
 @pytest.mark.django_db

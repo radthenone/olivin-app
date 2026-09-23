@@ -5,7 +5,11 @@ from __future__ import annotations
 import pytest
 
 from apps.shipping.models import ShippingZone
-from apps.shipping.services import available_methods, free_shipping_threshold
+from apps.shipping.services import (
+    available_methods,
+    free_shipping_threshold,
+    zone_for_country,
+)
 from common.money import Money
 from tests.factories.shipping import (
     ParcelLockerMethodFactory,
@@ -126,3 +130,14 @@ class TestWaluta:
     def test_ujemna_wartosc_koszyka_jest_bledem_programu(self):
         with pytest.raises(ValueError):
             available_methods(order_value=Money(-1), zone=ShippingZone.PL)
+
+
+class TestStrefaDostawy:
+    def test_polska_to_strefa_krajowa(self):
+        assert zone_for_country("PL") == ShippingZone.PL
+
+    def test_kraj_unii_to_strefa_unijna(self):
+        assert zone_for_country("DE") == ShippingZone.EU
+
+    def test_kraj_spoza_unii_nie_ma_strefy(self):
+        assert zone_for_country("US") is None

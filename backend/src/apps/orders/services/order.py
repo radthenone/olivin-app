@@ -20,41 +20,8 @@ from apps.orders.models import (
 from apps.orders.services.cart import cart_items, totals
 from apps.products.models import ProductStatus
 from apps.shipping.models import ShippingMethod, ShippingZone
-from apps.shipping.services import cost_for
+from apps.shipping.services import cost_for, zone_for_country
 from common.money import DEFAULT_CURRENCY, Money
-
-# Kraje Unii poza Polską. Lista jest tu, a nie w bazie, bo zmienia się raz na
-# dekadę i jest faktem prawnym, a nie danymi sklepu (ADR 0019).
-EU_COUNTRIES = frozenset(
-    {
-        "AT",
-        "BE",
-        "BG",
-        "CY",
-        "CZ",
-        "DE",
-        "DK",
-        "EE",
-        "ES",
-        "FI",
-        "FR",
-        "GR",
-        "HR",
-        "HU",
-        "IE",
-        "IT",
-        "LT",
-        "LU",
-        "LV",
-        "MT",
-        "NL",
-        "PT",
-        "RO",
-        "SE",
-        "SI",
-        "SK",
-    }
-)
 
 
 class OrderError(ValidationError):
@@ -78,17 +45,6 @@ class ShippingAddress:
     street2: str = ""
 
 
-def resolve_zone(country: str) -> str:
-    """Strefa dla kraju; kraj spoza Unii nie jest obsługiwany (ADR 0019)."""
-    if country == "PL":
-        return ShippingZone.PL
-    if country in EU_COUNTRIES:
-        return ShippingZone.EU
-    raise OrderError(
-        {"country": "Sklep wysyła wyłącznie do Polski i pozostałych krajów Unii."}
-    )
-
-
 @transaction.atomic
 def create_order(
     *,
@@ -110,7 +66,11 @@ def create_order(
         raise OrderError({"cart": "Nie da się złożyć zamówienia z pustego koszyka."})
 
     subject_email = _resolve_email(user=user, email=email)
-    zone = resolve_zone(address.country)
+    zone = zone_for_country(address.country)
+    if zone is None:
+        raise OrderError(
+            {"country": "Sklep wysyła wyłącznie do Polski i pozostałych krajów Unii."}
+        )
     summary = totals(items)
 
     _reject_unavailable_items(items)
@@ -278,7 +238,7 @@ def _reject_guest_above_limit(*, user, total: Money) -> None:
 
 
 def _reject_unavailable_method(
-    method: ShippingMethod, *, order_value: Money, zone: str
+    method: ShippingMethod, *, order_value: Money, zone: ShippingZone
 ) -> None:
     """Metoda musi być tą samą, którą klient zobaczył w kroku dostawy.
 
