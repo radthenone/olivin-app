@@ -4,8 +4,41 @@ from dataclasses import dataclass
 
 from django.conf import settings
 
-from apps.shipping.models import ShippingMethod
+from apps.shipping.models import ShippingMethod, ShippingZone
 from common.money import DEFAULT_CURRENCY, Money
+
+# Kraje Unii poza Polską. Lista jest tu, a nie w bazie, bo zmienia się raz na
+# dekadę i jest faktem prawnym, a nie danymi sklepu (ADR 0019).
+EU_COUNTRIES = frozenset(
+    {
+        "AT",
+        "BE",
+        "BG",
+        "CY",
+        "CZ",
+        "DE",
+        "DK",
+        "EE",
+        "ES",
+        "FI",
+        "FR",
+        "GR",
+        "HR",
+        "HU",
+        "IE",
+        "IT",
+        "LT",
+        "LU",
+        "LV",
+        "MT",
+        "NL",
+        "PT",
+        "RO",
+        "SE",
+        "SI",
+        "SK",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,3 +128,12 @@ def available_methods(*, order_value: Money, zone: str) -> list[ShippingOffer]:
         ShippingOffer(method=method, cost=cost_for(method, order_value))
         for method in methods
     ]
+
+
+def zone_for_country(country: str) -> ShippingZone | None:
+    """Strefa dostawy dla kraju; `None`, gdy sklep tam nie wysyła (ADR 0019)."""
+    if country == "PL":
+        return ShippingZone.PL
+    if country in EU_COUNTRIES:
+        return ShippingZone.EU
+    return None

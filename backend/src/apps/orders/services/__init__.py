@@ -16,7 +16,6 @@ from apps.orders.services.cart import (
     totals,
 )
 from apps.orders.services.order import (
-    EU_COUNTRIES,
     OrderError,
     ShippingAddress,
     attach_guest_orders,
@@ -24,11 +23,9 @@ from apps.orders.services.order import (
     create_order,
     expire_unpaid_orders,
     release_reservations,
-    resolve_zone,
 )
 
 __all__ = [
-    "EU_COUNTRIES",
     "CartError",
     "CartTotals",
     "OrderError",
@@ -47,7 +44,6 @@ __all__ = [
     "new_guest_token",
     "release_reservations",
     "remove_item",
-    "resolve_zone",
     "set_quantity",
     "totals",
 ]
