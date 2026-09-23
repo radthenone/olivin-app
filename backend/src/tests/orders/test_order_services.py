@@ -72,7 +72,10 @@ def _terms_for(user=None, email: str = ""):
 
 @pytest.mark.django_db
 class TestCreateOrder:
+    """Składanie zamówienia z koszyka."""
+
     def test_order_is_created_as_pending(self, settings):
+        """Zamówienie powstaje w statusie pending."""
         settings.FREE_SHIPPING_THRESHOLD = None
         user = UserFactory()
         _terms_for(user=user)
@@ -113,6 +116,7 @@ class TestCreateOrder:
         assert order.total == Money(100000)
 
     def test_cart_is_cleared(self):
+        """Koszyk jest czyszczony."""
         user = UserFactory()
         _terms_for(user=user)
         cart = CartFactory(user=user)
@@ -130,6 +134,7 @@ class TestCreateOrder:
         assert cart.items.count() == 0
 
     def test_reservations_are_created_and_reduce_availability(self):
+        """Rezerwacje powstają i obniżają dostępność."""
         user = UserFactory()
         _terms_for(user=user)
         cart = CartFactory(user=user)
@@ -149,6 +154,7 @@ class TestCreateOrder:
         assert variant.available == 3
 
     def test_made_to_order_item_gets_no_reservation(self):
+        """Wyrób na zamówienie nie dostaje rezerwacji."""
         user = UserFactory()
         _terms_for(user=user)
         cart = CartFactory(user=user)
@@ -166,6 +172,7 @@ class TestCreateOrder:
         assert order.has_made_to_order_item is True
 
     def test_empty_cart_is_rejected(self):
+        """Pusty koszyk jest odrzucony."""
         user = UserFactory()
         _terms_for(user=user)
 
@@ -180,6 +187,7 @@ class TestCreateOrder:
         assert "cart" in error.value.message_dict
 
     def test_non_eu_country_is_rejected(self):
+        """Kraj spoza Unii jest odrzucony."""
         user = UserFactory()
         _terms_for(user=user)
         cart = CartFactory(user=user)
@@ -203,6 +211,7 @@ class TestSnapshot:
     """Pozycja zamówienia trzyma kopię, nie odwołanie (ADR 0010)."""
 
     def test_price_survives_price_list_change(self):
+        """Cena przeżywa zmianę cennika."""
         user = UserFactory()
         _terms_for(user=user)
         cart = CartFactory(user=user)
@@ -224,6 +233,7 @@ class TestSnapshot:
         assert order.total == Money(100000)
 
     def test_name_and_sku_are_copied(self):
+        """Nazwa i SKU są skopiowane."""
         user = UserFactory()
         _terms_for(user=user)
         cart = CartFactory(user=user)
@@ -244,6 +254,7 @@ class TestSnapshot:
         assert item.sku == "RING-001"
 
     def test_engraving_and_its_price_are_copied(self):
+        """Grawerunek i jego cena są skopiowane."""
         user = UserFactory()
         _terms_for(user=user)
         cart = CartFactory(user=user)
@@ -265,6 +276,7 @@ class TestSnapshot:
         assert order.total == Money(104900)
 
     def test_shipping_cost_is_frozen(self):
+        """Koszt dostawy jest zamrożony."""
         user = UserFactory()
         _terms_for(user=user)
         cart = CartFactory(user=user)
@@ -285,7 +297,10 @@ class TestSnapshot:
 
 @pytest.mark.django_db
 class TestValidation:
+    """Walidacje przed złożeniem zamówienia."""
+
     def test_no_terms_consent_blocks_order(self):
+        """Bez zgody na regulamin zamówienie nie powstaje."""
         user = UserFactory()
         ConsentDocumentFactory(kind=ConsentKind.TERMS)
         cart = CartFactory(user=user)
@@ -304,6 +319,7 @@ class TestValidation:
         assert "terms" in error.value.message_dict
 
     def test_new_terms_version_invalidates_old_consent(self):
+        """Nowa wersja regulaminu unieważnia starą zgodę."""
         user = UserFactory()
         _terms_for(user=user)
         ConsentDocumentFactory(
@@ -327,6 +343,7 @@ class TestValidation:
         assert "terms" in error.value.message_dict
 
     def test_guest_above_limit_requires_account(self):
+        """Gość powyżej progu wymaga konta."""
         email = "gosc@test.com"
         _terms_for(email=email)
         cart = GuestCartFactory()
@@ -365,6 +382,7 @@ class TestValidation:
         assert "email" in error.value.message_dict
 
     def test_guest_exactly_at_limit_passes(self, settings):
+        """Gość dokładnie na progu przechodzi."""
         settings.FREE_SHIPPING_THRESHOLD = None
         email = "gosc@test.com"
         _terms_for(email=email)
@@ -383,6 +401,7 @@ class TestValidation:
         assert order.total == Money(GUEST_ORDER_LIMIT)
 
     def test_logged_in_user_has_no_limit(self):
+        """Zalogowany nie ma progu."""
         user = UserFactory()
         _terms_for(user=user)
         cart = CartFactory(user=user)
@@ -400,6 +419,7 @@ class TestValidation:
         assert order.status == OrderStatus.PENDING
 
     def test_method_above_its_limit_is_rejected(self):
+        """Metoda ponad swój limit jest odrzucona."""
         user = UserFactory()
         _terms_for(user=user)
         cart = CartFactory(user=user)
@@ -418,6 +438,7 @@ class TestValidation:
         assert "shipping_method" in error.value.message_dict
 
     def test_method_from_other_zone_is_rejected(self):
+        """Metoda z innej strefy jest odrzucona."""
         user = UserFactory()
         _terms_for(user=user)
         cart = CartFactory(user=user)
@@ -436,6 +457,7 @@ class TestValidation:
         assert "shipping_method" in error.value.message_dict
 
     def test_quantity_above_stock_blocks_order(self):
+        """Ilość ponad stan zatrzymuje zamówienie."""
         user = UserFactory()
         _terms_for(user=user)
         cart = CartFactory(user=user)
@@ -456,6 +478,7 @@ class TestValidation:
         assert "items" in error.value.message_dict
 
     def test_failed_order_keeps_cart(self):
+        """Nieudane zamówienie nie czyści koszyka."""
         user = UserFactory()
         ConsentDocumentFactory(kind=ConsentKind.TERMS)
         cart = CartFactory(user=user)
@@ -477,6 +500,8 @@ class TestValidation:
 
 @pytest.mark.django_db
 class TestStatusTransitions:
+    """Przejścia statusów zamówienia."""
+
     def _order(self, **kwargs) -> Order:
         user = UserFactory()
         _terms_for(user=user)
@@ -498,6 +523,7 @@ class TestStatusTransitions:
         )
 
     def test_pending_moves_to_paid(self):
+        """Pending przechodzi w paid."""
         order = self._order()
 
         order.transition_to(OrderStatus.PAID)
@@ -505,6 +531,7 @@ class TestStatusTransitions:
         assert order.status == OrderStatus.PAID
 
     def test_backward_transition_is_rejected(self):
+        """Przejście wstecz jest odrzucone."""
         order = self._order()
         order.transition_to(OrderStatus.PAID)
 
@@ -512,6 +539,7 @@ class TestStatusTransitions:
             order.transition_to(OrderStatus.PENDING)
 
     def test_production_requires_made_to_order_item(self):
+        """Produkcja wymaga wyrobu na zamówienie."""
         order = self._order()
         order.transition_to(OrderStatus.PAID)
 
@@ -519,6 +547,7 @@ class TestStatusTransitions:
             order.transition_to(OrderStatus.IN_PRODUCTION)
 
     def test_production_with_made_to_order_item_passes(self):
+        """Produkcja przy wyrobie na zamówienie przechodzi."""
         order = self._order(made_to_order=True)
         order.transition_to(OrderStatus.PAID)
 
@@ -527,6 +556,7 @@ class TestStatusTransitions:
         assert order.status == OrderStatus.IN_PRODUCTION
 
     def test_cancelled_is_final_state(self):
+        """Anulowane jest stanem końcowym."""
         order = self._order()
         order.transition_to(OrderStatus.CANCELLED)
 
@@ -534,6 +564,7 @@ class TestStatusTransitions:
             order.transition_to(OrderStatus.PAID)
 
     def test_shipped_moves_only_to_delivered(self):
+        """Wysłane idzie tylko do dostarczonego."""
         order = self._order()
         order.transition_to(OrderStatus.PAID)
         order.transition_to(OrderStatus.PACKED)
@@ -548,6 +579,8 @@ class TestStatusTransitions:
 
 @pytest.mark.django_db
 class TestCancelOrder:
+    """Anulowanie zamówienia."""
+
     def _pending_order(self):
         user = UserFactory()
         _terms_for(user=user)
@@ -564,6 +597,7 @@ class TestCancelOrder:
         return order, variant
 
     def test_cancel_releases_reservations(self):
+        """Anulowanie zwalnia rezerwacje."""
         order, variant = self._pending_order()
 
         cancel_order(order)
@@ -577,6 +611,7 @@ class TestCancelOrder:
         assert variant.available == 5
 
     def test_cancel_paid_order_is_rejected(self):
+        """Anulowanie opłaconego jest odrzucone."""
         order, _ = self._pending_order()
         order.transition_to(OrderStatus.PAID)
 
@@ -588,7 +623,10 @@ class TestCancelOrder:
 
 @pytest.mark.django_db
 class TestExpireUnpaidOrders:
+    """Zadanie sprzątające nieopłacone zamówienia."""
+
     def test_unpaid_after_one_day_is_cancelled(self):
+        """Nieopłacone po dobie jest anulowane."""
         user = UserFactory()
         _terms_for(user=user)
         cart = CartFactory(user=user)
@@ -611,6 +649,7 @@ class TestExpireUnpaidOrders:
         assert order.status == OrderStatus.CANCELLED
 
     def test_fresh_order_stays(self):
+        """Świeże zamówienie zostaje."""
         user = UserFactory()
         _terms_for(user=user)
         cart = CartFactory(user=user)
@@ -632,6 +671,8 @@ class TestExpireUnpaidOrders:
 
 @pytest.mark.django_db
 class TestGuestOrders:
+    """Zamówienia gościa."""
+
     def _guest_order(self, email: str):
         _terms_for(email=email)
         cart = GuestCartFactory()
@@ -656,6 +697,7 @@ class TestGuestOrders:
         assert order.user_id is None  # type: ignore[missing-attribute]
 
     def test_email_confirmation_attaches_orders(self):
+        """Potwierdzenie adresu podpina zamówienia."""
         email = "gosc@test.com"
         order = self._guest_order(email)
         user = UserFactory(email=email)
@@ -669,6 +711,7 @@ class TestGuestOrders:
         assert order.user_id == user.pk  # type: ignore[missing-attribute]
 
     def test_confirming_other_email_does_not_attach(self):
+        """Potwierdzenie cudzego adresu nie podpina."""
         order = self._guest_order("gosc@test.com")
         other = UserFactory(email="ktos.inny@test.com")
         address = EmailAddress.objects.create(
@@ -681,6 +724,7 @@ class TestGuestOrders:
         assert order.user_id is None  # type: ignore[missing-attribute]
 
     def test_service_attaches_only_given_email(self):
+        """Serwis podpina tylko wskazany adres."""
         order = self._guest_order("gosc@test.com")
         other = UserFactory(email="ktos.inny@test.com")
 
