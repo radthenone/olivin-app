@@ -13,19 +13,27 @@ from django.http import HttpRequest
 from rest_framework.views import APIView
 
 from apps.orders.models import Cart, CartItem
-from apps.orders.schema import cart_item_schema, cart_merge_schema, cart_schema
+from apps.orders.schema import (
+    cart_item_schema,
+    cart_merge_schema,
+    cart_promotion_code_schema,
+    cart_schema,
+)
 from apps.orders.serializers import (
     CartItemQuantitySerializer,
     CartItemWriteSerializer,
     CartSerializer,
+    PromotionCodeSerializer,
 )
 from apps.orders.services import (
     CartTotals,
     add_item,
+    apply_promotion_code,
     cart_items,
     get_cart,
     get_or_create_cart,
     merge_carts,
+    promotions_for,
     remove_item,
     set_quantity,
     totals,
@@ -51,6 +59,7 @@ class CartPayload:
     cart_token: str | None
     items: list[CartItem]
     totals: CartTotals
+    promotion_code: str | None = None
 
 
 def _empty_payload() -> CartPayload:
@@ -64,11 +73,19 @@ def _empty_payload() -> CartPayload:
 
 
 def _payload_of(cart: Cart) -> CartPayload:
+    """Koszyk z wyceną promocji — tą samą, którą dostanie zamówienie.
+
+    Właściciel bierze się z koszyka, nie z żądania: limit na klienta liczy
+    się dla konta, do którego koszyk należy. Gość nie ma tu jeszcze adresu,
+    więc jego limit sprawdza dopiero złożenie zamówienia.
+    """
     items = list(cart_items(cart))
+    discounts = promotions_for(cart, items, user=cart.user)
     return CartPayload(
         cart_token=cart.session_key or None,
         items=items,
-        totals=totals(items),
+        totals=totals(items, discounts),
+        promotion_code=cart.promotion.code if cart.promotion else None,
     )
 
 
@@ -148,6 +165,32 @@ class CartMergeView(APIView):
         target = get_or_create_cart(user=user_of(request))
         merged = merge_carts(guest=guest, target=target)
         return Response(CartSerializer(_payload_of(merged)).data)
+
+
+@cart_promotion_code_schema
+class CartPromotionCodeView(APIView):
+    """Kod promocyjny w koszyku.
+
+    Actions:
+    - post: POST /cart/promotion-code/ — aktywuje promocję kodową
+
+    Dla każdego, także gościa — kod wpisuje się przed logowaniem. Koszyk
+    powstaje, jeśli go jeszcze nie ma, tak jak przy dodaniu pozycji.
+    """
+
+    permission_classes = [AllowAny]
+    serializer_class = CartSerializer
+
+    def post(self, request: Request) -> Response:
+        payload = PromotionCodeSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+
+        cart = get_or_create_cart(user=user_of(request), token=token_of(request))
+        try:
+            apply_promotion_code(cart, payload.validated_data["code"])
+        except DjangoValidationError as error:
+            raise _as_drf_error(error) from error
+        return Response(CartSerializer(_payload_of(cart)).data)
 
 
 @cart_item_schema

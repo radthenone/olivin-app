@@ -21,6 +21,8 @@ class OrderItemSerializer(serializers.ModelSerializer):
     goods_price = MoneySerializer(read_only=True)
     engraving_total = MoneySerializer(read_only=True)
     line_total = MoneySerializer(read_only=True)
+    discount_amount = MoneySerializer(source="discount_money", read_only=True)
+    discounted_total = MoneySerializer(read_only=True)
     is_pair = serializers.BooleanField(read_only=True)
 
     class Meta:
@@ -41,6 +43,8 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "goods_price",
             "engraving_total",
             "line_total",
+            "discount_amount",
+            "discounted_total",
         ]
         read_only_fields = fields
 

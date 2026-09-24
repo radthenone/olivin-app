@@ -58,7 +58,7 @@
         <td class="amount">{{ item.quantity }}</td>
         <td class="amount">{{ item.unit_price_money }}</td>
         <td class="amount">{% if item.is_vat_exempt %}zw.{% else %}{% widthratio item.vat_rate 1 100 %}%{% endif %}</td>
-        <td class="amount">{{ item.line_total }}</td>
+        <td class="amount">{{ item.line_total }}{% if item.discount_amount %}<br><span class="muted">rabat −{{ item.discount_money }}, po rabacie {{ item.discounted_total }}</span>{% endif %}</td>
       </tr>
       {% endfor %}
     </tbody>

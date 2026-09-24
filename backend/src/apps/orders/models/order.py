@@ -175,7 +175,7 @@ class Order(TimestampedModel):
     discount_amount = MoneyAmountField(
         default=0,
         validators=[MinValueValidator(0)],
-        help_text="Suma rabatów z promocji; wypełni ją bilet promocji",
+        help_text="Suma rabatów z promocji na pozycjach, przed podatkiem (ADR 0023)",
     )
     coupon_amount = MoneyAmountField(
         default=0,
@@ -375,7 +375,7 @@ class OrderItem(TimestampedModel):
     discount_amount = MoneyAmountField(
         default=0,
         validators=[MinValueValidator(0)],
-        help_text="Rabat naliczony na tę pozycję; wypełni go bilet promocji",
+        help_text="Rabat promocji naliczony na towar tej pozycji, przed podatkiem",
     )
 
     class Meta:
@@ -429,3 +429,12 @@ class OrderItem(TimestampedModel):
     @property
     def line_total(self) -> Money:
         return self.goods_price + self.engraving_total
+
+    @property
+    def discount_money(self) -> Money:
+        return Money(self.discount_amount, self.currency)
+
+    @property
+    def discounted_total(self) -> Money:
+        """Wartość pozycji po rabacie — to od niej liczy się podatek (ADR 0023)."""
+        return self.line_total - self.discount_money

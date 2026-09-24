@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+from collections import defaultdict
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Q
 
 from apps.consents.models import Consent, ConsentDocument, ConsentKind
 from apps.inventory.models import ReservationStatus
@@ -18,8 +21,10 @@ from apps.orders.models import (
     OrderItem,
     OrderStatus,
 )
-from apps.orders.services.cart import cart_items, totals
+from apps.orders.services.cart import cart_items, promotions_for, totals
 from apps.products.models import ProductStatus
+from apps.promotions.models import Promotion, PromotionRedemption
+from apps.promotions.services import AppliedPromotion
 from apps.shipping.models import ShippingMethod, ShippingZone
 from apps.shipping.services import cost_for, zone_for_country
 from common.money import DEFAULT_CURRENCY, Money
@@ -76,7 +81,9 @@ def create_order(
         raise OrderError(
             {"country": "Sklep wysyła wyłącznie do Polski i pozostałych krajów Unii."}
         )
-    summary = totals(items)
+    _lock_limited_promotions()
+    discounts = promotions_for(cart, items, user=user, email=subject_email)
+    summary = totals(items, discounts)
 
     _reject_unavailable_items(items)
     _reject_without_terms_consent(user=user, email=subject_email)
@@ -85,7 +92,7 @@ def create_order(
     shipping_cost = cost_for(shipping_method, summary.subtotal)
     # Limit liczony od kwoty do zapłaty, a nie od samego towaru: próg z
     # `.ai/project.md` dotyczy tego, ile gość zostawia w sklepie.
-    _reject_guest_above_limit(user=user, total=summary.subtotal + shipping_cost)
+    _reject_guest_above_limit(user=user, total=summary.total + shipping_cost)
 
     order = _build_order(
         address=address,
@@ -94,11 +101,16 @@ def create_order(
         user=user,
         email=subject_email,
         invoice_requested=invoice_requested,
+        discount=summary.discount_amount,
     )
-    _snapshot_items(order, items)
+    _snapshot_items(order, items, discounts)
+    _record_redemptions(order, discounts)
     _reserve_items(order, items)
 
     cart.items.all().delete()  # type: ignore[missing-attribute]
+    # Kod został wykorzystany — następny koszyk zaczyna bez niego.
+    cart.promotion = None
+    cart.save(update_fields=["promotion", "updated_at"])
     cart.touch()
     return order
 
@@ -155,6 +167,35 @@ def attach_guest_orders(user: CustomUser, email: str | None = None) -> int:
     address = email or user.email
     return Order.objects.filter(user__isnull=True, email__iexact=address).update(
         user=user
+    )
+
+
+def _lock_limited_promotions() -> None:
+    """Blokuje promocje z limitem do końca transakcji składania zamówienia.
+
+    Bez tego dwa równoległe zamówienia policzyłyby te same wolne użycia
+    i oba dostałyby rabat ponad limit.
+    """
+    # ponytail: blokada na wszystkie aktywne promocje z limitem szereguje
+    # zamówienia korzystające z nich; przy dużym ruchu blokować tylko wybrane.
+    list(
+        Promotion.objects.active()
+        .filter(Q(global_limit__isnull=False) | Q(per_customer_limit__isnull=False))
+        .select_for_update()
+        .values_list("pk", flat=True)
+    )
+
+
+def _record_redemptions(
+    order: Order, discounts: Mapping[Any, AppliedPromotion]
+) -> None:
+    """Jedno zastosowanie na promocję — z sumą jej rabatu na wszystkich pozycjach."""
+    amounts: dict[Promotion, int] = defaultdict(int)
+    for applied in discounts.values():
+        amounts[applied.promotion] += applied.amount.amount
+    PromotionRedemption.objects.bulk_create(
+        PromotionRedemption(promotion=promotion, order=order, amount=amount)
+        for promotion, amount in amounts.items()
     )
 
 
@@ -279,6 +320,7 @@ def _build_order(
     user: Customer,
     email: str,
     invoice_requested: bool,
+    discount: Money,
 ) -> Order:
     terms = ConsentDocument.objects.current(ConsentKind.TERMS)
     if terms is None:
@@ -299,13 +341,17 @@ def _build_order(
         currency=shipping_cost.currency or DEFAULT_CURRENCY,
         terms_document=terms,
         invoice_requested=invoice_requested,
+        discount_amount=discount.amount,
     )
 
 
-def _snapshot_items(order: Order, items: list[CartItem]) -> None:
+def _snapshot_items(
+    order: Order, items: list[CartItem], discounts: Mapping[Any, AppliedPromotion]
+) -> None:
     """Przepisuje pozycje koszyka na pozycje zamówienia (ADR 0010)."""
     snapshots = []
     for item in items:
+        applied = discounts.get(item.pk)
         variant = item.variant
         product = variant.product
         engraving = product.engraving_price or 0
@@ -326,6 +372,7 @@ def _snapshot_items(order: Order, items: list[CartItem]) -> None:
                 size=variant.size,
                 second_size=item.second_size,
                 second_engraving_text=item.second_engraving_text,
+                discount_amount=applied.amount.amount if applied else 0,
             )
         )
     OrderItem.objects.bulk_create(snapshots)

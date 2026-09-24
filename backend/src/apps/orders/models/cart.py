@@ -67,6 +67,14 @@ class Cart(TimestampedModel):
             f"{GUEST_CART_TTL_DAYS} dni jest kasowany zadaniem okresowym."
         ),
     )
+    promotion = models.ForeignKey(
+        "promotions.Promotion",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="Promocja aktywowana kodem wpisanym w koszyku",
+    )
 
     objects: CartQuerySet = CartQuerySet.as_manager()  # type: ignore[bad-assignment]
 

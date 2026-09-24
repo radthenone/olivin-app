@@ -5,6 +5,7 @@ from apps.orders.views.cart import (
     CartDetailView,
     CartItemViewSet,
     CartMergeView,
+    CartPromotionCodeView,
     token_of,
     user_of,
 )
@@ -15,6 +16,7 @@ __all__ = [
     "CartDetailView",
     "CartItemViewSet",
     "CartMergeView",
+    "CartPromotionCodeView",
     "OrderViewSet",
     "token_of",
     "user_of",
