@@ -366,12 +366,20 @@ class TestImagesInApi:
         assert body["variants"][0]["images"] == []
         assert len(body["images"]) == 1
 
-    def test_galeria_nie_mnozy_zapytan(
+    def test_gallery_does_not_multiply_queries(
         self, api_client, on_commit, django_assert_max_num_queries
     ):
+        """Galeria trzech zdjęć nie dokłada zapytań na każde zdjęcie.
+
+        Pierwsze żądanie rozgrzewa procesowy cache `ContentType` — bez tego
+        wynik zależał od kolejności testów (siódme zapytanie o typ treści
+        pojawiało się tylko, gdy nikt wcześniej go nie zapisał).
+        """
         product = PublishedProductFactory()
         for position in range(3):
             add_image(product=product, on_commit=on_commit, position=position)
+        url = reverse("product-detail", kwargs={"slug": product.slug})
+        api_client.get(url)
 
         with django_assert_max_num_queries(6):
-            api_client.get(reverse("product-detail", kwargs={"slug": product.slug}))
+            api_client.get(url)
