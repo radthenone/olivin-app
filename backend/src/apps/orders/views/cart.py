@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, cast
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import status, viewsets
@@ -29,6 +30,9 @@ from apps.orders.services import (
     set_quantity,
     totals,
 )
+
+if TYPE_CHECKING:
+    from apps.accounts.models import Customer, CustomUser
 
 # Gość nosi swój koszyk w tym nagłówku — nie w ciasteczku, bo aplikacja
 # mobilna ciasteczek nie ma (ADR 0030).
@@ -73,9 +77,16 @@ def token_of(request: Request | HttpRequest) -> str | None:
     return request.META.get(_META_KEY) or None
 
 
-def user_of(request: Request | HttpRequest):
-    """Zalogowany klient albo `None` — gość nie jest tu błędem."""
-    return request.user if request.user.is_authenticated else None
+def user_of(request: Request | HttpRequest) -> Customer:
+    """Zalogowany klient albo `None` — gość nie jest tu błędem.
+
+    Jedyne miejsce, gdzie `AnonymousUser` zamienia się na `None`; serwisy
+    dostają już `Customer`. `cast`, bo stuby typują `request.user` jako
+    `AbstractBaseUser | AnonymousUser`, a nie jako `AUTH_USER_MODEL`.
+    """
+    if not request.user.is_authenticated:
+        return None
+    return cast("CustomUser", request.user)
 
 
 def _as_drf_error(error: DjangoValidationError) -> ValidationError:
@@ -134,7 +145,7 @@ class CartMergeView(APIView):
                 }
             )
 
-        target = get_or_create_cart(user=request.user)
+        target = get_or_create_cart(user=user_of(request))
         merged = merge_carts(guest=guest, target=target)
         return Response(CartSerializer(_payload_of(merged)).data)
 

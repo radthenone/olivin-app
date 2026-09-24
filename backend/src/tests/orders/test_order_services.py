@@ -318,6 +318,25 @@ class TestValidation:
 
         assert "terms" in error.value.message_dict
 
+    def test_guest_consent_on_account_email_does_not_count_for_customer(self):
+        """Zgoda gościa na adres konta nie zastępuje akceptacji przez konto."""
+        user = UserFactory()
+        _terms_for(email=user.email)
+        cart = CartFactory(user=user)
+        variant = _variant()
+        stock(variant, 5)
+        add_item(cart, variant=variant, quantity=1)
+
+        with pytest.raises(OrderError) as error:
+            create_order(
+                cart=cart,
+                address=ADDRESS,
+                shipping_method=ShippingMethodFactory(),
+                user=user,
+            )
+
+        assert "terms" in error.value.message_dict
+
     def test_new_terms_version_invalidates_old_consent(self):
         """Nowa wersja regulaminu unieważnia starą zgodę."""
         user = UserFactory()

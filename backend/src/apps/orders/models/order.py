@@ -3,6 +3,7 @@ from __future__ import annotations
 import secrets
 from datetime import datetime, timedelta
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
@@ -13,6 +14,9 @@ from apps.orders.models.cart import ENGRAVING_MAX_LENGTH, MAX_ITEM_QUANTITY
 from apps.products.models.choices import RingSize
 from common import TimestampedModel
 from common.money import CurrencyField, Money, MoneyAmountField
+
+if TYPE_CHECKING:
+    from apps.accounts.models import Customer
 
 # Zamówienie bez zapłaty przez dobę anuluje się samo (`CONTEXT.md`, Order).
 UNPAID_ORDER_TTL = timedelta(hours=24)
@@ -69,14 +73,16 @@ def new_order_number() -> str:
 
 
 class OrderQuerySet(models.QuerySet["Order"]):
-    def for_subject(self, *, user=None, email: str | None = None) -> OrderQuerySet:
+    def for_subject(
+        self, *, user: Customer = None, email: str | None = None
+    ) -> OrderQuerySet:
         """Zamówienia klienta albo gościa po e-mailu — nigdy obu naraz.
 
         Ścieżka gościa obejmuje wyłącznie zamówienia bez konta. Inaczej sam
         adres plus numer otwierałby — i pozwalał anulować — zamówienie
         zalogowanego klienta, mimo że to jego konto nim zarządza.
         """
-        if user is not None and user.is_authenticated:
+        if user is not None:
             return self.filter(user=user)
         if email:
             return self.filter(user__isnull=True, email__iexact=email)

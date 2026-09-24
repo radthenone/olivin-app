@@ -40,3 +40,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}".strip()
+
+
+# Podmiot zamówień, koszyka i zgód: zalogowane konto albo `None` dla gościa.
+# Anonim (`AnonymousUser`) tu nie trafia — widoki zamieniają go na `None`
+# w `user_of()`, więc serwisy nie muszą pytać o `is_authenticated`.
+type Customer = CustomUser | None

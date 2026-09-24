@@ -3,6 +3,7 @@ from __future__ import annotations
 import secrets
 from collections.abc import Iterable
 from dataclasses import asdict, dataclass
+from typing import TYPE_CHECKING
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -11,6 +12,9 @@ from django.db.models import QuerySet
 from apps.orders.models import MAX_ITEM_QUANTITY, Cart, CartItem
 from apps.products.models import ProductVariant
 from common.money import DEFAULT_CURRENCY, Money
+
+if TYPE_CHECKING:
+    from apps.accounts.models import Customer
 
 # Token gościa ma być nie do odgadnięcia — jest jedynym kluczem do koszyka,
 # który nie ma właściciela. 32 bajty losowości dają ~43 znaki w base64url.
@@ -99,16 +103,16 @@ def totals(items: Iterable[CartItem]) -> CartTotals:
     )
 
 
-def get_cart(*, user=None, token: str | None = None) -> Cart | None:
+def get_cart(*, user: Customer = None, token: str | None = None) -> Cart | None:
     """Koszyk konta albo gościa; `None`, gdy żadnego jeszcze nie ma."""
-    if user is not None and user.is_authenticated:
+    if user is not None:
         return Cart.objects.filter(user=user).first()
     if token:
         return Cart.objects.guest().filter(session_key=token).first()
     return None
 
 
-def get_or_create_cart(*, user=None, token: str | None = None) -> Cart:
+def get_or_create_cart(*, user: Customer = None, token: str | None = None) -> Cart:
     """Koszyk do zapisu — zakładany przy pierwszym dodaniu pozycji (ADR 0030).
 
     Gość dostaje tu swój token. Token nieznany backendowi nie jest błędem:
@@ -118,7 +122,7 @@ def get_or_create_cart(*, user=None, token: str | None = None) -> Cart:
     existing = get_cart(user=user, token=token)
     if existing is not None:
         return existing
-    if user is not None and user.is_authenticated:
+    if user is not None:
         # `get_or_create`, bo koszyk konta jest relacją jeden-do-jednego:
         # dwa żądania świeżo zalogowanego klienta, które trafią tu naraz,
         # inaczej rozbiłyby się o unikalność zamiast dostać ten sam koszyk.
