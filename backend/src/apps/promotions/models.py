@@ -100,10 +100,7 @@ class Promotion(TimestampedModel):
     )
     requires_premium = models.BooleanField(
         default=False,
-        help_text=(
-            "Tylko dla klientów premium. Do czasu wprowadzenia członkostwa "
-            "taka promocja nie działa dla nikogo."
-        ),
+        help_text="Tylko dla klientów premium (`CONTEXT.md`, Membership).",
     )
     per_customer_limit = models.PositiveIntegerField(
         null=True,

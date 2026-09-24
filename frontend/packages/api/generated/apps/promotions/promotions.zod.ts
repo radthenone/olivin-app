@@ -37,7 +37,7 @@ export const PromotionsListResponse = zod.object({
   "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
   "currency": zod.string().describe('Kod waluty ISO 4217')
 }).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.').nullable().describe('Minimalna wartość koszyka przed rabatami; pusta — bez progu'),
-  "requiresPremium": zod.boolean().describe('Tylko dla klientów premium. Do czasu wprowadzenia członkostwa taka promocja nie działa dla nikogo.')
+  "requiresPremium": zod.boolean().describe('Tylko dla klientów premium (`CONTEXT.md`, Membership).')
 }).describe('Promocja widoczna w sklepie — bez kodu i bez limitów.\n\nLimity są sprawą sklepu: klient dowie się o wyczerpaniu z wyceny\nkoszyka, a pokazywanie liczników zachęcałoby do wyścigu o ostatnie użycia.'))
 })
 

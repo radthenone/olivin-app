@@ -10,6 +10,13 @@ from common import TimestampedModel
 # Create your models here.
 
 
+class MembershipLevel(models.TextChoices):
+    """Poziom klienta (`CONTEXT.md`, Membership)."""
+
+    REGULAR = "regular", "Zwykłe"
+    PREMIUM = "premium", "Premium"
+
+
 class Profile(TimestampedModel):
     """User profile model storing additional user information.
 
@@ -48,6 +55,20 @@ class Profile(TimestampedModel):
         max_length=20,
         choices=RoleChoices.choices,
         default=RoleChoices.CUSTOMER,
+    )
+    membership = models.CharField(
+        max_length=16,
+        choices=MembershipLevel.choices,
+        default=MembershipLevel.REGULAR,
+        help_text=(
+            "Poziom członkostwa — premium nadawane automatycznie po "
+            "przekroczeniu progu i nigdy nie odbierane (ADR 0023)"
+        ),
+    )
+    membership_granted_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Data nadania premium; puste dla zwykłego członkostwa",
     )
 
     class Meta:

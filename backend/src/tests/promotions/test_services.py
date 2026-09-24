@@ -7,13 +7,14 @@ from datetime import timedelta
 import pytest
 from django.utils import timezone
 
+from apps.accounts.models import MembershipLevel
 from apps.orders.models import OrderStatus
 from apps.orders.services import cart_items
 from apps.promotions.models import PromotionKind
 from apps.promotions.services import best_promotions
 from apps.products.services.metal_rate import activate_rate
 from common.money import Money
-from tests.factories.accounts import UserFactory
+from tests.factories.accounts import ProfileFactory, UserFactory
 from tests.factories.categories import CategoryFactory
 from tests.factories.collections import CollectionFactory
 from tests.factories.orders import (
@@ -157,12 +158,30 @@ class TestPromotionConditions:
             item.pk: (promotion, Money(12990))
         }
 
-    def test_premium_promotion_waits_for_membership(self):
-        """Warunek członkostwa nie jest jeszcze egzekwowany — więc nikt nie dostaje rabatu."""
+    def test_premium_promotion_denies_regular_customer(self):
+        """Klient bez premium nie dostaje rabatu z promocji z warunkiem członkostwa."""
+        user = UserFactory()
+        ProfileFactory(user=user)
+        item = _line(cart=CartFactory(user=user))
+        PromotionFactory(requires_premium=True)
+
+        assert _discounts(item, user=user) == {}
+
+    def test_premium_promotion_denies_guest(self):
+        """Gość — bez profilu — nie może być premium."""
         item = _line()
         PromotionFactory(requires_premium=True)
 
         assert _discounts(item) == {}
+
+    def test_premium_promotion_grants_discount_to_premium_customer(self):
+        """Klient premium dostaje rabat z promocji z warunkiem członkostwa."""
+        user = UserFactory()
+        ProfileFactory(user=user, membership=MembershipLevel.PREMIUM)
+        item = _line(cart=CartFactory(user=user))
+        promotion = PromotionFactory(requires_premium=True)
+
+        assert _discounts(item, user=user) == {item.pk: (promotion, Money(12990))}
 
     def test_cart_below_minimum_value_gets_nothing(self):
         """Koszyk za 1299 zł nie spełnia progu 2000 zł."""

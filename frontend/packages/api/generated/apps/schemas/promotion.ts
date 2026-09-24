@@ -44,6 +44,6 @@ export interface Promotion {
   readonly endsAt: string | null;
   /** Minimalna wartość koszyka przed rabatami; pusta — bez progu */
   readonly minCartValue: Money | null;
-  /** Tylko dla klientów premium. Do czasu wprowadzenia członkostwa taka promocja nie działa dla nikogo. */
+  /** Tylko dla klientów premium (`CONTEXT.md`, Membership). */
   readonly requiresPremium: boolean;
 }
