@@ -11,6 +11,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from apps.orders.models import Cart
 from apps.products.services.metal_rate import activate_rate
 from tests.factories.products import (
     MetalRateFactory,
@@ -94,6 +95,15 @@ class TestCartPromotionCode:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "code" in response.json()
+
+    def test_rejected_code_leaves_no_guest_cart(self, api_client: APIClient):
+        """Odrzucony kod bez tokenu nie zakłada pustego koszyka gościa."""
+        response: Any = api_client.post(
+            reverse("cart-promotion-code"), {"code": "NIEMA"}
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert not Cart.objects.exists()
 
     def test_cart_shows_automatic_promotion(self, api_client: APIClient):
         """Promocja bez kodu obniża sumę koszyka bez żadnej akcji klienta."""

@@ -9,6 +9,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
+from django.db import transaction
 from django.http import HttpRequest
 from rest_framework.views import APIView
 
@@ -185,9 +186,14 @@ class CartPromotionCodeView(APIView):
         payload = PromotionCodeSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
 
-        cart = get_or_create_cart(user=user_of(request), token=token_of(request))
+        # Jedna transakcja: odrzucony kod nie zostawia po sobie świeżo
+        # założonego, pustego koszyka gościa, którego token nikt nie dostał.
         try:
-            apply_promotion_code(cart, payload.validated_data["code"])
+            with transaction.atomic():
+                cart = get_or_create_cart(
+                    user=user_of(request), token=token_of(request)
+                )
+                apply_promotion_code(cart, payload.validated_data["code"])
         except DjangoValidationError as error:
             raise _as_drf_error(error) from error
         return Response(CartSerializer(_payload_of(cart)).data)
