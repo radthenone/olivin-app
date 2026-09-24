@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
 from django.db import transaction
 from django.utils import timezone
@@ -14,6 +15,10 @@ from apps.inventory.models import (
     StockMovementReason,
 )
 from apps.products.models import ProductVariant
+
+if TYPE_CHECKING:
+    # Import w czasie działania byłby cykliczny: `apps.orders` sięga po `reserve`.
+    from apps.orders.models import Order
 
 
 class ReservationError(Exception):
@@ -38,7 +43,7 @@ def reserve(
     variant: ProductVariant,
     quantity: int,
     ttl: timedelta = RESERVATION_TTL,
-    order=None,
+    order: Order | None = None,
 ) -> Reservation | None:
     """Wyłącza ilość wariantu z dostępności na czas płatności.
 

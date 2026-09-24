@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.functions import Lower
 from django.utils import timezone
 
 from common import TimestampedModel
+
+if TYPE_CHECKING:
+    from apps.accounts.models import Customer
 
 
 class ConsentKind(models.TextChoices):
@@ -72,7 +77,9 @@ class ConsentDocument(TimestampedModel):
 
 
 class ConsentQuerySet(models.QuerySet["Consent"]):
-    def for_subject(self, *, user=None, email: str | None = None) -> ConsentQuerySet:
+    def for_subject(
+        self, *, user: Customer = None, email: str | None = None
+    ) -> ConsentQuerySet:
         """Zgody użytkownika albo gościa po e-mailu — nigdy obu naraz.
 
         Zgoda gościa nie przechodzi na konto założone później na ten sam
@@ -85,7 +92,7 @@ class ConsentQuerySet(models.QuerySet["Consent"]):
         return self.none()
 
     def has_current_consent(
-        self, kind: str, *, user=None, email: str | None = None
+        self, kind: str, *, user: Customer = None, email: str | None = None
     ) -> bool:
         """Czy podmiot zaakceptował bieżącą wersję dokumentu danego rodzaju."""
         current = ConsentDocument.objects.current(kind)
