@@ -56,4 +56,6 @@ export interface OrderItem {
   readonly goodsPrice: Money;
   readonly engravingTotal: Money;
   readonly lineTotal: Money;
+  readonly discountAmount: Money;
+  readonly discountedTotal: Money;
 }

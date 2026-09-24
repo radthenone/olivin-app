@@ -69,8 +69,9 @@ export const CartRetrieveResponse = zod.object({
   "total": zod.object({
   "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
   "currency": zod.string().describe('Kod waluty ISO 4217')
-}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.')
-}).describe('Pełny widok koszyka — krok pierwszy kasy (ADR 0030).\n\nRabat i kupon są w odpowiedzi od początku, choć dziś zawsze zerowe:\nkontrakt ma nie zmieniać kształtu, gdy dojdą promocje i kupony.')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
+  "promotionCode": zod.string().nullable().describe('Kod promocji aktywowany w koszyku; pusty, gdy go nie ma')
+}).describe('Pełny widok koszyka — krok pierwszy kasy (ADR 0030).\n\nRabat to suma promocji na pozycjach. Kupon jest w odpowiedzi od\npoczątku, choć dziś zawsze zerowy: kontrakt ma nie zmieniać kształtu,\ngdy dojdą kupony.')
 
 /**
  * Żądanie bez tokenu zakłada koszyk gościa i zwraca jego token w polu `cartToken`. Pozycja o tej samej personalizacji dolicza sztuki; inny grawerunek zakłada osobną pozycję.
@@ -174,8 +175,9 @@ export const CartItemsPartialUpdateResponse = zod.object({
   "total": zod.object({
   "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
   "currency": zod.string().describe('Kod waluty ISO 4217')
-}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.')
-}).describe('Pełny widok koszyka — krok pierwszy kasy (ADR 0030).\n\nRabat i kupon są w odpowiedzi od początku, choć dziś zawsze zerowe:\nkontrakt ma nie zmieniać kształtu, gdy dojdą promocje i kupony.')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
+  "promotionCode": zod.string().nullable().describe('Kod promocji aktywowany w koszyku; pusty, gdy go nie ma')
+}).describe('Pełny widok koszyka — krok pierwszy kasy (ADR 0030).\n\nRabat to suma promocji na pozycjach. Kupon jest w odpowiedzi od\npoczątku, choć dziś zawsze zerowy: kontrakt ma nie zmieniać kształtu,\ngdy dojdą kupony.')
 
 /**
  * Pozycje koszyka.
@@ -251,8 +253,9 @@ export const CartItemsDestroyResponse = zod.object({
   "total": zod.object({
   "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
   "currency": zod.string().describe('Kod waluty ISO 4217')
-}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.')
-}).describe('Pełny widok koszyka — krok pierwszy kasy (ADR 0030).\n\nRabat i kupon są w odpowiedzi od początku, choć dziś zawsze zerowe:\nkontrakt ma nie zmieniać kształtu, gdy dojdą promocje i kupony.')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
+  "promotionCode": zod.string().nullable().describe('Kod promocji aktywowany w koszyku; pusty, gdy go nie ma')
+}).describe('Pełny widok koszyka — krok pierwszy kasy (ADR 0030).\n\nRabat to suma promocji na pozycjach. Kupon jest w odpowiedzi od\npoczątku, choć dziś zawsze zerowy: kontrakt ma nie zmieniać kształtu,\ngdy dojdą kupony.')
 
 /**
  * Pozycje gościa trafiają do koszyka konta: te o tej samej personalizacji sumują ilości w granicach limitu sztuk, pozostałe stają obok. Koszyk gościa i jego token przestają istnieć.
@@ -315,6 +318,80 @@ export const CartMergeCreateResponse = zod.object({
   "total": zod.object({
   "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
   "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
+  "promotionCode": zod.string().nullable().describe('Kod promocji aktywowany w koszyku; pusty, gdy go nie ma')
+}).describe('Pełny widok koszyka — krok pierwszy kasy (ADR 0030).\n\nRabat to suma promocji na pozycjach. Kupon jest w odpowiedzi od\npoczątku, choć dziś zawsze zerowy: kontrakt ma nie zmieniać kształtu,\ngdy dojdą kupony.')
+
+/**
+ * Aktywuje promocję kodową; nowy kod zastępuje poprzedni. Nieznany albo nieaktywny kod to 400. Czy promocja obniży którąś pozycję, widać w `discountAmount` — zależy od zakresu, limitów i progu koszyka. Bez tokenu gość dostaje nowy koszyk i jego token.
+ * @summary Kod promocyjny w koszyku
+ */
+export const CartPromotionCodeCreateHeader = zod.object({
+  "X-Cart-Token": zod.string().optional().describe('Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany klient go nie wysyła — koszyk wynika z uwierzytelnienia.')
+})
+
+export const cartPromotionCodeCreateBodyCodeMax = 32;
+
+
+
+export const CartPromotionCodeCreateBody = zod.object({
+  "code": zod.string().max(cartPromotionCodeCreateBodyCodeMax).describe('Kod promocji, np. LATO2026')
+}).describe('Kod promocyjny wpisany w koszyku; wielkość liter nie ma znaczenia.')
+
+export const CartPromotionCodeCreateResponse = zod.object({
+  "cartToken": zod.string().nullable().describe('Token koszyka gościa do odesłania nagłówkiem `X-Cart-Token`; pusty przy koszyku zalogowanego klienta'),
+  "items": zod.array(zod.object({
+  "id": zod.uuid(),
+  "variant": zod.object({
+  "id": zod.uuid(),
+  "sku": zod.string().describe('Oznaczenie magazynowe wariantu, unikalne w całym katalogu'),
+  "productName": zod.string(),
+  "productSlug": zod.string(),
+  "metalColor": zod.enum(['yellow', 'white', 'rose', 'bicolor']).describe('\* `yellow` - Żółte\n\* `white` - Białe\n\* `rose` - Różowe\n\* `bicolor` - Dwukolorowe').describe('Kolor kruszcu\n\n\* `yellow` - Żółte\n\* `white` - Białe\n\* `rose` - Różowe\n\* `bicolor` - Dwukolorowe'),
+  "size": zod.enum(['8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26']).describe('\* `8` - 8\n\* `9` - 9\n\* `10` - 10\n\* `11` - 11\n\* `12` - 12\n\* `13` - 13\n\* `14` - 14\n\* `15` - 15\n\* `16` - 16\n\* `17` - 17\n\* `18` - 18\n\* `19` - 19\n\* `20` - 20\n\* `21` - 21\n\* `22` - 22\n\* `23` - 23\n\* `24` - 24\n\* `25` - 25\n\* `26` - 26').describe('Rozmiar pierścionka; puste dla wyrobów bez rozmiaru\n\n\* `8` - 8\n\* `9` - 9\n\* `10` - 10\n\* `11` - 11\n\* `12` - 12\n\* `13` - 13\n\* `14` - 14\n\* `15` - 15\n\* `16` - 16\n\* `17` - 17\n\* `18` - 18\n\* `19` - 19\n\* `20` - 20\n\* `21` - 21\n\* `22` - 22\n\* `23` - 23\n\* `24` - 24\n\* `25` - 25\n\* `26` - 26'),
+  "length": zod.enum(['16', '18', '20', '36', '38', '40', '42', '45', '50', '55', '60', '70', '80']).describe('\* `16` - 16 cm\n\* `18` - 18 cm\n\* `20` - 20 cm\n\* `36` - 36 cm\n\* `38` - 38 cm\n\* `40` - 40 cm\n\* `42` - 42 cm\n\* `45` - 45 cm\n\* `50` - 50 cm\n\* `55` - 55 cm\n\* `60` - 60 cm\n\* `70` - 70 cm\n\* `80` - 80 cm').describe('Długość w centymetrach; puste dla wyrobów bez długości\n\n\* `16` - 16 cm\n\* `18` - 18 cm\n\* `20` - 20 cm\n\* `36` - 36 cm\n\* `38` - 38 cm\n\* `40` - 40 cm\n\* `42` - 42 cm\n\* `45` - 45 cm\n\* `50` - 50 cm\n\* `55` - 55 cm\n\* `60` - 60 cm\n\* `70` - 70 cm\n\* `80` - 80 cm'),
+  "isMadeToOrder": zod.boolean(),
+  "thumbnailUrl": zod.url().nullable().describe('Najwęższy gotowy rozmiar zdjęcia wariantu, a gdy wariant swojego nie ma — zdjęcia produktu. Pusty, gdy żadne zdjęcie nie jest jeszcze przetworzone.')
+}).describe('Tyle o wariancie, ile potrzebuje wiersz koszyka — nie cała karta produktu.\n\nMiniatura jest tu, a nie po stronie klienta: bez niej rozwijana lista\nkoszyka musiałaby dociągać `GET \/products\/` po jednym żądaniu na wiersz,\nżeby pokazać, co klient właściwie kupuje.'),
+  "quantity": zod.number().describe('Liczba sztuk pozycji, najwyżej 5'),
+  "engravingText": zod.string().describe('Treść grawerunku; przy parze trafia na oba egzemplarze, o ile drugi nie ma własnej. Puste oznacza wyrób bez grawerunku.'),
+  "secondSize": zod.enum(['8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26']).describe('\* `8` - 8\n\* `9` - 9\n\* `10` - 10\n\* `11` - 11\n\* `12` - 12\n\* `13` - 13\n\* `14` - 14\n\* `15` - 15\n\* `16` - 16\n\* `17` - 17\n\* `18` - 18\n\* `19` - 19\n\* `20` - 20\n\* `21` - 21\n\* `22` - 22\n\* `23` - 23\n\* `24` - 24\n\* `25` - 25\n\* `26` - 26').describe('Rozmiar drugiego egzemplarza pary. Wypełniony zamienia pozycję w parę; pierwszy rozmiar bierze się z wariantu.\n\n\* `8` - 8\n\* `9` - 9\n\* `10` - 10\n\* `11` - 11\n\* `12` - 12\n\* `13` - 13\n\* `14` - 14\n\* `15` - 15\n\* `16` - 16\n\* `17` - 17\n\* `18` - 18\n\* `19` - 19\n\* `20` - 20\n\* `21` - 21\n\* `22` - 22\n\* `23` - 23\n\* `24` - 24\n\* `25` - 25\n\* `26` - 26'),
+  "secondEngravingText": zod.string().describe('Grawerunek drugiego egzemplarza, gdy ma być inny niż pierwszego'),
+  "isPair": zod.boolean(),
+  "unitPrice": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
+  "goodsPrice": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
+  "engravingPrice": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
+  "lineTotal": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
 }).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.')
-}).describe('Pełny widok koszyka — krok pierwszy kasy (ADR 0030).\n\nRabat i kupon są w odpowiedzi od początku, choć dziś zawsze zerowe:\nkontrakt ma nie zmieniać kształtu, gdy dojdą promocje i kupony.')
+}).describe('Pozycja koszyka z wyceną liczoną przy odczycie, nie zamrożoną.\n\nCena idzie prosto z wariantu, bo koszyk ma pokazywać dzisiejszy cennik\n(`CONTEXT.md`, CartItem). Kopia powstaje dopiero w pozycji zamówienia\n(ADR 0010).')),
+  "itemCount": zod.number().describe('Liczba pozycji, nie sztuk — para obrączek jest jedną pozycją'),
+  "subtotal": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
+  "discountAmount": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
+  "couponAmount": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
+  "total": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
+  "promotionCode": zod.string().nullable().describe('Kod promocji aktywowany w koszyku; pusty, gdy go nie ma')
+}).describe('Pełny widok koszyka — krok pierwszy kasy (ADR 0030).\n\nRabat to suma promocji na pozycjach. Kupon jest w odpowiedzi od\npoczątku, choć dziś zawsze zerowy: kontrakt ma nie zmieniać kształtu,\ngdy dojdą kupony.')
 
