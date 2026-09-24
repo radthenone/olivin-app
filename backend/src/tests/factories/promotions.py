@@ -6,7 +6,13 @@ from django.utils import timezone
 from factory.declarations import LazyFunction, Sequence, SubFactory
 from factory.django import DjangoModelFactory
 
-from apps.promotions.models import Promotion, PromotionKind, PromotionRedemption
+from apps.promotions.models import (
+    Coupon,
+    CouponSource,
+    Promotion,
+    PromotionKind,
+    PromotionRedemption,
+)
 from tests.factories.orders import OrderFactory
 
 
@@ -39,3 +45,14 @@ class PromotionRedemptionFactory(DjangoModelFactory):
     promotion = SubFactory(PromotionFactory)
     order = SubFactory(OrderFactory)
     amount = 1000
+
+
+class CouponFactory(DjangoModelFactory):
+    """Kupon kampanijny na 100 zł, wydany dziś — kod i ważność z modelu."""
+
+    class Meta:
+        model = Coupon
+
+    nominal = 10000
+    currency = "PLN"
+    source = CouponSource.CAMPAIGN

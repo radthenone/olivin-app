@@ -180,7 +180,7 @@ class Order(TimestampedModel):
     coupon_amount = MoneyAmountField(
         default=0,
         validators=[MinValueValidator(0)],
-        help_text="Kwota pokryta kuponem; wypełni ją bilet kuponów",
+        help_text="Kwota towaru pokryta kuponem, po promocjach (ADR 0011)",
     )
 
     # --- Dokumenty ---------------------------------------------------------

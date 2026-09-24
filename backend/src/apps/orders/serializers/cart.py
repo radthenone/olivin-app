@@ -120,9 +120,8 @@ class CartItemSerializer(serializers.ModelSerializer):
 class CartSerializer(serializers.Serializer):
     """Pełny widok koszyka — krok pierwszy kasy (ADR 0030).
 
-    Rabat to suma promocji na pozycjach. Kupon jest w odpowiedzi od
-    początku, choć dziś zawsze zerowy: kontrakt ma nie zmieniać kształtu,
-    gdy dojdą kupony.
+    Rabat to suma promocji na pozycjach. Kupon to zapłata za towar po
+    rabatach — `total` jest już po nim, dostawy jeszcze nie zawiera.
     """
 
     cart_token = serializers.CharField(
@@ -148,6 +147,11 @@ class CartSerializer(serializers.Serializer):
         allow_null=True,
         help_text="Kod promocji aktywowany w koszyku; pusty, gdy go nie ma",
     )
+    coupon_code = serializers.CharField(
+        read_only=True,
+        allow_null=True,
+        help_text="Kod kuponu wpisany w koszyku; pusty, gdy go nie ma",
+    )
 
 
 class PromotionCodeSerializer(serializers.Serializer):
@@ -155,6 +159,14 @@ class PromotionCodeSerializer(serializers.Serializer):
 
     code = serializers.CharField(
         max_length=CODE_MAX_LENGTH, help_text="Kod promocji, np. LATO2026"
+    )
+
+
+class CouponCodeSerializer(serializers.Serializer):
+    """Kod kuponu wpisany w koszyku; wielkość liter nie ma znaczenia."""
+
+    code = serializers.CharField(
+        max_length=CODE_MAX_LENGTH, help_text="Kod kuponu nadany przez sklep"
     )
 
 

@@ -31,6 +31,46 @@ paths:
               schema:
                 $ref: '#/components/schemas/Cart'
           description: ''
+  /cart/coupon/:
+    post:
+      operationId: cart_coupon_create
+      description: Wpisuje kupon; nowy kod zastępuje poprzedni. Nieznany, wykorzystany
+        albo przeterminowany kupon to 400. Kupon pokrywa towar po promocjach (`couponAmount`),
+        nigdy dostawę; nadwyżka nominału przepada. Limit żądań zakresu `auth` (10/min).
+        Bez tokenu gość dostaje nowy koszyk i jego token.
+      summary: Kupon w koszyku
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany
+          klient go nie wysyła — koszyk wynika z uwierzytelnienia.
+      tags:
+      - Cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CouponCode'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CouponCode'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CouponCode'
+        required: true
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
   /cart/items/:
     post:
       operationId: cart_items_create
@@ -1886,9 +1926,8 @@ components:
       description: |-
         Pełny widok koszyka — krok pierwszy kasy (ADR 0030).
 
-        Rabat to suma promocji na pozycjach. Kupon jest w odpowiedzi od
-        początku, choć dziś zawsze zerowy: kontrakt ma nie zmieniać kształtu,
-        gdy dojdą kupony.
+        Rabat to suma promocji na pozycjach. Kupon to zapłata za towar po
+        rabatach — `total` jest już po nim, dostawy jeszcze nie zawiera.
       properties:
         cartToken:
           type: string
@@ -1926,9 +1965,15 @@ components:
           readOnly: true
           nullable: true
           description: Kod promocji aktywowany w koszyku; pusty, gdy go nie ma
+        couponCode:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Kod kuponu wpisany w koszyku; pusty, gdy go nie ma
       required:
       - cartToken
       - couponAmount
+      - couponCode
       - discountAmount
       - itemCount
       - items
@@ -2886,6 +2931,16 @@ components:
         * `YE` - Yemen
         * `ZM` - Zambia
         * `ZW` - Zimbabwe
+    CouponCode:
+      type: object
+      description: Kod kuponu wpisany w koszyku; wielkość liter nie ma znaczenia.
+      properties:
+        code:
+          type: string
+          description: Kod kuponu nadany przez sklep
+          maxLength: 32
+      required:
+      - code
     CutEnum:
       enum:
       - brilliant

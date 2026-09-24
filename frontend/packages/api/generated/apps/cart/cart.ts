@@ -27,6 +27,7 @@ import type {
 import type {
   Cart,
   CartItemWrite,
+  CouponCode,
   PatchedCartItemQuantity,
   PromotionCode
 } from '../schemas';
@@ -152,7 +153,89 @@ export function useCartRetrieve<TData = Awaited<ReturnType<typeof cartRetrieve>>
 
 
 
-export type cartItemsCreateResponse201 = {
+export type cartCouponCreateResponse200 = {
+  data: Cart
+  status: 200
+}
+
+export type cartCouponCreateResponseSuccess = (cartCouponCreateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type cartCouponCreateResponse = (cartCouponCreateResponseSuccess)
+
+export const getCartCouponCreateUrl = () => {
+
+
+
+
+  return `/cart/coupon/`
+}
+
+/**
+ * Wpisuje kupon; nowy kod zastępuje poprzedni. Nieznany, wykorzystany albo przeterminowany kupon to 400. Kupon pokrywa towar po promocjach (`couponAmount`), nigdy dostawę; nadwyżka nominału przepada. Limit żądań zakresu `auth` (10/min). Bez tokenu gość dostaje nowy koszyk i jego token.
+ * @summary Kupon w koszyku
+ */
+export const cartCouponCreate = async (couponCode: CouponCode, options?: RequestInit): Promise<cartCouponCreateResponse> => {
+
+  return appInstance<cartCouponCreateResponse>(getCartCouponCreateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(couponCode)
+  }
+);}
+
+
+
+
+export const getCartCouponCreateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cartCouponCreate>>, TError,{data: BodyType<CouponCode>}, TContext>, request?: SecondParameter<typeof appInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof cartCouponCreate>>, TError,{data: BodyType<CouponCode>}, TContext> => {
+
+const mutationKey = ['cartCouponCreate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cartCouponCreate>>, {data: BodyType<CouponCode>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  cartCouponCreate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CartCouponCreateMutationResult = NonNullable<Awaited<ReturnType<typeof cartCouponCreate>>>
+    export type CartCouponCreateMutationBody = BodyType<CouponCode>
+    export type CartCouponCreateMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Kupon w koszyku
+ */
+export const useCartCouponCreate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cartCouponCreate>>, TError,{data: BodyType<CouponCode>}, TContext>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof cartCouponCreate>>,
+        TError,
+        {data: BodyType<CouponCode>},
+        TContext
+      > => {
+      return useMutation(getCartCouponCreateMutationOptions(options), queryClient);
+    }
+    export type cartItemsCreateResponse201 = {
   data: Cart
   status: 201
 }

@@ -11,9 +11,8 @@ import type { Money } from './money';
 /**
  * Pełny widok koszyka — krok pierwszy kasy (ADR 0030).
 
-Rabat to suma promocji na pozycjach. Kupon jest w odpowiedzi od
-początku, choć dziś zawsze zerowy: kontrakt ma nie zmieniać kształtu,
-gdy dojdą kupony.
+Rabat to suma promocji na pozycjach. Kupon to zapłata za towar po
+rabatach — `total` jest już po nim, dostawy jeszcze nie zawiera.
  */
 export interface Cart {
   /**
@@ -33,4 +32,9 @@ export interface Cart {
      * @nullable
      */
   readonly promotionCode: string | null;
+  /**
+     * Kod kuponu wpisany w koszyku; pusty, gdy go nie ma
+     * @nullable
+     */
+  readonly couponCode: string | null;
 }

@@ -6,6 +6,7 @@ from apps.orders.serializers.cart import (
     CartItemWriteSerializer,
     CartSerializer,
     CartVariantSerializer,
+    CouponCodeSerializer,
     PromotionCodeSerializer,
 )
 from apps.orders.serializers.order import (
@@ -22,6 +23,7 @@ __all__ = [
     "CartItemWriteSerializer",
     "CartSerializer",
     "CartVariantSerializer",
+    "CouponCodeSerializer",
     "OrderCreateSerializer",
     "OrderItemSerializer",
     "OrderLookupSerializer",

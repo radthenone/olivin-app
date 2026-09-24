@@ -12,7 +12,7 @@ from django.db.models import Q
 
 from apps.consents.models import Consent, ConsentDocument, ConsentKind
 from apps.inventory.models import ReservationStatus
-from apps.inventory.services import ReservationError, release, reserve
+from apps.inventory.services import ReservationError, consume, release, reserve
 from apps.orders.models import (
     GUEST_ORDER_LIMIT,
     Cart,
@@ -23,7 +23,13 @@ from apps.orders.models import (
 )
 from apps.orders.services.cart import cart_items, promotions_for, totals
 from apps.products.models import ProductStatus
-from apps.promotions.models import Promotion, PromotionRedemption
+from apps.promotions.models import (
+    Coupon,
+    CouponRedemption,
+    CouponStatus,
+    Promotion,
+    PromotionRedemption,
+)
 from apps.promotions.services import AppliedPromotion
 from apps.shipping.models import ShippingMethod, ShippingZone
 from apps.shipping.services import cost_for, zone_for_country
@@ -82,8 +88,9 @@ def create_order(
             {"country": "Sklep wysyła wyłącznie do Polski i pozostałych krajów Unii."}
         )
     _lock_limited_promotions()
+    coupon = _lock_coupon(cart)
     discounts = promotions_for(cart, items, user=user, email=subject_email)
-    summary = totals(items, discounts)
+    summary = totals(items, discounts, coupon)
 
     _reject_unavailable_items(items)
     _reject_without_terms_consent(user=user, email=subject_email)
@@ -102,15 +109,20 @@ def create_order(
         email=subject_email,
         invoice_requested=invoice_requested,
         discount=summary.discount_amount,
+        coupon=summary.coupon_amount,
     )
     _snapshot_items(order, items, discounts)
     _record_redemptions(order, discounts)
+    _redeem_coupon(order, coupon, summary.coupon_amount)
     _reserve_items(order, items)
+    if order.total.amount == 0:
+        _settle_without_payment(order)
 
     cart.items.all().delete()  # type: ignore[missing-attribute]
-    # Kod został wykorzystany — następny koszyk zaczyna bez niego.
+    # Kod i kupon zostały wykorzystane — następny koszyk zaczyna bez nich.
     cart.promotion = None
-    cart.save(update_fields=["promotion", "updated_at"])
+    cart.coupon = None
+    cart.save(update_fields=["promotion", "coupon", "updated_at"])
     cart.touch()
     return order
 
@@ -199,9 +211,55 @@ def _record_redemptions(
     )
 
 
+def _lock_coupon(cart: Cart) -> Coupon | None:
+    """Kupon koszyka zablokowany do końca transakcji — jednorazowość.
+
+    Dwa koszyki z tym samym kodem składane naraz: drugie zamówienie czeka
+    na pierwsze i widzi kupon już wykorzystany, więc liczy go jako zero.
+    """
+    if cart.coupon_id is None:  # type: ignore[missing-attribute]
+        return None
+    return Coupon.objects.select_for_update().filter(pk=cart.coupon_id).first()  # type: ignore[missing-attribute]
+
+
+def _redeem_coupon(order: Order, coupon: Coupon | None, amount: Money) -> None:
+    """Zapisuje użycie kuponu; nadwyżka nominału przepada razem z kuponem."""
+    if coupon is None or amount.amount <= 0:
+        return
+    CouponRedemption.objects.create(coupon=coupon, order=order, amount=amount.amount)
+    coupon.status = CouponStatus.REDEEMED
+    coupon.save(update_fields=["status", "updated_at"])
+
+
+def _settle_without_payment(order: Order) -> None:
+    """Nic do zapłaty (kupon + darmowa dostawa): `paid` bez operatora płatności.
+
+    Rezerwacje są świeże, więc schodzą ze stanu od razu — tak samo jak po
+    zdarzeniu zapłaty w `apps.payments.services._settle`.
+    """
+    # Import w funkcji: `apps.orders.tasks` importuje ten moduł.
+    from apps.orders.tasks import issue_sales_documents
+
+    for reservation in order.reservations.filter(  # type: ignore[missing-attribute]
+        status=ReservationStatus.ACTIVE
+    ):
+        consume(reservation)
+    order.transition_to(OrderStatus.PAID)
+    transaction.on_commit(
+        lambda: issue_sales_documents.delay(str(order.pk))  # type: ignore[missing-attribute]
+    )
+
+
 def _close_unpaid(order: Order) -> None:
-    """Zamyka nieopłacone zamówienie: rezerwacje wracają, status `cancelled`."""
+    """Zamyka nieopłacone zamówienie: rezerwacje wracają, status `cancelled`.
+
+    Kupon wraca do użycia — klient nic nie kupił. Wiersz użycia zostaje
+    jako ślad (ADR 0014); termin ważności się nie przesuwa.
+    """
     release_reservations(order)
+    Coupon.objects.filter(
+        redemptions__order=order, status=CouponStatus.REDEEMED
+    ).update(status=CouponStatus.ISSUED)
     order.transition_to(OrderStatus.CANCELLED)
 
 
@@ -321,6 +379,7 @@ def _build_order(
     email: str,
     invoice_requested: bool,
     discount: Money,
+    coupon: Money,
 ) -> Order:
     terms = ConsentDocument.objects.current(ConsentKind.TERMS)
     if terms is None:
@@ -342,6 +401,7 @@ def _build_order(
         terms_document=terms,
         invoice_requested=invoice_requested,
         discount_amount=discount.amount,
+        coupon_amount=coupon.amount,
     )
 
 

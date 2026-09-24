@@ -30,6 +30,7 @@ CELERY_IMPORTS = (
     "apps.products.tasks",
     "apps.translations.tasks",
     "apps.orders.tasks",
+    "apps.promotions.tasks",
     "apps.inventory.tasks",
 )
 
@@ -60,6 +61,11 @@ CELERY_BEAT_SCHEDULE = {
     },
     # Raz na dobę, nad ranem: koszyk gościa bez aktywności przez 30 dni nie
     # ma już komu się pokazać, bo dostęp do niego daje wyłącznie token.
+    # Raz na dobę: status kuponu po terminie — ważność i tak liczy się z daty.
+    "expire-coupons": {
+        "task": "apps.promotions.tasks.expire_coupons",
+        "schedule": crontab(minute=45, hour=3),
+    },
     "purge-stale-guest-carts": {
         "task": "apps.orders.tasks.purge_stale_guest_carts",
         "schedule": crontab(minute=30, hour=3),

@@ -30,6 +30,7 @@ export * from './consent';
 export * from './consentDocument';
 export * from './consentKindEnum';
 export * from './countryEnum';
+export * from './couponCode';
 export * from './customersAddressesListParams';
 export * from './customersProfileListParams';
 export * from './cutEnum';

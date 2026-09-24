@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from apps.orders.models import MAX_ITEM_QUANTITY, Cart, CartItem
 from apps.products.models import ProductVariant
-from apps.promotions.models import Promotion, normalise_code
+from apps.promotions.models import Coupon, Promotion, normalise_code
 from apps.promotions.services import AppliedPromotion, best_promotions
 from common.money import DEFAULT_CURRENCY, Money
 
@@ -57,9 +57,8 @@ class Personalisation:
 class CartTotals:
     """Podsumowanie koszyka policzone na backendzie.
 
-    Rabat to suma promocji na pozycjach (ADR 0023). Kupon jest tu od
-    początku, choć dziś zawsze zerowy: kontrakt kasy ma nie zmieniać
-    kształtu, gdy dojdą kupony (#154).
+    Rabat to suma promocji na pozycjach (ADR 0023). Kupon to zapłata za
+    towar po rabatach — nigdy za dostawę, której tu jeszcze nie ma (ADR 0011).
     """
 
     item_count: int
@@ -90,6 +89,7 @@ def cart_items(cart: Cart) -> QuerySet[CartItem]:
 def totals(
     items: Iterable[CartItem],
     discounts: Mapping[Any, AppliedPromotion] | None = None,
+    coupon: Coupon | None = None,
 ) -> CartTotals:
     """Sumuje gotowe pozycje po cenie aktualnej (`CONTEXT.md`, CartItem).
 
@@ -97,6 +97,10 @@ def totals(
     odpowiedzi, a pobieranie ich drugi raz dawałoby dwa zapytania i dwie
     szanse na rozjazd między sumą a tym, co klient widzi. Rabaty przychodzą
     gotowe z `promotions_for` — ten sam wynik trafia potem do zamówienia.
+
+    Kupon pokrywa najwyżej towar po rabatach; nadwyżka nominału przepada.
+    Kupon już nieważny (wykorzystany w innym koszyku, po terminie) liczy się
+    jako zero — tak samo w podglądzie i w zamówieniu.
     """
     rows = list(items)
     currency = rows[0].unit_price.currency if rows else DEFAULT_CURRENCY
@@ -105,12 +109,16 @@ def totals(
     discount = sum(
         (applied.amount for applied in (discounts or {}).values()), start=zero
     )
+    goods = subtotal - discount
+    covered = zero
+    if coupon is not None and coupon.is_usable() and coupon.currency == currency:
+        covered = min(coupon.nominal_money, goods)
     return CartTotals(
         item_count=len(rows),
         subtotal=subtotal,
         discount_amount=discount,
-        coupon_amount=zero,
-        total=subtotal - discount,
+        coupon_amount=covered,
+        total=goods - covered,
     )
 
 
@@ -140,6 +148,23 @@ def apply_promotion_code(cart: Cart, code: str) -> Cart:
     cart.promotion = promotion
     cart.last_activity_at = timezone.now()
     cart.save(update_fields=["promotion", "last_activity_at", "updated_at"])
+    return cart
+
+
+@transaction.atomic
+def apply_coupon_code(cart: Cart, code: str) -> Cart:
+    """Wpisuje kupon do koszyka; nowy kod zastępuje poprzedni.
+
+    Kupon zostaje oznaczony jako wykorzystany dopiero przy złożeniu
+    zamówienia — tutaj sprawdzamy tylko, czy w ogóle da się nim zapłacić.
+    """
+    normalised = normalise_code(code)
+    coupon = Coupon.objects.filter(code=normalised).first() if normalised else None
+    if coupon is None or not coupon.is_usable():
+        raise CartError({"code": "Nie ma ważnego kuponu o tym kodzie."})
+    cart.coupon = coupon
+    cart.last_activity_at = timezone.now()
+    cart.save(update_fields=["coupon", "last_activity_at", "updated_at"])
     return cart
 
 
@@ -286,6 +311,9 @@ def merge_carts(*, guest: Cart, target: Cart) -> Cart:
     if target.promotion_id is None and guest.promotion_id is not None:  # type: ignore[missing-attribute]
         target.promotion_id = guest.promotion_id  # type: ignore[missing-attribute]
         target.save(update_fields=["promotion", "updated_at"])
+    if target.coupon_id is None and guest.coupon_id is not None:  # type: ignore[missing-attribute]
+        target.coupon_id = guest.coupon_id  # type: ignore[missing-attribute]
+        target.save(update_fields=["coupon", "updated_at"])
     guest.delete()
     target.touch()
     return target

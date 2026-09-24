@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 from datetime import datetime
 
 from django.core.exceptions import ValidationError
@@ -209,3 +210,140 @@ class PromotionRedemption(TimestampedModel):
 
     def __str__(self) -> str:
         return f"{self.promotion} → {self.order}"
+
+
+# Nominały kuponu w groszach — lista, nie dowolna kwota (ADR 0011).
+COUPON_NOMINALS = (5000, 10000, 15000, 20000, 25000, 30000, 50000, 100000)
+
+# Kod kuponu nadaje sklep: bez zer, jedynek, „I" i „O", jak numer zamówienia.
+_COUPON_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+_COUPON_CODE_LENGTH = 12
+
+
+def new_coupon_code() -> str:
+    return "".join(secrets.choice(_COUPON_ALPHABET) for _ in range(_COUPON_CODE_LENGTH))
+
+
+def twelve_months_later(moment: datetime | None = None) -> datetime:
+    """Ta sama chwila rok później; 29 lutego przechodzi na 28."""
+    moment = moment or timezone.now()
+    try:
+        return moment.replace(year=moment.year + 1)
+    except ValueError:
+        return moment.replace(year=moment.year + 1, day=28)
+
+
+class CouponStatus(models.TextChoices):
+    ISSUED = "issued", "Wydany"
+    REDEEMED = "redeemed", "Wykorzystany"
+    EXPIRED = "expired", "Wygasły"
+
+
+class CouponSource(models.TextChoices):
+    CAMPAIGN = "campaign", "Kampania"
+    RETURN = "return", "Zwrot"
+
+
+class Coupon(TimestampedModel):
+    """Jednorazowy kupon — forma zapłaty za towar (`CONTEXT.md`, Coupon).
+
+    Pokrywa towar po promocjach, nigdy dostawę; niewykorzystana część
+    nominału przepada (ADR 0011, 0023). Nie jest rabatem: nie obniża podstawy
+    opodatkowania, tylko rozlicza zapłatę (ADR 0014).
+    """
+
+    code = models.CharField(
+        max_length=CODE_MAX_LENGTH,
+        unique=True,
+        default=new_coupon_code,
+        help_text="Kod nadany przez sklep. Wielkość liter nie ma znaczenia.",
+    )
+    nominal = MoneyAmountField(
+        choices=[(value, f"{value // 100} zł") for value in COUPON_NOMINALS],
+        help_text="Nominał w groszach, z listy — wielokrotność 10 zł",
+    )
+    currency = CurrencyField(help_text="Waluta nominału")
+    expires_at = models.DateTimeField(
+        default=twelve_months_later,
+        help_text="Koniec ważności — 12 miesięcy od wydania",
+    )
+    status = models.CharField(
+        max_length=16,
+        choices=CouponStatus.choices,
+        default=CouponStatus.ISSUED,
+    )
+    source = models.CharField(
+        max_length=16,
+        choices=CouponSource.choices,
+        default=CouponSource.CAMPAIGN,
+        help_text="Skąd kupon: kampania marketingowa albo przyjęty zwrot",
+    )
+
+    class Meta:
+        verbose_name = "Kupon"
+        verbose_name_plural = "Kupony"
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(nominal__in=COUPON_NOMINALS),
+                name="coupon_nominal_from_list",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.code} ({self.nominal_money})"
+
+    @property
+    def nominal_money(self) -> Money:
+        return Money(self.nominal, self.currency)
+
+    def is_usable(self, moment: datetime | None = None) -> bool:
+        """Wydany i w terminie — sam status nie wystarcza, zadanie biega raz na dobę."""
+        moment = moment or timezone.now()
+        return self.status == CouponStatus.ISSUED and self.expires_at > moment
+
+    def clean(self) -> None:
+        super().clean()
+        self.code = normalise_code(self.code)
+
+    def save(self, *args, **kwargs) -> None:
+        if self.nominal not in COUPON_NOMINALS:
+            raise ValidationError({"nominal": "Nominał spoza listy kuponów."})
+        self.code = normalise_code(self.code)
+        super().save(*args, **kwargs)
+
+
+class CouponRedemption(TimestampedModel):
+    """Użycie kuponu w zamówieniu z faktycznie naliczoną kwotą (`CONTEXT.md`).
+
+    Zdarzenie, nie saldo (ADR 0014): wiersz zostaje także wtedy, gdy
+    nieopłacone zamówienie anulowano i kupon wrócił do użycia.
+    """
+
+    coupon = models.ForeignKey(
+        Coupon,
+        on_delete=models.PROTECT,
+        related_name="redemptions",
+    )
+    order = models.OneToOneField(
+        "orders.Order",
+        on_delete=models.CASCADE,
+        related_name="coupon_redemption",
+    )
+    amount = MoneyAmountField(
+        validators=[MinValueValidator(0)],
+        help_text="Kwota pokryta kuponem — najwyżej nominał, reszta przepada",
+    )
+
+    class Meta:
+        verbose_name = "Użycie kuponu"
+        verbose_name_plural = "Użycia kuponów"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gte=0),
+                name="coupon_redemption_amount_is_not_negative",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.coupon} → {self.order}"

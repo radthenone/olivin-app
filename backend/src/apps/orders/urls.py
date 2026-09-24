@@ -2,6 +2,7 @@ from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
 from apps.orders.views import (
+    CartCouponView,
     CartDetailView,
     CartItemViewSet,
     CartMergeView,
@@ -21,5 +22,6 @@ urlpatterns = [
         CartPromotionCodeView.as_view(),
         name="cart-promotion-code",
     ),
+    path("coupon/", CartCouponView.as_view(), name="cart-coupon"),
     path("", include(router.urls)),
 ]

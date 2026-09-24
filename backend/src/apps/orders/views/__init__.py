@@ -2,6 +2,7 @@
 
 from apps.orders.views.cart import (
     CART_TOKEN_HEADER,
+    CartCouponView,
     CartDetailView,
     CartItemViewSet,
     CartMergeView,
@@ -13,6 +14,7 @@ from apps.orders.views.order import OrderViewSet
 
 __all__ = [
     "CART_TOKEN_HEADER",
+    "CartCouponView",
     "CartDetailView",
     "CartItemViewSet",
     "CartMergeView",

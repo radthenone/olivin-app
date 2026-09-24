@@ -15,6 +15,7 @@ from rest_framework.views import APIView
 
 from apps.orders.models import Cart, CartItem
 from apps.orders.schema import (
+    cart_coupon_schema,
     cart_item_schema,
     cart_merge_schema,
     cart_promotion_code_schema,
@@ -24,11 +25,13 @@ from apps.orders.serializers import (
     CartItemQuantitySerializer,
     CartItemWriteSerializer,
     CartSerializer,
+    CouponCodeSerializer,
     PromotionCodeSerializer,
 )
 from apps.orders.services import (
     CartTotals,
     add_item,
+    apply_coupon_code,
     apply_promotion_code,
     cart_items,
     get_cart,
@@ -61,6 +64,7 @@ class CartPayload:
     items: list[CartItem]
     totals: CartTotals
     promotion_code: str | None = None
+    coupon_code: str | None = None
 
 
 def _empty_payload() -> CartPayload:
@@ -85,8 +89,9 @@ def _payload_of(cart: Cart) -> CartPayload:
     return CartPayload(
         cart_token=cart.session_key or None,
         items=items,
-        totals=totals(items, discounts),
+        totals=totals(items, discounts, cart.coupon),
         promotion_code=cart.promotion.code if cart.promotion else None,
+        coupon_code=cart.coupon.code if cart.coupon else None,
     )
 
 
@@ -194,6 +199,38 @@ class CartPromotionCodeView(APIView):
                     user=user_of(request), token=token_of(request)
                 )
                 apply_promotion_code(cart, payload.validated_data["code"])
+        except DjangoValidationError as error:
+            raise _as_drf_error(error) from error
+        return Response(CartSerializer(_payload_of(cart)).data)
+
+
+@cart_coupon_schema
+class CartCouponView(APIView):
+    """Kupon w koszyku.
+
+    Actions:
+    - post: POST /cart/coupon/ — wpisuje kupon jako zapłatę za towar
+
+    Dla każdego, także gościa. Zakres `auth`: kod kuponu to wartość na
+    okaziciela, więc zgadywanie go ma być wolne (`.ai/project.md`).
+    """
+
+    permission_classes = [AllowAny]
+    serializer_class = CartSerializer
+    throttle_scope = "auth"
+
+    def post(self, request: Request) -> Response:
+        payload = CouponCodeSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+
+        # Jedna transakcja, jak przy kodzie promocji: odrzucony kupon nie
+        # zostawia pustego koszyka gościa.
+        try:
+            with transaction.atomic():
+                cart = get_or_create_cart(
+                    user=user_of(request), token=token_of(request)
+                )
+                apply_coupon_code(cart, payload.validated_data["code"])
         except DjangoValidationError as error:
             raise _as_drf_error(error) from error
         return Response(CartSerializer(_payload_of(cart)).data)
