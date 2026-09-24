@@ -72,7 +72,23 @@ def issue_document(order: Order, kind: str) -> SalesDocument:
         ContentFile(render_pdf(document)),
     )
     document.save()
+    _notify_document_ready(order, document)
     return document
+
+
+def _notify_document_ready(order: Order, document: SalesDocument) -> None:
+    """Powiadamia o nowo wystawionym dokumencie (#156, transakcyjne)."""
+    from apps.notifications.models import NotificationKind
+    from apps.notifications.services import notify
+
+    recipient = order.user if order.user_id is not None else order.email  # type: ignore[missing-attribute]
+    payload = {
+        "order_number": order.number,
+        "document_kind": document.get_kind_display(),  # type: ignore[missing-attribute]
+    }
+    transaction.on_commit(
+        lambda: notify(recipient, NotificationKind.DOCUMENT_READY, payload)  # type: ignore[bad-argument-type]
+    )
 
 
 @transaction.atomic

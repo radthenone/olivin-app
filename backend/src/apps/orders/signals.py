@@ -5,6 +5,8 @@ from django.db import transaction
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
+from apps.notifications.models import NotificationKind
+from apps.notifications.services import notify
 from apps.orders.models import Order, OrderStatus
 from apps.orders.services.order import attach_guest_orders
 
@@ -28,13 +30,13 @@ def attach_guest_orders_on_email_confirmed(
 
 @receiver(pre_save, sender=Order, dispatch_uid="orders_capture_previous_status")
 def _capture_previous_status(sender, instance: Order, **kwargs) -> None:
-    """Zapamiętuje poprzedni status, żeby wykryć wejście w `delivered`.
+    """Zapamiętuje poprzedni status — powiadomienia i premium go potrzebują.
 
-    Zapytanie tylko wtedy, gdy zapis wprowadza `delivered` — to jedyne
-    przejście, które coś uruchamia; reszta zapisów nie płaci za sprawdzenie.
+    Zapytanie tylko przy istniejącym wierszu: nowo tworzone zamówienie nie
+    ma poprzedniego statusu do porównania.
     """
     instance._previous_status = None  # type: ignore[attr-defined]
-    if instance.pk and instance.status == OrderStatus.DELIVERED:
+    if instance.pk:
         instance._previous_status = (  # type: ignore[attr-defined]
             Order.objects.filter(pk=instance.pk)
             .values_list("status", flat=True)
@@ -70,3 +72,33 @@ def _grant_premium_on_delivery(sender, instance: Order, **kwargs) -> None:
         transaction.on_commit(
             lambda: grant_premium_if_eligible(instance.user)  # type: ignore[bad-argument-type]
         )
+
+
+@receiver(post_save, sender=Order, dispatch_uid="orders_notify_on_status_change")
+def _notify_on_status_change(sender, instance: Order, created: bool, **kwargs) -> None:
+    """Powiadamia o każdym przejściu statusu, w tym o `paid` (#156).
+
+    Jedno miejsce dla wszystkich przejść: `transition_to()` jest jedyną drogą
+    do zmiany statusu poza tworzeniem zamówienia, więc podpięcie tu pokrywa
+    `mark_paid()` (webhook Stripe, zamówienie opłacone kuponem) i panel
+    admina bez osobnych wywołań w każdym z nich.
+    """
+    if created:
+        return
+    previous_status = getattr(instance, "_previous_status", None)
+    if previous_status is None or previous_status == instance.status:
+        return
+
+    kind = (
+        NotificationKind.ORDER_PAID
+        if instance.status == OrderStatus.PAID
+        else NotificationKind.ORDER_STATUS_CHANGED
+    )
+    payload = {
+        "order_number": instance.number,
+        "status_label": instance.get_status_display(),  # type: ignore[missing-attribute]
+    }
+    # Gość nie ma konta, ale ma zawsze e-mail (`Order._resolve_email`) — dostaje
+    # sam e-mail, bez rekordu w aplikacji (`notify()`).
+    recipient = instance.user if instance.user_id is not None else instance.email  # type: ignore[missing-attribute]
+    transaction.on_commit(lambda: notify(recipient, kind, payload))  # type: ignore[bad-argument-type]
