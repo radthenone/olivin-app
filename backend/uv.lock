@@ -156,7 +156,7 @@ requires-dist = [
     { name = "rich", specifier = ">=14.2.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.16.7" },
     { name = "stripe", specifier = ">=13.0.1" },
-    { name = "weasyprint", specifier = ">=66" },
+    { name = "weasyprint", specifier = ">=70.0" },
 ]
 provides-extras = ["dev", "test"]
 
