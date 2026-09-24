@@ -168,6 +168,14 @@ def apply_coupon_code(cart: Cart, code: str) -> Cart:
     return cart
 
 
+def remove_coupon(cart: Cart) -> Cart:
+    """Kupon wychodzi z koszyka — np. wykorzystany już w innym zamówieniu."""
+    cart.coupon = None
+    cart.last_activity_at = timezone.now()
+    cart.save(update_fields=["coupon", "last_activity_at", "updated_at"])
+    return cart
+
+
 def get_cart(*, user: Customer = None, token: str | None = None) -> Cart | None:
     """Koszyk konta albo gościa; `None`, gdy żadnego jeszcze nie ma."""
     if user is not None:
@@ -311,8 +319,12 @@ def merge_carts(*, guest: Cart, target: Cart) -> Cart:
     if target.promotion_id is None and guest.promotion_id is not None:  # type: ignore[missing-attribute]
         target.promotion_id = guest.promotion_id  # type: ignore[missing-attribute]
         target.save(update_fields=["promotion", "updated_at"])
-    if target.coupon_id is None and guest.coupon_id is not None:  # type: ignore[missing-attribute]
-        target.coupon_id = guest.coupon_id  # type: ignore[missing-attribute]
+    # Kupon gościa zastępuje kupon konta, który już nie działa.
+    guest_coupon = guest.coupon
+    if guest_coupon is not None and (
+        target.coupon is None or not target.coupon.is_usable()
+    ):
+        target.coupon = guest_coupon
         target.save(update_fields=["coupon", "updated_at"])
     guest.delete()
     target.touch()

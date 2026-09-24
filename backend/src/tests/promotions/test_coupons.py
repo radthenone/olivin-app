@@ -19,6 +19,7 @@ from apps.inventory.models import ReservationStatus
 from apps.orders.models import OrderStatus
 from apps.orders.services import (
     CartError,
+    OrderError,
     ShippingAddress,
     add_item,
     apply_coupon_code,
@@ -101,12 +102,17 @@ def _cart_totals(cart):
 
 @pytest.mark.django_db
 class TestCouponModel:
-    def test_nominal_off_the_list_is_rejected(self):
-        """Nominał spoza listy (np. 95 zł) nie przechodzi ani walidacji, ani zapisu."""
+    @pytest.mark.parametrize("nominal", [9500, 0, -1000])
+    def test_nominal_not_multiple_of_ten_zloty_is_rejected(self, nominal):
+        """95 zł, zero i kwota ujemna nie przechodzą ani walidacji, ani zapisu."""
         with pytest.raises(ValidationError):
-            CouponFactory.build(nominal=9500).full_clean()
+            CouponFactory.build(nominal=nominal).full_clean()
         with pytest.raises(ValidationError):
-            CouponFactory(nominal=9500)
+            CouponFactory(nominal=nominal)
+
+    def test_any_multiple_of_ten_zloty_is_accepted(self):
+        """Kupon ze zwrotu zaokrąglony w górę do pełnych 10 zł, np. 70 zł."""
+        CouponFactory.build(nominal=7000).full_clean()
 
     def test_valid_for_twelve_months_with_shop_code(self):
         """Nowy kupon: ważny 12 miesięcy, kod nadany przez sklep, status `issued`."""
@@ -176,6 +182,18 @@ class TestApplyCoupon:
         assert summary.coupon_amount == Money(30000)
         assert summary.total == Money(0)
 
+    def test_guest_coupon_replaces_dead_account_coupon(self):
+        """Konto ma kupon już wykorzystany — przejmuje działający kupon gościa."""
+        coupon = CouponFactory()
+        guest = GuestCartFactory()
+        apply_coupon_code(guest, coupon.code)
+        target = CartFactory(coupon=CouponFactory(status=CouponStatus.REDEEMED))
+
+        merged = merge_carts(guest=guest, target=target)
+
+        merged.refresh_from_db()
+        assert merged.coupon == coupon
+
     def test_guest_coupon_survives_login(self):
         """Kupon wpisany jako gość przechodzi do koszyka konta przy scaleniu."""
         coupon = CouponFactory()
@@ -224,8 +242,12 @@ class TestOrderWithCoupon:
         with pytest.raises(CartError):
             apply_coupon_code(CartFactory(), coupon.code)
 
-    def test_coupon_redeemed_elsewhere_is_not_counted_twice(self):
-        """Ten sam kod w dwóch koszykach: drugie zamówienie płaci całość."""
+    def test_coupon_redeemed_elsewhere_rejects_the_order(self):
+        """Ten sam kod w dwóch koszykach: drugie zamówienie odmówione, nie droższe.
+
+        Klient widział w koszyku sumę po kuponie — cicha zmiana kwoty przy
+        składaniu byłaby gorsza niż jawna odmowa.
+        """
         coupon = CouponFactory()
         first_user, second_user = _user_with_terms(), _user_with_terms()
         first_cart, second_cart = (
@@ -237,10 +259,11 @@ class TestOrderWithCoupon:
             apply_coupon_code(cart, coupon.code)
 
         first = _order(first_cart, first_user)
-        second = _order(second_cart, second_user)
+        with pytest.raises(OrderError) as error:
+            _order(second_cart, second_user)
 
         assert first.coupon_amount == 10000
-        assert second.coupon_amount == 0
+        assert "coupon" in error.value.message_dict
         assert CouponRedemption.objects.filter(coupon=coupon).count() == 1
 
     def test_full_coverage_with_free_shipping_is_paid_without_intent(self):
@@ -258,6 +281,25 @@ class TestOrderWithCoupon:
         assert {r.status for r in order.reservations.all()} == {  # type: ignore[missing-attribute]
             ReservationStatus.CONSUMED
         }
+
+    def test_order_paid_with_coupon_can_be_cancelled(self, api_client: APIClient):
+        """Opłacone w całości kuponem: anulowanie od razu, towar i kupon wracają."""
+        user = _user_with_terms()
+        cart = CartFactory(user=user)
+        variant = _cart_with_variant(cart, price=30000)
+        coupon = CouponFactory(nominal=50000)
+        apply_coupon_code(cart, coupon.code)
+        order = _order(cart, user, shipping_rate=0)
+        api_client.force_authenticate(user)
+
+        response: Any = api_client.post(reverse("order-cancel", args=[order.number]))
+
+        order.refresh_from_db()
+        coupon.refresh_from_db()
+        assert response.status_code == status.HTTP_200_OK
+        assert order.status == OrderStatus.CANCELLED
+        assert coupon.status == CouponStatus.ISSUED
+        assert type(variant).objects.get(pk=variant.pk).available == 5
 
     def test_cancelled_unpaid_order_gives_coupon_back(self):
         """Klient nic nie kupił — kupon wraca do użycia."""
@@ -315,3 +357,53 @@ class TestCartCouponView:
             response: Any = api_client.post(reverse("cart-coupon"), {"code": "NIEMA2"})
 
         assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+
+    @pytest.mark.parametrize(
+        "coupon_kwargs",
+        [
+            {"status": CouponStatus.REDEEMED},
+            {"expires_at": timezone.now() - timedelta(minutes=1)},
+        ],
+    )
+    def test_used_or_expired_code_is_400(self, api_client: APIClient, coupon_kwargs):
+        token = self._guest_cart_token(api_client)
+        coupon = CouponFactory(**coupon_kwargs)
+
+        response: Any = api_client.post(
+            reverse("cart-coupon"), {"code": coupon.code}, HTTP_X_CART_TOKEN=token
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "code" in response.json()
+
+    def test_delete_removes_coupon(self, api_client: APIClient):
+        token = self._guest_cart_token(api_client)
+        coupon = CouponFactory()
+        api_client.post(
+            reverse("cart-coupon"), {"code": coupon.code}, HTTP_X_CART_TOKEN=token
+        )
+
+        response: Any = api_client.delete(
+            reverse("cart-coupon"), HTTP_X_CART_TOKEN=token
+        )
+
+        body = response.json()
+        assert response.status_code == status.HTTP_200_OK
+        assert body["couponCode"] is None
+        assert body["couponAmount"]["amount"] == 0
+        assert body["total"]["amount"] == 100000
+
+    def test_dead_coupon_is_not_shown(self, api_client: APIClient):
+        """Kupon wykorzystany w innym zamówieniu znika z podglądu koszyka."""
+        token = self._guest_cart_token(api_client)
+        coupon = CouponFactory()
+        api_client.post(
+            reverse("cart-coupon"), {"code": coupon.code}, HTTP_X_CART_TOKEN=token
+        )
+        coupon.status = CouponStatus.REDEEMED
+        coupon.save()
+
+        body = api_client.get(reverse("cart-detail"), HTTP_X_CART_TOKEN=token).json()  # type: ignore[attr-defined]
+
+        assert body["couponCode"] is None
+        assert body["couponAmount"]["amount"] == 0

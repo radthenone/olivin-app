@@ -89,6 +89,15 @@ cart_coupon_schema = extend_schema_view(
         request=CouponCodeSerializer,
         responses={200: CartSerializer},
     ),
+    delete=extend_schema(
+        tags=["Cart"],
+        summary="Usunięcie kuponu z koszyka",
+        description=(
+            "Kupon wraca do niewykorzystanych. Klient bez koszyka dostaje pusty koszyk."
+        ),
+        parameters=[CART_TOKEN_PARAMETER],
+        responses={200: CartSerializer},
+    ),
 )
 
 cart_item_schema = extend_schema_view(

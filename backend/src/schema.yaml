@@ -71,6 +71,31 @@ paths:
               schema:
                 $ref: '#/components/schemas/Cart'
           description: ''
+    delete:
+      operationId: cart_coupon_destroy
+      description: Kupon wraca do niewykorzystanych. Klient bez koszyka dostaje pusty
+        koszyk.
+      summary: Usunięcie kuponu z koszyka
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany
+          klient go nie wysyła — koszyk wynika z uwierzytelnienia.
+      tags:
+      - Cart
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
   /cart/items/:
     post:
       operationId: cart_items_create

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import Counter
 from dataclasses import dataclass
 
 from django.core.exceptions import ValidationError
@@ -10,14 +9,11 @@ from django.utils import timezone
 from apps.inventory.models import ReservationStatus
 from apps.inventory.services import (
     ReservationError,
-    consume,
-    release,
     reserve,
     restock,
 )
 from apps.orders.models import Order, OrderStatus
-from apps.orders.services import release_reservations
-from apps.orders.tasks import issue_sales_documents
+from apps.orders.services import consume_stock, mark_paid, release_reservations
 from apps.payments.models import Payment, PaymentStatus, RefundReason, WebhookEvent
 from core.integrations.payments import (
     EventKind,
@@ -191,17 +187,12 @@ def _settle(payment: Payment) -> None:
         # Punkt zapisu: rozliczenie części pozycji przed odmową przy
         # kolejnej musi się cofnąć, zanim pieniądze pójdą z powrotem.
         with transaction.atomic():
-            _consume_stock(order)
+            consume_stock(order)
     except ReservationError:
         _refund(payment, RefundReason.OUT_OF_STOCK)
         return
 
-    order.transition_to(OrderStatus.PAID)
-    # Po commicie: zadanie uruchomione wcześniej mogłoby nie zobaczyć
-    # zamówienia opłaconego albo wystawić dokument za cofniętą zapłatę.
-    transaction.on_commit(
-        lambda: issue_sales_documents.delay(str(order.pk))  # type: ignore[missing-attribute]
-    )
+    mark_paid(order)
 
 
 def _complete_refund(payment: Payment) -> None:
@@ -244,15 +235,6 @@ def _set_status(payment: Payment, status: PaymentStatus) -> None:
     payment.save(update_fields=["status", "updated_at"])
 
 
-def _needed_stock(order: Order) -> Counter[int]:
-    """Ilości do zdjęcia ze stanu według wariantu; wyrób na zamówienie pomija."""
-    needed: Counter[int] = Counter()
-    for item in order.items.all():  # type: ignore[missing-attribute]
-        if not item.is_made_to_order:
-            needed[item.variant_id] += item.quantity * item.specimen_count  # type: ignore[missing-attribute]
-    return needed
-
-
 def _renew_reservations(order: Order) -> None:
     """Zwalnia rezerwacje zamówienia i zakłada je od nowa na pełny czas.
 
@@ -268,31 +250,3 @@ def _renew_reservations(order: Order) -> None:
             reserve(item.variant, item.quantity * item.specimen_count, order=order)
         except ReservationError as error:
             raise PaymentError({"items": str(error)}) from error
-
-
-def _consume_stock(order: Order) -> None:
-    """Rozlicza rezerwacje ruchem sprzedaży.
-
-    Rezerwacja wygasła, zanim zdarzenie doszło (np. długie uwierzytelnienie
-    u banku) — próbujemy wziąć towar od nowa. Jeśli już go nie ma,
-    `ReservationError` wychodzi na zewnątrz i pieniądze wracają.
-    """
-    needed = _needed_stock(order)
-    for reservation in order.reservations.filter(  # type: ignore[missing-attribute]
-        status=ReservationStatus.ACTIVE
-    ).select_related("variant__product"):
-        if reservation.is_active:
-            consume(reservation)
-            needed[reservation.variant_id] -= reservation.quantity
-        else:
-            release(reservation)
-
-    variants = {
-        item.variant_id: item.variant  # type: ignore[missing-attribute]
-        for item in order.items.select_related("variant__product")  # type: ignore[missing-attribute]
-    }
-    for variant_id, quantity in needed.items():
-        if quantity > 0:
-            reservation = reserve(variants[variant_id], quantity, order=order)
-            if reservation is not None:
-                consume(reservation)

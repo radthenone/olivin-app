@@ -6,6 +6,8 @@ from datetime import datetime
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.db.models.functions import Mod
+from django.db.models.lookups import Exact
 from django.utils import timezone
 
 from common import TimestampedModel
@@ -212,8 +214,8 @@ class PromotionRedemption(TimestampedModel):
         return f"{self.promotion} → {self.order}"
 
 
-# Nominały kuponu w groszach — lista, nie dowolna kwota (ADR 0011).
-COUPON_NOMINALS = (5000, 10000, 15000, 20000, 25000, 30000, 50000, 100000)
+# Nominał kuponu to wielokrotność 10 zł, w groszach (ADR 0011).
+COUPON_NOMINAL_STEP = 1000
 
 # Kod kuponu nadaje sklep: bez zer, jedynek, „I" i „O", jak numer zamówienia.
 _COUPON_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
@@ -231,6 +233,11 @@ def twelve_months_later(moment: datetime | None = None) -> datetime:
         return moment.replace(year=moment.year + 1)
     except ValueError:
         return moment.replace(year=moment.year + 1, day=28)
+
+
+def _validate_nominal(value: int) -> None:
+    if value <= 0 or value % COUPON_NOMINAL_STEP:
+        raise ValidationError("Nominał kuponu to dodatnia wielokrotność 10 zł.")
 
 
 class CouponStatus(models.TextChoices):
@@ -259,8 +266,8 @@ class Coupon(TimestampedModel):
         help_text="Kod nadany przez sklep. Wielkość liter nie ma znaczenia.",
     )
     nominal = MoneyAmountField(
-        choices=[(value, f"{value // 100} zł") for value in COUPON_NOMINALS],
-        help_text="Nominał w groszach, z listy — wielokrotność 10 zł",
+        validators=[_validate_nominal],
+        help_text="Nominał w groszach — wielokrotność 10 zł (1000 gr)",
     )
     currency = CurrencyField(help_text="Waluta nominału")
     expires_at = models.DateTimeField(
@@ -285,8 +292,10 @@ class Coupon(TimestampedModel):
         ordering = ["-created_at", "-id"]
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(nominal__in=COUPON_NOMINALS),
-                name="coupon_nominal_from_list",
+                condition=models.Q(
+                    Exact(Mod("nominal", COUPON_NOMINAL_STEP), 0), nominal__gt=0
+                ),
+                name="coupon_nominal_multiple_of_ten_zloty",
             ),
         ]
 
@@ -307,8 +316,10 @@ class Coupon(TimestampedModel):
         self.code = normalise_code(self.code)
 
     def save(self, *args, **kwargs) -> None:
-        if self.nominal not in COUPON_NOMINALS:
-            raise ValidationError({"nominal": "Nominał spoza listy kuponów."})
+        try:
+            _validate_nominal(self.nominal)
+        except ValidationError as error:
+            raise ValidationError({"nominal": error.messages}) from error
         self.code = normalise_code(self.code)
         super().save(*args, **kwargs)
 

@@ -59,13 +59,13 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.inventory.tasks.expire_reservations",
         "schedule": crontab(minute="*/5"),
     },
-    # Raz na dobę, nad ranem: koszyk gościa bez aktywności przez 30 dni nie
-    # ma już komu się pokazać, bo dostęp do niego daje wyłącznie token.
     # Raz na dobę: status kuponu po terminie — ważność i tak liczy się z daty.
     "expire-coupons": {
         "task": "apps.promotions.tasks.expire_coupons",
         "schedule": crontab(minute=45, hour=3),
     },
+    # Raz na dobę, nad ranem: koszyk gościa bez aktywności przez 30 dni nie
+    # ma już komu się pokazać, bo dostęp do niego daje wyłącznie token.
     "purge-stale-guest-carts": {
         "task": "apps.orders.tasks.purge_stale_guest_carts",
         "schedule": crontab(minute=30, hour=3),

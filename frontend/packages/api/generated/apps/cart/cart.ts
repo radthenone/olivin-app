@@ -235,6 +235,88 @@ export const useCartCouponCreate = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getCartCouponCreateMutationOptions(options), queryClient);
     }
+    export type cartCouponDestroyResponse200 = {
+  data: Cart
+  status: 200
+}
+
+export type cartCouponDestroyResponseSuccess = (cartCouponDestroyResponse200) & {
+  headers: Headers;
+};
+;
+
+export type cartCouponDestroyResponse = (cartCouponDestroyResponseSuccess)
+
+export const getCartCouponDestroyUrl = () => {
+
+
+
+
+  return `/cart/coupon/`
+}
+
+/**
+ * Kupon wraca do niewykorzystanych. Klient bez koszyka dostaje pusty koszyk.
+ * @summary Usunięcie kuponu z koszyka
+ */
+export const cartCouponDestroy = async ( options?: RequestInit): Promise<cartCouponDestroyResponse> => {
+
+  return appInstance<cartCouponDestroyResponse>(getCartCouponDestroyUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getCartCouponDestroyMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cartCouponDestroy>>, TError,void, TContext>, request?: SecondParameter<typeof appInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof cartCouponDestroy>>, TError,void, TContext> => {
+
+const mutationKey = ['cartCouponDestroy'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cartCouponDestroy>>, void> = () => {
+
+
+          return  cartCouponDestroy(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CartCouponDestroyMutationResult = NonNullable<Awaited<ReturnType<typeof cartCouponDestroy>>>
+
+    export type CartCouponDestroyMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Usunięcie kuponu z koszyka
+ */
+export const useCartCouponDestroy = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cartCouponDestroy>>, TError,void, TContext>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof cartCouponDestroy>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getCartCouponDestroyMutationOptions(options), queryClient);
+    }
     export type cartItemsCreateResponse201 = {
   data: Cart
   status: 201

@@ -53,3 +53,9 @@ class CouponAdmin(admin.ModelAdmin):
     list_display = ("code", "nominal", "status", "source", "expires_at")
     list_filter = ("status", "source")
     search_fields = ("code",)
+
+    def get_readonly_fields(self, request, obj=None) -> tuple[str, ...]:
+        """Wydany kupon to zobowiązanie sklepu — kodu, nominału ani statusu się nie przepisuje."""
+        if obj is not None and obj.pk:
+            return ("code", "nominal", "currency", "status")
+        return ()
