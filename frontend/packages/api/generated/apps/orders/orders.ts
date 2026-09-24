@@ -28,11 +28,13 @@ import type {
   Order,
   OrderCreate,
   OrdersCancelCreateParams,
+  OrdersDocumentsListParams,
   OrdersListParams,
   OrdersPaymentCreateParams,
   OrdersRetrieveParams,
   PaginatedOrderList,
-  PaymentIntent
+  PaymentIntent,
+  SalesDocument
 } from '../schemas';
 
 import { appInstance } from '../../../src/app-mutator';
@@ -469,7 +471,135 @@ export const useOrdersCancelCreate = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getOrdersCancelCreateMutationOptions(options), queryClient);
     }
-    export type ordersPaymentCreateResponse201 = {
+    export type ordersDocumentsListResponse200 = {
+  data: SalesDocument[]
+  status: 200
+}
+
+export type ordersDocumentsListResponseSuccess = (ordersDocumentsListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type ordersDocumentsListResponse = (ordersDocumentsListResponseSuccess)
+
+export const getOrdersDocumentsListUrl = (number: string,
+    params: OrdersDocumentsListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/orders/${number}/documents/?${stringifiedParams}` : `/orders/${number}/documents/`
+}
+
+/**
+ * Potwierdzenie zamówienia i — na prośbę klienta — faktura imienna, wystawiane raz po opłaceniu zamówienia. Każdy dokument ma adres PDF podpisany na czas (`S3_SIGNED_URL_TTL`); po wygaśnięciu trzeba pobrać listę ponownie. Zamówienie tuż po zapłacie może mieć jeszcze pustą listę — dokumenty powstają w tle.
+ * @summary Dokumenty sprzedaży zamówienia
+ */
+export const ordersDocumentsList = async (number: string,
+    params: OrdersDocumentsListParams, options?: RequestInit): Promise<ordersDocumentsListResponse> => {
+
+  return appInstance<ordersDocumentsListResponse>(getOrdersDocumentsListUrl(number,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getOrdersDocumentsListQueryKey = (number: string,
+    params?: OrdersDocumentsListParams,) => {
+    return [
+    `/orders/${number}/documents/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getOrdersDocumentsListQueryOptions = <TData = Awaited<ReturnType<typeof ordersDocumentsList>>, TError = ErrorType<unknown>>(number: string,
+    params: OrdersDocumentsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersDocumentsList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getOrdersDocumentsListQueryKey(number,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof ordersDocumentsList>>> = ({ signal }) => ordersDocumentsList(number,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: number !== null && number !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof ordersDocumentsList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type OrdersDocumentsListQueryResult = NonNullable<Awaited<ReturnType<typeof ordersDocumentsList>>>
+export type OrdersDocumentsListQueryError = ErrorType<unknown>
+
+
+export function useOrdersDocumentsList<TData = Awaited<ReturnType<typeof ordersDocumentsList>>, TError = ErrorType<unknown>>(
+ number: string,
+    params: OrdersDocumentsListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersDocumentsList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ordersDocumentsList>>,
+          TError,
+          Awaited<ReturnType<typeof ordersDocumentsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useOrdersDocumentsList<TData = Awaited<ReturnType<typeof ordersDocumentsList>>, TError = ErrorType<unknown>>(
+ number: string,
+    params: OrdersDocumentsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersDocumentsList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ordersDocumentsList>>,
+          TError,
+          Awaited<ReturnType<typeof ordersDocumentsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useOrdersDocumentsList<TData = Awaited<ReturnType<typeof ordersDocumentsList>>, TError = ErrorType<unknown>>(
+ number: string,
+    params: OrdersDocumentsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersDocumentsList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Dokumenty sprzedaży zamówienia
+ */
+
+export function useOrdersDocumentsList<TData = Awaited<ReturnType<typeof ordersDocumentsList>>, TError = ErrorType<unknown>>(
+ number: string,
+    params: OrdersDocumentsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersDocumentsList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getOrdersDocumentsListQueryOptions(number,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+export type ordersPaymentCreateResponse201 = {
   data: PaymentIntent
   status: 201
 }

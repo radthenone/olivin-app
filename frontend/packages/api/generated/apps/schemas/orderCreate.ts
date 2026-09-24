@@ -281,4 +281,6 @@ export interface OrderCreate {
   country: CountryEnum;
   /** Metoda dostawy wybrana w trzecim kroku kasy */
   shippingMethod: string;
+  /** Faktura imienna na odbiorcę i adres z zamówienia; potwierdzenie zamówienia powstaje zawsze */
+  invoiceRequested?: boolean;
 }
