@@ -183,6 +183,15 @@ class Order(TimestampedModel):
         help_text="Kwota pokryta kuponem; wypełni ją bilet kuponów",
     )
 
+    # --- Dokumenty ---------------------------------------------------------
+    invoice_requested = models.BooleanField(
+        default=False,
+        help_text=(
+            "Klient poprosił o fakturę imienną — wystawiana na odbiorcę "
+            "i adres z zamówienia (ADR 0026)"
+        ),
+    )
+
     # --- Zgoda -------------------------------------------------------------
     terms_document = models.ForeignKey(
         "consents.ConsentDocument",

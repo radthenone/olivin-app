@@ -5,12 +5,16 @@ Testing settings for Olivin project.
 import os
 
 # --- Database: SQLite in-memory, bez migracji ---
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": ":memory:",
+# `TEST_DATABASE=postgres` zostawia Postgresa z `components/database.py` —
+# dla testów blokad wierszy, których SQLite nie odtworzy (`select_for_update`
+# jest tam bez skutku, a zapis blokuje całą bazę).
+if os.environ.get("TEST_DATABASE") != "postgres":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": ":memory:",
+        }
     }
-}
 
 
 class DisableMigrations:

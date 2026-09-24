@@ -1100,6 +1100,45 @@ paths:
               schema:
                 $ref: '#/components/schemas/Order'
           description: ''
+  /orders/{number}/documents/:
+    get:
+      operationId: orders_documents_list
+      description: Potwierdzenie zamówienia i — na prośbę klienta — faktura imienna,
+        wystawiane raz po opłaceniu zamówienia. Każdy dokument ma adres PDF podpisany
+        na czas (`S3_SIGNED_URL_TTL`); po wygaśnięciu trzeba pobrać listę ponownie.
+        Zamówienie tuż po zapłacie może mieć jeszcze pustą listę — dokumenty powstają
+        w tle.
+      summary: Dokumenty sprzedaży zamówienia
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+          format: email
+          minLength: 1
+        description: Adres podany przy składaniu zamówienia
+        required: true
+      - in: path
+        name: number
+        schema:
+          type: string
+          pattern: ^[A-Z0-9]+$
+        required: true
+      tags:
+      - Orders
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SalesDocument'
+          description: ''
   /orders/{number}/payment/:
     post:
       operationId: orders_payment_create
@@ -3101,6 +3140,11 @@ components:
           type: string
           readOnly: true
           description: Kopia oznaczenia wersji regulaminu z chwili złożenia
+        invoiceRequested:
+          type: boolean
+          readOnly: true
+          description: Klient poprosił o fakturę imienną — wystawiana na odbiorcę
+            i adres z zamówienia (ADR 0026)
         items:
           type: array
           items:
@@ -3142,6 +3186,7 @@ components:
       - exchangeRate
       - goodsTotal
       - id
+      - invoiceRequested
       - items
       - number
       - postalCode
@@ -3445,6 +3490,11 @@ components:
           type: string
           format: uuid
           description: Metoda dostawy wybrana w trzecim kroku kasy
+        invoiceRequested:
+          type: boolean
+          default: false
+          description: Faktura imienna na odbiorcę i adres z zamówienia; potwierdzenie
+            zamówienia powstaje zawsze
       required:
       - city
       - country
@@ -4486,6 +4536,66 @@ components:
       description: |-
         * `customer` - Customer
         * `admin` - Admin
+    SalesDocument:
+      type: object
+      description: |-
+        Dokument sprzedaży do pobrania adresem podpisanym na czas (ADR 0025).
+
+        Adres wygasa po `S3_SIGNED_URL_TTL` — klient pobiera listę na nowo,
+        zamiast zapamiętywać odnośnik.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/SalesDocumentKindEnum'
+          readOnly: true
+          description: |-
+            Rodzaj dokumentu; korekta przychodzi ze zwrotami
+
+            * `confirmation` - Potwierdzenie zamówienia
+            * `invoice` - Faktura
+            * `correction` - Korekta
+        reference:
+          type: string
+          readOnly: true
+        number:
+          type: integer
+          readOnly: true
+          description: Numer ciągły w obrębie rodzaju i roku
+        year:
+          type: integer
+          readOnly: true
+          description: Rok numeracji — ten sam, co rok wystawienia
+        issuedOn:
+          type: string
+          format: date
+          readOnly: true
+          description: Data wystawienia dokumentu
+        url:
+          type: string
+          readOnly: true
+          description: Adres PDF podpisany na czas; po wygaśnięciu pobierz listę ponownie
+      required:
+      - id
+      - issuedOn
+      - kind
+      - number
+      - reference
+      - url
+      - year
+    SalesDocumentKindEnum:
+      enum:
+      - confirmation
+      - invoice
+      - correction
+      type: string
+      description: |-
+        * `confirmation` - Potwierdzenie zamówienia
+        * `invoice` - Faktura
+        * `correction` - Korekta
     ShippingMethodKindEnum:
       enum:
       - parcel_locker

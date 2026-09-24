@@ -12,6 +12,7 @@ from apps.orders.serializers.order import (
     OrderItemSerializer,
     OrderLookupSerializer,
     OrderSerializer,
+    SalesDocumentSerializer,
 )
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "OrderItemSerializer",
     "OrderLookupSerializer",
     "OrderSerializer",
+    "SalesDocumentSerializer",
 ]

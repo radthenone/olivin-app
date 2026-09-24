@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <title>{{ document.reference }}</title>
+  <style>
+    @page { size: A4; margin: 18mm; }
+    body { font-family: "DejaVu Sans", sans-serif; font-size: 10pt; color: #222; }
+    h1 { font-size: 16pt; margin: 0 0 4mm; }
+    .parties { display: flex; justify-content: space-between; margin: 6mm 0; }
+    .parties div { width: 48%; }
+    table { width: 100%; border-collapse: collapse; margin-top: 4mm; }
+    th, td { border-bottom: 1px solid #ccc; padding: 2mm; text-align: left; }
+    td.amount, th.amount { text-align: right; }
+    .totals td { border: none; }
+    .muted { color: #666; font-size: 8pt; }
+  </style>
+</head>
+<body>
+  <h1>{{ document.get_kind_display }} {{ document.reference }}</h1>
+  <p>Data wystawienia: {{ document.issued_on|date:"Y-m-d" }} · Zamówienie {{ order.number }}</p>
+
+  <div class="parties">
+    <div>
+      <strong>Sprzedawca</strong><br>
+      {{ seller.name }}<br>
+      {% if seller.address %}{{ seller.address }}<br>{% endif %}
+      {% if seller.tax_id %}NIP: {{ seller.tax_id }}{% endif %}
+    </div>
+    <div>
+      <strong>Nabywca</strong><br>
+      {{ order.recipient_name }}<br>
+      {{ order.street }}{% if order.street2 %}, {{ order.street2 }}{% endif %}<br>
+      {{ order.postal_code }} {{ order.city }}, {{ order.country }}<br>
+      {{ order.email }}
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Pozycja</th>
+        <th>SKU</th>
+        <th class="amount">Ilość</th>
+        <th class="amount">Cena brutto</th>
+        <th class="amount">VAT</th>
+        <th class="amount">Wartość brutto</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>
+          {{ item.product_name }}{% if item.is_pair %} (para){% endif %}
+          {% if item.engraving_text %}<br><span class="muted">Grawer: {{ item.engraving_text }}{% if item.second_engraving_text %} / {{ item.second_engraving_text }}{% endif %}</span>{% endif %}
+        </td>
+        <td>{{ item.sku }}</td>
+        <td class="amount">{{ item.quantity }}</td>
+        <td class="amount">{{ item.unit_price_money }}</td>
+        <td class="amount">{% if item.is_vat_exempt %}zw.{% else %}{% widthratio item.vat_rate 1 100 %}%{% endif %}</td>
+        <td class="amount">{{ item.line_total }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <table class="totals">
+    <tr><td class="amount">Towar</td><td class="amount">{{ order.goods_total }}</td></tr>
+    {% if order.discount_amount %}<tr><td class="amount">Rabat</td><td class="amount">−{{ order.discount_money }}</td></tr>{% endif %}
+    {% if order.coupon_amount %}<tr><td class="amount">Kupon</td><td class="amount">−{{ order.coupon_money }}</td></tr>{% endif %}
+    <tr><td class="amount">Dostawa ({{ order.shipping_method_name }})</td><td class="amount">{{ order.shipping_cost_money }}</td></tr>
+    <tr><td class="amount"><strong>Razem</strong></td><td class="amount"><strong>{{ order.total }}</strong></td></tr>
+  </table>
+
+  {% for item in items %}{% if item.is_vat_exempt and item.vat_exemption_basis %}
+  <p class="muted">{{ item.sku }}: zwolnienie z VAT — {{ item.vat_exemption_basis }}</p>
+  {% endif %}{% endfor %}
+</body>
+</html>

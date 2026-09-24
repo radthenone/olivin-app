@@ -88,6 +88,7 @@ SPECTACULAR_SETTINGS = {
         "ShippingZoneEnum": "apps.shipping.models.ShippingZone",
         "OrderStatusEnum": "apps.orders.models.order.OrderStatus",
         "PaymentStatusEnum": "apps.payments.models.PaymentStatus",
+        "SalesDocumentKindEnum": "apps.orders.models.document.SalesDocumentKind",
         # Stan zdrowia to `ChoiceField` z listą wartości, bez klasy `Choices`,
         # więc wpisujemy same wartości. Bez tego kolizja z `Order.status`
         # przemianowała go na `HealthCheckResponseStatusEnum` i zmieniła
