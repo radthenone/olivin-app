@@ -1,9 +1,14 @@
 from __future__ import annotations
 
-from factory.declarations import Sequence
+from factory.declarations import Sequence, SubFactory
 from factory.django import DjangoModelFactory
 
-from apps.shipping.models import ShippingMethod, ShippingMethodKind, ShippingZone
+from apps.shipping.models import (
+    Shipment,
+    ShippingMethod,
+    ShippingMethodKind,
+    ShippingZone,
+)
 
 
 class ShippingMethodFactory(DjangoModelFactory):
@@ -37,3 +42,17 @@ class PickupMethodFactory(ShippingMethodFactory):
     kind = ShippingMethodKind.PICKUP
     rate = 0
     max_order_value = None
+
+
+class ShipmentFactory(DjangoModelFactory):
+    """Przesyłka wpisana ręcznie w panelu, jeszcze przed nadaniem (ADR 0027)."""
+
+    class Meta:
+        model = Shipment
+
+    # Ścieżka tekstowa, bo `tests.factories.orders` sam importuje ten moduł.
+    order = SubFactory("tests.factories.orders.OrderFactory")
+    tracking_number = ""
+    declared_value = 25000
+    currency = "PLN"
+    pickup_point_code = ""
