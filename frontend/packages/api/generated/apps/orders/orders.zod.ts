@@ -67,6 +67,14 @@ export const OrdersListResponse = zod.object({
   "lineTotal": zod.object({
   "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
   "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
+  "discountAmount": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
+  "discountedTotal": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
 }).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.')
 }).describe('Pozycja zamówienia — wyłącznie kopie z chwili złożenia (ADR 0010).\n\nNie ma tu odwołania do dzisiejszej ceny wariantu ani do jego stanu:\nzamówienie ma pokazywać to, co klient kupił, a nie to, co jest w sklepie\nteraz.')),
   "goodsTotal": zod.object({
@@ -193,6 +201,14 @@ export const OrdersRetrieveResponse = zod.object({
   "lineTotal": zod.object({
   "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
   "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
+  "discountAmount": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
+  "discountedTotal": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
 }).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.')
 }).describe('Pozycja zamówienia — wyłącznie kopie z chwili złożenia (ADR 0010).\n\nNie ma tu odwołania do dzisiejszej ceny wariantu ani do jego stanu:\nzamówienie ma pokazywać to, co klient kupił, a nie to, co jest w sklepie\nteraz.')),
   "goodsTotal": zod.object({
@@ -280,6 +296,14 @@ export const OrdersCancelCreateResponse = zod.object({
   "currency": zod.string().describe('Kod waluty ISO 4217')
 }).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
   "lineTotal": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
+  "discountAmount": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.'),
+  "discountedTotal": zod.object({
   "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
   "currency": zod.string().describe('Kod waluty ISO 4217')
 }).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.')

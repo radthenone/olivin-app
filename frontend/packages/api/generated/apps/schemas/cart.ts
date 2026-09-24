@@ -11,8 +11,9 @@ import type { Money } from './money';
 /**
  * Pełny widok koszyka — krok pierwszy kasy (ADR 0030).
 
-Rabat i kupon są w odpowiedzi od początku, choć dziś zawsze zerowe:
-kontrakt ma nie zmieniać kształtu, gdy dojdą promocje i kupony.
+Rabat to suma promocji na pozycjach. Kupon jest w odpowiedzi od
+początku, choć dziś zawsze zerowy: kontrakt ma nie zmieniać kształtu,
+gdy dojdą kupony.
  */
 export interface Cart {
   /**
@@ -27,4 +28,9 @@ export interface Cart {
   readonly discountAmount: Money;
   readonly couponAmount: Money;
   readonly total: Money;
+  /**
+     * Kod promocji aktywowany w koszyku; pusty, gdy go nie ma
+     * @nullable
+     */
+  readonly promotionCode: string | null;
 }

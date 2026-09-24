@@ -180,6 +180,46 @@ paths:
               schema:
                 $ref: '#/components/schemas/Cart'
           description: ''
+  /cart/promotion-code/:
+    post:
+      operationId: cart_promotion_code_create
+      description: Aktywuje promocję kodową; nowy kod zastępuje poprzedni. Nieznany
+        albo nieaktywny kod to 400. Czy promocja obniży którąś pozycję, widać w `discountAmount`
+        — zależy od zakresu, limitów i progu koszyka. Bez tokenu gość dostaje nowy
+        koszyk i jego token.
+      summary: Kod promocyjny w koszyku
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany
+          klient go nie wysyła — koszyk wynika z uwierzytelnienia.
+      tags:
+      - Cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromotionCode'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PromotionCode'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PromotionCode'
+        required: true
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
   /categories/:
     get:
       operationId: categories_list
@@ -1469,6 +1509,40 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProductDetail'
           description: ''
+  /promotions/:
+    get:
+      operationId: promotions_list
+      description: Promocje w okresie obowiązywania, które działają bez kodu. Zakres
+        to identyfikatory produktów, kolekcji i kategorii (kategoria obejmuje podkategorie)
+        albo `wholeCatalog`. Promocje kodowe nie są tu wymieniane — kod zna ten, komu
+        sklep go dał.
+      summary: Aktywne promocje bez kodu
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Promotions
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPromotionList'
+          description: ''
   /shipping-methods/:
     get:
       operationId: shipping_methods_list
@@ -1812,8 +1886,9 @@ components:
       description: |-
         Pełny widok koszyka — krok pierwszy kasy (ADR 0030).
 
-        Rabat i kupon są w odpowiedzi od początku, choć dziś zawsze zerowe:
-        kontrakt ma nie zmieniać kształtu, gdy dojdą promocje i kupony.
+        Rabat to suma promocji na pozycjach. Kupon jest w odpowiedzi od
+        początku, choć dziś zawsze zerowy: kontrakt ma nie zmieniać kształtu,
+        gdy dojdą kupony.
       properties:
         cartToken:
           type: string
@@ -1846,12 +1921,18 @@ components:
           allOf:
           - $ref: '#/components/schemas/Money'
           readOnly: true
+        promotionCode:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Kod promocji aktywowany w koszyku; pusty, gdy go nie ma
       required:
       - cartToken
       - couponAmount
       - discountAmount
       - itemCount
       - items
+      - promotionCode
       - subtotal
       - total
     CartItem:
@@ -3589,7 +3670,17 @@ components:
           allOf:
           - $ref: '#/components/schemas/Money'
           readOnly: true
+        discountAmount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        discountedTotal:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
       required:
+      - discountAmount
+      - discountedTotal
       - engravingText
       - engravingTotal
       - goodsPrice
@@ -3740,6 +3831,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Profile'
+    PaginatedPromotionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Promotion'
     PatchedAddress:
       type: object
       properties:
@@ -4528,6 +4642,119 @@ components:
       - fullName
       - id
       - role
+    Promotion:
+      type: object
+      description: |-
+        Promocja widoczna w sklepie — bez kodu i bez limitów.
+
+        Limity są sprawą sklepu: klient dowie się o wyczerpaniu z wyceny
+        koszyka, a pokazywanie liczników zachęcałoby do wyścigu o ostatnie użycia.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          description: Nazwa promocji po polsku
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/PromotionKindEnum'
+          readOnly: true
+          description: |-
+            Procentowa albo kwotowa
+
+            * `percent` - Procentowa
+            * `amount` - Kwotowa
+        value:
+          type: integer
+          readOnly: true
+          description: Procent obniżki (1–100) albo kwota obniżki jednego egzemplarza
+            w groszach — zależnie od rodzaju
+        currency:
+          type: string
+          readOnly: true
+          description: Waluta kwoty obniżki i minimalnej wartości koszyka
+        wholeCatalog:
+          type: boolean
+          readOnly: true
+          description: Promocja na cały katalog — wtedy listy poniżej są pomijane
+        products:
+          type: array
+          items:
+            type: string
+            format: uuid
+          readOnly: true
+          description: Produkty objęte promocją
+        collections:
+          type: array
+          items:
+            type: string
+            format: uuid
+          readOnly: true
+          description: Kolekcje objęte promocją
+        categories:
+          type: array
+          items:
+            type: string
+            format: uuid
+          readOnly: true
+          description: Kategorie objęte promocją — razem z ich podkategoriami
+        startsAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Początek obowiązywania
+        endsAt:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Koniec obowiązywania; puste oznacza promocję bezterminową
+        minCartValue:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+          nullable: true
+          description: Minimalna wartość koszyka przed rabatami; pusta — bez progu
+        requiresPremium:
+          type: boolean
+          readOnly: true
+          description: Tylko dla klientów premium. Do czasu wprowadzenia członkostwa
+            taka promocja nie działa dla nikogo.
+      required:
+      - categories
+      - collections
+      - currency
+      - endsAt
+      - id
+      - kind
+      - minCartValue
+      - name
+      - products
+      - requiresPremium
+      - startsAt
+      - value
+      - wholeCatalog
+    PromotionCode:
+      type: object
+      description: Kod promocyjny wpisany w koszyku; wielkość liter nie ma znaczenia.
+      properties:
+        code:
+          type: string
+          description: Kod promocji, np. LATO2026
+          maxLength: 32
+      required:
+      - code
+    PromotionKindEnum:
+      enum:
+      - percent
+      - amount
+      type: string
+      description: |-
+        * `percent` - Procentowa
+        * `amount` - Kwotowa
     RoleEnum:
       enum:
       - customer

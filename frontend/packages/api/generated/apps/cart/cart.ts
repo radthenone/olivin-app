@@ -27,7 +27,8 @@ import type {
 import type {
   Cart,
   CartItemWrite,
-  PatchedCartItemQuantity
+  PatchedCartItemQuantity,
+  PromotionCode
 } from '../schemas';
 
 import { appInstance } from '../../../src/app-mutator';
@@ -488,4 +489,86 @@ export const useCartMergeCreate = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCartMergeCreateMutationOptions(options), queryClient);
+    }
+    export type cartPromotionCodeCreateResponse200 = {
+  data: Cart
+  status: 200
+}
+
+export type cartPromotionCodeCreateResponseSuccess = (cartPromotionCodeCreateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type cartPromotionCodeCreateResponse = (cartPromotionCodeCreateResponseSuccess)
+
+export const getCartPromotionCodeCreateUrl = () => {
+
+
+
+
+  return `/cart/promotion-code/`
+}
+
+/**
+ * Aktywuje promocję kodową; nowy kod zastępuje poprzedni. Nieznany albo nieaktywny kod to 400. Czy promocja obniży którąś pozycję, widać w `discountAmount` — zależy od zakresu, limitów i progu koszyka. Bez tokenu gość dostaje nowy koszyk i jego token.
+ * @summary Kod promocyjny w koszyku
+ */
+export const cartPromotionCodeCreate = async (promotionCode: PromotionCode, options?: RequestInit): Promise<cartPromotionCodeCreateResponse> => {
+
+  return appInstance<cartPromotionCodeCreateResponse>(getCartPromotionCodeCreateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(promotionCode)
+  }
+);}
+
+
+
+
+export const getCartPromotionCodeCreateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cartPromotionCodeCreate>>, TError,{data: BodyType<PromotionCode>}, TContext>, request?: SecondParameter<typeof appInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof cartPromotionCodeCreate>>, TError,{data: BodyType<PromotionCode>}, TContext> => {
+
+const mutationKey = ['cartPromotionCodeCreate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cartPromotionCodeCreate>>, {data: BodyType<PromotionCode>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  cartPromotionCodeCreate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CartPromotionCodeCreateMutationResult = NonNullable<Awaited<ReturnType<typeof cartPromotionCodeCreate>>>
+    export type CartPromotionCodeCreateMutationBody = BodyType<PromotionCode>
+    export type CartPromotionCodeCreateMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Kod promocyjny w koszyku
+ */
+export const useCartPromotionCodeCreate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cartPromotionCodeCreate>>, TError,{data: BodyType<PromotionCode>}, TContext>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof cartPromotionCodeCreate>>,
+        TError,
+        {data: BodyType<PromotionCode>},
+        TContext
+      > => {
+      return useMutation(getCartPromotionCodeCreateMutationOptions(options), queryClient);
     }

@@ -11,6 +11,7 @@ from apps.products.models import (
     ProductVariant,
     RingSize,
 )
+from apps.promotions.models import CODE_MAX_LENGTH
 from core.api.serializers import MoneySerializer
 
 # Najwęższy rozmiar z `RENDITION_WIDTHS` — wiersz koszyka to miniatura,
@@ -119,8 +120,9 @@ class CartItemSerializer(serializers.ModelSerializer):
 class CartSerializer(serializers.Serializer):
     """Pełny widok koszyka — krok pierwszy kasy (ADR 0030).
 
-    Rabat i kupon są w odpowiedzi od początku, choć dziś zawsze zerowe:
-    kontrakt ma nie zmieniać kształtu, gdy dojdą promocje i kupony.
+    Rabat to suma promocji na pozycjach. Kupon jest w odpowiedzi od
+    początku, choć dziś zawsze zerowy: kontrakt ma nie zmieniać kształtu,
+    gdy dojdą kupony.
     """
 
     cart_token = serializers.CharField(
@@ -141,6 +143,19 @@ class CartSerializer(serializers.Serializer):
     discount_amount = MoneySerializer(source="totals.discount_amount", read_only=True)
     coupon_amount = MoneySerializer(source="totals.coupon_amount", read_only=True)
     total = MoneySerializer(source="totals.total", read_only=True)
+    promotion_code = serializers.CharField(
+        read_only=True,
+        allow_null=True,
+        help_text="Kod promocji aktywowany w koszyku; pusty, gdy go nie ma",
+    )
+
+
+class PromotionCodeSerializer(serializers.Serializer):
+    """Kod promocyjny wpisany w koszyku; wielkość liter nie ma znaczenia."""
+
+    code = serializers.CharField(
+        max_length=CODE_MAX_LENGTH, help_text="Kod promocji, np. LATO2026"
+    )
 
 
 class CartItemWriteSerializer(serializers.Serializer):

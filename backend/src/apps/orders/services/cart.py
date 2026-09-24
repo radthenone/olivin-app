@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 import secrets
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import QuerySet
+from django.utils import timezone
 
 from apps.orders.models import MAX_ITEM_QUANTITY, Cart, CartItem
 from apps.products.models import ProductVariant
+from apps.promotions.models import Promotion, normalise_code
+from apps.promotions.services import AppliedPromotion, best_promotions
 from common.money import DEFAULT_CURRENCY, Money
 
 if TYPE_CHECKING:
@@ -54,9 +57,9 @@ class Personalisation:
 class CartTotals:
     """Podsumowanie koszyka policzone na backendzie.
 
-    Rabat i kupon są tu od początku, choć dziś zawsze zerowe: kontrakt kasy
-    ma nie zmieniać kształtu, gdy dojdą promocje (#153) i kupony (#154).
-    Klient, który już rysuje te wiersze, nie będzie musiał ich dokładać.
+    Rabat to suma promocji na pozycjach (ADR 0023). Kupon jest tu od
+    początku, choć dziś zawsze zerowy: kontrakt kasy ma nie zmieniać
+    kształtu, gdy dojdą kupony (#154).
     """
 
     item_count: int
@@ -76,6 +79,7 @@ def cart_items(cart: Cart) -> QuerySet[CartItem]:
         cart.items.select_related(  # type: ignore[missing-attribute]
             "variant", "variant__product", "variant__inventory"
         )
+        .prefetch_related("variant__cost_components")
         # Zdjęcia raz dla całego koszyka, a nie raz na wiersz: miniatura
         # w rozwijanej liście nie może kosztować zapytania na pozycję.
         .prefetch_related("variant__images", "variant__product__images")
@@ -83,24 +87,60 @@ def cart_items(cart: Cart) -> QuerySet[CartItem]:
     )
 
 
-def totals(items: Iterable[CartItem]) -> CartTotals:
+def totals(
+    items: Iterable[CartItem],
+    discounts: Mapping[Any, AppliedPromotion] | None = None,
+) -> CartTotals:
     """Sumuje gotowe pozycje po cenie aktualnej (`CONTEXT.md`, CartItem).
 
     Bierze listę, a nie koszyk: widok i tak potrzebuje tych samych pozycji do
     odpowiedzi, a pobieranie ich drugi raz dawałoby dwa zapytania i dwie
-    szanse na rozjazd między sumą a tym, co klient widzi.
+    szanse na rozjazd między sumą a tym, co klient widzi. Rabaty przychodzą
+    gotowe z `promotions_for` — ten sam wynik trafia potem do zamówienia.
     """
     rows = list(items)
     currency = rows[0].unit_price.currency if rows else DEFAULT_CURRENCY
-    subtotal = sum((item.line_total for item in rows), start=Money.zero(currency))
     zero = Money.zero(currency)
+    subtotal = sum((item.line_total for item in rows), start=zero)
+    discount = sum(
+        (applied.amount for applied in (discounts or {}).values()), start=zero
+    )
     return CartTotals(
         item_count=len(rows),
         subtotal=subtotal,
-        discount_amount=zero,
+        discount_amount=discount,
         coupon_amount=zero,
-        total=subtotal,
+        total=subtotal - discount,
     )
+
+
+def promotions_for(
+    cart: Cart, items: Iterable[CartItem], *, user: Customer = None, email: str = ""
+) -> dict[Any, AppliedPromotion]:
+    """Promocje pozycji koszyka, z uwzględnieniem kodu aktywowanego w koszyku."""
+    return best_promotions(items, user=user, email=email, code_promotion=cart.promotion)
+
+
+@transaction.atomic
+def apply_promotion_code(cart: Cart, code: str) -> Cart:
+    """Aktywuje w koszyku promocję kodową; nowy kod zastępuje poprzedni.
+
+    Kod musi należeć do promocji w okresie obowiązywania. Czy promocja
+    obejmie którąś pozycję — zakres, limity, próg koszyka — rozstrzyga wycena,
+    bo zawartość koszyka jeszcze się zmieni.
+    """
+    normalised = normalise_code(code)
+    promotion = (
+        Promotion.objects.active().filter(code=normalised).first()
+        if normalised
+        else None
+    )
+    if promotion is None:
+        raise CartError({"code": "Nie ma aktywnej promocji o tym kodzie."})
+    cart.promotion = promotion
+    cart.last_activity_at = timezone.now()
+    cart.save(update_fields=["promotion", "last_activity_at", "updated_at"])
+    return cart
 
 
 def get_cart(*, user: Customer = None, token: str | None = None) -> Cart | None:
@@ -241,6 +281,11 @@ def merge_carts(*, guest: Cart, target: Cart) -> Cart:
         existing.save(update_fields=["quantity", "updated_at"])
         item.delete()
 
+    # Kod wpisany jako gość nie przepada przy logowaniu, ale nie nadpisuje
+    # kodu, który konto już miało.
+    if target.promotion_id is None and guest.promotion_id is not None:  # type: ignore[missing-attribute]
+        target.promotion_id = guest.promotion_id  # type: ignore[missing-attribute]
+        target.save(update_fields=["promotion", "updated_at"])
     guest.delete()
     target.touch()
     return target

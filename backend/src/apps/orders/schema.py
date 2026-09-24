@@ -11,6 +11,7 @@ from apps.orders.serializers import (
     OrderCreateSerializer,
     OrderLookupSerializer,
     OrderSerializer,
+    PromotionCodeSerializer,
     SalesDocumentSerializer,
 )
 from apps.payments.serializers import PaymentIntentSerializer
@@ -52,6 +53,22 @@ cart_merge_schema = extend_schema_view(
         ),
         parameters=[CART_TOKEN_PARAMETER],
         request=None,
+        responses={200: CartSerializer},
+    ),
+)
+
+cart_promotion_code_schema = extend_schema_view(
+    post=extend_schema(
+        tags=["Cart"],
+        summary="Kod promocyjny w koszyku",
+        description=(
+            "Aktywuje promocję kodową; nowy kod zastępuje poprzedni. Nieznany "
+            "albo nieaktywny kod to 400. Czy promocja obniży którąś pozycję, "
+            "widać w `discountAmount` — zależy od zakresu, limitów i progu "
+            "koszyka. Bez tokenu gość dostaje nowy koszyk i jego token."
+        ),
+        parameters=[CART_TOKEN_PARAMETER],
+        request=PromotionCodeSerializer,
         responses={200: CartSerializer},
     ),
 )

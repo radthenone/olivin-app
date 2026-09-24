@@ -39,7 +39,7 @@ APPLICATION_APPS = [
     "apps.shipping",
     "apps.reviews",
     "apps.inventory",
-    "apps.discounts",
+    "apps.promotions",
     "apps.notifications",
     "apps.categories",
     "apps.collections",
