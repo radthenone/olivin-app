@@ -20,6 +20,7 @@ from apps.orders.serializers import (
 from apps.orders.services import (
     cancel_order,
     create_order,
+    is_covered_by_coupon,
     get_cart,
 )
 from apps.orders.views.cart import token_of, user_of
@@ -110,12 +111,14 @@ class OrderViewSet(
     def cancel(self, request: Request, *args, **kwargs) -> Response:
         """Anulowanie: `pending` od razu, `paid` przez zwrot u operatora.
 
+        Opłacone w całości kuponem (bez płatności) anuluje się od razu.
+
         Opłacone zamówienie odpowiada 202 i zostaje `paid` — do `cancelled`
         przenosi je dopiero zdarzenie zwrotu (ADR 0012).
         """
         order = self.get_object()
         try:
-            if order.status == OrderStatus.PAID:
+            if order.status == OrderStatus.PAID and not is_covered_by_coupon(order):
                 request_cancellation(order)
                 order.refresh_from_db()
                 return Response(

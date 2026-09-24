@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import secrets
 from datetime import datetime
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.db.models.functions import Mod
+from django.db.models.lookups import Exact
 from django.utils import timezone
 
 from common import TimestampedModel
@@ -209,3 +212,149 @@ class PromotionRedemption(TimestampedModel):
 
     def __str__(self) -> str:
         return f"{self.promotion} → {self.order}"
+
+
+# Nominał kuponu to wielokrotność 10 zł, w groszach (ADR 0011).
+COUPON_NOMINAL_STEP = 1000
+
+# Kod kuponu nadaje sklep: bez zer, jedynek, „I" i „O", jak numer zamówienia.
+_COUPON_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+_COUPON_CODE_LENGTH = 12
+
+
+def new_coupon_code() -> str:
+    return "".join(secrets.choice(_COUPON_ALPHABET) for _ in range(_COUPON_CODE_LENGTH))
+
+
+def twelve_months_later(moment: datetime | None = None) -> datetime:
+    """Ta sama chwila rok później; 29 lutego przechodzi na 28."""
+    moment = moment or timezone.now()
+    try:
+        return moment.replace(year=moment.year + 1)
+    except ValueError:
+        return moment.replace(year=moment.year + 1, day=28)
+
+
+def _validate_nominal(value: int) -> None:
+    if value <= 0 or value % COUPON_NOMINAL_STEP:
+        raise ValidationError("Nominał kuponu to dodatnia wielokrotność 10 zł.")
+
+
+class CouponStatus(models.TextChoices):
+    ISSUED = "issued", "Wydany"
+    REDEEMED = "redeemed", "Wykorzystany"
+    EXPIRED = "expired", "Wygasły"
+
+
+class CouponSource(models.TextChoices):
+    CAMPAIGN = "campaign", "Kampania"
+    RETURN = "return", "Zwrot"
+
+
+class Coupon(TimestampedModel):
+    """Jednorazowy kupon — forma zapłaty za towar (`CONTEXT.md`, Coupon).
+
+    Pokrywa towar po promocjach, nigdy dostawę; niewykorzystana część
+    nominału przepada (ADR 0011, 0023). Nie jest rabatem: nie obniża podstawy
+    opodatkowania, tylko rozlicza zapłatę (ADR 0014).
+    """
+
+    code = models.CharField(
+        max_length=CODE_MAX_LENGTH,
+        unique=True,
+        default=new_coupon_code,
+        help_text="Kod nadany przez sklep. Wielkość liter nie ma znaczenia.",
+    )
+    nominal = MoneyAmountField(
+        validators=[_validate_nominal],
+        help_text="Nominał w groszach — wielokrotność 10 zł (1000 gr)",
+    )
+    currency = CurrencyField(help_text="Waluta nominału")
+    expires_at = models.DateTimeField(
+        default=twelve_months_later,
+        help_text="Koniec ważności — 12 miesięcy od wydania",
+    )
+    status = models.CharField(
+        max_length=16,
+        choices=CouponStatus.choices,
+        default=CouponStatus.ISSUED,
+    )
+    source = models.CharField(
+        max_length=16,
+        choices=CouponSource.choices,
+        default=CouponSource.CAMPAIGN,
+        help_text="Skąd kupon: kampania marketingowa albo przyjęty zwrot",
+    )
+
+    class Meta:
+        verbose_name = "Kupon"
+        verbose_name_plural = "Kupony"
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(
+                    Exact(Mod("nominal", COUPON_NOMINAL_STEP), 0), nominal__gt=0
+                ),
+                name="coupon_nominal_multiple_of_ten_zloty",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.code} ({self.nominal_money})"
+
+    @property
+    def nominal_money(self) -> Money:
+        return Money(self.nominal, self.currency)
+
+    def is_usable(self, moment: datetime | None = None) -> bool:
+        """Wydany i w terminie — sam status nie wystarcza, zadanie biega raz na dobę."""
+        moment = moment or timezone.now()
+        return self.status == CouponStatus.ISSUED and self.expires_at > moment
+
+    def clean(self) -> None:
+        super().clean()
+        self.code = normalise_code(self.code)
+
+    def save(self, *args, **kwargs) -> None:
+        try:
+            _validate_nominal(self.nominal)
+        except ValidationError as error:
+            raise ValidationError({"nominal": error.messages}) from error
+        self.code = normalise_code(self.code)
+        super().save(*args, **kwargs)
+
+
+class CouponRedemption(TimestampedModel):
+    """Użycie kuponu w zamówieniu z faktycznie naliczoną kwotą (`CONTEXT.md`).
+
+    Zdarzenie, nie saldo (ADR 0014): wiersz zostaje także wtedy, gdy
+    nieopłacone zamówienie anulowano i kupon wrócił do użycia.
+    """
+
+    coupon = models.ForeignKey(
+        Coupon,
+        on_delete=models.PROTECT,
+        related_name="redemptions",
+    )
+    order = models.OneToOneField(
+        "orders.Order",
+        on_delete=models.CASCADE,
+        related_name="coupon_redemption",
+    )
+    amount = MoneyAmountField(
+        validators=[MinValueValidator(0)],
+        help_text="Kwota pokryta kuponem — najwyżej nominał, reszta przepada",
+    )
+
+    class Meta:
+        verbose_name = "Użycie kuponu"
+        verbose_name_plural = "Użycia kuponów"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gte=0),
+                name="coupon_redemption_amount_is_not_negative",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.coupon} → {self.order}"

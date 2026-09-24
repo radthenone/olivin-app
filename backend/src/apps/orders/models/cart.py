@@ -75,6 +75,14 @@ class Cart(TimestampedModel):
         related_name="+",
         help_text="Promocja aktywowana kodem wpisanym w koszyku",
     )
+    coupon = models.ForeignKey(
+        "promotions.Coupon",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text="Kupon wpisany w koszyku — zapłata za towar po promocjach",
+    )
 
     objects: CartQuerySet = CartQuerySet.as_manager()  # type: ignore[bad-assignment]
 

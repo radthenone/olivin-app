@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
@@ -12,7 +12,13 @@ from django.db.models import Q
 
 from apps.consents.models import Consent, ConsentDocument, ConsentKind
 from apps.inventory.models import ReservationStatus
-from apps.inventory.services import ReservationError, release, reserve
+from apps.inventory.services import (
+    ReservationError,
+    consume,
+    release,
+    reserve,
+    restock,
+)
 from apps.orders.models import (
     GUEST_ORDER_LIMIT,
     Cart,
@@ -23,7 +29,13 @@ from apps.orders.models import (
 )
 from apps.orders.services.cart import cart_items, promotions_for, totals
 from apps.products.models import ProductStatus
-from apps.promotions.models import Promotion, PromotionRedemption
+from apps.promotions.models import (
+    Coupon,
+    CouponRedemption,
+    CouponStatus,
+    Promotion,
+    PromotionRedemption,
+)
 from apps.promotions.services import AppliedPromotion
 from apps.shipping.models import ShippingMethod, ShippingZone
 from apps.shipping.services import cost_for, zone_for_country
@@ -82,8 +94,9 @@ def create_order(
             {"country": "Sklep wysyła wyłącznie do Polski i pozostałych krajów Unii."}
         )
     _lock_limited_promotions()
+    coupon = _lock_coupon(cart)
     discounts = promotions_for(cart, items, user=user, email=subject_email)
-    summary = totals(items, discounts)
+    summary = totals(items, discounts, coupon)
 
     _reject_unavailable_items(items)
     _reject_without_terms_consent(user=user, email=subject_email)
@@ -102,15 +115,22 @@ def create_order(
         email=subject_email,
         invoice_requested=invoice_requested,
         discount=summary.discount_amount,
+        coupon=summary.coupon_amount,
     )
     _snapshot_items(order, items, discounts)
     _record_redemptions(order, discounts)
+    _redeem_coupon(order, coupon, summary.coupon_amount)
     _reserve_items(order, items)
+    if order.total.amount == 0:
+        # Nic do zapłaty (kupon + darmowa dostawa): `paid` bez operatora.
+        consume_stock(order)
+        mark_paid(order)
 
     cart.items.all().delete()  # type: ignore[missing-attribute]
-    # Kod został wykorzystany — następny koszyk zaczyna bez niego.
+    # Kod i kupon zostały wykorzystane — następny koszyk zaczyna bez nich.
     cart.promotion = None
-    cart.save(update_fields=["promotion", "updated_at"])
+    cart.coupon = None
+    cart.save(update_fields=["promotion", "coupon", "updated_at"])
     cart.touch()
     return order
 
@@ -119,9 +139,14 @@ def create_order(
 def cancel_order(order: Order) -> Order:
     """Anuluje zamówienie i zwalnia rezerwacje.
 
-    Tylko `pending`: anulowanie zamówienia opłaconego pociąga zwrot pieniędzy
-    u operatora — `apps.payments.services.request_cancellation`.
+    `pending` — od razu. `paid` bez żadnej płatności (pokryte w całości
+    kuponem) — też od razu: towar wraca na stan, kupon do użycia. Opłacone
+    pieniędzmi pociąga zwrot u operatora —
+    `apps.payments.services.request_cancellation`.
     """
+    if is_covered_by_coupon(order):
+        _cancel_paid_without_payment(order)
+        return order
     if order.status != OrderStatus.PENDING:
         raise OrderError(
             {
@@ -199,10 +224,87 @@ def _record_redemptions(
     )
 
 
+def _lock_coupon(cart: Cart) -> Coupon | None:
+    """Kupon koszyka zablokowany do końca transakcji — jednorazowość.
+
+    Dwa koszyki z tym samym kodem składane naraz: drugie zamówienie czeka
+    na pierwsze i widzi kupon już wykorzystany. Wtedy odmowa, a nie cicha
+    zmiana kwoty — klient widział w koszyku sumę po kuponie.
+    """
+    if cart.coupon_id is None:  # type: ignore[missing-attribute]
+        return None
+    coupon = Coupon.objects.select_for_update().filter(pk=cart.coupon_id).first()  # type: ignore[missing-attribute]
+    if coupon is None or not coupon.is_usable():
+        raise OrderError(
+            {
+                "coupon": (
+                    "Kupon został już wykorzystany albo wygasł — usuń go "
+                    "z koszyka i złóż zamówienie ponownie."
+                )
+            }
+        )
+    return coupon
+
+
+def _redeem_coupon(order: Order, coupon: Coupon | None, amount: Money) -> None:
+    """Zapisuje użycie kuponu; nadwyżka nominału przepada razem z kuponem."""
+    if coupon is None or amount.amount <= 0:
+        return
+    CouponRedemption.objects.create(coupon=coupon, order=order, amount=amount.amount)
+    coupon.status = CouponStatus.REDEEMED
+    coupon.save(update_fields=["status", "updated_at"])
+
+
 def _close_unpaid(order: Order) -> None:
-    """Zamyka nieopłacone zamówienie: rezerwacje wracają, status `cancelled`."""
+    """Zamyka nieopłacone zamówienie: rezerwacje wracają, status `cancelled`.
+
+    Kupon wraca do użycia — klient nic nie kupił. Wiersz użycia zostaje
+    jako ślad (ADR 0014); termin ważności się nie przesuwa.
+    """
     release_reservations(order)
+    _return_coupon(order)
     order.transition_to(OrderStatus.CANCELLED)
+
+
+def _cancel_paid_without_payment(order: Order) -> None:
+    """Zamówienie pokryte kuponem: towar wraca na stan, kupon do użycia."""
+    for reservation in order.reservations.filter(  # type: ignore[missing-attribute]
+        status=ReservationStatus.CONSUMED
+    ):
+        restock(reservation, note=f"Anulowanie zamówienia {order.number}")
+    _return_coupon(order)
+    order.transition_to(OrderStatus.CANCELLED)
+
+
+def _return_coupon(order: Order) -> None:
+    """Kupon wraca do użycia; wiersz użycia zostaje jako ślad (ADR 0014)."""
+    Coupon.objects.filter(
+        redemptions__order=order, status=CouponStatus.REDEEMED
+    ).update(status=CouponStatus.ISSUED)
+
+
+def is_covered_by_coupon(order: Order) -> bool:
+    """Opłacone bez pieniędzy — kupon pokrył towar, dostawa darmowa.
+
+    Po kwocie, nie po braku płatności: nie ma tu czego zwracać u operatora,
+    a zamówienie opłacone pieniędzmi zawsze ma kwotę większą od zera.
+    """
+    return order.status == OrderStatus.PAID and order.total.amount == 0
+
+
+def mark_paid(order: Order) -> None:
+    """Zamówienie `paid` i dokumenty sprzedaży po commicie (ADR 0026).
+
+    Po commicie: zadanie uruchomione wcześniej mogłoby nie zobaczyć
+    zamówienia opłaconego albo wystawić dokument za cofniętą zapłatę.
+    """
+    # Import w funkcji: `apps.orders.tasks` importuje ten moduł.
+    from apps.orders.tasks import issue_sales_documents
+
+    order.transition_to(OrderStatus.PAID)
+    transaction.on_commit(
+        lambda: issue_sales_documents.delay(str(order.pk))  # type: ignore[missing-attribute]
+    )
 
 
 def _resolve_email(*, user: Customer, email: str) -> str:
@@ -321,6 +423,7 @@ def _build_order(
     email: str,
     invoice_requested: bool,
     discount: Money,
+    coupon: Money,
 ) -> Order:
     terms = ConsentDocument.objects.current(ConsentKind.TERMS)
     if terms is None:
@@ -342,6 +445,7 @@ def _build_order(
         terms_document=terms,
         invoice_requested=invoice_requested,
         discount_amount=discount.amount,
+        coupon_amount=coupon.amount,
     )
 
 
@@ -403,3 +507,41 @@ def expire_unpaid_orders(*, older_than: datetime) -> int:
         _close_unpaid(order)
         cancelled += 1
     return cancelled
+
+
+def _needed_stock(order: Order) -> Counter[int]:
+    """Ilości do zdjęcia ze stanu według wariantu; wyrób na zamówienie pomija."""
+    needed: Counter[int] = Counter()
+    for item in order.items.all():  # type: ignore[missing-attribute]
+        if not item.is_made_to_order:
+            needed[item.variant_id] += item.quantity * item.specimen_count  # type: ignore[missing-attribute]
+    return needed
+
+
+def consume_stock(order: Order) -> None:
+    """Rozlicza rezerwacje ruchem sprzedaży.
+
+    Rezerwacja wygasła, zanim zdarzenie doszło (np. długie uwierzytelnienie
+    u banku) — próbujemy wziąć towar od nowa. Jeśli już go nie ma,
+    `ReservationError` wychodzi na zewnątrz i pieniądze wracają.
+    Wspólne dla zapłaty u operatora i zamówienia pokrytego kuponem.
+    """
+    needed = _needed_stock(order)
+    for reservation in order.reservations.filter(  # type: ignore[missing-attribute]
+        status=ReservationStatus.ACTIVE
+    ).select_related("variant__product"):
+        if reservation.is_active:
+            consume(reservation)
+            needed[reservation.variant_id] -= reservation.quantity
+        else:
+            release(reservation)
+
+    variants = {
+        item.variant_id: item.variant  # type: ignore[missing-attribute]
+        for item in order.items.select_related("variant__product")  # type: ignore[missing-attribute]
+    }
+    for variant_id, quantity in needed.items():
+        if quantity > 0:
+            reservation = reserve(variants[variant_id], quantity, order=order)
+            if reservation is not None:
+                consume(reservation)

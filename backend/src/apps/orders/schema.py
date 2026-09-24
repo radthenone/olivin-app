@@ -11,6 +11,7 @@ from apps.orders.serializers import (
     OrderCreateSerializer,
     OrderLookupSerializer,
     OrderSerializer,
+    CouponCodeSerializer,
     PromotionCodeSerializer,
     SalesDocumentSerializer,
 )
@@ -69,6 +70,32 @@ cart_promotion_code_schema = extend_schema_view(
         ),
         parameters=[CART_TOKEN_PARAMETER],
         request=PromotionCodeSerializer,
+        responses={200: CartSerializer},
+    ),
+)
+
+cart_coupon_schema = extend_schema_view(
+    post=extend_schema(
+        tags=["Cart"],
+        summary="Kupon w koszyku",
+        description=(
+            "Wpisuje kupon; nowy kod zastępuje poprzedni. Nieznany, "
+            "wykorzystany albo przeterminowany kupon to 400. Kupon pokrywa "
+            "towar po promocjach (`couponAmount`), nigdy dostawę; nadwyżka "
+            "nominału przepada. Limit żądań zakresu `auth` (10/min). Bez "
+            "tokenu gość dostaje nowy koszyk i jego token."
+        ),
+        parameters=[CART_TOKEN_PARAMETER],
+        request=CouponCodeSerializer,
+        responses={200: CartSerializer},
+    ),
+    delete=extend_schema(
+        tags=["Cart"],
+        summary="Usunięcie kuponu z koszyka",
+        description=(
+            "Kupon wraca do niewykorzystanych. Klient bez koszyka dostaje pusty koszyk."
+        ),
+        parameters=[CART_TOKEN_PARAMETER],
         responses={200: CartSerializer},
     ),
 )
