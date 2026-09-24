@@ -15,6 +15,11 @@ from apps.orders.services.cart import (
     set_quantity,
     totals,
 )
+from apps.orders.services.document import (
+    issue_document,
+    issue_documents,
+    next_number,
+)
 from apps.orders.services.order import (
     OrderError,
     ShippingAddress,
@@ -40,8 +45,11 @@ __all__ = [
     "find_item",
     "get_cart",
     "get_or_create_cart",
+    "issue_document",
+    "issue_documents",
     "merge_carts",
     "new_guest_token",
+    "next_number",
     "release_reservations",
     "remove_item",
     "set_quantity",

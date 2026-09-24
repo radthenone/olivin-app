@@ -11,6 +11,7 @@ from apps.orders.serializers import (
     OrderCreateSerializer,
     OrderLookupSerializer,
     OrderSerializer,
+    SalesDocumentSerializer,
 )
 from apps.payments.serializers import PaymentIntentSerializer
 
@@ -145,5 +146,18 @@ order_schema = extend_schema_view(
         parameters=[OrderLookupSerializer],
         request=None,
         responses={201: PaymentIntentSerializer},
+    ),
+    documents=extend_schema(
+        tags=["Orders"],
+        summary="Dokumenty sprzedaży zamówienia",
+        description=(
+            "Potwierdzenie zamówienia i — na prośbę klienta — faktura imienna, "
+            "wystawiane raz po opłaceniu zamówienia. Każdy dokument ma adres "
+            "PDF podpisany na czas (`S3_SIGNED_URL_TTL`); po wygaśnięciu "
+            "trzeba pobrać listę ponownie. Zamówienie tuż po zapłacie może "
+            "mieć jeszcze pustą listę — dokumenty powstają w tle."
+        ),
+        parameters=[OrderLookupSerializer],
+        responses={200: SalesDocumentSerializer(many=True)},
     ),
 )

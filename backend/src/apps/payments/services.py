@@ -17,6 +17,7 @@ from apps.inventory.services import (
 )
 from apps.orders.models import Order, OrderStatus
 from apps.orders.services import release_reservations
+from apps.orders.tasks import issue_sales_documents
 from apps.payments.models import Payment, PaymentStatus, RefundReason, WebhookEvent
 from core.integrations.payments import (
     EventKind,
@@ -196,6 +197,11 @@ def _settle(payment: Payment) -> None:
         return
 
     order.transition_to(OrderStatus.PAID)
+    # Po commicie: zadanie uruchomione wcześniej mogłoby nie zobaczyć
+    # zamówienia opłaconego albo wystawić dokument za cofniętą zapłatę.
+    transaction.on_commit(
+        lambda: issue_sales_documents.delay(str(order.pk))  # type: ignore[missing-attribute]
+    )
 
 
 def _complete_refund(payment: Payment) -> None:

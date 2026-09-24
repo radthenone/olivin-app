@@ -37,6 +37,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 FROM python:${PYTHON_VERSION}-slim-bookworm AS runtime-base
 
+# Pango, Cairo i HarfBuzz — WeasyPrint renderuje nimi dokumenty sprzedaży
+# w zadaniu Celery (ADR 0026); DejaVu daje polskie znaki na wydruku.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
@@ -49,6 +51,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     redis-tools \
     postgresql-client-16 \
     libpq5 \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    libpangocairo-1.0-0 \
+    libcairo2 \
+    libharfbuzz-subset0 \
+    fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

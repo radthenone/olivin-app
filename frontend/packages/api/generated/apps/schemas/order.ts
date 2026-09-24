@@ -51,6 +51,8 @@ export interface Order {
   readonly exchangeRate: string;
   /** Kopia oznaczenia wersji regulaminu z chwili złożenia */
   readonly termsVersion: string;
+  /** Klient poprosił o fakturę imienną — wystawiana na odbiorcę i adres z zamówienia (ADR 0026) */
+  readonly invoiceRequested: boolean;
   readonly items: readonly OrderItem[];
   readonly goodsTotal: Money;
   readonly shippingCost: Money;

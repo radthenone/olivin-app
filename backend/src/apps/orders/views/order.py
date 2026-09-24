@@ -15,6 +15,7 @@ from apps.orders.serializers import (
     OrderCreateSerializer,
     OrderLookupSerializer,
     OrderSerializer,
+    SalesDocumentSerializer,
 )
 from apps.orders.services import (
     cancel_order,
@@ -41,6 +42,7 @@ class OrderViewSet(
     - create:   POST /orders/                  — złożenie zamówienia z koszyka
     - cancel:   POST /orders/{number}/cancel/  — anulowanie `pending` albo zwrot `paid`
     - payment:  POST /orders/{number}/payment/ — intencja płatnicza (ADR 0012)
+    - documents: GET /orders/{number}/documents/ — dokumenty sprzedaży (ADR 0026)
 
     Adresem jest numer zamówienia, nie identyfikator: to jego klient ma
     w wiadomości i to nim posługuje się w kontakcie ze sklepem. Gość
@@ -97,6 +99,7 @@ class OrderViewSet(
                 shipping_method=data["shipping_method"],
                 user=user,
                 email=data["email"],
+                invoice_requested=data["invoice_requested"],
             )
         except DjangoValidationError as error:
             raise ValidationError(error.message_dict) from error
@@ -134,6 +137,13 @@ class OrderViewSet(
         return Response(
             PaymentIntentSerializer(started).data, status=status.HTTP_201_CREATED
         )
+
+    @action(detail=True, methods=["get"], pagination_class=None)
+    def documents(self, request: Request, *args, **kwargs) -> Response:
+        """Dokumenty sprzedaży zamówienia z adresami podpisanymi na czas."""
+        order = self.get_object()
+        documents = order.documents.all()  # type: ignore[missing-attribute]
+        return Response(SalesDocumentSerializer(documents, many=True).data)
 
     def _guest_email(self) -> str:
         """E-mail gościa z parametru zapytania; pusty, gdy go nie podał."""

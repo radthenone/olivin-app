@@ -3,7 +3,7 @@ from __future__ import annotations
 from django_countries.serializer_fields import CountryField
 from rest_framework import serializers
 
-from apps.orders.models import Order, OrderItem
+from apps.orders.models import Order, OrderItem, SalesDocument
 from apps.orders.services import ShippingAddress
 from apps.shipping.models import ShippingMethod
 from core.api.serializers import MoneySerializer
@@ -76,6 +76,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "currency",
             "exchange_rate",
             "terms_version",
+            "invoice_requested",
             "items",
             "goods_total",
             "shipping_cost",
@@ -115,6 +116,14 @@ class OrderCreateSerializer(serializers.Serializer):
         queryset=ShippingMethod.objects.active(),
         help_text="Metoda dostawy wybrana w trzecim kroku kasy",
     )
+    invoice_requested = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text=(
+            "Faktura imienna na odbiorcę i adres z zamówienia; potwierdzenie "
+            "zamówienia powstaje zawsze"
+        ),
+    )
 
     def to_address(self) -> ShippingAddress:
         """Adres ze zwalidowanych danych jako typ domeny; kraj jako kod ISO."""
@@ -139,3 +148,26 @@ class OrderLookupSerializer(serializers.Serializer):
     email = serializers.EmailField(
         help_text="Adres podany przy składaniu zamówienia",
     )
+
+
+class SalesDocumentSerializer(serializers.ModelSerializer):
+    """Dokument sprzedaży do pobrania adresem podpisanym na czas (ADR 0025).
+
+    Adres wygasa po `S3_SIGNED_URL_TTL` — klient pobiera listę na nowo,
+    zamiast zapamiętywać odnośnik.
+    """
+
+    reference = serializers.CharField(read_only=True)
+    url = serializers.SerializerMethodField(
+        help_text="Adres PDF podpisany na czas; po wygaśnięciu pobierz listę ponownie",
+    )
+
+    class Meta:
+        model = SalesDocument
+        fields = ["id", "kind", "reference", "number", "year", "issued_on", "url"]
+        read_only_fields = fields
+
+    def get_url(self, obj: SalesDocument) -> str:
+        from core.storage import DOCUMENTS, object_url
+
+        return object_url(DOCUMENTS, obj.object_key)

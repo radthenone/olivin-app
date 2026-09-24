@@ -17,3 +17,9 @@ _free_shipping_threshold = os.environ.get("FREE_SHIPPING_THRESHOLD", "50000").st
 FREE_SHIPPING_THRESHOLD: int | None = (
     int(_free_shipping_threshold) if _free_shipping_threshold else None
 )
+
+# Sprzedawca na dokumentach sprzedaży (ADR 0026). Jeden sklep, jedna firma —
+# stąd ustawienie, a nie model. Pusta wartość zostawia pole puste na wydruku.
+SELLER_NAME = os.environ.get("SELLER_NAME", "Olivin")
+SELLER_ADDRESS = os.environ.get("SELLER_ADDRESS", "")
+SELLER_TAX_ID = os.environ.get("SELLER_TAX_ID", "")

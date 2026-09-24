@@ -57,6 +57,7 @@ def create_order(
     shipping_method: ShippingMethod,
     user: Customer = None,
     email: str = "",
+    invoice_requested: bool = False,
 ) -> Order:
     """Składa zamówienie z koszyka w jednej transakcji (ADR 0030).
 
@@ -92,6 +93,7 @@ def create_order(
         shipping_cost=shipping_cost,
         user=user,
         email=subject_email,
+        invoice_requested=invoice_requested,
     )
     _snapshot_items(order, items)
     _reserve_items(order, items)
@@ -276,6 +278,7 @@ def _build_order(
     shipping_cost: Money,
     user: Customer,
     email: str,
+    invoice_requested: bool,
 ) -> Order:
     terms = ConsentDocument.objects.current(ConsentKind.TERMS)
     if terms is None:
@@ -295,6 +298,7 @@ def _build_order(
         shipping_cost=shipping_cost.amount,
         currency=shipping_cost.currency or DEFAULT_CURRENCY,
         terms_document=terms,
+        invoice_requested=invoice_requested,
     )
 
 
