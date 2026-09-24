@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pytest
 from django.db.utils import IntegrityError
-from django.test import Client
 from django.urls import reverse
 
 from apps.shipping.models import Shipment
@@ -21,9 +20,9 @@ class TestShipmentModel:
             Shipment.objects.filter(pk=shipment.pk).update(declared_value=-1)
 
     def test_declared_value_comes_out_as_money(self):
-        shipment = ShipmentFactory(declared_value=25000, currency="PLN")
+        shipment = ShipmentFactory(declared_value=25000, currency="EUR")
 
-        assert shipment.declared_value_money == Money(25000, "PLN")
+        assert shipment.declared_value_money == Money(25000, "EUR")
 
     def test_str_is_tracking_number_once_shipped(self):
         assert str(ShipmentFactory(tracking_number="PL123")) == "PL123"
@@ -36,12 +35,10 @@ class TestShipmentModel:
 
 @pytest.mark.django_db
 class TestShipmentAdmin:
-    def test_changelist_opens_for_admin(self, admin_user):
+    def test_changelist_opens_for_admin(self, admin_client):
         ShipmentFactory(tracking_number="PL123")
-        client = Client()
-        client.force_login(admin_user)
 
-        response = client.get(reverse("admin:shipping_shipment_changelist"))
+        response = admin_client.get(reverse("admin:shipping_shipment_changelist"))
 
         assert response.status_code == 200
         assert b"PL123" in response.content
