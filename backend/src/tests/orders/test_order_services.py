@@ -11,6 +11,7 @@ from allauth.account.signals import email_confirmed
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
+from apps.accounts.models import MembershipLevel
 from apps.consents.models import ConsentKind
 from apps.inventory.models import ReservationStatus
 from apps.orders.models import (
@@ -30,7 +31,7 @@ from apps.orders.services import (
 from apps.orders.services.cart import add_item
 from apps.shipping.models import ShippingZone
 from common.money import Money
-from tests.factories.accounts import UserFactory
+from tests.factories.accounts import ProfileFactory, UserFactory
 from tests.factories.consents import (
     ConsentDocumentFactory,
     ConsentFactory,
@@ -593,6 +594,137 @@ class TestStatusTransitions:
             order.transition_to(OrderStatus.CANCELLED)
 
         order.transition_to(OrderStatus.DELIVERED)
+        assert order.status == OrderStatus.DELIVERED
+
+
+@pytest.mark.django_db
+class TestMembershipGrantOnDelivery:
+    """Dostarczenie zamówienia nadaje premium po przekroczeniu progu (#155)."""
+
+    def _order(self, *, user, status=OrderStatus.PAID) -> Order:
+        _terms_for(user=user)
+        cart = CartFactory(user=user)
+        variant = ProductVariantFactory(product=PublishedProductFactory())
+        stock(variant, 5)
+        add_item(cart, variant=variant, quantity=1)
+        order = create_order(
+            cart=cart,
+            address=ADDRESS,
+            shipping_method=ShippingMethodFactory(),
+            user=user,
+        )
+        order.transition_to(status)
+        return order
+
+    def test_transition_to_delivered_grants_premium_above_threshold(
+        self, settings, django_capture_on_commit_callbacks
+    ):
+        """Suma dostarczonych zamówień powyżej progu nadaje premium bezterminowo.
+
+        Nadanie czeka na `on_commit` — bez przechwycenia callbacków test by
+        przeszedł mimo pustego kodu, bo pytest-django i tak wycofuje
+        transakcję po teście.
+        """
+        settings.PREMIUM_MEMBERSHIP_THRESHOLD = 100000
+        user = UserFactory()
+        profile = ProfileFactory(user=user)
+        order = self._order(user=user, status=OrderStatus.PAID)
+        order.transition_to(OrderStatus.PACKED)
+        order.transition_to(OrderStatus.SHIPPED)
+
+        with django_capture_on_commit_callbacks(execute=True):
+            order.transition_to(OrderStatus.DELIVERED)
+
+        profile.refresh_from_db()
+        assert profile.membership == MembershipLevel.PREMIUM
+        assert profile.membership_granted_at is not None
+
+    def test_transition_to_delivered_below_threshold_stays_regular(
+        self, settings, django_capture_on_commit_callbacks
+    ):
+        """Suma dostarczonych zamówień poniżej progu nie nadaje premium."""
+        settings.PREMIUM_MEMBERSHIP_THRESHOLD = 10_000_000
+        user = UserFactory()
+        profile = ProfileFactory(user=user)
+        order = self._order(user=user, status=OrderStatus.PAID)
+        order.transition_to(OrderStatus.PACKED)
+        order.transition_to(OrderStatus.SHIPPED)
+
+        with django_capture_on_commit_callbacks(execute=True):
+            order.transition_to(OrderStatus.DELIVERED)
+
+        profile.refresh_from_db()
+        assert profile.membership == MembershipLevel.REGULAR
+        assert profile.membership_granted_at is None
+
+    def test_grant_waits_for_commit(self, settings, django_capture_on_commit_callbacks):
+        """Nadanie nie dzieje się od razu po `save()`, tylko po zatwierdzeniu transakcji."""
+        settings.PREMIUM_MEMBERSHIP_THRESHOLD = 100000
+        user = UserFactory()
+        profile = ProfileFactory(user=user)
+        order = self._order(user=user, status=OrderStatus.PAID)
+        order.transition_to(OrderStatus.PACKED)
+        order.transition_to(OrderStatus.SHIPPED)
+
+        with django_capture_on_commit_callbacks() as callbacks:
+            order.transition_to(OrderStatus.DELIVERED)
+            profile.refresh_from_db()
+            assert profile.membership == MembershipLevel.REGULAR
+
+        for callback in callbacks:
+            callback()
+
+        profile.refresh_from_db()
+        assert profile.membership == MembershipLevel.PREMIUM
+
+    def test_plain_save_to_delivered_also_grants_premium(
+        self, settings, django_capture_on_commit_callbacks
+    ):
+        """Panel admina zapisuje status wprost przez `save()`, nie `transition_to`.
+
+        Sygnał wisi na `Order.save()`, nie na `transition_to()` — musi
+        zadziałać także wtedy.
+        """
+        settings.PREMIUM_MEMBERSHIP_THRESHOLD = 100000
+        user = UserFactory()
+        profile = ProfileFactory(user=user)
+        order = self._order(user=user, status=OrderStatus.PAID)
+        order.status = OrderStatus.PACKED
+        order.save()
+        order.status = OrderStatus.SHIPPED
+        order.save()
+
+        with django_capture_on_commit_callbacks(execute=True):
+            order.status = OrderStatus.DELIVERED
+            order.save()
+
+        profile.refresh_from_db()
+        assert profile.membership == MembershipLevel.PREMIUM
+
+    def test_guest_order_delivery_does_not_error(
+        self, settings, django_capture_on_commit_callbacks
+    ):
+        """Zamówienie gościa nie ma komu nadać premium — sygnał nie wybucha."""
+        settings.PREMIUM_MEMBERSHIP_THRESHOLD = 100000
+        document = ConsentDocumentFactory(kind=ConsentKind.TERMS)
+        GuestConsentFactory(email="gosc@test.com", document=document)
+        cart = GuestCartFactory()
+        variant = ProductVariantFactory(product=PublishedProductFactory())
+        stock(variant, 5)
+        add_item(cart, variant=variant, quantity=1)
+        order = create_order(
+            cart=cart,
+            address=ADDRESS,
+            shipping_method=ShippingMethodFactory(),
+            email="gosc@test.com",
+        )
+        order.transition_to(OrderStatus.PAID)
+        order.transition_to(OrderStatus.PACKED)
+        order.transition_to(OrderStatus.SHIPPED)
+
+        with django_capture_on_commit_callbacks(execute=True):
+            order.transition_to(OrderStatus.DELIVERED)
+
         assert order.status == OrderStatus.DELIVERED
 
 

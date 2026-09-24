@@ -4801,8 +4801,7 @@ components:
         requiresPremium:
           type: boolean
           readOnly: true
-          description: Tylko dla klientów premium. Do czasu wprowadzenia członkostwa
-            taka promocja nie działa dla nikogo.
+          description: Tylko dla klientów premium (`CONTEXT.md`, Membership).
       required:
       - categories
       - collections

@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 from django.db.models import Count, F, Q, QuerySet
 
+from apps.accounts.services.membership_service import is_premium
 from apps.categories.models import Category
 from apps.collections.models import Collection
 from apps.orders.models import CartItem, OrderStatus
@@ -84,18 +85,23 @@ def eligible_promotions(
     """Promocje w okresie, bez wyczerpanego limitu, dostępne dla tego klienta.
 
     Promocja z kodem przechodzi tylko wtedy, gdy to ją aktywował koszyk.
-    Promocja z warunkiem członkostwa nie przechodzi wcale, dopóki członkostwo
-    nie istnieje — rabat premium dla wszystkich byłby gorszy niż żaden.
+    Promocja z warunkiem członkostwa przechodzi tylko dla klienta premium
+    (`CONTEXT.md`, Membership; ADR 0023).
     """
     codes = Q(code="")
     if code_promotion is not None:
         codes |= Q(pk=code_promotion.pk)
 
+    membership = Q(requires_premium=False)
+    if is_premium(user):
+        membership |= Q(requires_premium=True)
+
     # Zamówienie anulowane oddaje użycie — klient nic nie kupił.
     live = ~Q(redemptions__order__status=OrderStatus.CANCELLED)
     promotions = (
         Promotion.objects.active()
-        .filter(codes, requires_premium=False)
+        .filter(codes)
+        .filter(membership)
         .annotate(**{USED: Count("redemptions", filter=live)})
         .filter(Q(global_limit__isnull=True) | Q(global_limit__gt=F(USED)))
     )

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from allauth.account.signals import email_confirmed
+from django.db import transaction
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
+from apps.orders.models import Order, OrderStatus
 from apps.orders.services.order import attach_guest_orders
 
 
@@ -21,3 +24,49 @@ def attach_guest_orders_on_email_confirmed(
     e-maila i po dodaniu drugiego adresu do konta.
     """
     attach_guest_orders(email_address.user, email=email_address.email)
+
+
+@receiver(pre_save, sender=Order, dispatch_uid="orders_capture_previous_status")
+def _capture_previous_status(sender, instance: Order, **kwargs) -> None:
+    """Zapamiętuje poprzedni status, żeby wykryć wejście w `delivered`.
+
+    Zapytanie tylko wtedy, gdy zapis wprowadza `delivered` — to jedyne
+    przejście, które coś uruchamia; reszta zapisów nie płaci za sprawdzenie.
+    """
+    instance._previous_status = None  # type: ignore[attr-defined]
+    if instance.pk and instance.status == OrderStatus.DELIVERED:
+        instance._previous_status = (  # type: ignore[attr-defined]
+            Order.objects.filter(pk=instance.pk)
+            .values_list("status", flat=True)
+            .first()
+        )
+
+
+@receiver(post_save, sender=Order, dispatch_uid="orders_grant_premium_on_delivery")
+def _grant_premium_on_delivery(sender, instance: Order, **kwargs) -> None:
+    """Dostarczone zamówienie liczy się do progu premium (`CONTEXT.md`, Membership).
+
+    Zamówienie gościa nie ma komu nadać premium — członkostwo mieszka na
+    profilu konta. Nadanie czeka na `on_commit`: sygnał nie ma pewności, że
+    wywołujący jest w transakcji, a licząc próg zaraz po `save()`, mógłby
+    zobaczyć zamówienie, które i tak zostanie wycofane przez rollback.
+
+    Sygnał wisi na `Model.save()`, więc `Order.objects.filter(...).update()`
+    i `bulk_update()` go omijają — status zmieniony tą drogą nie nalicza
+    premium. W tym kodzie jedyna droga do `delivered` to `save()`
+    (`transition_to()` albo panel admina), więc to nie jest luka, dopóki
+    nikt nie doda masowej zmiany statusu.
+    """
+    previous_status = getattr(instance, "_previous_status", None)
+    if (
+        instance.status == OrderStatus.DELIVERED
+        and previous_status != OrderStatus.DELIVERED
+        and instance.user_id is not None  # type: ignore[missing-attribute]
+    ):
+        from apps.accounts.services.membership_service import (
+            grant_premium_if_eligible,
+        )
+
+        transaction.on_commit(
+            lambda: grant_premium_if_eligible(instance.user)  # type: ignore[bad-argument-type]
+        )

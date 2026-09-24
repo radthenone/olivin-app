@@ -18,6 +18,12 @@ FREE_SHIPPING_THRESHOLD: int | None = (
     int(_free_shipping_threshold) if _free_shipping_threshold else None
 )
 
+# Próg wartości dostarczonych zamówień nadający premium, bezterminowo
+# (`CONTEXT.md`, Membership; ADR 0023). Grosze, PLN.
+PREMIUM_MEMBERSHIP_THRESHOLD = int(
+    os.environ.get("PREMIUM_MEMBERSHIP_THRESHOLD", "500000")
+)
+
 # Sprzedawca na dokumentach sprzedaży (ADR 0026). Jeden sklep, jedna firma —
 # stąd ustawienie, a nie model. Pusta wartość zostawia pole puste na wydruku.
 SELLER_NAME = os.environ.get("SELLER_NAME", "Olivin")
