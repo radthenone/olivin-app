@@ -42,6 +42,31 @@ class TestPaidTotal:
 
         assert paid_total(user) == Money(100000)
 
+    def test_excludes_coupon_covered_part(self):
+        """Kupon jest zapłatą (ADR 0011/0014) — pokryta nim część to nie „zapłacone”."""
+        user = UserFactory()
+        order = OrderFactory(
+            user=user,
+            status=OrderStatus.DELIVERED,
+            discount_amount=10000,
+            coupon_amount=30000,
+        )
+        OrderItemFactory(order=order, unit_price=100000, quantity=1)
+
+        assert paid_total(user) == Money(60000)
+
+    def test_coupon_covering_everything_floors_at_zero(self):
+        user = UserFactory()
+        order = OrderFactory(
+            user=user,
+            status=OrderStatus.DELIVERED,
+            discount_amount=0,
+            coupon_amount=100000,
+        )
+        OrderItemFactory(order=order, unit_price=100000, quantity=1)
+
+        assert paid_total(user) == Money.zero()
+
     def test_excludes_returned_orders(self):
         user = UserFactory()
         returned = OrderFactory(user=user, status=OrderStatus.RETURNED)

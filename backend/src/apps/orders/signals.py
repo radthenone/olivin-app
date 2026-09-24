@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from allauth.account.signals import email_confirmed
+from django.db import transaction
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
@@ -46,7 +47,15 @@ def _grant_premium_on_delivery(sender, instance: Order, **kwargs) -> None:
     """Dostarczone zamówienie liczy się do progu premium (`CONTEXT.md`, Membership).
 
     Zamówienie gościa nie ma komu nadać premium — członkostwo mieszka na
-    profilu konta.
+    profilu konta. Nadanie czeka na `on_commit`: sygnał nie ma pewności, że
+    wywołujący jest w transakcji, a licząc próg zaraz po `save()`, mógłby
+    zobaczyć zamówienie, które i tak zostanie wycofane przez rollback.
+
+    Sygnał wisi na `Model.save()`, więc `Order.objects.filter(...).update()`
+    i `bulk_update()` go omijają — status zmieniony tą drogą nie nalicza
+    premium. W tym kodzie jedyna droga do `delivered` to `save()`
+    (`transition_to()` albo panel admina), więc to nie jest luka, dopóki
+    nikt nie doda masowej zmiany statusu.
     """
     previous_status = getattr(instance, "_previous_status", None)
     if (
@@ -58,4 +67,6 @@ def _grant_premium_on_delivery(sender, instance: Order, **kwargs) -> None:
             grant_premium_if_eligible,
         )
 
-        grant_premium_if_eligible(instance.user)  # type: ignore[bad-argument-type]
+        transaction.on_commit(
+            lambda: grant_premium_if_eligible(instance.user)  # type: ignore[bad-argument-type]
+        )

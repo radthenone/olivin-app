@@ -24,7 +24,12 @@ def is_premium(user: CustomUser | None) -> bool:
 
 
 def paid_total(user: CustomUser) -> Money:
-    """Suma zapłacona za dostarczone zamówienia: po rabatach, bez dostawy, bez zwróconych.
+    """Suma faktycznie zapłacona za dostarczone zamówienia, bez dostawy.
+
+    Ta sama formuła co `Order.total` bez dostawy: towar po rabatach i po
+    kuponie, przycięty do zera. Kupon jest formą zapłaty (ADR 0011/0014) —
+    kupon wydany ze zwrotu pochodzi z kwoty już raz policzonej do progu przy
+    poprzednim zamówieniu, więc pokryta nim część nie jest zapłatą drugi raz.
 
     Zamówienie zwrócone ma status `returned`, nie `delivered` — filtr po
     statusie wystarcza, bez osobnego wykluczenia. Liczą się tylko zamówienia
@@ -36,9 +41,11 @@ def paid_total(user: CustomUser) -> Money:
         user=user, status=OrderStatus.DELIVERED, currency=DEFAULT_CURRENCY
     )
     zero = Money.zero(DEFAULT_CURRENCY)
-    return sum(
-        (order.goods_total - order.discount_money for order in orders), start=zero
-    )
+    total = zero
+    for order in orders:
+        goods = order.goods_total - order.discount_money - order.coupon_money
+        total += goods if goods > zero else zero
+    return total
 
 
 def grant_premium_if_eligible(user: CustomUser) -> Profile | None:
