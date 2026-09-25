@@ -103,6 +103,14 @@ class Product(TimestampedModel):
             "wymagana przy produkcie grawerowalnym"
         ),
     )
+    repair_available = models.BooleanField(
+        default=False,
+        help_text="Reklamację wyrobu można załatwić naprawą (`CONTEXT.md`, ReturnReason)",
+    )
+    replacement_available = models.BooleanField(
+        default=False,
+        help_text="Reklamację wyrobu można załatwić wymianą (`CONTEXT.md`, ReturnReason)",
+    )
 
     # Tłumaczenia jako relacja, żeby `prefetch_related` je pobrał
     # razem z obiektem — inaczej każde pole dobijałoby bazę.

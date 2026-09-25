@@ -34,6 +34,10 @@ _TEMPLATES: dict[str, tuple[str, str]] = {
         "Dokument do zamówienia {order_number} gotowy",
         "Dokument {document_kind} do zamówienia {order_number} jest gotowy.",
     ),
+    "return_request_status_changed": (
+        "Zgłoszenie zwrotu do zamówienia {order_number}",
+        "Zgłoszenie zwrotu do zamówienia {order_number} ma teraz stan: {status_label}.",
+    ),
 }
 
 

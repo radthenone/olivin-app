@@ -17,6 +17,10 @@ class NotificationKind(models.TextChoices):
     ORDER_STATUS_CHANGED = "order_status_changed", "Zmiana statusu zamówienia"
     ORDER_PAID = "order_paid", "Zamówienie opłacone"
     DOCUMENT_READY = "document_ready", "Dokument gotowy"
+    RETURN_REQUEST_STATUS_CHANGED = (
+        "return_request_status_changed",
+        "Zmiana stanu zgłoszenia zwrotu",
+    )
 
 
 # Transakcyjne docierają zawsze; rodzaje spoza tego zbioru są marketingowe
@@ -26,6 +30,7 @@ TRANSACTIONAL_KINDS: frozenset[str] = frozenset(
         NotificationKind.ORDER_STATUS_CHANGED,
         NotificationKind.ORDER_PAID,
         NotificationKind.DOCUMENT_READY,
+        NotificationKind.RETURN_REQUEST_STATUS_CHANGED,
     }
 )
 

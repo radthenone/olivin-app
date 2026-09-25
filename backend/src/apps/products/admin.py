@@ -106,6 +106,16 @@ class ProductAdmin(admin.ModelAdmin):
             },
         ),
         (
+            "Reklamacja",
+            {
+                "fields": ("repair_available", "replacement_available"),
+                "description": (
+                    "Zwrot pieniędzy przy reklamacji przysługuje zawsze; naprawę "
+                    "i wymianę klient wybierze tylko wtedy, gdy produkt je dopuszcza."
+                ),
+            },
+        ),
+        (
             "Grawer",
             {
                 "fields": ("is_engravable", "engraving_price"),

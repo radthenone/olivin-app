@@ -1405,6 +1405,165 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaymentIntent'
           description: ''
+  /orders/{number}/return-options/:
+    get:
+      operationId: orders_return_options_list
+      description: Pozycje doręczonego zamówienia z ilością, którą da się jeszcze
+        zwrócić, podstawami otwartymi dziś wraz z terminem (od daty doręczenia) i
+        żądaniami dostępnymi przy reklamacji. Odstąpienie nie obejmuje grawerunku
+        ani produktu na zamówienie. Zamówienie niedoręczone zwraca pustą listę.
+      summary: Formularz zwrotu zamówienia
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+          format: email
+          minLength: 1
+        description: Adres podany przy składaniu zamówienia
+        required: true
+      - in: path
+        name: number
+        schema:
+          type: string
+          pattern: ^[A-Z0-9]+$
+        required: true
+      tags:
+      - Orders
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReturnOption'
+          description: ''
+  /orders/{number}/returns/:
+    get:
+      operationId: orders_returns_list
+      description: Zgłoszenia z decyzją sklepu dla każdej pozycji.
+      summary: Zgłoszenia zwrotu zamówienia
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+          format: email
+          minLength: 1
+        description: Adres podany przy składaniu zamówienia
+        required: true
+      - in: path
+        name: number
+        schema:
+          type: string
+          pattern: ^[A-Z0-9]+$
+        required: true
+      tags:
+      - Orders
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReturnRequest'
+          description: ''
+    post:
+      operationId: orders_returns_create
+      description: Wyłącznie dla zamówienia `delivered`, w terminie wybranej podstawy.
+        Para obrączek wraca w całości. Przy reklamacji każda pozycja wymaga `claimRequest`
+        dopuszczonego przez produkt. Pozycja z grawerunkiem poza reklamacją trafia
+        do stanu `to_agree`. Naruszenie reguł to 400.
+      summary: Zgłoszenie zwrotu
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+          format: email
+          minLength: 1
+        description: Adres podany przy składaniu zamówienia
+        required: true
+      - in: path
+        name: number
+        schema:
+          type: string
+          pattern: ^[A-Z0-9]+$
+        required: true
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReturnRequestCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReturnRequestCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReturnRequestCreate'
+        required: true
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnRequest'
+          description: ''
+  /orders/{number}/returns/{id}/:
+    get:
+      operationId: orders_returns_retrieve
+      description: Jedno zgłoszenie — wyłącznie przez swoje zamówienie.
+      summary: Zgłoszenie zwrotu po identyfikatorze
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+          format: email
+          minLength: 1
+        description: Adres podany przy składaniu zamówienia
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: number
+        schema:
+          type: string
+          pattern: ^[A-Z0-9]+$
+        required: true
+      tags:
+      - Orders
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnRequest'
+          description: ''
   /payments/webhook/:
     post:
       operationId: payments_webhook_create
@@ -2440,6 +2599,16 @@ components:
       - id
       - name
       - slug
+    ClaimRequestEnum:
+      enum:
+      - refund
+      - repair
+      - replacement
+      type: string
+      description: |-
+        * `refund` - Zwrot pieniędzy
+        * `repair` - Naprawa
+        * `replacement` - Wymiana
     ClarityEnum:
       enum:
       - FL
@@ -3402,6 +3571,7 @@ components:
             * `order_status_changed` - Zmiana statusu zamówienia
             * `order_paid` - Zamówienie opłacone
             * `document_ready` - Dokument gotowy
+            * `return_request_status_changed` - Zmiana stanu zgłoszenia zwrotu
         message:
           type: string
           readOnly: true
@@ -3435,11 +3605,13 @@ components:
       - order_status_changed
       - order_paid
       - document_ready
+      - return_request_status_changed
       type: string
       description: |-
         * `order_status_changed` - Zmiana statusu zamówienia
         * `order_paid` - Zamówienie opłacone
         * `document_ready` - Dokument gotowy
+        * `return_request_status_changed` - Zmiana stanu zgłoszenia zwrotu
     NotificationPreference:
       type: object
       description: Zgoda marketingowa klienta, osobno per kanał.
@@ -5107,6 +5279,231 @@ components:
       description: |-
         * `percent` - Procentowa
         * `amount` - Kwotowa
+    ReturnDeadline:
+      type: object
+      description: Otwarta podstawa zwrotu i chwila, do której można z niej skorzystać.
+      properties:
+        reason:
+          allOf:
+          - $ref: '#/components/schemas/ReturnReasonEnum'
+          readOnly: true
+        deadline:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - deadline
+      - reason
+    ReturnItemStatusEnum:
+      enum:
+      - pending
+      - to_agree
+      - accepted
+      - rejected
+      type: string
+      description: |-
+        * `pending` - Oczekuje na rozpatrzenie
+        * `to_agree` - Do uzgodnienia
+        * `accepted` - Uwzględniona
+        * `rejected` - Odrzucona
+    ReturnLineWrite:
+      type: object
+      properties:
+        orderItem:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+        claimRequest:
+          default: ''
+          description: |-
+            Wymagane przy reklamacji, niedozwolone przy innej podstawie
+
+            * `refund` - Zwrot pieniędzy
+            * `repair` - Naprawa
+            * `replacement` - Wymiana
+          oneOf:
+          - $ref: '#/components/schemas/ClaimRequestEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+      required:
+      - orderItem
+      - quantity
+    ReturnOption:
+      type: object
+      description: 'Pozycja w formularzu zwrotu: co, z jakiej podstawy, do kiedy.'
+      properties:
+        orderItem:
+          type: string
+          format: uuid
+          readOnly: true
+        productName:
+          type: string
+          readOnly: true
+        sku:
+          type: string
+          readOnly: true
+        isPair:
+          type: boolean
+          readOnly: true
+          description: Para obrączek wraca w całości — ilość równa kupionej
+        returnableQuantity:
+          type: integer
+          readOnly: true
+          description: Ilość nieobjęta żadnym nieodrzuconym zgłoszeniem
+        deadlines:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReturnDeadline'
+          readOnly: true
+          description: Podstawy, z których pozycję można dziś zwrócić
+        claimRequests:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimRequestEnum'
+          readOnly: true
+          description: Żądania dostępne przy reklamacji tej pozycji
+      required:
+      - claimRequests
+      - deadlines
+      - isPair
+      - orderItem
+      - productName
+      - returnableQuantity
+      - sku
+    ReturnReasonEnum:
+      enum:
+      - withdrawal
+      - complaint
+      - goodwill
+      type: string
+      description: |-
+        * `withdrawal` - Odstąpienie od umowy
+        * `complaint` - Reklamacja
+        * `goodwill` - Zwrot dobrowolny
+    ReturnRequest:
+      type: object
+      description: Zgłoszenie zwrotu w postaci dla klienta.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reason:
+          allOf:
+          - $ref: '#/components/schemas/ReturnReasonEnum'
+          readOnly: true
+          description: |-
+            Podstawa zwrotu — obowiązkowa
+
+            * `withdrawal` - Odstąpienie od umowy
+            * `complaint` - Reklamacja
+            * `goodwill` - Zwrot dobrowolny
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReturnRequestStatusEnum'
+          readOnly: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReturnRequestItem'
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when the record was created
+      required:
+      - createdAt
+      - id
+      - items
+      - reason
+      - status
+    ReturnRequestCreate:
+      type: object
+      properties:
+        reason:
+          $ref: '#/components/schemas/ReturnReasonEnum'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReturnLineWrite'
+      required:
+      - items
+      - reason
+    ReturnRequestItem:
+      type: object
+      description: Pozycja zgłoszenia z decyzją sklepu.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        orderItem:
+          type: string
+          format: uuid
+          readOnly: true
+        productName:
+          type: string
+          readOnly: true
+        sku:
+          type: string
+          readOnly: true
+        quantity:
+          type: integer
+          readOnly: true
+        claimRequest:
+          allOf:
+          - $ref: '#/components/schemas/ClaimRequestEnum'
+          readOnly: true
+          description: |-
+            Żądanie reklamacyjne; puste przy innej podstawie
+
+            * `refund` - Zwrot pieniędzy
+            * `repair` - Naprawa
+            * `replacement` - Wymiana
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReturnItemStatusEnum'
+          readOnly: true
+        decisionNote:
+          type: string
+          readOnly: true
+          description: Uzasadnienie decyzji — obowiązkowe przy odrzuceniu
+        agreedResolution:
+          type: string
+          readOnly: true
+          description: Uzgodniona forma, np. odkup po cenie złomu (pozycja do uzgodnienia)
+        agreedAmount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+          nullable: true
+        decidedAt:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - agreedAmount
+      - agreedResolution
+      - claimRequest
+      - decidedAt
+      - decisionNote
+      - id
+      - orderItem
+      - productName
+      - quantity
+      - sku
+      - status
+    ReturnRequestStatusEnum:
+      enum:
+      - submitted
+      - resolved
+      type: string
+      description: |-
+        * `submitted` - Zgłoszone
+        * `resolved` - Rozpatrzone
     RoleEnum:
       enum:
       - customer

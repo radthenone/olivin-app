@@ -1,9 +1,20 @@
 from django import forms
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.core.exceptions import ValidationError
 from django.db.models import Count, QuerySet
 from django.http import HttpRequest
 
-from apps.orders.models import Cart, CartItem, Order, OrderItem, OrderStatus
+from apps.orders.models import (
+    Cart,
+    CartItem,
+    Order,
+    OrderItem,
+    OrderStatus,
+    ReturnItemStatus,
+    ReturnRequest,
+    ReturnRequestItem,
+)
+from apps.orders.services.returns import decide_return_item, validate_decision
 
 
 class CartItemInline(admin.TabularInline):
@@ -136,6 +147,137 @@ class OrderAdmin(admin.ModelAdmin):
     @admin.display(description="Do zapłaty")
     def total_display(self, obj: Order) -> str:
         return str(obj.total)
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
+
+    def has_delete_permission(self, request: HttpRequest, obj=None) -> bool:
+        return False
+
+
+class ReturnRequestItemForm(forms.ModelForm):
+    """Decyzja o pozycji zgłoszenia — reguły z `validate_decision`, nie z panelu.
+
+    Sprawdzenie w `clean()`, żeby obsługa zobaczyła komunikat przy pozycji,
+    a nie błąd serwera przy zapisie (jak w `OrderAdminForm`).
+    """
+
+    decision = forms.ChoiceField(
+        label="Decyzja",
+        required=False,
+        choices=[
+            ("", "—"),
+            (ReturnItemStatus.ACCEPTED, ReturnItemStatus.ACCEPTED.label),
+            (ReturnItemStatus.REJECTED, ReturnItemStatus.REJECTED.label),
+        ],
+    )
+
+    class Meta:
+        model = ReturnRequestItem
+        fields = ("restocked", "decision_note", "agreed_resolution", "agreed_amount")
+        labels = {"restocked": "Wraca na stan"}
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        # Inline nie ma `get_readonly_fields` per wiersz (dostaje zgłoszenie,
+        # nie pozycję), więc rozstrzygnięty wiersz blokuje się w formularzu:
+        # pole `disabled` pokazuje wartość i ignoruje to, co przyszło w POST.
+        if self.instance.pk is not None and not self.instance.is_open:
+            for field in self.fields.values():
+                field.disabled = True
+
+    def clean(self) -> dict:
+        cleaned = super().clean() or {}
+        if cleaned.get("decision"):
+            try:
+                validate_decision(self.instance, **self.decision_kwargs(cleaned))
+            except ValidationError as error:
+                raise forms.ValidationError(error.messages) from error
+        return cleaned
+
+    @staticmethod
+    def decision_kwargs(cleaned: dict) -> dict:
+        return {
+            "status": cleaned["decision"],
+            "restock": bool(cleaned.get("restocked")),
+            "note": cleaned.get("decision_note") or "",
+            "agreed_resolution": cleaned.get("agreed_resolution") or "",
+            "agreed_amount": cleaned.get("agreed_amount"),
+        }
+
+
+class ReturnRequestItemInline(admin.TabularInline):
+    model = ReturnRequestItem
+    form = ReturnRequestItemForm
+    extra = 0
+    can_delete = False
+    fields = (
+        "order_item",
+        "quantity",
+        "claim_request",
+        "status",
+        "decision",
+        "restocked",
+        "decision_note",
+        "agreed_resolution",
+        "agreed_amount",
+        "decided_at",
+    )
+    readonly_fields = (
+        "order_item",
+        "quantity",
+        "claim_request",
+        "status",
+        "decided_at",
+    )
+
+    def has_add_permission(self, request: HttpRequest, obj=None) -> bool:
+        return False
+
+
+@admin.register(ReturnRequest)
+class ReturnRequestAdmin(admin.ModelAdmin):
+    """Rozpatrywanie zgłoszeń zwrotu — decyzja osobno dla każdej pozycji.
+
+    Zapis pozycji idzie wyłącznie przez `decide_return_item()` (ADR 0021):
+    tam powstaje ruch magazynowy, stan zgłoszenia i powiadomienie. Wiersz
+    bez wybranej decyzji nie zmienia się wcale.
+    """
+
+    inlines = [ReturnRequestItemInline]
+    list_display = ("__str__", "reason", "status", "created_at")
+    list_filter = ("status", "reason", "created_at")
+    search_fields = ("order__number", "order__email")
+    ordering = ("-created_at",)
+    readonly_fields = ("order", "reason", "status")
+
+    def get_queryset(self, request: HttpRequest) -> QuerySet[ReturnRequest]:
+        return super().get_queryset(request).select_related("order")
+
+    def save_formset(self, request, form, formset, change) -> None:
+        if formset.model is not ReturnRequestItem:
+            super().save_formset(request, form, formset, change)
+            return
+        # Historia zmian w panelu czyta te listy, które normalnie wypełnia
+        # `formset.save()` — tu zapis idzie obok niego.
+        formset.new_objects, formset.deleted_objects = [], []
+        formset.changed_objects = []
+        for item_form in formset.forms:
+            if not item_form.cleaned_data.get("decision"):
+                continue
+            try:
+                decide_return_item(
+                    item_form.instance,
+                    **ReturnRequestItemForm.decision_kwargs(item_form.cleaned_data),
+                )
+            except ValidationError as error:
+                # Reguła złamana między walidacją formularza a zapisem, np.
+                # równoległa decyzja o tej samej pozycji — komunikat, nie 500.
+                messages.error(
+                    request, f"{item_form.instance}: {' '.join(error.messages)}"
+                )
+                continue
+            formset.changed_objects.append((item_form.instance, ["status"]))
 
     def has_add_permission(self, request: HttpRequest) -> bool:
         return False

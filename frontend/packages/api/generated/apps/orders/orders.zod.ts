@@ -402,3 +402,149 @@ export const OrdersPaymentCreateQueryParams = zod.object({
   "email": zod.email().min(1).describe('Adres podany przy składaniu zamówienia')
 })
 
+/**
+ * Pozycje doręczonego zamówienia z ilością, którą da się jeszcze zwrócić, podstawami otwartymi dziś wraz z terminem (od daty doręczenia) i żądaniami dostępnymi przy reklamacji. Odstąpienie nie obejmuje grawerunku ani produktu na zamówienie. Zamówienie niedoręczone zwraca pustą listę.
+ * @summary Formularz zwrotu zamówienia
+ */
+export const ordersReturnOptionsListPathNumberRegExp = new RegExp('^[A-Z0-9]+$');
+
+
+export const OrdersReturnOptionsListParams = zod.object({
+  "number": zod.coerce.string().regex(ordersReturnOptionsListPathNumberRegExp)
+})
+
+
+
+
+export const OrdersReturnOptionsListQueryParams = zod.object({
+  "email": zod.email().min(1).describe('Adres podany przy składaniu zamówienia')
+})
+
+export const OrdersReturnOptionsListResponseItem = zod.object({
+  "orderItem": zod.uuid(),
+  "productName": zod.string(),
+  "sku": zod.string(),
+  "isPair": zod.boolean().describe('Para obrączek wraca w całości — ilość równa kupionej'),
+  "returnableQuantity": zod.number().describe('Ilość nieobjęta żadnym nieodrzuconym zgłoszeniem'),
+  "deadlines": zod.array(zod.object({
+  "reason": zod.enum(['withdrawal', 'complaint', 'goodwill']).describe('\* `withdrawal` - Odstąpienie od umowy\n\* `complaint` - Reklamacja\n\* `goodwill` - Zwrot dobrowolny'),
+  "deadline": zod.iso.datetime({"offset":true})
+}).describe('Otwarta podstawa zwrotu i chwila, do której można z niej skorzystać.')).describe('Podstawy, z których pozycję można dziś zwrócić'),
+  "claimRequests": zod.array(zod.enum(['refund', 'repair', 'replacement']).describe('\* `refund` - Zwrot pieniędzy\n\* `repair` - Naprawa\n\* `replacement` - Wymiana')).describe('Żądania dostępne przy reklamacji tej pozycji')
+}).describe('Pozycja w formularzu zwrotu: co, z jakiej podstawy, do kiedy.')
+export const OrdersReturnOptionsListResponse = zod.array(OrdersReturnOptionsListResponseItem)
+
+/**
+ * Zgłoszenia z decyzją sklepu dla każdej pozycji.
+ * @summary Zgłoszenia zwrotu zamówienia
+ */
+export const ordersReturnsListPathNumberRegExp = new RegExp('^[A-Z0-9]+$');
+
+
+export const OrdersReturnsListParams = zod.object({
+  "number": zod.coerce.string().regex(ordersReturnsListPathNumberRegExp)
+})
+
+
+
+
+export const OrdersReturnsListQueryParams = zod.object({
+  "email": zod.email().min(1).describe('Adres podany przy składaniu zamówienia')
+})
+
+export const OrdersReturnsListResponseItem = zod.object({
+  "id": zod.uuid(),
+  "reason": zod.enum(['withdrawal', 'complaint', 'goodwill']).describe('\* `withdrawal` - Odstąpienie od umowy\n\* `complaint` - Reklamacja\n\* `goodwill` - Zwrot dobrowolny').describe('Podstawa zwrotu — obowiązkowa\n\n\* `withdrawal` - Odstąpienie od umowy\n\* `complaint` - Reklamacja\n\* `goodwill` - Zwrot dobrowolny'),
+  "status": zod.enum(['submitted', 'resolved']).describe('\* `submitted` - Zgłoszone\n\* `resolved` - Rozpatrzone'),
+  "items": zod.array(zod.object({
+  "id": zod.uuid(),
+  "orderItem": zod.uuid(),
+  "productName": zod.string(),
+  "sku": zod.string(),
+  "quantity": zod.number(),
+  "claimRequest": zod.enum(['refund', 'repair', 'replacement']).describe('\* `refund` - Zwrot pieniędzy\n\* `repair` - Naprawa\n\* `replacement` - Wymiana').describe('Żądanie reklamacyjne; puste przy innej podstawie\n\n\* `refund` - Zwrot pieniędzy\n\* `repair` - Naprawa\n\* `replacement` - Wymiana'),
+  "status": zod.enum(['pending', 'to_agree', 'accepted', 'rejected']).describe('\* `pending` - Oczekuje na rozpatrzenie\n\* `to_agree` - Do uzgodnienia\n\* `accepted` - Uwzględniona\n\* `rejected` - Odrzucona'),
+  "decisionNote": zod.string().describe('Uzasadnienie decyzji — obowiązkowe przy odrzuceniu'),
+  "agreedResolution": zod.string().describe('Uzgodniona forma, np. odkup po cenie złomu (pozycja do uzgodnienia)'),
+  "agreedAmount": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.').nullable(),
+  "decidedAt": zod.iso.datetime({"offset":true}).nullable()
+}).describe('Pozycja zgłoszenia z decyzją sklepu.')),
+  "createdAt": zod.iso.datetime({"offset":true}).describe('Timestamp when the record was created')
+}).describe('Zgłoszenie zwrotu w postaci dla klienta.')
+export const OrdersReturnsListResponse = zod.array(OrdersReturnsListResponseItem)
+
+/**
+ * Wyłącznie dla zamówienia `delivered`, w terminie wybranej podstawy. Para obrączek wraca w całości. Przy reklamacji każda pozycja wymaga `claimRequest` dopuszczonego przez produkt. Pozycja z grawerunkiem poza reklamacją trafia do stanu `to_agree`. Naruszenie reguł to 400.
+ * @summary Zgłoszenie zwrotu
+ */
+export const ordersReturnsCreatePathNumberRegExp = new RegExp('^[A-Z0-9]+$');
+
+
+export const OrdersReturnsCreateParams = zod.object({
+  "number": zod.coerce.string().regex(ordersReturnsCreatePathNumberRegExp)
+})
+
+
+
+
+export const OrdersReturnsCreateQueryParams = zod.object({
+  "email": zod.email().min(1).describe('Adres podany przy składaniu zamówienia')
+})
+
+
+export const ordersReturnsCreateBodyItemsItemClaimRequestDefault = ``;
+
+export const OrdersReturnsCreateBody = zod.object({
+  "reason": zod.enum(['withdrawal', 'complaint', 'goodwill']).describe('\* `withdrawal` - Odstąpienie od umowy\n\* `complaint` - Reklamacja\n\* `goodwill` - Zwrot dobrowolny'),
+  "items": zod.array(zod.object({
+  "orderItem": zod.uuid(),
+  "quantity": zod.number().min(1),
+  "claimRequest": zod.union([zod.enum(['refund', 'repair', 'replacement']).describe('\* `refund` - Zwrot pieniędzy\n\* `repair` - Naprawa\n\* `replacement` - Wymiana'),zod.enum([''])]).default(ordersReturnsCreateBodyItemsItemClaimRequestDefault).describe('Wymagane przy reklamacji, niedozwolone przy innej podstawie\n\n\* `refund` - Zwrot pieniędzy\n\* `repair` - Naprawa\n\* `replacement` - Wymiana')
+}))
+})
+
+/**
+ * Jedno zgłoszenie — wyłącznie przez swoje zamówienie.
+ * @summary Zgłoszenie zwrotu po identyfikatorze
+ */
+export const ordersReturnsRetrievePathNumberRegExp = new RegExp('^[A-Z0-9]+$');
+
+
+export const OrdersReturnsRetrieveParams = zod.object({
+  "id": zod.uuid(),
+  "number": zod.coerce.string().regex(ordersReturnsRetrievePathNumberRegExp)
+})
+
+
+
+
+export const OrdersReturnsRetrieveQueryParams = zod.object({
+  "email": zod.email().min(1).describe('Adres podany przy składaniu zamówienia')
+})
+
+export const OrdersReturnsRetrieveResponse = zod.object({
+  "id": zod.uuid(),
+  "reason": zod.enum(['withdrawal', 'complaint', 'goodwill']).describe('\* `withdrawal` - Odstąpienie od umowy\n\* `complaint` - Reklamacja\n\* `goodwill` - Zwrot dobrowolny').describe('Podstawa zwrotu — obowiązkowa\n\n\* `withdrawal` - Odstąpienie od umowy\n\* `complaint` - Reklamacja\n\* `goodwill` - Zwrot dobrowolny'),
+  "status": zod.enum(['submitted', 'resolved']).describe('\* `submitted` - Zgłoszone\n\* `resolved` - Rozpatrzone'),
+  "items": zod.array(zod.object({
+  "id": zod.uuid(),
+  "orderItem": zod.uuid(),
+  "productName": zod.string(),
+  "sku": zod.string(),
+  "quantity": zod.number(),
+  "claimRequest": zod.enum(['refund', 'repair', 'replacement']).describe('\* `refund` - Zwrot pieniędzy\n\* `repair` - Naprawa\n\* `replacement` - Wymiana').describe('Żądanie reklamacyjne; puste przy innej podstawie\n\n\* `refund` - Zwrot pieniędzy\n\* `repair` - Naprawa\n\* `replacement` - Wymiana'),
+  "status": zod.enum(['pending', 'to_agree', 'accepted', 'rejected']).describe('\* `pending` - Oczekuje na rozpatrzenie\n\* `to_agree` - Do uzgodnienia\n\* `accepted` - Uwzględniona\n\* `rejected` - Odrzucona'),
+  "decisionNote": zod.string().describe('Uzasadnienie decyzji — obowiązkowe przy odrzuceniu'),
+  "agreedResolution": zod.string().describe('Uzgodniona forma, np. odkup po cenie złomu (pozycja do uzgodnienia)'),
+  "agreedAmount": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.').nullable(),
+  "decidedAt": zod.iso.datetime({"offset":true}).nullable()
+}).describe('Pozycja zgłoszenia z decyzją sklepu.')),
+  "createdAt": zod.iso.datetime({"offset":true}).describe('Timestamp when the record was created')
+}).describe('Zgłoszenie zwrotu w postaci dla klienta.')
+

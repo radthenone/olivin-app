@@ -32,8 +32,15 @@ import type {
   OrdersListParams,
   OrdersPaymentCreateParams,
   OrdersRetrieveParams,
+  OrdersReturnOptionsListParams,
+  OrdersReturnsCreateParams,
+  OrdersReturnsListParams,
+  OrdersReturnsRetrieveParams,
   PaginatedOrderList,
   PaymentIntent,
+  ReturnOption,
+  ReturnRequest,
+  ReturnRequestCreate,
   SalesDocument
 } from '../schemas';
 
@@ -690,3 +697,487 @@ export const useOrdersPaymentCreate = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getOrdersPaymentCreateMutationOptions(options), queryClient);
     }
+    export type ordersReturnOptionsListResponse200 = {
+  data: ReturnOption[]
+  status: 200
+}
+
+export type ordersReturnOptionsListResponseSuccess = (ordersReturnOptionsListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type ordersReturnOptionsListResponse = (ordersReturnOptionsListResponseSuccess)
+
+export const getOrdersReturnOptionsListUrl = (number: string,
+    params: OrdersReturnOptionsListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/orders/${number}/return-options/?${stringifiedParams}` : `/orders/${number}/return-options/`
+}
+
+/**
+ * Pozycje doręczonego zamówienia z ilością, którą da się jeszcze zwrócić, podstawami otwartymi dziś wraz z terminem (od daty doręczenia) i żądaniami dostępnymi przy reklamacji. Odstąpienie nie obejmuje grawerunku ani produktu na zamówienie. Zamówienie niedoręczone zwraca pustą listę.
+ * @summary Formularz zwrotu zamówienia
+ */
+export const ordersReturnOptionsList = async (number: string,
+    params: OrdersReturnOptionsListParams, options?: RequestInit): Promise<ordersReturnOptionsListResponse> => {
+
+  return appInstance<ordersReturnOptionsListResponse>(getOrdersReturnOptionsListUrl(number,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getOrdersReturnOptionsListQueryKey = (number: string,
+    params?: OrdersReturnOptionsListParams,) => {
+    return [
+    `/orders/${number}/return-options/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getOrdersReturnOptionsListQueryOptions = <TData = Awaited<ReturnType<typeof ordersReturnOptionsList>>, TError = ErrorType<unknown>>(number: string,
+    params: OrdersReturnOptionsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersReturnOptionsList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getOrdersReturnOptionsListQueryKey(number,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof ordersReturnOptionsList>>> = ({ signal }) => ordersReturnOptionsList(number,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: number !== null && number !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof ordersReturnOptionsList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type OrdersReturnOptionsListQueryResult = NonNullable<Awaited<ReturnType<typeof ordersReturnOptionsList>>>
+export type OrdersReturnOptionsListQueryError = ErrorType<unknown>
+
+
+export function useOrdersReturnOptionsList<TData = Awaited<ReturnType<typeof ordersReturnOptionsList>>, TError = ErrorType<unknown>>(
+ number: string,
+    params: OrdersReturnOptionsListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersReturnOptionsList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ordersReturnOptionsList>>,
+          TError,
+          Awaited<ReturnType<typeof ordersReturnOptionsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useOrdersReturnOptionsList<TData = Awaited<ReturnType<typeof ordersReturnOptionsList>>, TError = ErrorType<unknown>>(
+ number: string,
+    params: OrdersReturnOptionsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersReturnOptionsList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ordersReturnOptionsList>>,
+          TError,
+          Awaited<ReturnType<typeof ordersReturnOptionsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useOrdersReturnOptionsList<TData = Awaited<ReturnType<typeof ordersReturnOptionsList>>, TError = ErrorType<unknown>>(
+ number: string,
+    params: OrdersReturnOptionsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersReturnOptionsList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Formularz zwrotu zamówienia
+ */
+
+export function useOrdersReturnOptionsList<TData = Awaited<ReturnType<typeof ordersReturnOptionsList>>, TError = ErrorType<unknown>>(
+ number: string,
+    params: OrdersReturnOptionsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersReturnOptionsList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getOrdersReturnOptionsListQueryOptions(number,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+export type ordersReturnsListResponse200 = {
+  data: ReturnRequest[]
+  status: 200
+}
+
+export type ordersReturnsListResponseSuccess = (ordersReturnsListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type ordersReturnsListResponse = (ordersReturnsListResponseSuccess)
+
+export const getOrdersReturnsListUrl = (number: string,
+    params: OrdersReturnsListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/orders/${number}/returns/?${stringifiedParams}` : `/orders/${number}/returns/`
+}
+
+/**
+ * Zgłoszenia z decyzją sklepu dla każdej pozycji.
+ * @summary Zgłoszenia zwrotu zamówienia
+ */
+export const ordersReturnsList = async (number: string,
+    params: OrdersReturnsListParams, options?: RequestInit): Promise<ordersReturnsListResponse> => {
+
+  return appInstance<ordersReturnsListResponse>(getOrdersReturnsListUrl(number,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getOrdersReturnsListQueryKey = (number: string,
+    params?: OrdersReturnsListParams,) => {
+    return [
+    `/orders/${number}/returns/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getOrdersReturnsListQueryOptions = <TData = Awaited<ReturnType<typeof ordersReturnsList>>, TError = ErrorType<unknown>>(number: string,
+    params: OrdersReturnsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersReturnsList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getOrdersReturnsListQueryKey(number,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof ordersReturnsList>>> = ({ signal }) => ordersReturnsList(number,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: number !== null && number !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof ordersReturnsList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type OrdersReturnsListQueryResult = NonNullable<Awaited<ReturnType<typeof ordersReturnsList>>>
+export type OrdersReturnsListQueryError = ErrorType<unknown>
+
+
+export function useOrdersReturnsList<TData = Awaited<ReturnType<typeof ordersReturnsList>>, TError = ErrorType<unknown>>(
+ number: string,
+    params: OrdersReturnsListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersReturnsList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ordersReturnsList>>,
+          TError,
+          Awaited<ReturnType<typeof ordersReturnsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useOrdersReturnsList<TData = Awaited<ReturnType<typeof ordersReturnsList>>, TError = ErrorType<unknown>>(
+ number: string,
+    params: OrdersReturnsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersReturnsList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ordersReturnsList>>,
+          TError,
+          Awaited<ReturnType<typeof ordersReturnsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useOrdersReturnsList<TData = Awaited<ReturnType<typeof ordersReturnsList>>, TError = ErrorType<unknown>>(
+ number: string,
+    params: OrdersReturnsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersReturnsList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Zgłoszenia zwrotu zamówienia
+ */
+
+export function useOrdersReturnsList<TData = Awaited<ReturnType<typeof ordersReturnsList>>, TError = ErrorType<unknown>>(
+ number: string,
+    params: OrdersReturnsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersReturnsList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getOrdersReturnsListQueryOptions(number,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+export type ordersReturnsCreateResponse201 = {
+  data: ReturnRequest
+  status: 201
+}
+
+export type ordersReturnsCreateResponseSuccess = (ordersReturnsCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type ordersReturnsCreateResponse = (ordersReturnsCreateResponseSuccess)
+
+export const getOrdersReturnsCreateUrl = (number: string,
+    params: OrdersReturnsCreateParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/orders/${number}/returns/?${stringifiedParams}` : `/orders/${number}/returns/`
+}
+
+/**
+ * Wyłącznie dla zamówienia `delivered`, w terminie wybranej podstawy. Para obrączek wraca w całości. Przy reklamacji każda pozycja wymaga `claimRequest` dopuszczonego przez produkt. Pozycja z grawerunkiem poza reklamacją trafia do stanu `to_agree`. Naruszenie reguł to 400.
+ * @summary Zgłoszenie zwrotu
+ */
+export const ordersReturnsCreate = async (number: string,
+    returnRequestCreate: ReturnRequestCreate,
+    params: OrdersReturnsCreateParams, options?: RequestInit): Promise<ordersReturnsCreateResponse> => {
+
+  return appInstance<ordersReturnsCreateResponse>(getOrdersReturnsCreateUrl(number,params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(returnRequestCreate)
+  }
+);}
+
+
+
+
+export const getOrdersReturnsCreateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ordersReturnsCreate>>, TError,{number: string;data: BodyType<ReturnRequestCreate>;params: OrdersReturnsCreateParams}, TContext>, request?: SecondParameter<typeof appInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof ordersReturnsCreate>>, TError,{number: string;data: BodyType<ReturnRequestCreate>;params: OrdersReturnsCreateParams}, TContext> => {
+
+const mutationKey = ['ordersReturnsCreate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof ordersReturnsCreate>>, {number: string;data: BodyType<ReturnRequestCreate>;params: OrdersReturnsCreateParams}> = (props) => {
+          const {number,data,params} = props ?? {};
+
+          return  ordersReturnsCreate(number,data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type OrdersReturnsCreateMutationResult = NonNullable<Awaited<ReturnType<typeof ordersReturnsCreate>>>
+    export type OrdersReturnsCreateMutationBody = BodyType<ReturnRequestCreate>
+    export type OrdersReturnsCreateMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Zgłoszenie zwrotu
+ */
+export const useOrdersReturnsCreate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ordersReturnsCreate>>, TError,{number: string;data: BodyType<ReturnRequestCreate>;params: OrdersReturnsCreateParams}, TContext>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof ordersReturnsCreate>>,
+        TError,
+        {number: string;data: BodyType<ReturnRequestCreate>;params: OrdersReturnsCreateParams},
+        TContext
+      > => {
+      return useMutation(getOrdersReturnsCreateMutationOptions(options), queryClient);
+    }
+    export type ordersReturnsRetrieveResponse200 = {
+  data: ReturnRequest
+  status: 200
+}
+
+export type ordersReturnsRetrieveResponseSuccess = (ordersReturnsRetrieveResponse200) & {
+  headers: Headers;
+};
+;
+
+export type ordersReturnsRetrieveResponse = (ordersReturnsRetrieveResponseSuccess)
+
+export const getOrdersReturnsRetrieveUrl = (number: string,
+    id: string,
+    params: OrdersReturnsRetrieveParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/orders/${number}/returns/${id}/?${stringifiedParams}` : `/orders/${number}/returns/${id}/`
+}
+
+/**
+ * Jedno zgłoszenie — wyłącznie przez swoje zamówienie.
+ * @summary Zgłoszenie zwrotu po identyfikatorze
+ */
+export const ordersReturnsRetrieve = async (number: string,
+    id: string,
+    params: OrdersReturnsRetrieveParams, options?: RequestInit): Promise<ordersReturnsRetrieveResponse> => {
+
+  return appInstance<ordersReturnsRetrieveResponse>(getOrdersReturnsRetrieveUrl(number,id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getOrdersReturnsRetrieveQueryKey = (number: string,
+    id: string,
+    params?: OrdersReturnsRetrieveParams,) => {
+    return [
+    `/orders/${number}/returns/${id}/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getOrdersReturnsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof ordersReturnsRetrieve>>, TError = ErrorType<unknown>>(number: string,
+    id: string,
+    params: OrdersReturnsRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersReturnsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getOrdersReturnsRetrieveQueryKey(number,id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof ordersReturnsRetrieve>>> = ({ signal }) => ordersReturnsRetrieve(number,id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: number !== null && number !== undefined && id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof ordersReturnsRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type OrdersReturnsRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof ordersReturnsRetrieve>>>
+export type OrdersReturnsRetrieveQueryError = ErrorType<unknown>
+
+
+export function useOrdersReturnsRetrieve<TData = Awaited<ReturnType<typeof ordersReturnsRetrieve>>, TError = ErrorType<unknown>>(
+ number: string,
+    id: string,
+    params: OrdersReturnsRetrieveParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersReturnsRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ordersReturnsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof ordersReturnsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useOrdersReturnsRetrieve<TData = Awaited<ReturnType<typeof ordersReturnsRetrieve>>, TError = ErrorType<unknown>>(
+ number: string,
+    id: string,
+    params: OrdersReturnsRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersReturnsRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof ordersReturnsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof ordersReturnsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useOrdersReturnsRetrieve<TData = Awaited<ReturnType<typeof ordersReturnsRetrieve>>, TError = ErrorType<unknown>>(
+ number: string,
+    id: string,
+    params: OrdersReturnsRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersReturnsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Zgłoszenie zwrotu po identyfikatorze
+ */
+
+export function useOrdersReturnsRetrieve<TData = Awaited<ReturnType<typeof ordersReturnsRetrieve>>, TError = ErrorType<unknown>>(
+ number: string,
+    id: string,
+    params: OrdersReturnsRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof ordersReturnsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getOrdersReturnsRetrieveQueryOptions(number,id,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+

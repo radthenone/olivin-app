@@ -91,6 +91,10 @@ SPECTACULAR_SETTINGS = {
         "SalesDocumentKindEnum": "apps.orders.models.document.SalesDocumentKind",
         "PromotionKindEnum": "apps.promotions.models.PromotionKind",
         "NotificationKindEnum": "apps.notifications.models.NotificationKind",
+        "ReturnReasonEnum": "apps.orders.models.returns.ReturnReason",
+        "ClaimRequestEnum": "apps.orders.models.returns.ClaimRequest",
+        "ReturnRequestStatusEnum": "apps.orders.models.returns.ReturnRequestStatus",
+        "ReturnItemStatusEnum": "apps.orders.models.returns.ReturnItemStatus",
         # Stan zdrowia to `ChoiceField` z listą wartości, bez klasy `Choices`,
         # więc wpisujemy same wartości. Bez tego kolizja z `Order.status`
         # przemianowała go na `HealthCheckResponseStatusEnum` i zmieniła
