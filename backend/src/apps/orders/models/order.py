@@ -319,6 +319,7 @@ class Order(TimestampedModel):
     def save(self, *args, **kwargs) -> None:
         # W `save()`, nie tylko w `transition_to()`: panel admina zapisuje
         # status wprost, a data ma powstać tak samo każdą drogą (#193).
+        # Działa przy każdym zapisie `delivered` z pustą datą, nie tylko przy przejściu.
         if self.status == OrderStatus.DELIVERED and self.delivered_at is None:
             self.delivered_at = timezone.now()
             if kwargs.get("update_fields") is not None:
