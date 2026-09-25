@@ -7,14 +7,6 @@ dotyczy, co blokuje, kto rozstrzyga i jakie są opcje.
 Gdy decyzja zapada, jej uzasadnienie trafia do `docs/adr/`, a pozycja znika
 stąd. Gdy praca odłożona rusza, wraca na tracker jako zadanie z zakresem.
 
-## Stan modelu w chwili pisania
-
-Aplikacje `products` i `orders` są pustymi szkieletami po `startapp`. Decyzje
-zapisane w ADR-ach opisują model, który dopiero powstanie — żaden z nich nie
-jest jeszcze zaimplementowany.
-
----
-
 ## Pomysły na przyszłość
 
 Oznaczone na trackerze etykietą `future-idea`. Nie są zaplanowaną pracą — są

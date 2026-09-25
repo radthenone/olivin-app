@@ -35,7 +35,7 @@ Zweryfikowano: 2026-09-11.
 
 **Puste szkielety po `startapp` — dziewięć linii kodu każdy, zero modeli, zero migracji:**
 
-`discounts`, `reviews`, `notifications`
+`reviews`, `notifications`
 
 Nie zakładaj, że którakolwiek z nich cokolwiek zawiera. `Cart`, `Order`, `Payment`, stan magazynowy i rezerwacje już są.
 
