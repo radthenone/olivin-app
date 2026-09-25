@@ -202,7 +202,7 @@ class OrderViewSet(
     @action(
         detail=True,
         methods=["get"],
-        url_path=r"returns/(?P<id>[0-9a-f-]{36})",
+        url_path=r"returns/(?P<id>[0-9a-fA-F-]{36})",
         url_name="return-detail",
         pagination_class=None,
     )

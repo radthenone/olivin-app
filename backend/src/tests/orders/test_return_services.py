@@ -63,26 +63,26 @@ class TestReturnDeadlines:
         [
             (
                 ReturnReason.WITHDRAWAL,
-                "2027-03-15 12:00:00+01:00",
-                "2027-03-15 12:00:01+01:00",
+                "2027-03-15 23:59:59+01:00",
+                "2027-03-16 00:00:00+01:00",
             ),
             (
                 ReturnReason.GOODWILL,
-                # Terminy liczone w UTC: zmiana czasu 28 marca go nie przesuwa.
-                "2027-03-31 11:00:00+00:00",
-                "2027-03-31 11:00:01+00:00",
+                # Po zmianie czasu 28 marca koniec dnia liczy się w CEST.
+                "2027-03-31 23:59:59+02:00",
+                "2027-04-01 00:00:00+02:00",
             ),
             (
                 ReturnReason.COMPLAINT,
-                "2029-03-01 12:00:00+01:00",
-                "2029-03-01 12:00:01+01:00",
+                "2029-03-01 23:59:59+01:00",
+                "2029-03-02 00:00:00+01:00",
             ),
         ],
     )
     def test_request_allowed_until_deadline_and_rejected_after(
         self, reason, last_moment, too_late
     ):
-        """Zgłoszenie przechodzi w ostatniej chwili terminu, sekundę później nie."""
+        """Termin trwa do końca ostatniego dnia czasu polskiego, nie co do sekundy."""
         order = _delivered_order()
         item = _item(order)
         claim = ClaimRequest.REFUND if reason == ReturnReason.COMPLAINT else ""
@@ -96,6 +96,19 @@ class TestReturnDeadlines:
 
         assert request.reason == reason
 
+    def test_evening_delivery_counts_polish_calendar_day(self):
+        """Doręczenie o 23:30 czasu polskiego (22:30 UTC) liczy się od tego dnia."""
+        with freeze_time("2027-03-01 22:30:00+00:00"):
+            order = OrderFactory(status=OrderStatus.DELIVERED)
+        item = _item(order)
+
+        with freeze_time("2027-03-16 00:00:00+01:00"), pytest.raises(ValidationError):
+            _request(order, ReturnReason.WITHDRAWAL, ReturnLine(item, 1))
+        with freeze_time("2027-03-15 23:59:59+01:00"):
+            request = _request(order, ReturnReason.WITHDRAWAL, ReturnLine(item, 1))
+
+        assert request.reason == ReturnReason.WITHDRAWAL
+
     def test_complaint_deadline_is_two_calendar_years_from_leap_day(self):
         """Doręczenie 29 lutego: termin reklamacji kończy się 28 lutego."""
         with freeze_time("2028-02-29 10:00:00+01:00"):
@@ -107,6 +120,20 @@ class TestReturnDeadlines:
         deadline = options[0].deadlines[ReturnReason.COMPLAINT]
         assert (deadline.year, deadline.month, deadline.day) == (2030, 2, 28)
         assert item.pk == options[0].item.pk
+
+    def test_options_count_taken_quantity_in_one_query(
+        self, django_assert_max_num_queries
+    ):
+        """Ilość do zwrotu dla wszystkich pozycji bez zapytania na pozycję."""
+        order = _delivered_order()
+        items = [_item(order, quantity=2) for _ in range(3)]
+        with freeze_time("2027-03-02"):
+            _request(order, ReturnReason.GOODWILL, ReturnLine(items[0], 1))
+
+        with freeze_time("2027-03-03"), django_assert_max_num_queries(2):
+            options = return_options(order)
+
+        assert [option.returnable_quantity for option in options] == [1, 2, 2]
 
     def test_options_list_only_reasons_still_open(self):
         """Po 14 dniach formularz nie proponuje już odstąpienia."""
@@ -466,6 +493,47 @@ class TestItemDecision:
         assert request.status == ReturnRequestStatus.RESOLVED
         order.refresh_from_db()
         assert order.status == OrderStatus.DELIVERED
+
+    def test_last_decision_resolves_request_and_returns_order(self):
+        """Ostatnia decyzja rozstrzyga zgłoszenie i przenosi zamówienie w `returned`."""
+        order = _delivered_order()
+        request = self._goodwill(order, _item(order), _item(order))
+        first, second = request.items.order_by("id")
+
+        decide_return_item(first, status=ReturnItemStatus.ACCEPTED)
+        order.refresh_from_db()
+        assert order.status == OrderStatus.DELIVERED
+
+        decide_return_item(second, status=ReturnItemStatus.ACCEPTED)
+        request.refresh_from_db()
+        order.refresh_from_db()
+        assert request.status == ReturnRequestStatus.RESOLVED
+        assert order.status == OrderStatus.RETURNED
+
+    @pytest.mark.parametrize(
+        ("engraved", "status", "note"),
+        [
+            (False, ReturnItemStatus.ACCEPTED, ""),
+            (True, ReturnItemStatus.REJECTED, "Brak porozumienia"),
+        ],
+    )
+    def test_agreement_fields_only_when_accepting_item_to_agree(
+        self, engraved, status, note
+    ):
+        """Forma i kwota uzgodnienia należą wyłącznie do przyjęcia „do uzgodnienia”."""
+        order = _delivered_order()
+        engraving = {"engraving_text": "Na zawsze", "engraving_price": 5000}
+        item = _item(order, **(engraving if engraved else {}))
+        request = self._goodwill(order, item)
+
+        with pytest.raises(ValidationError):
+            decide_return_item(
+                request.items.get(),
+                status=status,
+                note=note,
+                agreed_resolution="Odkup po cenie złomu",
+                agreed_amount=30000,
+            )
 
     def test_order_returned_when_accepted_returns_cover_all_items(self):
         """Zamówienie przechodzi w `returned`, gdy wróciło wszystko."""

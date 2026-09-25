@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 from django.db.models import Count, QuerySet
 from django.http import HttpRequest
@@ -177,6 +177,15 @@ class ReturnRequestItemForm(forms.ModelForm):
         fields = ("restocked", "decision_note", "agreed_resolution", "agreed_amount")
         labels = {"restocked": "Wraca na stan"}
 
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        # Inline nie ma `get_readonly_fields` per wiersz (dostaje zgłoszenie,
+        # nie pozycję), więc rozstrzygnięty wiersz blokuje się w formularzu:
+        # pole `disabled` pokazuje wartość i ignoruje to, co przyszło w POST.
+        if self.instance.pk is not None and not self.instance.is_open:
+            for field in self.fields.values():
+                field.disabled = True
+
     def clean(self) -> dict:
         cleaned = super().clean() or {}
         if cleaned.get("decision"):
@@ -254,12 +263,21 @@ class ReturnRequestAdmin(admin.ModelAdmin):
         formset.new_objects, formset.deleted_objects = [], []
         formset.changed_objects = []
         for item_form in formset.forms:
-            if item_form.cleaned_data.get("decision"):
+            if not item_form.cleaned_data.get("decision"):
+                continue
+            try:
                 decide_return_item(
                     item_form.instance,
                     **ReturnRequestItemForm.decision_kwargs(item_form.cleaned_data),
                 )
-                formset.changed_objects.append((item_form.instance, ["status"]))
+            except ValidationError as error:
+                # Reguła złamana między walidacją formularza a zapisem, np.
+                # równoległa decyzja o tej samej pozycji — komunikat, nie 500.
+                messages.error(
+                    request, f"{item_form.instance}: {' '.join(error.messages)}"
+                )
+                continue
+            formset.changed_objects.append((item_form.instance, ["status"]))
 
     def has_add_permission(self, request: HttpRequest) -> bool:
         return False

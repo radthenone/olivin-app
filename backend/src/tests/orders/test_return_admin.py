@@ -2,13 +2,20 @@
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import pytest
+from django.core.exceptions import ValidationError
 from django.urls import reverse
 from freezegun import freeze_time
 
 from apps.inventory.models import StockMovement, StockMovementReason
 from apps.orders.models import OrderStatus, ReturnItemStatus, ReturnReason
-from apps.orders.services.returns import ReturnLine, create_return_request
+from apps.orders.services.returns import (
+    ReturnLine,
+    create_return_request,
+    decide_return_item,
+)
 from tests.factories.orders import OrderFactory, OrderItemFactory
 from tests.factories.products import stock
 
@@ -26,7 +33,7 @@ def _goodwill_request(*quantities: int):
     return request
 
 
-def _post(admin_client, request, rows: list[dict]):
+def _post(admin_client, request, rows: list[dict], **kwargs):
     data = {
         "items-TOTAL_FORMS": str(len(rows)),
         "items-INITIAL_FORMS": str(len(rows)),
@@ -40,7 +47,7 @@ def _post(admin_client, request, rows: list[dict]):
         data[f"items-{index}-return_request"] = str(request.pk)
         data.update({f"items-{index}-{key}": value for key, value in row.items()})
     url = reverse("admin:orders_returnrequest_change", args=[request.pk])
-    return admin_client.post(url, data)
+    return admin_client.post(url, data, **kwargs)
 
 
 @pytest.mark.django_db
@@ -93,3 +100,45 @@ class TestReturnRequestAdmin:
         item = request.items.get()
         assert item.status == ReturnItemStatus.PENDING
         assert item.decision_note == ""
+
+    def test_decided_row_is_read_only(self, admin_client):
+        """Rozstrzygnięta pozycja nie przyjmuje nowej decyzji ani ruchu na stan."""
+        request = _goodwill_request(1, 1)
+        first = request.items.order_by("created_at", "id").first()
+        assert first is not None
+        stock(first.order_item.variant, 3)
+        decide_return_item(first, status=ReturnItemStatus.ACCEPTED)
+
+        response = _post(
+            admin_client,
+            request,
+            [
+                {"decision": ReturnItemStatus.ACCEPTED, "restocked": "on"},
+                {},
+            ],
+        )
+
+        assert response.status_code == 302
+        first.refresh_from_db()
+        assert not first.restocked
+        assert not StockMovement.objects.filter(
+            reason=StockMovementReason.RETURN
+        ).exists()
+
+    def test_rule_broken_at_save_shows_message_not_500(self, admin_client):
+        """Reguła złamana dopiero przy zapisie (np. równoległa decyzja) to komunikat."""
+        request = _goodwill_request(1)
+
+        with patch(
+            "apps.orders.admin.decide_return_item",
+            side_effect=ValidationError({"status": "Pozycja jest już rozstrzygnięta."}),
+        ):
+            response = _post(
+                admin_client,
+                request,
+                [{"decision": ReturnItemStatus.ACCEPTED}],
+                follow=True,
+            )
+
+        assert response.status_code == 200
+        assert "już rozstrzygnięta" in response.content.decode()

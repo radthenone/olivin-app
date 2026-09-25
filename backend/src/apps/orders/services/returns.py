@@ -7,7 +7,7 @@ tu powstaje zgłoszenie i decyzja sklepu, nic więcej.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime, time
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -30,6 +30,7 @@ from apps.orders.models import (
     ReturnRequestStatus,
 )
 from apps.orders.models.returns import COMPLAINT_YEARS, RETURN_PERIODS
+from apps.orders.services.document import SHOP_TIME_ZONE
 
 
 @dataclass(frozen=True)
@@ -60,20 +61,28 @@ class ReturnOption:
 
 
 def return_deadline(order: Order, reason: str) -> datetime:
-    """Koniec terminu danej podstawy, liczony od doręczenia.
+    """Koniec terminu danej podstawy: ostatnia chwila ostatniego dnia.
 
-    Reklamacja to dwa lata kalendarzowe: doręczenie 29 lutego kończy termin
-    28 lutego, a nie przesuwa go o dzień przez rok przestępny.
+    Termin ustawowy liczy się w dniach kalendarzowych czasu polskiego, nie co
+    do sekundy od doręczenia — doręczenie o 23:30 zaczyna bieg tego dnia,
+    a klient ma czas do końca dnia ostatniego. Reklamacja to dwa lata
+    kalendarzowe: doręczenie 29 lutego kończy termin 28 lutego.
     """
     delivered_at = order.delivered_at
     assert delivered_at is not None
-    if reason != ReturnReason.COMPLAINT:
-        return delivered_at + RETURN_PERIODS[reason]
-    year = delivered_at.year + COMPLAINT_YEARS
+    delivered_on = delivered_at.astimezone(SHOP_TIME_ZONE).date()
+    if reason == ReturnReason.COMPLAINT:
+        last_day = _add_years(delivered_on, COMPLAINT_YEARS)
+    else:
+        last_day = delivered_on + RETURN_PERIODS[reason]
+    return datetime.combine(last_day, time.max, tzinfo=SHOP_TIME_ZONE)
+
+
+def _add_years(day: date, years: int) -> date:
     try:
-        return delivered_at.replace(year=year)
+        return day.replace(year=day.year + years)
     except ValueError:
-        return delivered_at.replace(year=year, day=28)
+        return day.replace(year=day.year + years, day=28)
 
 
 def is_engraved(item: OrderItem) -> bool:
@@ -96,14 +105,15 @@ def claim_requests_for(item: OrderItem) -> list[str]:
     return claims
 
 
-def returnable_quantity(item: OrderItem) -> int:
-    """Ilość pozycji nieobjęta żadnym nieodrzuconym zgłoszeniem."""
-    taken = (
-        ReturnRequestItem.objects.filter(order_item=item)
+def taken_quantities(order: Order) -> dict:
+    """Ilość każdej pozycji objęta nieodrzuconymi zgłoszeniami — jednym zapytaniem."""
+    return dict(
+        ReturnRequestItem.objects.filter(return_request__order=order)
         .exclude(status=ReturnItemStatus.REJECTED)
-        .aggregate(total=Sum("quantity"))["total"]
+        .values_list("order_item")
+        .annotate(total=Sum("quantity"))
+        .order_by()
     )
-    return item.quantity - (taken or 0)
 
 
 def return_options(order: Order, *, now: datetime | None = None) -> list[ReturnOption]:
@@ -111,6 +121,7 @@ def return_options(order: Order, *, now: datetime | None = None) -> list[ReturnO
     if order.status != OrderStatus.DELIVERED or order.delivered_at is None:
         return []
     now = now or timezone.now()
+    taken = taken_quantities(order)
     options = []
     for item in order.items.select_related("variant__product"):  # type: ignore[missing-attribute]
         deadlines: dict[str, datetime] = {
@@ -122,7 +133,7 @@ def return_options(order: Order, *, now: datetime | None = None) -> list[ReturnO
         options.append(
             ReturnOption(
                 item=item,
-                returnable_quantity=returnable_quantity(item),
+                returnable_quantity=item.quantity - taken.get(item.pk, 0),
                 deadlines=deadlines,
                 claim_requests=claim_requests_for(item),
             )
@@ -190,6 +201,18 @@ def validate_decision(
                 )
             }
         )
+    agreeing = (
+        status == ReturnItemStatus.ACCEPTED and item.status == ReturnItemStatus.TO_AGREE
+    )
+    if not agreeing and (agreed_resolution.strip() or agreed_amount is not None):
+        raise ValidationError(
+            {
+                "agreed_resolution": (
+                    "Formę i kwotę wpisuje się wyłącznie przy przyjęciu pozycji "
+                    "do uzgodnienia."
+                )
+            }
+        )
     if restock and status != ReturnItemStatus.ACCEPTED:
         raise ValidationError(
             {"restocked": "Na stan wraca wyłącznie przyjęta pozycja."}
@@ -215,10 +238,17 @@ def decide_return_item(
 ) -> ReturnRequestItem:
     """Rozstrzyga pozycję zgłoszenia; przyjęta może wrócić na stan.
 
-    Wiersz jest blokowany i sprawdzany ponownie w transakcji — dwie decyzje
-    naraz zapisałyby dwa ruchy `return` za ten sam towar.
+    Najpierw blokada zamówienia (ta sama kolejność co w
+    `create_return_request`), potem pozycji. Bez niej równoległe decyzje
+    o różnych pozycjach nie widzą się nawzajem: każda zastaje drugą otwartą
+    i zgłoszenie zostaje `submitted`, a zamówienie nie przechodzi w
+    `returned`. Blokada pozycji chroni przed dwoma ruchami `return` za ten
+    sam towar.
     """
     with transaction.atomic():
+        order = Order.objects.select_for_update(of=("self",)).get(
+            return_requests__items=item
+        )
         item = ReturnRequestItem.objects.select_for_update().get(pk=item.pk)
         validate_decision(
             item,
@@ -238,7 +268,7 @@ def decide_return_item(
         if restock:
             _restock(item)
         _resolve_request_if_decided(item.return_request)
-        _mark_order_returned_if_complete(item.return_request.order)
+        _mark_order_returned_if_complete(order)
     return item
 
 
@@ -272,15 +302,16 @@ def _validate_request(order: Order, reason: str, lines: list[ReturnLine]) -> Non
     item_ids = [line.order_item.pk for line in lines]
     if len(set(item_ids)) != len(item_ids):
         raise ValidationError({"items": "Każda pozycja może wystąpić raz."})
+    taken = taken_quantities(order)
     for line in lines:
-        _validate_line(order, reason, line)
+        _validate_line(order, reason, line, taken)
 
 
-def _validate_line(order: Order, reason: str, line: ReturnLine) -> None:
+def _validate_line(order: Order, reason: str, line: ReturnLine, taken: dict) -> None:
     item = line.order_item
     if item.order_id != order.pk:  # type: ignore[missing-attribute]
         raise ValidationError({"items": "Pozycja nie należy do tego zamówienia."})
-    left = returnable_quantity(item)
+    left = item.quantity - taken.get(item.pk, 0)
     if not 1 <= line.quantity <= left:
         raise ValidationError(
             {"items": f"Pozycję {item.sku} można zwrócić w ilości od 1 do {left}."}
