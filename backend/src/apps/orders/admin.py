@@ -268,10 +268,12 @@ class ReturnRequestAdmin(admin.ModelAdmin):
         self, request: HttpRequest, queryset: QuerySet[ReturnRequest]
     ) -> None:
         """Pieniądze oddane przelewem po odmowie operatora (ADR 0031)."""
-        done = queryset.filter(refund_status=ReturnRefundStatus.MANUAL).update(
-            refund_status=ReturnRefundStatus.MANUAL_DONE
-        )
-        self.message_user(request, f"Oznaczono przelewy: {done}.")
+        manual = list(queryset.filter(refund_status=ReturnRefundStatus.MANUAL))
+        for return_request in manual:
+            return_request.refund_status = ReturnRefundStatus.MANUAL_DONE
+            return_request.save(update_fields=["refund_status", "updated_at"])
+            self.log_change(request, return_request, "Przelew zwrotu wykonany ręcznie")
+        self.message_user(request, f"Oznaczono przelewy: {len(manual)}.")
 
     def get_queryset(self, request: HttpRequest) -> QuerySet[ReturnRequest]:
         return super().get_queryset(request).select_related("order")

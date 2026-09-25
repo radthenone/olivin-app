@@ -13,6 +13,14 @@ class PaymentProviderError(Exception):
     """Operator odmówił albo nie odpowiedział — klient może spróbować ponownie."""
 
 
+class PaymentProviderDeclined(PaymentProviderError):
+    """Jednoznaczna odmowa operatora — ponowienie tym samym zleceniem nic nie da.
+
+    Odróżnia „nie” od „nie wiadomo”: po przekroczeniu czasu operator mógł
+    zlecenie wykonać, więc sklep nie może wtedy założyć, że pieniądze nie wyszły.
+    """
+
+
 class EventKind(StrEnum):
     """Rodzaj zdarzenia operatora sprowadzony do tego, co sklep rozróżnia.
 
@@ -49,6 +57,7 @@ class ProviderEvent:
     type: str
     intent_id: str = ""
     refund_id: str = ""
+    metadata: dict = field(default_factory=dict)
     payload: dict = field(default_factory=dict)
 
 
@@ -72,9 +81,18 @@ class PaymentProvider(Protocol):
     ) -> Intent: ...
 
     def refund(
-        self, intent_id: str, *, idempotency_key: str, amount: int | None = None
+        self,
+        intent_id: str,
+        *,
+        idempotency_key: str,
+        amount: int | None = None,
+        metadata: dict[str, str] | None = None,
     ) -> str:
-        """Zleca zwrot; bez `amount` — całej płatności, z nim — części."""
+        """Zleca zwrot; bez `amount` — całej płatności, z nim — części.
+
+        `metadata` wraca w zdarzeniach zwrotu — pozwala rozpoznać zwrot, którego
+        identyfikatora sklep nie zdążył zapisać.
+        """
         ...
 
     def verify_signature(self, payload: bytes, signature: str) -> ProviderEvent: ...

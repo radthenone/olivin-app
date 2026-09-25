@@ -17,6 +17,7 @@ from apps.orders.services import consume_stock, mark_paid, release_reservations
 from apps.payments.models import Payment, PaymentStatus, RefundReason, WebhookEvent
 from core.integrations.payments import (
     EventKind,
+    PaymentProviderDeclined,
     PaymentProviderError,
     ProviderEvent,
     get_provider,
@@ -155,16 +156,28 @@ def handle_event(event: ProviderEvent) -> bool:
     return True
 
 
-def refund_return(request: ReturnRequest) -> None:
+@transaction.atomic
+def refund_return(request_id: object) -> None:
     """Zleca zwrot pieniężnej części rozliczenia zgłoszenia (ADR 0031).
 
-    Zwrot częściowy tej samej płatności — sama płatność nie zmienia stanu,
-    stan zwrotu nosi zgłoszenie. Odmowa operatora albo brak płatności, z której
-    dałoby się oddać tę kwotę, przenosi zgłoszenie do zwrotu ręcznego: sklep
-    robi przelew i oznacza go w panelu. Płatność czytana bez blokady —
-    zdarzenia operatora blokują ją przed zamówieniem, rozliczenie odwrotnie.
+    Woła je zadanie po zatwierdzeniu rozliczenia — zwrot u operatora nie może
+    wyjść z transakcji, która potem się cofnie. Zwrot częściowy tej samej
+    płatności: sama płatność nie zmienia stanu, stan zwrotu nosi zgłoszenie.
+
+    Jednoznaczna odmowa operatora albo brak płatności, z której dałoby się
+    oddać tę kwotę, przenosi zgłoszenie do zwrotu ręcznego. Brak odpowiedzi
+    zostawia `pending` i rzuca wyjątek: zadanie ponawia tym samym kluczem
+    idempotencji, bo operator mógł zwrot już wykonać — przelew ręczny
+    oznaczałby wtedy podwójną wypłatę.
+
+    Najpierw blokada zamówienia, jak w `decide_return_item`; płatność czytana
+    bez blokady — zdarzenia operatora blokują ją przed zamówieniem.
     """
-    order = request.order
+    request = ReturnRequest.objects.select_related("order").get(pk=request_id)
+    order = Order.objects.select_for_update().get(pk=request.order_id)  # type: ignore[missing-attribute]
+    request = ReturnRequest.objects.select_for_update().get(pk=request_id)
+    if request.refund_status != ReturnRefundStatus.PENDING or request.refund_id:
+        return
     payment = order.payments.filter(status=PaymentStatus.SUCCEEDED).first()  # type: ignore[missing-attribute]
     already = sum(
         ReturnRequest.objects.filter(
@@ -174,50 +187,57 @@ def refund_return(request: ReturnRequest) -> None:
         .exclude(pk=request.pk)
         .values_list("refund_amount", flat=True)
     )
-    status = ReturnRefundStatus.MANUAL
-    if payment is not None and already + request.refund_amount <= payment.amount:
-        try:
-            request.refund_id = get_provider().refund(
-                payment.intent_id,
-                idempotency_key=f"return-{request.pk}-refund",
-                amount=request.refund_amount,
-            )
-            status = ReturnRefundStatus.PENDING
-        except PaymentProviderError:
-            pass
-    request.refund_status = status
-    request.save(update_fields=["refund_status", "refund_id", "updated_at"])
+    if payment is None or already + request.refund_amount > payment.amount:
+        _set_return_refund(request, ReturnRefundStatus.MANUAL)
+        return
+    try:
+        request.refund_id = get_provider().refund(
+            payment.intent_id,
+            idempotency_key=f"return-{request.pk}-refund",
+            amount=request.refund_amount,
+            metadata={"return_request_id": str(request.pk)},
+        )
+    except PaymentProviderDeclined:
+        _set_return_refund(request, ReturnRefundStatus.MANUAL)
+        return
+    request.save(update_fields=["refund_id", "updated_at"])
 
 
 def _apply_return_refund(event: ProviderEvent, payment: Payment) -> None:
     """Zdarzenie zwrotu za zgłoszenie, nie za całą płatność.
 
-    Blokada zamówienia czeka, aż rozliczenie, które zleciło zwrot, zapisze
-    jego identyfikator — zdarzenie potrafi przyjść przed końcem tamtej
-    transakcji. Zwrot nieznany sklepowi (np. zlecony w panelu operatora)
-    jest pomijany.
+    Zgłoszenie rozpoznaje identyfikator zwrotu albo — gdy sklep nie zdążył go
+    zapisać (brak odpowiedzi operatora przy zleceniu) — `metadata`. Blokada
+    zamówienia czeka, aż zlecenie zapisze identyfikator. Zwrot nieznany
+    sklepowi (np. zlecony w panelu operatora) jest pomijany. Pieniądze, które
+    faktycznie wróciły, wygrywają z oczekującym zwrotem ręcznym.
     """
     Order.objects.select_for_update().get(pk=payment.order_id)  # type: ignore[missing-attribute]
-    request = (
-        ReturnRequest.objects.select_for_update()
-        .filter(refund_id=event.refund_id)
-        .first()
-    )
+    requests = ReturnRequest.objects.select_for_update().filter(order=payment.order_id)  # type: ignore[missing-attribute]
+    request = requests.filter(refund_id=event.refund_id).first()
+    if request is None and (pk := event.metadata.get("return_request_id")):
+        request = requests.filter(pk=pk, refund_id="").first()
     if request is None:
         return
-    if event.kind == EventKind.REFUNDED:
-        new_status = ReturnRefundStatus.REFUNDED
-    elif event.kind == EventKind.REFUND_FAILED:
-        new_status = ReturnRefundStatus.MANUAL
-    else:
-        return
-    if request.refund_status not in (
+    if not request.refund_id:
+        request.refund_id = event.refund_id
+    if event.kind == EventKind.REFUNDED and request.refund_status in (
+        ReturnRefundStatus.PENDING,
+        ReturnRefundStatus.MANUAL,
+    ):
+        _set_return_refund(request, ReturnRefundStatus.REFUNDED)
+    elif event.kind == EventKind.REFUND_FAILED and request.refund_status in (
         ReturnRefundStatus.PENDING,
         ReturnRefundStatus.REFUNDED,
     ):
-        return
-    request.refund_status = new_status
-    request.save(update_fields=["refund_status", "updated_at"])
+        _set_return_refund(request, ReturnRefundStatus.MANUAL)
+    else:
+        request.save(update_fields=["refund_id", "updated_at"])
+
+
+def _set_return_refund(request: ReturnRequest, status: str) -> None:
+    request.refund_status = status
+    request.save(update_fields=["refund_status", "refund_id", "updated_at"])
 
 
 def _apply(kind: EventKind, payment: Payment) -> None:

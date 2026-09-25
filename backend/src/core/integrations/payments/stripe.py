@@ -7,6 +7,7 @@ from core.integrations.payments.base import (
     EventKind,
     Intent,
     InvalidSignature,
+    PaymentProviderDeclined,
     PaymentProviderError,
     ProviderEvent,
 )
@@ -26,7 +27,13 @@ _REFUND_EVENTS = {"refund.created", "refund.updated"}
 _REFUND_STATUS_KINDS = {
     "succeeded": EventKind.REFUNDED,
     "failed": EventKind.REFUND_FAILED,
+    # Anulowany zwrot też nie oddał pieniędzy — prowadzi do zwrotu ręcznego.
+    "canceled": EventKind.REFUND_FAILED,
 }
+
+# Odmowy jednoznaczne: operator na pewno nie wykonał zlecenia. Brak połączenia,
+# limit żądań czy błąd po stronie Stripe to „nie wiadomo” — tam się ponawia.
+_DECLINED_ERRORS = (stripe.CardError, stripe.InvalidRequestError)
 
 
 class StripeProvider:
@@ -70,16 +77,25 @@ class StripeProvider:
         return Intent(id=intent.id, client_secret=intent.client_secret or "")
 
     def refund(
-        self, intent_id: str, *, idempotency_key: str, amount: int | None = None
+        self,
+        intent_id: str,
+        *,
+        idempotency_key: str,
+        amount: int | None = None,
+        metadata: dict[str, str] | None = None,
     ) -> str:
         params: dict = {"payment_intent": intent_id}
         if amount is not None:
             params["amount"] = amount
+        if metadata:
+            params["metadata"] = metadata
         try:
             refund = self._client().v1.refunds.create(
                 params=params,  # type: ignore[bad-argument-type]
                 options={"idempotency_key": idempotency_key},
             )
+        except _DECLINED_ERRORS as error:
+            raise PaymentProviderDeclined(str(error)) from error
         except stripe.StripeError as error:
             raise PaymentProviderError(str(error)) from error
         return refund.id
@@ -107,6 +123,9 @@ class StripeProvider:
             type=event.type,
             intent_id=_intent_id_of(obj),
             refund_id=obj.get("id", "") if obj.get("object") == "refund" else "",
+            metadata=(obj.get("metadata") or {})
+            if obj.get("object") == "refund"
+            else {},
             payload=data,
         )
 

@@ -13,6 +13,7 @@ import pytest
 from core.integrations.payments import (
     EventKind,
     InvalidSignature,
+    PaymentProviderDeclined,
     PaymentProviderError,
     get_provider,
 )
@@ -62,6 +63,7 @@ class TestStripe:
             ("refund.updated", "succeeded", EventKind.REFUNDED),
             ("refund.created", "pending", EventKind.OTHER),
             ("refund.updated", "failed", EventKind.REFUND_FAILED),
+            ("refund.updated", "canceled", EventKind.REFUND_FAILED),
         ],
     )
     def test_zwrot_konczy_dopiero_status_succeeded(
@@ -74,6 +76,7 @@ class TestStripe:
                 "object": "refund",
                 "status": refund_status,
                 "payment_intent": "pi_1",
+                "metadata": {"return_request_id": "rr_1"},
             },
         )
 
@@ -84,6 +87,7 @@ class TestStripe:
         assert event.kind == kind
         assert event.intent_id == "pi_1"
         assert event.refund_id == "re_1"
+        assert event.metadata == {"return_request_id": "rr_1"}
 
     def test_charge_refunded_nie_konczy_zwrotu(self):
         payload = _stripe_event(
@@ -155,6 +159,55 @@ class TestStripe:
                 StripeProvider("sk_test", SECRET).refund(
                     "pi_1", idempotency_key="refund-pi_1"
                 )
+
+    def test_card_error_is_unambiguous_decline(self):
+        """Odrzucenie przez bank to „nie”, nie „nie wiadomo” — bez ponawiania."""
+        import stripe
+
+        client = MagicMock()
+        client.v1.refunds.create.side_effect = stripe.CardError(
+            "card closed", None, "card_declined"
+        )
+
+        with patch("stripe.StripeClient", return_value=client):
+            with pytest.raises(PaymentProviderDeclined):
+                StripeProvider("sk_test", SECRET).refund(
+                    "pi_1", idempotency_key="refund-pi_1"
+                )
+
+    def test_connection_error_is_not_a_decline(self):
+        """Brak odpowiedzi mógł nastąpić po wykonaniu zwrotu — to nie odmowa."""
+        import stripe
+
+        client = MagicMock()
+        client.v1.refunds.create.side_effect = stripe.APIConnectionError("down")
+
+        with patch("stripe.StripeClient", return_value=client):
+            with pytest.raises(PaymentProviderError) as raised:
+                StripeProvider("sk_test", SECRET).refund(
+                    "pi_1", idempotency_key="refund-pi_1"
+                )
+        assert not isinstance(raised.value, PaymentProviderDeclined)
+
+    def test_partial_refund_sends_amount_and_metadata(self):
+        """Zwrot za zgłoszenie idzie z kwotą i identyfikatorem zgłoszenia."""
+        client = MagicMock()
+        client.v1.refunds.create.return_value = MagicMock(id="re_1")
+
+        with patch("stripe.StripeClient", return_value=client):
+            StripeProvider("sk_test", SECRET).refund(
+                "pi_1",
+                idempotency_key="return-1-refund",
+                amount=5000,
+                metadata={"return_request_id": "1"},
+            )
+
+        params = client.v1.refunds.create.call_args.kwargs["params"]
+        assert params == {
+            "payment_intent": "pi_1",
+            "amount": 5000,
+            "metadata": {"return_request_id": "1"},
+        }
 
 
 class TestAtrapa:

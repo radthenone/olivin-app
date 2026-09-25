@@ -10,6 +10,7 @@ from core.integrations.payments.base import (
     EventKind,
     Intent,
     InvalidSignature,
+    PaymentProviderDeclined,
     PaymentProviderError,
     ProviderEvent,
 )
@@ -32,12 +33,15 @@ class FakePaymentProvider:
     refunds: ClassVar[list[dict]] = []
     # Ustawione na komunikat — następne wywołanie operatora odmówi.
     fail_with: ClassVar[str] = ""
+    # Z `fail_with`: odmowa jednoznaczna zamiast braku odpowiedzi.
+    declines: ClassVar[bool] = False
 
     @classmethod
     def reset(cls) -> None:
         cls.intents = []
         cls.refunds = []
         cls.fail_with = ""
+        cls.declines = False
 
     def create_intent(
         self,
@@ -66,7 +70,12 @@ class FakePaymentProvider:
         return Intent(id=intent_id, client_secret=secret)
 
     def refund(
-        self, intent_id: str, *, idempotency_key: str, amount: int | None = None
+        self,
+        intent_id: str,
+        *,
+        idempotency_key: str,
+        amount: int | None = None,
+        metadata: dict[str, str] | None = None,
     ) -> str:
         self._fail_if_requested()
         for existing in self.refunds:
@@ -79,6 +88,7 @@ class FakePaymentProvider:
                 "intent_id": intent_id,
                 "idempotency_key": idempotency_key,
                 "amount": amount,
+                "metadata": metadata or {},
             }
         )
         return refund_id
@@ -93,11 +103,14 @@ class FakePaymentProvider:
             type=data["kind"],
             intent_id=data.get("intent_id", ""),
             refund_id=data.get("refund_id", ""),
+            metadata=data.get("metadata", {}),
             payload=data,
         )
 
     def _fail_if_requested(self) -> None:
         if self.fail_with:
+            if self.declines:
+                raise PaymentProviderDeclined(self.fail_with)
             raise PaymentProviderError(self.fail_with)
 
 

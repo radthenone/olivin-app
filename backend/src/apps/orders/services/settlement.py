@@ -15,6 +15,7 @@ from apps.orders.models import (
     Order,
     ReturnItemStatus,
     ReturnReason,
+    ReturnRefundStatus,
     ReturnRequest,
     ReturnRequestItem,
 )
@@ -43,8 +44,8 @@ def settle_return_request(request: ReturnRequest) -> None:
 
     Wołane pod blokadą zamówienia (`decide_return_item`), więc kolejne
     zgłoszenie widzi kupony wydane przez wcześniejsze. Kupon powstaje od
-    razu; pieniądze zleca `refund_return`, a korekta i powiadomienie idą po
-    zatwierdzeniu zapisu.
+    razu; zwrot pieniędzy (`refund_return_request`), korekta i powiadomienie
+    idą po zatwierdzeniu zapisu.
     """
     if request.settled_at is not None:
         return
@@ -64,6 +65,18 @@ def settle_return_request(request: ReturnRequest) -> None:
     coupon_part, money = split_compensation(
         amount, max(order.coupon_amount - issued, 0)
     )
+    # Kupon zaokrąglony w górę oddał więcej, niż był wart zwrot — nadwyżkę
+    # potrąca się z pieniędzy przy kolejnym zwrocie. Pieniędzy nigdy nie
+    # oddaje się więcej, niż klient faktycznie zapłacił.
+    before = (
+        ReturnRequest.objects.filter(order=order, settled_at__isnull=False)
+        .exclude(pk=request.pk)
+        .aggregate(value=Sum("compensation_amount"), refunded=Sum("refund_amount"))
+    )
+    refunded_before = before["refunded"] or 0
+    overpaid = max(issued + refunded_before - (before["value"] or 0), 0)
+    paid_left = max(order.total.amount - refunded_before, 0)
+    money = max(min(money - overpaid, paid_left), 0)
     if coupon_part:
         request.coupon = Coupon.objects.create(
             nominal=coupon_part,
@@ -74,22 +87,28 @@ def settle_return_request(request: ReturnRequest) -> None:
     request.compensation_amount = amount
     request.refund_amount = money
     request.settled_at = timezone.now()
+    if money:
+        request.refund_status = ReturnRefundStatus.PENDING
     request.save(
         update_fields=[
             "coupon",
             "compensation_amount",
             "refund_amount",
+            "refund_status",
             "settled_at",
             "updated_at",
         ]
     )
-    if money:
-        # Import w funkcji: `apps.payments.services` importuje serwisy zamówień.
-        from apps.payments.services import refund_return
-
-        refund_return(request)
-
+    # Import w funkcji: `apps.payments` i `apps.orders.tasks` importują serwisy
+    # zamówień. Zwrot u operatora dopiero po zatwierdzeniu — cofnięta
+    # transakcja nie może zostawić pieniędzy wypłaconych bez śladu w bazie.
     from apps.orders.tasks import issue_return_correction
+    from apps.payments.tasks import refund_return_request
+
+    if money:
+        transaction.on_commit(
+            lambda: refund_return_request.delay(str(request.pk))  # type: ignore[missing-attribute]
+        )
 
     transaction.on_commit(
         lambda: issue_return_correction.delay(str(request.pk))  # type: ignore[missing-attribute]
@@ -107,15 +126,40 @@ def refunded_items(request: ReturnRequest) -> QuerySet[ReturnRequestItem]:
 
 
 def item_value(item: ReturnRequestItem) -> int:
-    """Wartość pozycji po promocjach; przy uzgodnieniu — uzgodniona kwota."""
+    """Wartość pozycji po promocjach; przy uzgodnieniu — uzgodniona kwota.
+
+    Część ilości liczy się narastająco: udział wszystkiego, co zwrócono do
+    tej porcji włącznie, minus udział tego, co przed nią. Zaokrąglenia się
+    wtedy znoszą i porcje razem dają dokładnie wartość pozycji.
+    """
     if item.agreed_amount is not None:
         return item.agreed_amount
     order_item = item.order_item
-    if item.quantity == order_item.quantity:
-        return order_item.discounted_total.amount
-    return order_item.discounted_total.multiply(
-        Decimal(item.quantity) / Decimal(order_item.quantity)
-    ).amount
+    total = order_item.discounted_total
+
+    def share(quantity: int) -> int:
+        return total.multiply(Decimal(quantity) / Decimal(order_item.quantity)).amount
+
+    before = _returned_before(item)
+    return share(before + item.quantity) - share(before)
+
+
+def _returned_before(item: ReturnRequestItem) -> int:
+    """Ilość pozycji rozliczona we wcześniejszych zgłoszeniach."""
+    earlier = ReturnRequestItem.objects.filter(
+        order_item=item.order_item,
+        status=ReturnItemStatus.ACCEPTED,
+        return_request__settled_at__isnull=False,
+    ).exclude(return_request=item.return_request_id)  # type: ignore[missing-attribute]
+    settled_at = item.return_request.settled_at
+    if settled_at is not None:
+        earlier = earlier.filter(return_request__settled_at__lt=settled_at)
+    return (
+        earlier.exclude(claim_request__in=_NOT_REFUNDED_CLAIMS).aggregate(
+            total=Sum("quantity")
+        )["total"]
+        or 0
+    )
 
 
 def _withdrawal_covers_order(order: Order) -> bool:

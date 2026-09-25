@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from typing import Any
+from unittest.mock import patch
 
 import pytest
+from django.contrib.admin.models import LogEntry
 from django.contrib.admin.sites import AdminSite
 from django.contrib.messages.storage.fallback import FallbackStorage
-from django.test import RequestFactory
+from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from freezegun import freeze_time
 from rest_framework import status
@@ -34,9 +36,9 @@ from apps.orders.services.returns import (
 from apps.orders.services.settlement import split_compensation
 from apps.orders.tasks import issue_return_correction
 from apps.payments.models import Payment, PaymentStatus
-from apps.payments.services import handle_event
+from apps.payments.services import handle_event, refund_return
 from apps.promotions.models import Coupon, CouponSource
-from core.integrations.payments import EventKind, ProviderEvent
+from core.integrations.payments import EventKind, PaymentProviderError, ProviderEvent
 from tests.orders.test_sales_documents import _stored_pdf
 from tests.factories.orders import OrderFactory, OrderItemFactory
 from tests.factories.products import ProductFactory, ProductVariantFactory
@@ -71,16 +73,27 @@ def _order(*prices: int, coupon: int = 20000, user=None):
     return order, items
 
 
-def _return(order, reason, *items, status_=ReturnItemStatus.ACCEPTED, **decision):
-    """Zgłoszenie całych pozycji i decyzja o każdej — w terminie."""
-    with freeze_time(LATER):
+def _return(
+    order,
+    reason,
+    *items,
+    status_=ReturnItemStatus.ACCEPTED,
+    quantity: int | None = None,
+    **decision,
+):
+    """Zgłoszenie pozycji (domyślnie całych) i decyzja o każdej — w terminie.
+
+    Callbacki po commicie wykonują się jak na produkcji: zlecenie zwrotu,
+    korekta i powiadomienia.
+    """
+    with freeze_time(LATER), TestCase.captureOnCommitCallbacks(execute=True):
         request = create_return_request(
             order,
             reason=reason,
             lines=[
                 ReturnLine(
                     item,
-                    item.quantity,
+                    quantity or item.quantity,
                     ClaimRequest.REFUND if reason == ReturnReason.COMPLAINT else "",
                 )
                 for item in items
@@ -181,6 +194,45 @@ class TestSettleReturn:
         assert second.refund_amount == 10000
         assert _refunds(fake_payment_provider) == [10000]
 
+    def test_rounded_up_coupon_is_deducted_from_next_refund(
+        self, fake_payment_provider
+    ):
+        """185 zł → kupon 190; reszta (115 zł) oddaje 10 kuponem i 100 pieniędzmi.
+
+        Nadwyżka 5 zł z zaokrąglenia schodzi z pieniędzy: razem klient dostaje
+        300 zł, a pieniędzmi nie więcej, niż zapłacił (100 zł).
+        """
+        order, items = _order(18500, 9500)
+
+        first = _return(order, ReturnReason.WITHDRAWAL, items[0])
+        second = _return(order, ReturnReason.WITHDRAWAL, items[1])
+
+        assert first.coupon.nominal == 19000  # type: ignore[union-attr]
+        assert first.refund_amount == 0
+        assert second.compensation_amount == 11500
+        assert second.coupon.nominal == 1000  # type: ignore[union-attr]
+        assert second.refund_amount == 10000
+        assert second.refund_status == ReturnRefundStatus.PENDING
+        assert _refunds(fake_payment_provider) == [10000]
+
+    def test_partial_returns_of_one_item_add_up_to_its_value(
+        self, fake_payment_provider
+    ):
+        """Porcje jednej pozycji nie gubią grosza: 29,99 zł to 10,00 + 9,99 + 10,00."""
+        order, _ = _order(coupon=0)
+        item = OrderItemFactory(
+            order=order, unit_price=1000, quantity=3, discount_amount=1
+        )
+        order.payments.update(amount=order.total.amount)  # type: ignore[missing-attribute]
+
+        values = [
+            _return(order, ReturnReason.GOODWILL, item, quantity=1).compensation_amount
+            for _ in range(3)
+        ]
+
+        assert values == [1000, 999, 1000]
+        assert sum(_refunds(fake_payment_provider)) == item.discounted_total.amount
+
     def test_order_without_coupon_gets_money_only(self, fake_payment_provider):
         """Kto płacił wyłącznie pieniędzmi, dostaje wyłącznie pieniądze."""
         order, items = _order(18000, 10000, coupon=0)
@@ -274,6 +326,7 @@ class TestRefundRefusal:
         """Operator odrzuca zlecenie — kupon zostaje, pieniądze do przelewu."""
         order, items = _order(25000, 3000)
         fake_payment_provider.fail_with = "card closed"
+        fake_payment_provider.declines = True
 
         request = _return(order, ReturnReason.GOODWILL, items[0])
 
@@ -312,8 +365,9 @@ class TestRefundRefusal:
         from core.integrations.payments.fake import FakePaymentProvider
 
         FakePaymentProvider.fail_with = "card closed"
+        FakePaymentProvider.declines = True
         request = _return(order, ReturnReason.GOODWILL, items[0])
-        FakePaymentProvider.fail_with = ""
+        FakePaymentProvider.reset()
         http = RequestFactory().post("/")
         http.user = admin_user
         http.session = {}  # type: ignore[assignment]
@@ -325,11 +379,89 @@ class TestRefundRefusal:
 
         request.refresh_from_db()
         assert request.refund_status == ReturnRefundStatus.MANUAL_DONE
+        assert LogEntry.objects.filter(object_id=str(request.pk)).exists()
+
+    def test_no_answer_keeps_pending_and_retries_with_same_key(
+        self, fake_payment_provider
+    ):
+        """Brak odpowiedzi to nie odmowa: zostaje `pending`, ponowienie tym samym kluczem."""
+        order, items = _order(25000, 3000)
+        with patch("apps.payments.tasks.refund_return_request.delay"):
+            request = _return(order, ReturnReason.GOODWILL, items[0])
+        fake_payment_provider.fail_with = "timeout"
+
+        with pytest.raises(PaymentProviderError):
+            refund_return(request.pk)
+
+        request.refresh_from_db()
+        assert request.refund_status == ReturnRefundStatus.PENDING
+        assert request.refund_id == ""
+
+        fake_payment_provider.fail_with = ""
+        refund_return(request.pk)
+
+        request.refresh_from_db()
+        assert request.refund_status == ReturnRefundStatus.PENDING
+        (refund,) = fake_payment_provider.refunds
+        assert refund["idempotency_key"] == f"return-{request.pk}-refund"
+        assert refund["metadata"] == {"return_request_id": str(request.pk)}
+        assert request.refund_id == refund["id"]
+
+    def test_refund_event_matched_by_metadata_when_id_unknown(self):
+        """Zwrot wykonany mimo braku odpowiedzi rozpoznaje `metadata` zdarzenia."""
+        order, items = _order(25000, 3000)
+        with patch("apps.payments.tasks.refund_return_request.delay"):
+            request = _return(order, ReturnReason.GOODWILL, items[0])
+
+        handle_event(
+            ProviderEvent(
+                id="evt_refunded_meta",
+                kind=EventKind.REFUNDED,
+                type="refunded",
+                intent_id=order.payments.get().intent_id,  # type: ignore[missing-attribute]
+                refund_id="re_late",
+                metadata={"return_request_id": str(request.pk)},
+            )
+        )
+
+        request.refresh_from_db()
+        assert request.refund_status == ReturnRefundStatus.REFUNDED
+        assert request.refund_id == "re_late"
+
+    def test_refunded_wins_over_manual(self, fake_payment_provider):
+        """Pieniądze, które faktycznie wróciły, zdejmują zgłoszenie z przelewu ręcznego."""
+        order, items = _order(18000, 10000, coupon=0)
+        request = _return(order, ReturnReason.GOODWILL, items[0])
+        handle_event(_refund_event(EventKind.REFUND_FAILED, request))
+
+        handle_event(_refund_event(EventKind.REFUNDED, request, "evt_late"))
+
+        request.refresh_from_db()
+        assert request.refund_status == ReturnRefundStatus.REFUNDED
+
+    def test_refund_waits_for_commit(self, fake_payment_provider):
+        """Rozliczenie cofnięte razem z transakcją nie zleca zwrotu u operatora."""
+        order, items = _order(18000, 10000, coupon=0)
+
+        with freeze_time(LATER), TestCase.captureOnCommitCallbacks(execute=False):
+            request = create_return_request(
+                order, reason=ReturnReason.GOODWILL, lines=[ReturnLine(items[0], 1)]
+            )
+            decide_return_item(
+                request.items.get(),  # type: ignore[missing-attribute]
+                status=ReturnItemStatus.ACCEPTED,
+            )
+
+        request.refresh_from_db()
+        assert request.refund_status == ReturnRefundStatus.PENDING
+        assert fake_payment_provider.refunds == []
 
 
-def _refund_event(kind: EventKind, request: ReturnRequest) -> ProviderEvent:
+def _refund_event(
+    kind: EventKind, request: ReturnRequest, event_id: str = ""
+) -> ProviderEvent:
     return ProviderEvent(
-        id=f"evt_{kind}_{request.refund_id}",
+        id=event_id or f"evt_{kind}_{request.refund_id}",
         kind=kind,
         type=str(kind),
         intent_id=request.order.payments.get().intent_id,  # type: ignore[missing-attribute]
@@ -341,14 +473,11 @@ def _refund_event(kind: EventKind, request: ReturnRequest) -> ProviderEvent:
 class TestCorrectionAndNotification:
     """Korekta raz po rozliczeniu i powiadomienie z kwotą i formą."""
 
-    def test_correction_issued_once_per_settled_request(
-        self, django_capture_on_commit_callbacks
-    ):
+    def test_correction_issued_once_per_settled_request(self):
         """Korekta powstaje po rozliczeniu; powtórka zadania nie nadaje numeru."""
         order, items = _order(25000, 3000)
 
-        with django_capture_on_commit_callbacks(execute=True):
-            request = _return(order, ReturnReason.GOODWILL, items[0])
+        request = _return(order, ReturnReason.GOODWILL, items[0])
         issue_return_correction(str(request.pk))
 
         correction = SalesDocument.objects.get(kind=SalesDocumentKind.CORRECTION)
@@ -383,13 +512,11 @@ class TestCorrectionAndNotification:
         assert "−300.00 PLN" in html
         assert _stored_pdf(correction.object_key).startswith(b"%PDF")
 
-    def test_notification_with_amount_and_form(
-        self, user: CustomUser, django_capture_on_commit_callbacks
-    ):
-        """Transakcyjne powiadomienie mówi, ile kuponem, ile pieniędzmi."""
+    def test_notification_with_amount_and_form(self, user: CustomUser):
+        """Transakcyjne powiadomienie i e-mail mówią, ile kuponem, ile pieniędzmi."""
         order, items = _order(25000, 3000, user=user)
 
-        with django_capture_on_commit_callbacks(execute=True):
+        with patch("apps.notifications.services.send_notification_email") as send:
             request = _return(order, ReturnReason.GOODWILL, items[0])
 
         notification = Notification.objects.get(
@@ -398,6 +525,15 @@ class TestCorrectionAndNotification:
         assert notification.data["coupon_code"] == request.coupon.code  # type: ignore[union-attr]
         assert "200.00 PLN" == notification.data["coupon_amount"]
         assert "50.00 PLN" == notification.data["refund_amount"]
+        (mail,) = [
+            call.kwargs
+            for call in send.call_args_list
+            if call.kwargs["subject"].startswith("Rozliczenie zwrotu")
+        ]
+        assert mail["to"] == order.email
+        assert "250.00 PLN" in mail["body"]
+        assert f"kupon 200.00 PLN (kod {request.coupon.code})" in mail["body"]  # type: ignore[union-attr]
+        assert "zwrot pieniędzy 50.00 PLN" in mail["body"]
 
 
 @pytest.mark.django_db
