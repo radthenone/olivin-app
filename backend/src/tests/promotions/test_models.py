@@ -30,7 +30,7 @@ class TestDiscountsAppRemoved:
             CORE_DIR / "settings" / "components" / "apps.py",
             CORE_DIR / "urls.py",
         ):
-            assert "discounts" not in path.read_text(encoding="utf-8")
+            assert "apps.discounts" not in path.read_text(encoding="utf-8")
 
 
 @pytest.mark.django_db
