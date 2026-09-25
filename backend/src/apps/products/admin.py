@@ -4,6 +4,7 @@ from django.http import HttpRequest
 
 from apps.products.models import (
     CostComponent,
+    ExchangeRate,
     Gemstone,
     ProductImage,
     MetalRate,
@@ -226,6 +227,15 @@ class ProductVariantAdmin(admin.ModelAdmin):
     def calculated_price_display(self, obj: ProductVariant) -> str:
         price = calculate_price(obj) if obj.pk else None
         return str(price) if price is not None else "brak aktywnego kursu kruszcu"
+
+
+@admin.register(ExchangeRate)
+class ExchangeRateAdmin(admin.ModelAdmin):
+    """Kursy walut — wgląd; nowy kurs pobiera zadanie i działa od razu (ADR 0019)."""
+
+    list_display = ("currency", "base_currency", "rate", "effective_on", "source")
+    list_filter = ("currency",)
+    date_hierarchy = "effective_on"
 
 
 @admin.register(MetalRate)

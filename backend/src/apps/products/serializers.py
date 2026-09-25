@@ -4,8 +4,20 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.products.models import Gemstone, Product, ProductImage, ProductVariant
+from apps.products.pricing import price_in, round_up_to_half
 from apps.translations.serializers import TranslatedCharField
 from core.api.serializers import MoneySerializer
+
+
+def _engraving_in_currency(data: dict, product: Product, context: dict) -> dict:
+    """Cena grawerunku w walucie z `?currency=` — jak cena wariantu (ADR 0019)."""
+    rate = context.get("exchange_rate")
+    engraving = product.engraving_price_money
+    if rate is not None and engraving is not None:
+        data["engraving_price"] = MoneySerializer(
+            round_up_to_half(rate.convert(engraving))
+        ).data
+    return data
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -126,6 +138,15 @@ class ProductVariantSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
+    def to_representation(self, instance: ProductVariant) -> dict:
+        data = super().to_representation(instance)
+        rate = self.context.get("exchange_rate")
+        if rate is not None:
+            data["price"] = MoneySerializer(
+                price_in(instance, rate, self.context.get("metal_rates"))
+            ).data
+        return data
+
     @extend_schema_field(ProductImageSerializer(many=True))
     def get_images(self, obj: ProductVariant) -> list[dict]:
         """Zdjęcia różnicujące wygląd tego wariantu; szkice pominięte."""
@@ -174,6 +195,11 @@ class ProductListSerializer(serializers.ModelSerializer):
             "cheapest_variant",
         ]
         read_only_fields = fields
+
+    def to_representation(self, instance: Product) -> dict:
+        return _engraving_in_currency(
+            super().to_representation(instance), instance, self.context
+        )
 
     @extend_schema_field(ProductVariantSerializer(allow_null=True))
     def get_cheapest_variant(self, obj: Product) -> dict | None:
@@ -228,6 +254,11 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "variants",
         ]
         read_only_fields = fields
+
+    def to_representation(self, instance: Product) -> dict:
+        return _engraving_in_currency(
+            super().to_representation(instance), instance, self.context
+        )
 
     @extend_schema_field(ProductImageSerializer(many=True))
     def get_images(self, obj: Product) -> list[dict]:

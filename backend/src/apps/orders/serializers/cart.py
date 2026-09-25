@@ -14,6 +14,9 @@ from apps.products.models import (
 from apps.promotions.models import CODE_MAX_LENGTH
 from core.api.serializers import MoneySerializer
 
+# Pola ceny pozycji podmieniane wartościami w walucie kursu.
+_CONVERTED_FIELDS = ("unit_price", "goods_price", "engraving_price", "line_total")
+
 # Najwęższy rozmiar z `RENDITION_WIDTHS` — wiersz koszyka to miniatura,
 # nie galeria.
 THUMBNAIL_WIDTH = 400
@@ -152,6 +155,17 @@ class CartSerializer(serializers.Serializer):
         allow_null=True,
         help_text="Kod kuponu wpisany w koszyku; pusty, gdy go nie ma",
     )
+
+    def to_representation(self, instance) -> dict:
+        data = super().to_representation(instance)
+        lines = getattr(instance, "lines", None)
+        if lines:
+            rows = data["items"] or []
+            for item, row in zip(instance.items, rows, strict=True):
+                line = lines[item.pk]
+                for name in _CONVERTED_FIELDS:
+                    row[name] = MoneySerializer(getattr(line, name)).data
+        return data
 
 
 class PromotionCodeSerializer(serializers.Serializer):

@@ -9,7 +9,14 @@ from rest_framework.settings import api_settings
 
 from apps.inventory.models import has_available_variant
 from apps.products.filters import MIN_PRICE, ProductFilterSet
-from apps.products.models import EFFECTIVE_PRICE, Product, ProductVariant
+from apps.products.currency import QUERY_PARAM, requested_rate
+from apps.products.models import (
+    EFFECTIVE_PRICE,
+    ExchangeRate,
+    Product,
+    ProductVariant,
+)
+from apps.products.pricing import active_metal_rates
 from apps.products.schema import product_schema
 from apps.products.serializers import ProductDetailSerializer, ProductListSerializer
 
@@ -84,6 +91,9 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             .prefetch_related("inventory__movements", "gemstones")
             .order_by(EFFECTIVE_PRICE, "sku")
         )
+        if self._exchange_rate() is not None:
+            # Próg kosztowy przy przeliczeniu potrzebuje składników kosztu.
+            variants = variants.prefetch_related("cost_components")
         cheapest = (
             ProductVariant.objects.with_effective_price()
             .filter(product=OuterRef("pk"))
@@ -107,6 +117,21 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             .annotate(**{MIN_PRICE: Subquery(cheapest)})
             .annotate(**{HAS_AVAILABLE: has_available_variant()})
         )
+
+    def get_serializer_context(self) -> dict:
+        context = super().get_serializer_context()
+        rate = self._exchange_rate()
+        if rate is not None:
+            # Kursy kruszców raz na żądanie, nie raz na wariant (próg kosztu).
+            context["metal_rates"] = active_metal_rates()
+        return {**context, "exchange_rate": rate}
+
+    def _exchange_rate(self) -> ExchangeRate | None:
+        """Kurs dla `?currency=EUR`; `None` dla cen w złotych (ADR 0019)."""
+        if not hasattr(self, "_rate"):
+            params = self.request.query_params  # type: ignore[missing-attribute]
+            self._rate = requested_rate(params.get(QUERY_PARAM))
+        return self._rate
 
     def get_serializer_class(self):
         if self.action == "retrieve":

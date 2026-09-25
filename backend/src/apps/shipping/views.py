@@ -11,7 +11,9 @@ from apps.shipping.serializers import (
     ShippingMethodQuerySerializer,
     ShippingOfferSerializer,
 )
-from apps.shipping.services import available_methods
+from apps.orders.services.currency import convert_shipping
+from apps.products.currency import requested_rate
+from apps.shipping.services import ShippingOffer, available_methods
 from common.money import Money
 
 
@@ -49,4 +51,12 @@ class ShippingMethodViewSet(viewsets.GenericViewSet):
             order_value=Money(query.validated_data["order_value"]),
             zone=query.validated_data["zone"],
         )
+        rate = requested_rate(query.validated_data["currency"])
+        if rate is not None:
+            offers = [
+                ShippingOffer(
+                    method=offer.method, cost=convert_shipping(offer.cost, rate)
+                )
+                for offer in offers
+            ]
         return Response(self.get_serializer(offers, many=True).data)

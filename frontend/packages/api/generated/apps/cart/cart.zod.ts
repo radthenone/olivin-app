@@ -12,6 +12,10 @@ import * as zod from 'zod';
  * Pozycje z ceną aktualną (koszyk nie zamraża cen), cena grawerunku osobno, liczba pozycji i suma. Klient bez koszyka dostaje pusty koszyk, a nie 404 — odczyt nie zakłada wiersza.
  * @summary Koszyk klienta albo gościa
  */
+export const CartRetrieveQueryParams = zod.object({
+  "currency": zod.enum(['EUR', 'PLN']).optional().describe('Waluta cen. EUR przelicza ceny złotowe po bieżącym kursie NBP i zaokrągla w górę do ,00\/,50 (ADR 0019); brak kursu daje 400. Filtry i progi (cena, darmowa dostawa) zawsze działają w złotych.')
+})
+
 export const CartRetrieveHeader = zod.object({
   "X-Cart-Token": zod.string().optional().describe('Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany klient go nie wysyła — koszyk wynika z uwierzytelnienia.')
 })

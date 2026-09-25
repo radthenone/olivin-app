@@ -16,6 +16,7 @@ from apps.orders.serializers import (
     SalesDocumentSerializer,
 )
 from apps.payments.serializers import PaymentIntentSerializer
+from apps.products.schema import CURRENCY_PARAMETER
 
 CART_TOKEN_PARAMETER = OpenApiParameter(
     name="X-Cart-Token",
@@ -37,7 +38,7 @@ cart_schema = extend_schema_view(
             "grawerunku osobno, liczba pozycji i suma. Klient bez koszyka "
             "dostaje pusty koszyk, a nie 404 — odczyt nie zakłada wiersza."
         ),
-        parameters=[CART_TOKEN_PARAMETER],
+        parameters=[CART_TOKEN_PARAMETER, CURRENCY_PARAMETER],
         responses={200: CartSerializer},
     ),
 )

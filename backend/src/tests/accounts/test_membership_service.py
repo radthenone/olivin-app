@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 import pytest
 from django.utils import timezone
 
@@ -81,13 +83,20 @@ class TestPaidTotal:
 
         assert paid_total(user) == Money.zero()
 
-    def test_excludes_orders_in_other_currencies(self):
-        """Zamówienia w euro nie liczą się do progu, który jest w groszach PLN."""
+    def test_euro_orders_count_at_their_snapshot_rate(self):
+        """Zamówienie w euro wraca do złotych po kursie zapisanym w nim (ADR 0019)."""
         user = UserFactory()
-        order = OrderFactory(user=user, status=OrderStatus.DELIVERED, currency="EUR")
-        OrderItemFactory(order=order, unit_price=100000, quantity=1)
+        order = OrderFactory(
+            user=user,
+            status=OrderStatus.DELIVERED,
+            currency="EUR",
+            exchange_rate=Decimal("4.265100"),
+            discount_amount=0,
+        )
+        OrderItemFactory(order=order, unit_price=10001, quantity=1)
 
-        assert paid_total(user) == Money.zero()
+        # 100,01 € × 4,2651 = 426,552651 zł → 426,55 zł (w pół do grosza).
+        assert paid_total(user) == Money(42655)
 
     def test_sums_across_several_delivered_orders(self):
         user = UserFactory()

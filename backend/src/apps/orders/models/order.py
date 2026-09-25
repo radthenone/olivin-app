@@ -172,6 +172,16 @@ class Order(TimestampedModel):
             "Jeden przy sprzedaży w złotych (ADR 0019)."
         ),
     )
+    exchange_rate_on = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Dzień notowania kursu; pusty przy sprzedaży w złotych (ADR 0019)",
+    )
+    exchange_rate_source = models.CharField(
+        max_length=64,
+        blank=True,
+        help_text="Źródło kursu (np. nbp); puste przy sprzedaży w złotych",
+    )
     discount_amount = MoneyAmountField(
         default=0,
         validators=[MinValueValidator(0)],

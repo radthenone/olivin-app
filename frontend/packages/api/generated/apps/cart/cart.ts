@@ -27,6 +27,7 @@ import type {
 import type {
   Cart,
   CartItemWrite,
+  CartRetrieveParams,
   CouponCode,
   PatchedCartItemQuantity,
   PromotionCode
@@ -52,21 +53,28 @@ export type cartRetrieveResponseSuccess = (cartRetrieveResponse200) & {
 
 export type cartRetrieveResponse = (cartRetrieveResponseSuccess)
 
-export const getCartRetrieveUrl = () => {
+export const getCartRetrieveUrl = (params?: CartRetrieveParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/cart/`
+  return stringifiedParams.length > 0 ? `/cart/?${stringifiedParams}` : `/cart/`
 }
 
 /**
  * Pozycje z ceną aktualną (koszyk nie zamraża cen), cena grawerunku osobno, liczba pozycji i suma. Klient bez koszyka dostaje pusty koszyk, a nie 404 — odczyt nie zakłada wiersza.
  * @summary Koszyk klienta albo gościa
  */
-export const cartRetrieve = async ( options?: RequestInit): Promise<cartRetrieveResponse> => {
+export const cartRetrieve = async (params?: CartRetrieveParams, options?: RequestInit): Promise<cartRetrieveResponse> => {
 
-  return appInstance<cartRetrieveResponse>(getCartRetrieveUrl(),
+  return appInstance<cartRetrieveResponse>(getCartRetrieveUrl(params),
   {
     ...options,
     method: 'GET'
@@ -79,23 +87,23 @@ export const cartRetrieve = async ( options?: RequestInit): Promise<cartRetrieve
 
 
 
-export const getCartRetrieveQueryKey = () => {
+export const getCartRetrieveQueryKey = (params?: CartRetrieveParams,) => {
     return [
-    `/cart/`
+    `/cart/`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getCartRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof cartRetrieve>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof cartRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+export const getCartRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof cartRetrieve>>, TError = ErrorType<unknown>>(params?: CartRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof cartRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getCartRetrieveQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getCartRetrieveQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof cartRetrieve>>> = ({ signal }) => cartRetrieve({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof cartRetrieve>>> = ({ signal }) => cartRetrieve(params, { signal, ...requestOptions });
 
 
 
@@ -109,7 +117,7 @@ export type CartRetrieveQueryError = ErrorType<unknown>
 
 
 export function useCartRetrieve<TData = Awaited<ReturnType<typeof cartRetrieve>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof cartRetrieve>>, TError, TData>> & Pick<
+ params: undefined |  CartRetrieveParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof cartRetrieve>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof cartRetrieve>>,
           TError,
@@ -119,7 +127,7 @@ export function useCartRetrieve<TData = Awaited<ReturnType<typeof cartRetrieve>>
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCartRetrieve<TData = Awaited<ReturnType<typeof cartRetrieve>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof cartRetrieve>>, TError, TData>> & Pick<
+ params?: CartRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof cartRetrieve>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof cartRetrieve>>,
           TError,
@@ -129,7 +137,7 @@ export function useCartRetrieve<TData = Awaited<ReturnType<typeof cartRetrieve>>
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCartRetrieve<TData = Awaited<ReturnType<typeof cartRetrieve>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof cartRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ params?: CartRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof cartRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -137,11 +145,11 @@ export function useCartRetrieve<TData = Awaited<ReturnType<typeof cartRetrieve>>
  */
 
 export function useCartRetrieve<TData = Awaited<ReturnType<typeof cartRetrieve>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof cartRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ params?: CartRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof cartRetrieve>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getCartRetrieveQueryOptions(options)
+  const queryOptions = getCartRetrieveQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
