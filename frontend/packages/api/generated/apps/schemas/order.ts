@@ -8,6 +8,7 @@
 import type { Money } from './money';
 import type { OrderItem } from './orderItem';
 import type { OrderStatusEnum } from './orderStatusEnum';
+import type { Shipment } from './shipment';
 
 /**
  * Zamówienie w postaci, w jakiej ogląda je klient.
@@ -59,6 +60,7 @@ export interface Order {
   /** Klient poprosił o fakturę imienną — wystawiana na odbiorcę i adres z zamówienia (ADR 0026) */
   readonly invoiceRequested: boolean;
   readonly items: readonly OrderItem[];
+  readonly shipments: readonly Shipment[];
   readonly goodsTotal: Money;
   readonly shippingCost: Money;
   readonly discountAmount: Money;

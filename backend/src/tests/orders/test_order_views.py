@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -18,13 +20,22 @@ from tests.factories.consents import (
     ConsentFactory,
     GuestConsentFactory,
 )
-from tests.factories.orders import CartFactory, GuestCartFactory
+from tests.factories.orders import (
+    CartFactory,
+    GuestCartFactory,
+    GuestOrderFactory,
+    OrderFactory,
+)
 from tests.factories.products import (
     ProductVariantFactory,
     PublishedProductFactory,
     stock,
 )
-from tests.factories.shipping import ShippingMethodFactory
+from tests.factories.shipping import (
+    ParcelLockerMethodFactory,
+    ShipmentFactory,
+    ShippingMethodFactory,
+)
 
 TOKEN_HEADER = "HTTP_X_CART_TOKEN"
 
@@ -358,3 +369,87 @@ class TestAnulowanie:
         response: Any = api_client.post(_cancel_url(order.number))
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.django_db
+class TestOrderShipments:
+    """Przesyłki w szczegółach zamówienia — numer śledzenia bez kwot przewoźnika."""
+
+    def test_detail_lists_shipments_without_declared_value(
+        self, authenticated_client: APIClient, user: CustomUser
+    ):
+        order = OrderFactory(user=user, shipping_method=ParcelLockerMethodFactory())
+        ShipmentFactory(
+            order=order,
+            tracking_number="PL123",
+            pickup_point_code="WAW01M",
+            declared_value=50000,
+        )
+
+        response: Any = authenticated_client.get(_order_url(order.number))
+
+        assert response.status_code == status.HTTP_200_OK
+        [shipment] = response.json()["shipments"]
+        assert shipment["trackingNumber"] == "PL123"
+        assert shipment["pickupPointCode"] == "WAW01M"
+        assert shipment["shippingMethodKind"] == "parcel_locker"
+        assert shipment["createdAt"]
+        assert "declaredValue" not in shipment
+        assert "50000" not in response.content.decode()
+        # Data doręczenia z #193 zostaje obok przesyłek.
+        assert "deliveredAt" in response.json()
+
+    def test_order_without_shipments_has_empty_list(
+        self, authenticated_client: APIClient, user: CustomUser
+    ):
+        order = OrderFactory(user=user)
+
+        response: Any = authenticated_client.get(_order_url(order.number))
+
+        assert response.json()["shipments"] == []
+
+    def test_guest_sees_shipments_with_number_and_email(self, api_client: APIClient):
+        order = GuestOrderFactory(email="gosc@test.com")
+        ShipmentFactory(order=order, tracking_number="PL999")
+
+        response: Any = api_client.get(
+            _order_url(order.number), {"email": "gosc@test.com"}
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["shipments"][0]["trackingNumber"] == "PL999"
+
+    def test_guest_without_email_does_not_see_shipments(self, api_client: APIClient):
+        order = GuestOrderFactory(email="gosc@test.com")
+        ShipmentFactory(order=order, tracking_number="PL999")
+
+        response: Any = api_client.get(_order_url(order.number))
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert "PL999" not in response.content.decode()
+
+    def test_guest_with_wrong_email_does_not_see_shipments(self, api_client: APIClient):
+        order = GuestOrderFactory(email="gosc@test.com")
+        ShipmentFactory(order=order, tracking_number="PL999")
+
+        response: Any = api_client.get(
+            _order_url(order.number), {"email": "ktos.inny@test.com"}
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert "PL999" not in response.content.decode()
+
+    def test_order_list_query_count_does_not_grow_with_shipments(
+        self, authenticated_client: APIClient, user: CustomUser
+    ):
+        ShipmentFactory.create_batch(2, order=OrderFactory(user=user))
+        with CaptureQueriesContext(connection) as single:
+            authenticated_client.get(_orders_url())
+
+        for _ in range(3):
+            ShipmentFactory.create_batch(2, order=OrderFactory(user=user))
+        with CaptureQueriesContext(connection) as many:
+            response: Any = authenticated_client.get(_orders_url())
+
+        assert len(response.json()["results"]) == 4
+        assert len(many) == len(single)

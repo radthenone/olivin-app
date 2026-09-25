@@ -143,8 +143,12 @@ class TestOrderWithPromotion:
         email = "gosc@test.com"
         GuestConsentFactory(email=email, document=terms)
         promotion = PromotionFactory(per_customer_limit=1)
+        # Wcześniejsze zamówienie na ten sam regulamin: osobny dokument z fabryki
+        # miałby tę samą datę obowiązywania i remis w `current()` losowałby,
+        # który regulamin jest bieżący.
         PromotionRedemptionFactory(
-            promotion=promotion, order=GuestOrderFactory(email=email)
+            promotion=promotion,
+            order=GuestOrderFactory(email=email, terms_document=terms),
         )
         cart = GuestCartFactory()
         _cart_with_variant(cart)
