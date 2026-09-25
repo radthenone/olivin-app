@@ -5,7 +5,9 @@
  * API documentation
  * OpenAPI spec version: 1.0.0
  */
+import type { Money } from './money';
 import type { ReturnReasonEnum } from './returnReasonEnum';
+import type { ReturnRefundStatusEnum } from './returnRefundStatusEnum';
 import type { ReturnRequestItem } from './returnRequestItem';
 import type { ReturnRequestStatusEnum } from './returnRequestStatusEnum';
 
@@ -22,6 +24,18 @@ export interface ReturnRequest {
   readonly reason: ReturnReasonEnum;
   readonly status: ReturnRequestStatusEnum;
   readonly items: readonly ReturnRequestItem[];
+  /** Zwracana kwota; pusta, dopóki zgłoszenia nie rozliczono */
+  readonly compensationAmount: Money | null;
+  /**
+     * Kod kuponu wydanego z kuponowej części zwrotu
+     * @nullable
+     */
+  readonly couponCode: string | null;
+  /** Nominał kuponu ze zwrotu */
+  readonly couponAmount: Money | null;
+  /** Pieniężna część zwrotu; pusta, dopóki nie rozliczono */
+  readonly refundAmount: Money | null;
+  readonly refundStatus: ReturnRefundStatusEnum;
   /** Timestamp when the record was created */
   readonly createdAt: string;
 }

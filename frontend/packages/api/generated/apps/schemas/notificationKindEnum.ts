@@ -11,6 +11,7 @@
 * `order_paid` - Zamówienie opłacone
 * `document_ready` - Dokument gotowy
 * `return_request_status_changed` - Zmiana stanu zgłoszenia zwrotu
+* `return_settled` - Rozliczenie zwrotu
  */
 export type NotificationKindEnum = typeof NotificationKindEnum[keyof typeof NotificationKindEnum];
 
@@ -20,4 +21,5 @@ export const NotificationKindEnum = {
   order_paid: 'order_paid',
   document_ready: 'document_ready',
   return_request_status_changed: 'return_request_status_changed',
+  return_settled: 'return_settled',
 } as const;
