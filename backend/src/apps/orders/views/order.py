@@ -58,8 +58,10 @@ class OrderViewSet(
 
     def get_queryset(self) -> QuerySet[Order]:
         items = OrderItem.objects.select_related("variant").order_by("created_at", "id")
+        # Przesyłki dostają zamówienie z cache prefetchu, a metoda dostawy
+        # przychodzi `select_related` — rodzaj metody nie dokłada zapytań.
         base = Order.objects.prefetch_related(
-            Prefetch("items", queryset=items)
+            Prefetch("items", queryset=items), "shipments"
         ).select_related("shipping_method")
 
         user = user_of(self.request)

@@ -3544,6 +3544,11 @@ components:
           items:
             $ref: '#/components/schemas/OrderItem'
           readOnly: true
+        shipments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Shipment'
+          readOnly: true
         goodsTotal:
           allOf:
           - $ref: '#/components/schemas/Money'
@@ -3586,6 +3591,7 @@ components:
       - number
       - postalCode
       - recipientName
+      - shipments
       - shippingCost
       - shippingMethodName
       - status
@@ -5159,6 +5165,49 @@ components:
         * `confirmation` - Potwierdzenie zamówienia
         * `invoice` - Faktura
         * `correction` - Korekta
+    Shipment:
+      type: object
+      description: |-
+        Przesyłka zamówienia w postaci dla klienta (`CONTEXT.md`, Shipment).
+
+        Wartości zadeklarowanej przewoźnikowi tu nie ma — to sprawa sklepu
+        i przewoźnika (ADR 0028). Link śledzenia składa frontend z szablonu
+        przewoźnika na podstawie rodzaju metody dostawy (ADR 0027).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        trackingNumber:
+          type: string
+          readOnly: true
+          description: Numer śledzenia u przewoźnika; pusty do chwili nadania
+        shippingMethodKind:
+          allOf:
+          - $ref: '#/components/schemas/ShippingMethodKindEnum'
+          readOnly: true
+          description: |-
+            Rodzaj metody dostawy zamówienia — wybiera szablon linku śledzenia
+
+            * `parcel_locker` - Paczkomat
+            * `courier` - Kurier
+            * `pickup` - Odbiór osobisty
+            * `eu` - Przesyłka do Unii
+        pickupPointCode:
+          type: string
+          readOnly: true
+          description: Kod punktu odbioru; wypełniany wyłącznie dla paczkomatu
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when the record was created
+      required:
+      - createdAt
+      - id
+      - pickupPointCode
+      - shippingMethodKind
+      - trackingNumber
     ShippingMethodKindEnum:
       enum:
       - parcel_locker

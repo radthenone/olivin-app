@@ -95,6 +95,7 @@ export * from './promotionsListParams';
 export * from './roleEnum';
 export * from './salesDocument';
 export * from './salesDocumentKindEnum';
+export * from './shipment';
 export * from './shippingMethodKindEnum';
 export * from './shippingMethodsListCurrency';
 export * from './shippingMethodsListParams';

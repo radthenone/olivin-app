@@ -5,7 +5,7 @@ from rest_framework import serializers
 
 from apps.orders.models import Order, OrderItem, SalesDocument
 from apps.orders.services import ShippingAddress
-from apps.shipping.models import ShippingMethod
+from apps.shipping.models import Shipment, ShippingMethod, ShippingMethodKind
 from core.api.serializers import MoneySerializer
 
 
@@ -49,6 +49,33 @@ class OrderItemSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class ShipmentSerializer(serializers.ModelSerializer):
+    """Przesyłka zamówienia w postaci dla klienta (`CONTEXT.md`, Shipment).
+
+    Wartości zadeklarowanej przewoźnikowi tu nie ma — to sprawa sklepu
+    i przewoźnika (ADR 0028). Link śledzenia składa frontend z szablonu
+    przewoźnika na podstawie rodzaju metody dostawy (ADR 0027).
+    """
+
+    shipping_method_kind = serializers.ChoiceField(
+        source="order.shipping_method.kind",
+        choices=ShippingMethodKind.choices,
+        read_only=True,
+        help_text="Rodzaj metody dostawy zamówienia — wybiera szablon linku śledzenia",
+    )
+
+    class Meta:
+        model = Shipment
+        fields = [
+            "id",
+            "tracking_number",
+            "shipping_method_kind",
+            "pickup_point_code",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+
 class OrderSerializer(serializers.ModelSerializer):
     """Zamówienie w postaci, w jakiej ogląda je klient.
 
@@ -57,6 +84,7 @@ class OrderSerializer(serializers.ModelSerializer):
     """
 
     items = OrderItemSerializer(many=True, read_only=True)
+    shipments = ShipmentSerializer(many=True, read_only=True)
     goods_total = MoneySerializer(read_only=True)
     shipping_cost = MoneySerializer(source="shipping_cost_money", read_only=True)
     discount_amount = MoneySerializer(source="discount_money", read_only=True)
@@ -83,6 +111,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "terms_version",
             "invoice_requested",
             "items",
+            "shipments",
             "goods_total",
             "shipping_cost",
             "discount_amount",

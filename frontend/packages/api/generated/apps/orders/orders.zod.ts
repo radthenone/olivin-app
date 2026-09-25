@@ -78,6 +78,13 @@ export const OrdersListResponse = zod.object({
   "currency": zod.string().describe('Kod waluty ISO 4217')
 }).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.')
 }).describe('Pozycja zamówienia — wyłącznie kopie z chwili złożenia (ADR 0010).\n\nNie ma tu odwołania do dzisiejszej ceny wariantu ani do jego stanu:\nzamówienie ma pokazywać to, co klient kupił, a nie to, co jest w sklepie\nteraz.')),
+  "shipments": zod.array(zod.object({
+  "id": zod.uuid(),
+  "trackingNumber": zod.string().describe('Numer śledzenia u przewoźnika; pusty do chwili nadania'),
+  "shippingMethodKind": zod.enum(['parcel_locker', 'courier', 'pickup', 'eu']).describe('\* `parcel_locker` - Paczkomat\n\* `courier` - Kurier\n\* `pickup` - Odbiór osobisty\n\* `eu` - Przesyłka do Unii').describe('Rodzaj metody dostawy zamówienia — wybiera szablon linku śledzenia\n\n\* `parcel_locker` - Paczkomat\n\* `courier` - Kurier\n\* `pickup` - Odbiór osobisty\n\* `eu` - Przesyłka do Unii'),
+  "pickupPointCode": zod.string().describe('Kod punktu odbioru; wypełniany wyłącznie dla paczkomatu'),
+  "createdAt": zod.iso.datetime({"offset":true}).describe('Timestamp when the record was created')
+}).describe('Przesyłka zamówienia w postaci dla klienta (`CONTEXT.md`, Shipment).\n\nWartości zadeklarowanej przewoźnikowi tu nie ma — to sprawa sklepu\ni przewoźnika (ADR 0028). Link śledzenia składa frontend z szablonu\nprzewoźnika na podstawie rodzaju metody dostawy (ADR 0027).')),
   "goodsTotal": zod.object({
   "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
   "currency": zod.string().describe('Kod waluty ISO 4217')
@@ -213,6 +220,13 @@ export const OrdersRetrieveResponse = zod.object({
   "currency": zod.string().describe('Kod waluty ISO 4217')
 }).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.')
 }).describe('Pozycja zamówienia — wyłącznie kopie z chwili złożenia (ADR 0010).\n\nNie ma tu odwołania do dzisiejszej ceny wariantu ani do jego stanu:\nzamówienie ma pokazywać to, co klient kupił, a nie to, co jest w sklepie\nteraz.')),
+  "shipments": zod.array(zod.object({
+  "id": zod.uuid(),
+  "trackingNumber": zod.string().describe('Numer śledzenia u przewoźnika; pusty do chwili nadania'),
+  "shippingMethodKind": zod.enum(['parcel_locker', 'courier', 'pickup', 'eu']).describe('\* `parcel_locker` - Paczkomat\n\* `courier` - Kurier\n\* `pickup` - Odbiór osobisty\n\* `eu` - Przesyłka do Unii').describe('Rodzaj metody dostawy zamówienia — wybiera szablon linku śledzenia\n\n\* `parcel_locker` - Paczkomat\n\* `courier` - Kurier\n\* `pickup` - Odbiór osobisty\n\* `eu` - Przesyłka do Unii'),
+  "pickupPointCode": zod.string().describe('Kod punktu odbioru; wypełniany wyłącznie dla paczkomatu'),
+  "createdAt": zod.iso.datetime({"offset":true}).describe('Timestamp when the record was created')
+}).describe('Przesyłka zamówienia w postaci dla klienta (`CONTEXT.md`, Shipment).\n\nWartości zadeklarowanej przewoźnikowi tu nie ma — to sprawa sklepu\ni przewoźnika (ADR 0028). Link śledzenia składa frontend z szablonu\nprzewoźnika na podstawie rodzaju metody dostawy (ADR 0027).')),
   "goodsTotal": zod.object({
   "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
   "currency": zod.string().describe('Kod waluty ISO 4217')
@@ -311,6 +325,13 @@ export const OrdersCancelCreateResponse = zod.object({
   "currency": zod.string().describe('Kod waluty ISO 4217')
 }).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.')
 }).describe('Pozycja zamówienia — wyłącznie kopie z chwili złożenia (ADR 0010).\n\nNie ma tu odwołania do dzisiejszej ceny wariantu ani do jego stanu:\nzamówienie ma pokazywać to, co klient kupił, a nie to, co jest w sklepie\nteraz.')),
+  "shipments": zod.array(zod.object({
+  "id": zod.uuid(),
+  "trackingNumber": zod.string().describe('Numer śledzenia u przewoźnika; pusty do chwili nadania'),
+  "shippingMethodKind": zod.enum(['parcel_locker', 'courier', 'pickup', 'eu']).describe('\* `parcel_locker` - Paczkomat\n\* `courier` - Kurier\n\* `pickup` - Odbiór osobisty\n\* `eu` - Przesyłka do Unii').describe('Rodzaj metody dostawy zamówienia — wybiera szablon linku śledzenia\n\n\* `parcel_locker` - Paczkomat\n\* `courier` - Kurier\n\* `pickup` - Odbiór osobisty\n\* `eu` - Przesyłka do Unii'),
+  "pickupPointCode": zod.string().describe('Kod punktu odbioru; wypełniany wyłącznie dla paczkomatu'),
+  "createdAt": zod.iso.datetime({"offset":true}).describe('Timestamp when the record was created')
+}).describe('Przesyłka zamówienia w postaci dla klienta (`CONTEXT.md`, Shipment).\n\nWartości zadeklarowanej przewoźnikowi tu nie ma — to sprawa sklepu\ni przewoźnika (ADR 0028). Link śledzenia składa frontend z szablonu\nprzewoźnika na podstawie rodzaju metody dostawy (ADR 0027).')),
   "goodsTotal": zod.object({
   "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
   "currency": zod.string().describe('Kod waluty ISO 4217')
