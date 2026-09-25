@@ -179,6 +179,26 @@ class TestOdczytZamowien:
         assert response.status_code == status.HTTP_200_OK
         assert [row["number"] for row in response.json()["results"]] == [order.number]
 
+    def test_order_detail_exposes_delivered_at(
+        self, authenticated_client: APIClient, user: CustomUser
+    ):
+        """Ekran zamówienia dostaje datę doręczenia — od niej liczy terminy zwrotu."""
+        order = self._order_for(authenticated_client, user)
+        before: Any = authenticated_client.get(_order_url(order.number))
+        assert before.json()["deliveredAt"] is None
+        for step in (
+            OrderStatus.PAID,
+            OrderStatus.PACKED,
+            OrderStatus.SHIPPED,
+            OrderStatus.DELIVERED,
+        ):
+            order.transition_to(step)
+
+        response: Any = authenticated_client.get(_order_url(order.number))
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["deliveredAt"] is not None
+
     def test_anonim_nie_dostaje_listy(self, api_client: APIClient):
         response: Any = api_client.get(_orders_url())
 

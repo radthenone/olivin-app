@@ -3481,6 +3481,13 @@ components:
             * `delivered` - Dostarczone
             * `cancelled` - Anulowane
             * `returned` - Zwrócone
+        deliveredAt:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Chwila przejścia w `delivered` — od niej biegną terminy zwrotu
+            (`CONTEXT.md`, ReturnReason). Ustawiana raz, nigdy nadpisywana.
         email:
           type: string
           format: email
@@ -3568,6 +3575,7 @@ components:
       - couponAmount
       - createdAt
       - currency
+      - deliveredAt
       - discountAmount
       - email
       - exchangeRate
