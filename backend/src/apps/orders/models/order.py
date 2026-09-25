@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models.functions import Lower
+from django.utils import timezone
 
 from apps.orders.models.cart import ENGRAVING_MAX_LENGTH, MAX_ITEM_QUANTITY
 from apps.products.models.choices import RingSize
@@ -129,6 +130,15 @@ class Order(TimestampedModel):
         choices=OrderStatus.choices,
         default=OrderStatus.PENDING,
         help_text="Etap cyklu życia zamówienia",
+    )
+    delivered_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        editable=False,
+        help_text=(
+            "Chwila przejścia w `delivered` — od niej biegną terminy zwrotu "
+            "(`CONTEXT.md`, ReturnReason). Ustawiana raz, nigdy nadpisywana."
+        ),
     )
 
     # --- Kopia adresu dostawy ---------------------------------------------
@@ -307,6 +317,13 @@ class Order(TimestampedModel):
         self.save(update_fields=["status", "updated_at"])
 
     def save(self, *args, **kwargs) -> None:
+        # W `save()`, nie tylko w `transition_to()`: panel admina zapisuje
+        # status wprost, a data ma powstać tak samo każdą drogą (#193).
+        # Działa przy każdym zapisie `delivered` z pustą datą, nie tylko przy przejściu.
+        if self.status == OrderStatus.DELIVERED and self.delivered_at is None:
+            self.delivered_at = timezone.now()
+            if kwargs.get("update_fields") is not None:
+                kwargs["update_fields"] = {*kwargs["update_fields"], "delivered_at"}
         if not self.terms_version and self.terms_document_id is not None:  # type: ignore[missing-attribute]
             self.terms_version = self.terms_document.version
         super().save(*args, **kwargs)

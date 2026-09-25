@@ -30,6 +30,11 @@ export interface Order {
   * `cancelled` - Anulowane
   * `returned` - Zwrócone */
   readonly status: OrderStatusEnum;
+  /**
+     * Chwila przejścia w `delivered` — od niej biegną terminy zwrotu (`CONTEXT.md`, ReturnReason). Ustawiana raz, nigdy nadpisywana.
+     * @nullable
+     */
+  readonly deliveredAt: string | null;
   /** Adres, pod który idzie potwierdzenie. Zawsze wypełniony — także dla klienta z kontem, bo zamówienie ma zostać czytelne po anonimizacji konta. */
   readonly email: string;
   /** Imię i nazwisko odbiorcy z chwili złożenia zamówienia */

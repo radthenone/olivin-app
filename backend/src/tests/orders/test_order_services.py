@@ -598,6 +598,94 @@ class TestStatusTransitions:
 
 
 @pytest.mark.django_db
+class TestDeliveredAt:
+    """Data doręczenia zapisana w chwili przejścia w `delivered` (#193)."""
+
+    def _shipped(self) -> Order:
+        order = TestStatusTransitions()._order()
+        for step in (OrderStatus.PAID, OrderStatus.PACKED, OrderStatus.SHIPPED):
+            order.transition_to(step)
+        return order
+
+    def test_transition_to_delivered_sets_date(self):
+        """Przejście w `delivered` zapisuje chwilę doręczenia w bazie."""
+        order = self._shipped()
+        before = timezone.now()
+
+        order.transition_to(OrderStatus.DELIVERED)
+
+        order.refresh_from_db()
+        assert order.delivered_at is not None
+        assert before <= order.delivered_at <= timezone.now()
+
+    def test_earlier_statuses_do_not_set_date(self):
+        """Etapy przed doręczeniem zostawiają datę pustą."""
+        order = self._shipped()
+
+        order.refresh_from_db()
+        assert order.delivered_at is None
+
+    def test_cancellation_does_not_set_date(self):
+        """Anulowanie to nie doręczenie."""
+        order = TestStatusTransitions()._order()
+
+        order.transition_to(OrderStatus.CANCELLED)
+
+        order.refresh_from_db()
+        assert order.delivered_at is None
+
+    def test_later_saves_do_not_change_date(self):
+        """Zwrot i zwykłe zapisy po doręczeniu nie nadpisują daty."""
+        order = self._shipped()
+        order.transition_to(OrderStatus.DELIVERED)
+        order.refresh_from_db()
+        delivered_at = order.delivered_at
+
+        order.save()
+        order.transition_to(OrderStatus.RETURNED)
+
+        order.refresh_from_db()
+        assert order.delivered_at == delivered_at
+
+    def test_plain_save_to_delivered_sets_date(self):
+        """Panel admina zapisuje status przez `save()` — data powstaje i tak."""
+        order = self._shipped()
+
+        order.status = OrderStatus.DELIVERED
+        order.save()
+
+        order.refresh_from_db()
+        assert order.delivered_at is not None
+
+    def test_backfill_uses_updated_at_for_delivered_without_date(self):
+        """Migracja danych przybliża datę doręczenia przez `updated_at`."""
+        from importlib import import_module
+
+        from django.apps import apps
+
+        migration = import_module("apps.orders.migrations.0007_order_delivered_at")
+        order = self._shipped()
+
+        migration.backfill_delivered_at(apps, None)
+        order.refresh_from_db()
+        assert order.delivered_at is None
+
+        order.transition_to(OrderStatus.DELIVERED)
+        Order.objects.filter(pk=order.pk).update(delivered_at=None)
+        migration.backfill_delivered_at(apps, None)
+
+        order.refresh_from_db()
+        assert order.delivered_at == order.updated_at
+
+
+def test_delivered_at_is_read_only_in_admin():
+    """Obsługa nie wpisuje daty doręczenia ręcznie — tylko status."""
+    from apps.orders.admin import OrderAdmin
+
+    assert "delivered_at" in OrderAdmin.readonly_fields
+
+
+@pytest.mark.django_db
 class TestMembershipGrantOnDelivery:
     """Dostarczenie zamówienia nadaje premium po przekroczeniu progu (#155)."""
 

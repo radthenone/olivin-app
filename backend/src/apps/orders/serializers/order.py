@@ -69,6 +69,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "id",
             "number",
             "status",
+            "delivered_at",
             "email",
             "recipient_name",
             "street",
