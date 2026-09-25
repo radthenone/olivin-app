@@ -33,7 +33,6 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
 
         user = cast(CustomUser, sociallogin.user)
 
-        user_field(user, "username", None)
         user_email(user, valid_email_or_none(email) or "")
         name_parts = (name or "").partition(" ")
         user_field(user, "first_name", first_name or name_parts[0])

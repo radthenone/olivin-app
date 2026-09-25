@@ -4503,6 +4503,11 @@ components:
           type: string
           format: email
           readOnly: true
+        username:
+          type: string
+          pattern: ^[A-Za-z0-9._-]+$
+          maxLength: 30
+          minLength: 3
         firstName:
           type: string
           description: User's first name
@@ -4953,6 +4958,11 @@ components:
           type: string
           format: email
           readOnly: true
+        username:
+          type: string
+          pattern: ^[A-Za-z0-9._-]+$
+          maxLength: 30
+          minLength: 3
         firstName:
           type: string
           description: User's first name

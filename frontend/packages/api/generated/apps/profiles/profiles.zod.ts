@@ -25,6 +25,11 @@ export const CustomersProfileListQueryParams = zod.object({
   "pageSize": zod.coerce.number().optional().describe('Number of results to return per page.')
 })
 
+export const customersProfileListResponseResultsItemUsernameMin = 3;
+export const customersProfileListResponseResultsItemUsernameMax = 30;
+
+
+export const customersProfileListResponseResultsItemUsernameRegExp = new RegExp('^[A-Za-z0-9._-]+$');
 export const customersProfileListResponseResultsItemFirstNameMax = 150;
 
 export const customersProfileListResponseResultsItemLastNameMax = 150;
@@ -38,6 +43,7 @@ export const CustomersProfileListResponse = zod.object({
   "results": zod.array(zod.object({
   "id": zod.uuid(),
   "email": zod.email(),
+  "username": zod.string().min(customersProfileListResponseResultsItemUsernameMin).max(customersProfileListResponseResultsItemUsernameMax).regex(customersProfileListResponseResultsItemUsernameRegExp).optional(),
   "firstName": zod.string().max(customersProfileListResponseResultsItemFirstNameMax).optional().describe('User\'s first name'),
   "lastName": zod.string().max(customersProfileListResponseResultsItemLastNameMax).optional().describe('User\'s last name'),
   "fullName": zod.string(),
@@ -60,6 +66,11 @@ Actions:
 - destroy:        DELETE /api/v1/profiles/{id}/
 - change_role:    PATCH /api/v1/profiles/{id}/change-role/
  */
+export const customersProfileCreateBodyUsernameMin = 3;
+export const customersProfileCreateBodyUsernameMax = 30;
+
+
+export const customersProfileCreateBodyUsernameRegExp = new RegExp('^[A-Za-z0-9._-]+$');
 export const customersProfileCreateBodyFirstNameMax = 150;
 
 export const customersProfileCreateBodyLastNameMax = 150;
@@ -67,6 +78,7 @@ export const customersProfileCreateBodyLastNameMax = 150;
 
 
 export const CustomersProfileCreateBody = zod.object({
+  "username": zod.string().min(customersProfileCreateBodyUsernameMin).max(customersProfileCreateBodyUsernameMax).regex(customersProfileCreateBodyUsernameRegExp).optional(),
   "firstName": zod.string().max(customersProfileCreateBodyFirstNameMax).optional().describe('User\'s first name'),
   "lastName": zod.string().max(customersProfileCreateBodyLastNameMax).optional().describe('User\'s last name'),
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
@@ -89,6 +101,11 @@ export const CustomersProfileRetrieveParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const customersProfileRetrieveResponseUsernameMin = 3;
+export const customersProfileRetrieveResponseUsernameMax = 30;
+
+
+export const customersProfileRetrieveResponseUsernameRegExp = new RegExp('^[A-Za-z0-9._-]+$');
 export const customersProfileRetrieveResponseFirstNameMax = 150;
 
 export const customersProfileRetrieveResponseLastNameMax = 150;
@@ -98,6 +115,7 @@ export const customersProfileRetrieveResponseLastNameMax = 150;
 export const CustomersProfileRetrieveResponse = zod.object({
   "id": zod.uuid(),
   "email": zod.email(),
+  "username": zod.string().min(customersProfileRetrieveResponseUsernameMin).max(customersProfileRetrieveResponseUsernameMax).regex(customersProfileRetrieveResponseUsernameRegExp).optional(),
   "firstName": zod.string().max(customersProfileRetrieveResponseFirstNameMax).optional().describe('User\'s first name'),
   "lastName": zod.string().max(customersProfileRetrieveResponseLastNameMax).optional().describe('User\'s last name'),
   "fullName": zod.string(),
@@ -123,6 +141,11 @@ export const CustomersProfileUpdateParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const customersProfileUpdateBodyUsernameMin = 3;
+export const customersProfileUpdateBodyUsernameMax = 30;
+
+
+export const customersProfileUpdateBodyUsernameRegExp = new RegExp('^[A-Za-z0-9._-]+$');
 export const customersProfileUpdateBodyFirstNameMax = 150;
 
 export const customersProfileUpdateBodyLastNameMax = 150;
@@ -130,12 +153,18 @@ export const customersProfileUpdateBodyLastNameMax = 150;
 
 
 export const CustomersProfileUpdateBody = zod.object({
+  "username": zod.string().min(customersProfileUpdateBodyUsernameMin).max(customersProfileUpdateBodyUsernameMax).regex(customersProfileUpdateBodyUsernameRegExp).optional(),
   "firstName": zod.string().max(customersProfileUpdateBodyFirstNameMax).optional().describe('User\'s first name'),
   "lastName": zod.string().max(customersProfileUpdateBodyLastNameMax).optional().describe('User\'s last name'),
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
   "phoneNumber": zod.string().optional()
 })
 
+export const customersProfileUpdateResponseUsernameMin = 3;
+export const customersProfileUpdateResponseUsernameMax = 30;
+
+
+export const customersProfileUpdateResponseUsernameRegExp = new RegExp('^[A-Za-z0-9._-]+$');
 export const customersProfileUpdateResponseFirstNameMax = 150;
 
 export const customersProfileUpdateResponseLastNameMax = 150;
@@ -145,6 +174,7 @@ export const customersProfileUpdateResponseLastNameMax = 150;
 export const CustomersProfileUpdateResponse = zod.object({
   "id": zod.uuid(),
   "email": zod.email(),
+  "username": zod.string().min(customersProfileUpdateResponseUsernameMin).max(customersProfileUpdateResponseUsernameMax).regex(customersProfileUpdateResponseUsernameRegExp).optional(),
   "firstName": zod.string().max(customersProfileUpdateResponseFirstNameMax).optional().describe('User\'s first name'),
   "lastName": zod.string().max(customersProfileUpdateResponseLastNameMax).optional().describe('User\'s last name'),
   "fullName": zod.string(),
@@ -170,6 +200,11 @@ export const CustomersProfilePartialUpdateParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const customersProfilePartialUpdateBodyUsernameMin = 3;
+export const customersProfilePartialUpdateBodyUsernameMax = 30;
+
+
+export const customersProfilePartialUpdateBodyUsernameRegExp = new RegExp('^[A-Za-z0-9._-]+$');
 export const customersProfilePartialUpdateBodyFirstNameMax = 150;
 
 export const customersProfilePartialUpdateBodyLastNameMax = 150;
@@ -177,12 +212,18 @@ export const customersProfilePartialUpdateBodyLastNameMax = 150;
 
 
 export const CustomersProfilePartialUpdateBody = zod.object({
+  "username": zod.string().min(customersProfilePartialUpdateBodyUsernameMin).max(customersProfilePartialUpdateBodyUsernameMax).regex(customersProfilePartialUpdateBodyUsernameRegExp).optional(),
   "firstName": zod.string().max(customersProfilePartialUpdateBodyFirstNameMax).optional().describe('User\'s first name'),
   "lastName": zod.string().max(customersProfilePartialUpdateBodyLastNameMax).optional().describe('User\'s last name'),
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
   "phoneNumber": zod.string().optional()
 })
 
+export const customersProfilePartialUpdateResponseUsernameMin = 3;
+export const customersProfilePartialUpdateResponseUsernameMax = 30;
+
+
+export const customersProfilePartialUpdateResponseUsernameRegExp = new RegExp('^[A-Za-z0-9._-]+$');
 export const customersProfilePartialUpdateResponseFirstNameMax = 150;
 
 export const customersProfilePartialUpdateResponseLastNameMax = 150;
@@ -192,6 +233,7 @@ export const customersProfilePartialUpdateResponseLastNameMax = 150;
 export const CustomersProfilePartialUpdateResponse = zod.object({
   "id": zod.uuid(),
   "email": zod.email(),
+  "username": zod.string().min(customersProfilePartialUpdateResponseUsernameMin).max(customersProfilePartialUpdateResponseUsernameMax).regex(customersProfilePartialUpdateResponseUsernameRegExp).optional(),
   "firstName": zod.string().max(customersProfilePartialUpdateResponseFirstNameMax).optional().describe('User\'s first name'),
   "lastName": zod.string().max(customersProfilePartialUpdateResponseLastNameMax).optional().describe('User\'s last name'),
   "fullName": zod.string(),
@@ -225,6 +267,11 @@ export const CustomersProfileChangeRolePartialUpdateParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const customersProfileChangeRolePartialUpdateBodyUsernameMin = 3;
+export const customersProfileChangeRolePartialUpdateBodyUsernameMax = 30;
+
+
+export const customersProfileChangeRolePartialUpdateBodyUsernameRegExp = new RegExp('^[A-Za-z0-9._-]+$');
 export const customersProfileChangeRolePartialUpdateBodyFirstNameMax = 150;
 
 export const customersProfileChangeRolePartialUpdateBodyLastNameMax = 150;
@@ -232,12 +279,18 @@ export const customersProfileChangeRolePartialUpdateBodyLastNameMax = 150;
 
 
 export const CustomersProfileChangeRolePartialUpdateBody = zod.object({
+  "username": zod.string().min(customersProfileChangeRolePartialUpdateBodyUsernameMin).max(customersProfileChangeRolePartialUpdateBodyUsernameMax).regex(customersProfileChangeRolePartialUpdateBodyUsernameRegExp).optional(),
   "firstName": zod.string().max(customersProfileChangeRolePartialUpdateBodyFirstNameMax).optional().describe('User\'s first name'),
   "lastName": zod.string().max(customersProfileChangeRolePartialUpdateBodyLastNameMax).optional().describe('User\'s last name'),
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
   "phoneNumber": zod.string().optional()
 })
 
+export const customersProfileChangeRolePartialUpdateResponseUsernameMin = 3;
+export const customersProfileChangeRolePartialUpdateResponseUsernameMax = 30;
+
+
+export const customersProfileChangeRolePartialUpdateResponseUsernameRegExp = new RegExp('^[A-Za-z0-9._-]+$');
 export const customersProfileChangeRolePartialUpdateResponseFirstNameMax = 150;
 
 export const customersProfileChangeRolePartialUpdateResponseLastNameMax = 150;
@@ -247,6 +300,7 @@ export const customersProfileChangeRolePartialUpdateResponseLastNameMax = 150;
 export const CustomersProfileChangeRolePartialUpdateResponse = zod.object({
   "id": zod.uuid(),
   "email": zod.email(),
+  "username": zod.string().min(customersProfileChangeRolePartialUpdateResponseUsernameMin).max(customersProfileChangeRolePartialUpdateResponseUsernameMax).regex(customersProfileChangeRolePartialUpdateResponseUsernameRegExp).optional(),
   "firstName": zod.string().max(customersProfileChangeRolePartialUpdateResponseFirstNameMax).optional().describe('User\'s first name'),
   "lastName": zod.string().max(customersProfileChangeRolePartialUpdateResponseLastNameMax).optional().describe('User\'s last name'),
   "fullName": zod.string(),
