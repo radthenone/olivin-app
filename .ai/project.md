@@ -2,7 +2,7 @@
 
 **Zasada tego pliku:** opisuje to, co JEST, nigdy to, co ma być. Plany mieszkają w zgłoszeniach na trackerze, decyzje w `docs/adr/`, słownik domeny w `CONTEXT.md`. Jeśli ten plik rozjedzie się z kodem, kod ma rację — zgłoś rozjazd zamiast budować na opisie.
 
-Zweryfikowano: 2026-09-11.
+Zweryfikowano: 2026-09-25.
 
 ## Gdzie czego szukać
 
@@ -35,7 +35,7 @@ Zweryfikowano: 2026-09-11.
 
 **Puste szkielety po `startapp` — dziewięć linii kodu każdy, zero modeli, zero migracji:**
 
-`discounts`, `reviews`, `notifications`
+`reviews`, `notifications`
 
 Nie zakładaj, że którakolwiek z nich cokolwiek zawiera. `Cart`, `Order`, `Payment`, stan magazynowy i rezerwacje już są.
 

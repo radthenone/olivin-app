@@ -8,7 +8,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 
 from apps.promotions.models import PromotionKind
-from core.paths import APPS_DIR
+from core.paths import APPS_DIR, CORE_DIR
 from tests.factories.promotions import PromotionFactory
 
 
@@ -23,6 +23,14 @@ class TestDiscountsAppRemoved:
     def test_no_code_left(self):
         """Na dysku nie ma po niej kodu."""
         assert not list((APPS_DIR / "discounts").glob("**/*.py"))
+
+    def test_settings_and_urls_do_not_mention_it(self):
+        """Ustawienia i routing nie odwołują się do usuniętej aplikacji."""
+        for path in (
+            CORE_DIR / "settings" / "components" / "apps.py",
+            CORE_DIR / "urls.py",
+        ):
+            assert "apps.discounts" not in path.read_text(encoding="utf-8")
 
 
 @pytest.mark.django_db
