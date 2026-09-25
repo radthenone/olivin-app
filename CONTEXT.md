@@ -80,6 +80,10 @@ _Unikaj_: Tax, TaxRate
 Zbiór wariantów wybranych przez klienta przed złożeniem zamówienia, przechowywany na backendzie dla każdego klienta — web i mobile. Należy do użytkownika albo do gościa identyfikowanego tokenem koszyka wydanym przez backend, nigdy do obu. Przy logowaniu koszyk gościa jest scalany z koszykiem konta, a token gościa przestaje działać. Koszyk gościa bez aktywności przez 30 dni jest kasowany.
 _Unikaj_: Basket, Bag, Koszyk zakupowy
 
+**CartReminder**:
+Jednorazowe przypomnienie o niepustym koszyku po 24 godzinach bez aktywności, z aktualnymi cenami i dostępnością pozycji, bez rabatu. Kolejne dopiero po zmianie zawartości koszyka. Komunikat marketingowy — trafia tylko do zalogowanych klientów ze zgodą na danym kanale; gość go nie dostaje. Nie wychodzi, gdy żadna pozycja nie jest dostępna. Nieopłacone zamówienie nie jest porzuconym koszykiem.
+_Unikaj_: Abandoned cart (jako nazwa modelu), Reminder, Porzucony koszyk
+
 **CartItem**:
 Pozycja koszyka: wariant, ilość i parametry personalizacji. Nie zamraża ceny — koszyk pokazuje cenę aktualną. Dwie pozycje na ten sam wariant z różnym grawerunkiem to dwie różne pozycje; nie wolno ich scalić. Para obrączek to jedna pozycja z dwoma egzemplarzami o osobnych rozmiarach i osobnym albo wspólnym grawerunkiem.
 _Unikaj_: LineItem, CartLine
@@ -242,5 +246,5 @@ Wersja regulaminu, polityki prywatności albo zgody marketingowej: rodzaj, oznac
 _Unikaj_: Terms, Policy, Regulamin jako treść
 
 **Consent**:
-Wersjonowana zgoda klienta albo gościa na regulamin, politykę prywatności lub komunikację marketingową, z datą. Podmiotem jest użytkownik albo e-mail gościa — dokładnie jedno; zgoda gościa nie przechodzi na konto założone później. Nowa wersja dokumentu wymaga ponownej akceptacji. Zgody na pliki cookie żyją wyłącznie w przeglądarce i nie są tu zapisywane.
+Wersjonowana zgoda klienta albo gościa na regulamin, politykę prywatności lub komunikację marketingową, z datą. Podmiotem jest użytkownik albo e-mail gościa — dokładnie jedno; zgoda gościa nie przechodzi na konto założone później. Założenie konta — także przez logowanie zewnętrzne — wymaga zgody na regulamin i politykę prywatności; zgoda marketingowa jest dobrowolna. Nowa wersja dokumentu wymaga ponownej akceptacji, ale jej brak blokuje wyłącznie składanie zamówień, nie dostęp do konta. Zgody na pliki cookie żyją wyłącznie w przeglądarce i nie są tu zapisywane.
 _Unikaj_: Agreement, Terms accepted (jako flaga), Cookie consent
