@@ -1,3 +1,7 @@
+---
+status: superseded by ADR-0031
+---
+
 # Podstawa zwrotu decyduje o dopuszczalnej formie rekompensaty
 
 Forma rekompensaty nie jest wyborem sklepu — wynika z tego, z jakiego tytułu
@@ -54,3 +58,4 @@ zaokrąglony w górę do pełnych 10 zł, z nowym terminem ważności). Wymiana
 rozmiaru nie jest osobnym procesem — to zwrot dobrowolny i nowe zamówienie.
 Produkt na zamówienie wyłącza odstąpienie tak jak grawer — patrz
 [ADR 0024](0024-produkt-na-zamowienie-i-para-jako-jedna-pozycja.md).
+
