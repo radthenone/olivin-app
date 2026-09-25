@@ -15,6 +15,7 @@ import * as zod from 'zod';
 export const ProductsListQueryParams = zod.object({
   "category": zod.coerce.string().optional().describe('Slug kategorii; obejmuje również jej podkategorie'),
   "collection": zod.coerce.string().optional().describe('Slug kolekcji marketingowej'),
+  "currency": zod.enum(['EUR', 'PLN']).optional().describe('Waluta cen. EUR przelicza ceny złotowe po bieżącym kursie NBP i zaokrągla w górę do ,00\/,50 (ADR 0019); brak kursu daje 400. Filtry ceny zawsze działają w złotych.'),
   "fineness": zod.enum(['333', '375', '585', '750', '916', '925', '950', '999']).optional().describe('Próba kruszcu\n\n\* `333` - 333 (8 karatów)\n\* `375` - 375 (9 karatów)\n\* `585` - 585 (14 karatów)\n\* `750` - 750 (18 karatów)\n\* `916` - 916 (22 karaty)\n\* `925` - 925 (srebro próby 925)\n\* `950` - 950 (platyna)\n\* `999` - 999 (kruszec inwestycyjny)'),
   "lang": zod.enum(['en', 'pl']).optional().describe('Język pól tekstowych. Bez tego parametru brany jest nagłówek `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi do tekstu polskiego; slug nie jest tłumaczony.'),
   "length": zod.enum(['16', '18', '20', '36', '38', '40', '42', '45', '50', '55', '60', '70', '80']).optional().describe('Długość w centymetrach\n\n\* `16` - 16 cm\n\* `18` - 18 cm\n\* `20` - 20 cm\n\* `36` - 36 cm\n\* `38` - 38 cm\n\* `40` - 40 cm\n\* `42` - 42 cm\n\* `45` - 45 cm\n\* `50` - 50 cm\n\* `55` - 55 cm\n\* `60` - 60 cm\n\* `70` - 70 cm\n\* `80` - 80 cm'),
@@ -102,6 +103,7 @@ export const ProductsRetrieveParams = zod.object({
 })
 
 export const ProductsRetrieveQueryParams = zod.object({
+  "currency": zod.enum(['EUR', 'PLN']).optional().describe('Waluta cen. EUR przelicza ceny złotowe po bieżącym kursie NBP i zaokrągla w górę do ,00\/,50 (ADR 0019); brak kursu daje 400. Filtry ceny zawsze działają w złotych.'),
   "lang": zod.enum(['en', 'pl']).optional().describe('Język pól tekstowych. Bez tego parametru brany jest nagłówek `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi do tekstu polskiego; slug nie jest tłumaczony.')
 })
 

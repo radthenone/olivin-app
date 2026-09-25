@@ -1431,6 +1431,16 @@ paths:
           type: string
         description: Slug kolekcji marketingowej
       - in: query
+        name: currency
+        schema:
+          type: string
+          enum:
+          - EUR
+          - PLN
+        description: Waluta cen. EUR przelicza ceny złotowe po bieżącym kursie NBP
+          i zaokrągla w górę do ,00/,50 (ADR 0019); brak kursu daje 400. Filtry ceny
+          zawsze działają w złotych.
+      - in: query
         name: fineness
         schema:
           type: string
@@ -1658,6 +1668,16 @@ paths:
         odpowiedzią jest 404, tak samo jak dla produktu nieistniejącego.
       summary: Produkt wraz z pełną listą wariantów
       parameters:
+      - in: query
+        name: currency
+        schema:
+          type: string
+          enum:
+          - EUR
+          - PLN
+        description: Waluta cen. EUR przelicza ceny złotowe po bieżącym kursie NBP
+          i zaokrągla w górę do ,00/,50 (ADR 0019); brak kursu daje 400. Filtry ceny
+          zawsze działają w złotych.
       - in: query
         name: lang
         schema:

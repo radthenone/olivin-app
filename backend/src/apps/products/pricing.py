@@ -17,6 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal
 
+from apps.products.models.exchange_rate import ExchangeRate
 from apps.products.models.metal_rate import MetalRate
 from apps.products.models.variant import ProductVariant
 from common.money import DEFAULT_CURRENCY, Money
@@ -24,6 +25,8 @@ from common.money import DEFAULT_CURRENCY, Money
 # Cena kończy się na pełnych złotówkach — grosze w cenie katalogowej
 # biżuterii nie niosą informacji, a psują odbiór.
 GROSZE_IN_ZLOTY = 100
+# Cena w euro kończy się na ,00 albo ,50 (ADR 0019, uzupełnienie 2026-09-22).
+HALF_UNIT = 50
 
 
 @dataclass(frozen=True, slots=True)
@@ -113,3 +116,25 @@ def calculate_price(variant: ProductVariant) -> Money | None:
     if floor is None:
         return None
     return round_up_to_zloty(margin_for(variant).apply(floor))
+
+
+def round_up_to_half(amount: Money) -> Money:
+    """W górę do najbliższej końcówki ,00 albo ,50."""
+    halves = (Decimal(amount.amount) / Decimal(HALF_UNIT)).to_integral_value(
+        rounding=ROUND_CEILING
+    )
+    return Money(int(halves) * HALF_UNIT, amount.currency)
+
+
+def price_in(variant: ProductVariant, rate: ExchangeRate) -> Money:
+    """Cena wariantu w walucie kursu (ADR 0019).
+
+    Przeliczona i zaokrąglona w górę do ,00/,50, ale nigdy poniżej kosztu
+    wariantu przeliczonego tym samym kursem — próg z ADR 0022 obowiązuje
+    w każdej walucie.
+    """
+    price = round_up_to_half(rate.convert(variant.effective_price))
+    floor = cost_floor(variant)
+    if floor is None:
+        return price
+    return max(price, round_up_to_half(rate.convert(floor)))

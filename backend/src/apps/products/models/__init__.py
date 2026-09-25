@@ -10,6 +10,11 @@ from apps.products.models.choices import (
     Stone,
 )
 from apps.products.models.cost_component import CostComponent
+from apps.products.models.exchange_rate import (
+    EURO,
+    ExchangeRate,
+    ExchangeRateQuerySet,
+)
 from apps.products.models.gemstone import (
     Clarity,
     Colour,
@@ -36,6 +41,9 @@ from apps.products.models.variant import (
 
 __all__ = [
     "EFFECTIVE_PRICE",
+    "EURO",
+    "ExchangeRate",
+    "ExchangeRateQuerySet",
     "CostComponent",
     "RENDITION_WIDTHS",
     "Clarity",

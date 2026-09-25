@@ -5,9 +5,14 @@
  * API documentation
  * OpenAPI spec version: 1.0.0
  */
+import type { ProductsRetrieveCurrency } from './productsRetrieveCurrency';
 import type { ProductsRetrieveLang } from './productsRetrieveLang';
 
 export type ProductsRetrieveParams = {
+/**
+ * Waluta cen. EUR przelicza ceny złotowe po bieżącym kursie NBP i zaokrągla w górę do ,00/,50 (ADR 0019); brak kursu daje 400. Filtry ceny zawsze działają w złotych.
+ */
+currency?: ProductsRetrieveCurrency;
 /**
  * Język pól tekstowych. Bez tego parametru brany jest nagłówek `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi do tekstu polskiego; slug nie jest tłumaczony.
  */

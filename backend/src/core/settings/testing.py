@@ -39,6 +39,9 @@ PASSWORD_HASHERS = [
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 ACTUAL_EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
+# --- Kurs walut bez sieci ---
+EXCHANGE_RATE_PROVIDER = "core.integrations.exchange_rate.fake.FakeExchangeRateProvider"
+
 # --- Cache ---
 CACHES = {
     "default": {

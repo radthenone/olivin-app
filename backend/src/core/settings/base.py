@@ -75,6 +75,14 @@ DEEPL_API_URL = str(
     os.environ.get("DEEPL_API_URL", "https://api-free.deepl.com/v2/translate")
 )
 
+# Kurs euro dla klienta z Unii (ADR 0019, ADR 0027). NBP nie wymaga klucza.
+EXCHANGE_RATE_PROVIDER = str(
+    os.environ.get(
+        "EXCHANGE_RATE_PROVIDER",
+        "core.integrations.exchange_rate.nbp.NbpProvider",
+    )
+)
+
 # Operator płatności (ADR 0012, ADR 0027). Kwoty i status zapłaty liczy
 # backend; klient dostaje wyłącznie sekret intencji dla komponentu operatora.
 PAYMENT_PROVIDER = str(

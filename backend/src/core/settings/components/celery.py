@@ -52,6 +52,12 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.products.tasks.propose_metal_rates",
         "schedule": crontab(minute=0, hour=6, day_of_month=1),
     },
+    # Codziennie sprawdza wiek kursu euro; pobiera nowy co 30 dni i ten
+    # działa od razu, bez aktywacji (ADR 0019).
+    "refresh-exchange-rate": {
+        "task": "apps.products.tasks.refresh_exchange_rate",
+        "schedule": crontab(minute=10, hour=6),
+    },
     # Co pięć minut: rezerwacja trzyma stan pół godziny, więc obchód częstszy
     # niczego nie poprawia, a rzadszy zostawiałby w panelu rezerwacje
     # „aktywne" długo po terminie. Dostępność i tak liczy sam termin.

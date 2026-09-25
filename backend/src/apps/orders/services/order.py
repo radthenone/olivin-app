@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass
+from decimal import ROUND_FLOOR
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
@@ -28,7 +29,8 @@ from apps.orders.models import (
     OrderStatus,
 )
 from apps.orders.services.cart import cart_items, promotions_for, totals
-from apps.products.models import ProductStatus
+from apps.products.models import EURO, ExchangeRate, ProductStatus
+from apps.products.pricing import price_in, round_up_to_half
 from apps.promotions.models import (
     Coupon,
     CouponRedemption,
@@ -93,10 +95,16 @@ def create_order(
         raise OrderError(
             {"country": "Sklep wysyła wyłącznie do Polski i pozostałych krajów Unii."}
         )
+    rate = _exchange_rate_for(zone)
     _lock_limited_promotions()
     coupon = _lock_coupon(cart)
     discounts = promotions_for(cart, items, user=user, email=subject_email)
     summary = totals(items, discounts, coupon)
+    if rate is not None and summary.coupon_amount:
+        # Kupon ma nominał w złotych (ADR 0011) — nie płaci za zamówienie w euro.
+        raise OrderError(
+            {"coupon": "Kupon w złotych nie opłaci zamówienia w euro — usuń go."}
+        )
 
     _reject_unavailable_items(items)
     _reject_without_terms_consent(user=user, email=subject_email)
@@ -107,6 +115,16 @@ def create_order(
     # `.ai/project.md` dotyczy tego, ile gość zostawia w sklepie.
     _reject_guest_above_limit(user=user, total=summary.total + shipping_cost)
 
+    discount = summary.discount_amount
+    if rate is not None:
+        # Wszystko liczone w złotych (ceny źródłowe), zamówienie zapisane
+        # w euro. Rabat w dół, żeby towar po rabacie nie zszedł pod próg.
+        shipping_cost = rate.convert(shipping_cost)
+        discount = sum(
+            (_item_discount(applied.amount, rate) for applied in discounts.values()),
+            start=Money.zero(rate.currency),
+        )
+
     order = _build_order(
         address=address,
         shipping_method=shipping_method,
@@ -114,10 +132,11 @@ def create_order(
         user=user,
         email=subject_email,
         invoice_requested=invoice_requested,
-        discount=summary.discount_amount,
+        discount=discount,
         coupon=summary.coupon_amount,
+        rate=rate,
     )
-    _snapshot_items(order, items, discounts)
+    _snapshot_items(order, items, discounts, rate)
     _record_redemptions(order, discounts)
     _redeem_coupon(order, coupon, summary.coupon_amount)
     _reserve_items(order, items)
@@ -424,6 +443,7 @@ def _build_order(
     invoice_requested: bool,
     discount: Money,
     coupon: Money,
+    rate: ExchangeRate | None,
 ) -> Order:
     terms = ConsentDocument.objects.current(ConsentKind.TERMS)
     if terms is None:
@@ -442,6 +462,8 @@ def _build_order(
         shipping_method_name=shipping_method.name,
         shipping_cost=shipping_cost.amount,
         currency=shipping_cost.currency or DEFAULT_CURRENCY,
+        # Kopia kursu: późniejsza zmiana kursu nie rusza zamówienia (ADR 0019).
+        exchange_rate=rate.rate if rate is not None else 1,
         terms_document=terms,
         invoice_requested=invoice_requested,
         discount_amount=discount.amount,
@@ -449,16 +471,43 @@ def _build_order(
     )
 
 
+def _exchange_rate_for(zone: ShippingZone) -> ExchangeRate | None:
+    """Kurs euro dla strefy EU (ADR 0019); `None` dla sprzedaży w złotych."""
+    if zone != ShippingZone.EU:
+        return None
+    rate = ExchangeRate.objects.current(EURO)
+    if rate is None:
+        raise OrderError({"currency": "Kurs euro nie jest dostępny — spróbuj później."})
+    return rate
+
+
+def _item_discount(amount: Money, rate: ExchangeRate) -> Money:
+    return rate.convert(amount, rounding=ROUND_FLOOR)
+
+
 def _snapshot_items(
-    order: Order, items: list[CartItem], discounts: Mapping[Any, AppliedPromotion]
+    order: Order,
+    items: list[CartItem],
+    discounts: Mapping[Any, AppliedPromotion],
+    rate: ExchangeRate | None = None,
 ) -> None:
-    """Przepisuje pozycje koszyka na pozycje zamówienia (ADR 0010)."""
+    """Przepisuje pozycje koszyka na pozycje zamówienia (ADR 0010).
+
+    Z kursem ceny idą w walucie kursu: wariant przez `price_in` (,00/,50,
+    nie poniżej progu), grawer zaokrąglony tak samo jak cena katalogowa.
+    """
     snapshots = []
     for item in items:
         applied = discounts.get(item.pk)
         variant = item.variant
         product = variant.product
         engraving = product.engraving_price or 0
+        unit_price = variant.effective_price.amount
+        discount = applied.amount.amount if applied else 0
+        if rate is not None:
+            unit_price = price_in(variant, rate).amount
+            engraving = round_up_to_half(rate.convert(Money(engraving))).amount
+            discount = _item_discount(applied.amount, rate).amount if applied else 0
         snapshots.append(
             OrderItem(
                 order=order,
@@ -467,7 +516,7 @@ def _snapshot_items(
                 sku=variant.sku,
                 is_made_to_order=product.is_made_to_order,
                 quantity=item.quantity,
-                unit_price=variant.effective_price.amount,
+                unit_price=unit_price,
                 vat_rate=variant.vat_rate,
                 is_vat_exempt=variant.is_vat_exempt,
                 vat_exemption_basis=variant.vat_exemption_basis,
@@ -476,7 +525,7 @@ def _snapshot_items(
                 size=variant.size,
                 second_size=item.second_size,
                 second_engraving_text=item.second_engraving_text,
-                discount_amount=applied.amount.amount if applied else 0,
+                discount_amount=discount,
             )
         )
     OrderItem.objects.bulk_create(snapshots)
