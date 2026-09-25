@@ -428,6 +428,17 @@ class TestOrderShipments:
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert "PL999" not in response.content.decode()
 
+    def test_guest_with_wrong_email_does_not_see_shipments(self, api_client: APIClient):
+        order = GuestOrderFactory(email="gosc@test.com")
+        ShipmentFactory(order=order, tracking_number="PL999")
+
+        response: Any = api_client.get(
+            _order_url(order.number), {"email": "ktos.inny@test.com"}
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert "PL999" not in response.content.decode()
+
     def test_order_list_query_count_does_not_grow_with_shipments(
         self, authenticated_client: APIClient, user: CustomUser
     ):
