@@ -38,6 +38,11 @@ _TEMPLATES: dict[str, tuple[str, str]] = {
         "Zgłoszenie zwrotu do zamówienia {order_number}",
         "Zgłoszenie zwrotu do zamówienia {order_number} ma teraz stan: {status_label}.",
     ),
+    "return_settled": (
+        "Rozliczenie zwrotu do zamówienia {order_number}",
+        "Zwrot do zamówienia {order_number} rozliczony na {compensation_amount}: "
+        "{compensation_form}.",
+    ),
 }
 
 

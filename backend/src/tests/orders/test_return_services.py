@@ -575,5 +575,11 @@ class TestReturnNotifications:
             user=order.user, kind=NotificationKind.RETURN_REQUEST_STATUS_CHANGED
         )
         assert notifications.count() == 2
-        assert send.call_count == 2
-        assert send.call_args.kwargs["to"] == order.email
+        # Przyjęcie rozlicza zwrot (#197) — jego e-maile liczy test rozliczenia.
+        status_mails = [
+            call
+            for call in send.call_args_list
+            if call.kwargs["subject"].startswith("Zgłoszenie zwrotu")
+        ]
+        assert len(status_mails) == 2
+        assert all(call.kwargs["to"] == order.email for call in status_mails)

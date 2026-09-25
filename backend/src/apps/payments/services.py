@@ -12,7 +12,7 @@ from apps.inventory.services import (
     reserve,
     restock,
 )
-from apps.orders.models import Order, OrderStatus
+from apps.orders.models import Order, OrderStatus, ReturnRefundStatus, ReturnRequest
 from apps.orders.services import consume_stock, mark_paid, release_reservations
 from apps.payments.models import Payment, PaymentStatus, RefundReason, WebhookEvent
 from core.integrations.payments import (
@@ -145,12 +145,79 @@ def handle_event(event: ProviderEvent) -> bool:
         if event.intent_id
         else None
     )
-    if payment is not None:
+    if payment is not None and event.refund_id not in ("", payment.refund_id):
+        _apply_return_refund(event, payment)
+    elif payment is not None:
         _apply(event.kind, payment)
 
     stored.processed_at = timezone.now()
     stored.save(update_fields=["processed_at", "updated_at"])
     return True
+
+
+def refund_return(request: ReturnRequest) -> None:
+    """Zleca zwrot pieniężnej części rozliczenia zgłoszenia (ADR 0031).
+
+    Zwrot częściowy tej samej płatności — sama płatność nie zmienia stanu,
+    stan zwrotu nosi zgłoszenie. Odmowa operatora albo brak płatności, z której
+    dałoby się oddać tę kwotę, przenosi zgłoszenie do zwrotu ręcznego: sklep
+    robi przelew i oznacza go w panelu. Płatność czytana bez blokady —
+    zdarzenia operatora blokują ją przed zamówieniem, rozliczenie odwrotnie.
+    """
+    order = request.order
+    payment = order.payments.filter(status=PaymentStatus.SUCCEEDED).first()  # type: ignore[missing-attribute]
+    already = sum(
+        ReturnRequest.objects.filter(
+            order=order,
+            refund_status__in=(ReturnRefundStatus.PENDING, ReturnRefundStatus.REFUNDED),
+        )
+        .exclude(pk=request.pk)
+        .values_list("refund_amount", flat=True)
+    )
+    status = ReturnRefundStatus.MANUAL
+    if payment is not None and already + request.refund_amount <= payment.amount:
+        try:
+            request.refund_id = get_provider().refund(
+                payment.intent_id,
+                idempotency_key=f"return-{request.pk}-refund",
+                amount=request.refund_amount,
+            )
+            status = ReturnRefundStatus.PENDING
+        except PaymentProviderError:
+            pass
+    request.refund_status = status
+    request.save(update_fields=["refund_status", "refund_id", "updated_at"])
+
+
+def _apply_return_refund(event: ProviderEvent, payment: Payment) -> None:
+    """Zdarzenie zwrotu za zgłoszenie, nie za całą płatność.
+
+    Blokada zamówienia czeka, aż rozliczenie, które zleciło zwrot, zapisze
+    jego identyfikator — zdarzenie potrafi przyjść przed końcem tamtej
+    transakcji. Zwrot nieznany sklepowi (np. zlecony w panelu operatora)
+    jest pomijany.
+    """
+    Order.objects.select_for_update().get(pk=payment.order_id)  # type: ignore[missing-attribute]
+    request = (
+        ReturnRequest.objects.select_for_update()
+        .filter(refund_id=event.refund_id)
+        .first()
+    )
+    if request is None:
+        return
+    if event.kind == EventKind.REFUNDED:
+        new_status = ReturnRefundStatus.REFUNDED
+    elif event.kind == EventKind.REFUND_FAILED:
+        new_status = ReturnRefundStatus.MANUAL
+    else:
+        return
+    if request.refund_status not in (
+        ReturnRefundStatus.PENDING,
+        ReturnRefundStatus.REFUNDED,
+    ):
+        return
+    request.refund_status = new_status
+    request.save(update_fields=["refund_status", "updated_at"])
 
 
 def _apply(kind: EventKind, payment: Payment) -> None:

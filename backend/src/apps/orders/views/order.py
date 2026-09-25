@@ -176,7 +176,9 @@ class OrderViewSet(
         """Zgłoszenia zwrotu zamówienia; gość tą samą parą numer + e-mail."""
         order = self.get_object()
         if request.method == "GET":
-            requests = order.return_requests.prefetch_related("items__order_item")  # type: ignore[missing-attribute]
+            requests = order.return_requests.select_related(  # type: ignore[missing-attribute]
+                "coupon"
+            ).prefetch_related("items__order_item")
             return Response(ReturnRequestSerializer(requests, many=True).data)
 
         payload = ReturnRequestCreateSerializer(data=request.data)
@@ -209,7 +211,9 @@ class OrderViewSet(
     def return_detail(self, request: Request, *args, id: str, **kwargs) -> Response:
         """Jedno zgłoszenie — wyłącznie przez swoje zamówienie."""
         order = self.get_object()
-        requests = order.return_requests.prefetch_related("items__order_item")  # type: ignore[missing-attribute]
+        requests = order.return_requests.select_related(  # type: ignore[missing-attribute]
+            "coupon"
+        ).prefetch_related("items__order_item")
         return Response(
             ReturnRequestSerializer(get_object_or_404(requests, pk=id)).data
         )

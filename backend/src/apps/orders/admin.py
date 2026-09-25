@@ -11,6 +11,7 @@ from apps.orders.models import (
     OrderItem,
     OrderStatus,
     ReturnItemStatus,
+    ReturnRefundStatus,
     ReturnRequest,
     ReturnRequestItem,
 )
@@ -245,11 +246,32 @@ class ReturnRequestAdmin(admin.ModelAdmin):
     """
 
     inlines = [ReturnRequestItemInline]
-    list_display = ("__str__", "reason", "status", "created_at")
-    list_filter = ("status", "reason", "created_at")
+    list_display = ("__str__", "reason", "status", "refund_status", "created_at")
+    list_filter = ("status", "refund_status", "reason", "created_at")
     search_fields = ("order__number", "order__email")
     ordering = ("-created_at",)
-    readonly_fields = ("order", "reason", "status")
+    readonly_fields = (
+        "order",
+        "reason",
+        "status",
+        "compensation_amount",
+        "coupon",
+        "refund_amount",
+        "refund_status",
+        "refund_id",
+        "settled_at",
+    )
+    actions = ["mark_manual_refund_done"]
+
+    @admin.action(description="Oznacz przelew zwrotu jako wykonany")
+    def mark_manual_refund_done(
+        self, request: HttpRequest, queryset: QuerySet[ReturnRequest]
+    ) -> None:
+        """Pieniądze oddane przelewem po odmowie operatora (ADR 0031)."""
+        done = queryset.filter(refund_status=ReturnRefundStatus.MANUAL).update(
+            refund_status=ReturnRefundStatus.MANUAL_DONE
+        )
+        self.message_user(request, f"Oznaczono przelewy: {done}.")
 
     def get_queryset(self, request: HttpRequest) -> QuerySet[ReturnRequest]:
         return super().get_queryset(request).select_related("order")

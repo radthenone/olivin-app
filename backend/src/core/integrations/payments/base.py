@@ -40,13 +40,15 @@ class ProviderEvent:
     """Zweryfikowane zdarzenie operatora.
 
     `intent_id` jest pusty przy zdarzeniach, które nie dotyczą żadnej
-    intencji — te sklep zapisuje i pomija.
+    intencji — te sklep zapisuje i pomija. `refund_id` niosą zdarzenia
+    zwrotu: odróżnia częściowy zwrot za zgłoszenie od zwrotu całej płatności.
     """
 
     id: str
     kind: EventKind
     type: str
     intent_id: str = ""
+    refund_id: str = ""
     payload: dict = field(default_factory=dict)
 
 
@@ -69,6 +71,10 @@ class PaymentProvider(Protocol):
         idempotency_key: str,
     ) -> Intent: ...
 
-    def refund(self, intent_id: str, *, idempotency_key: str) -> str: ...
+    def refund(
+        self, intent_id: str, *, idempotency_key: str, amount: int | None = None
+    ) -> str:
+        """Zleca zwrot; bez `amount` — całej płatności, z nim — części."""
+        ...
 
     def verify_signature(self, payload: bytes, signature: str) -> ProviderEvent: ...

@@ -19,6 +19,12 @@
 <body>
   <h1>{{ document.get_kind_display }} {{ document.reference }}</h1>
   <p>Data wystawienia: {{ document.issued_on|date:"Y-m-d" }} · Zamówienie {{ order.number }}</p>
+  {% if return_request %}
+  <p>
+    Korekta do: {% if corrected_document %}{{ corrected_document.get_kind_display }} {{ corrected_document.reference }} z dnia {{ corrected_document.issued_on|date:"Y-m-d" }}{% else %}zamówienia {{ order.number }}{% endif %}<br>
+    Przyczyna korekty: zwrot towaru — {{ return_request.get_reason_display }}
+  </p>
+  {% endif %}
 
   <div class="parties">
     <div>
@@ -36,6 +42,39 @@
     </div>
   </div>
 
+  {% if return_request %}
+  <table>
+    <thead>
+      <tr>
+        <th>Pozycja</th>
+        <th>SKU</th>
+        <th class="amount">Ilość</th>
+        <th class="amount">VAT</th>
+        <th class="amount">Korekta wartości brutto</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for line in returned_lines %}
+      <tr>
+        <td>
+          {{ line.item.order_item.product_name }}{% if line.item.order_item.is_pair %} (para){% endif %}
+          {% if line.item.agreed_resolution %}<br><span class="muted">Uzgodniono: {{ line.item.agreed_resolution }}</span>{% endif %}
+        </td>
+        <td>{{ line.item.order_item.sku }}</td>
+        <td class="amount">−{{ line.item.quantity }}</td>
+        <td class="amount">{% if line.item.order_item.is_vat_exempt %}zw.{% else %}{% widthratio line.item.order_item.vat_rate 1 100 %}%{% endif %}</td>
+        <td class="amount">−{{ line.value }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <table class="totals">
+    {% if shipping_refund.amount %}<tr><td class="amount">Dostawa ({{ order.shipping_method_name }})</td><td class="amount">−{{ shipping_refund }}</td></tr>{% endif %}
+    <tr><td class="amount"><strong>Razem korekta</strong></td><td class="amount"><strong>−{{ return_request.compensation_money }}</strong></td></tr>
+    <tr><td class="amount">Rozliczenie</td><td class="amount">{{ compensation_form }}</td></tr>
+  </table>
+  {% else %}
   <table>
     <thead>
       <tr>
@@ -71,6 +110,7 @@
     <tr><td class="amount">Dostawa ({{ order.shipping_method_name }})</td><td class="amount">{{ order.shipping_cost_money }}</td></tr>
     <tr><td class="amount"><strong>Razem</strong></td><td class="amount"><strong>{{ order.total }}</strong></td></tr>
   </table>
+  {% endif %}
   {% if order.exchange_rate_on %}
   <p class="muted">Przeliczono z cen w PLN po kursie {{ order.exchange_rate_source|upper }} z dnia {{ order.exchange_rate_on|date:"Y-m-d" }}: 1 {{ order.currency }} = {{ order.exchange_rate }} PLN.</p>
   {% endif %}

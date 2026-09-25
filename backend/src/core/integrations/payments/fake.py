@@ -65,7 +65,9 @@ class FakePaymentProvider:
         )
         return Intent(id=intent_id, client_secret=secret)
 
-    def refund(self, intent_id: str, *, idempotency_key: str) -> str:
+    def refund(
+        self, intent_id: str, *, idempotency_key: str, amount: int | None = None
+    ) -> str:
         self._fail_if_requested()
         for existing in self.refunds:
             if existing["idempotency_key"] == idempotency_key:
@@ -76,6 +78,7 @@ class FakePaymentProvider:
                 "id": refund_id,
                 "intent_id": intent_id,
                 "idempotency_key": idempotency_key,
+                "amount": amount,
             }
         )
         return refund_id
@@ -89,6 +92,7 @@ class FakePaymentProvider:
             kind=EventKind(data["kind"]),
             type=data["kind"],
             intent_id=data.get("intent_id", ""),
+            refund_id=data.get("refund_id", ""),
             payload=data,
         )
 
@@ -102,12 +106,15 @@ def sign(payload: bytes) -> str:
     return hmac.new(FAKE_WEBHOOK_SECRET.encode(), payload, hashlib.sha256).hexdigest()
 
 
-def event_payload(kind: EventKind, intent_id: str, event_id: str = "") -> bytes:
+def event_payload(
+    kind: EventKind, intent_id: str, event_id: str = "", refund_id: str = ""
+) -> bytes:
     """Treść zdarzenia atrapy — tak, jak przyszłaby w ciele żądania."""
     return json.dumps(
         {
             "id": event_id or f"evt_fake_{secrets.token_hex(8)}",
             "kind": str(kind),
             "intent_id": intent_id,
+            "refund_id": refund_id,
         }
     ).encode()

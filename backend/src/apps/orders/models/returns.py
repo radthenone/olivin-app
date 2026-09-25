@@ -50,14 +50,25 @@ class ReturnItemStatus(models.TextChoices):
     REJECTED = "rejected", "Odrzucona"
 
 
+class ReturnRefundStatus(models.TextChoices):
+    """Stan pieniężnej części rozliczenia zwrotu (ADR 0031)."""
+
+    NONE = "none", "Bez zwrotu pieniędzy"
+    PENDING = "pending", "Zlecony u operatora"
+    REFUNDED = "refunded", "Zwrócony"
+    MANUAL = "manual", "Do zwrotu ręcznego"
+    MANUAL_DONE = "manual_done", "Zwrócony przelewem"
+
+
 OPEN_ITEM_STATUSES = frozenset({ReturnItemStatus.PENDING, ReturnItemStatus.TO_AGREE})
 
 
 class ReturnRequest(TimestampedModel):
     """Zgłoszenie zwrotu wybranych pozycji doręczonego zamówienia (`CONTEXT.md`).
 
-    Jedna podstawa na zgłoszenie — to ona wyznacza termin. Rozliczenie
-    pieniędzy i kuponów (ADR 0031) i wymiana to osobne etapy.
+    Jedna podstawa na zgłoszenie — to ona wyznacza termin. Po rozpatrzeniu
+    przyjęte pozycje rozlicza `services.settlement`: najpierw kupon, resztę
+    pieniędzmi (ADR 0031). Wymiana to osobny etap.
     """
 
     order = models.ForeignKey(
@@ -76,6 +87,41 @@ class ReturnRequest(TimestampedModel):
         default=ReturnRequestStatus.SUBMITTED,
     )
 
+    # --- Rozliczenie (ADR 0031) ------------------------------------------
+    compensation_amount = MoneyAmountField(
+        null=True,
+        blank=True,
+        editable=False,
+        help_text="Zwracana kwota w groszach; pusta, dopóki nie rozliczono",
+    )
+    coupon = models.OneToOneField(
+        "promotions.Coupon",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        editable=False,
+        related_name="return_request",
+        help_text="Kupon wydany z kuponowej części zwrotu",
+    )
+    refund_amount = MoneyAmountField(
+        default=0,
+        editable=False,
+        help_text="Pieniężna część zwrotu w groszach",
+    )
+    refund_status = models.CharField(
+        max_length=16,
+        choices=ReturnRefundStatus.choices,
+        default=ReturnRefundStatus.NONE,
+        editable=False,
+    )
+    refund_id = models.CharField(
+        max_length=255,
+        blank=True,
+        editable=False,
+        help_text="Identyfikator zwrotu u operatora",
+    )
+    settled_at = models.DateTimeField(null=True, blank=True, editable=False)
+
     class Meta:
         verbose_name = "Zgłoszenie zwrotu"
         verbose_name_plural = "Zgłoszenia zwrotu"
@@ -89,6 +135,22 @@ class ReturnRequest(TimestampedModel):
 
     def __str__(self) -> str:
         return f"Zwrot {self.pk} — {self.order.number}"  # type: ignore[missing-attribute]
+
+    @property
+    def currency(self) -> str:
+        return self.order.currency  # type: ignore[missing-attribute]
+
+    @property
+    def compensation_money(self) -> Money | None:
+        if self.compensation_amount is None:
+            return None
+        return Money(self.compensation_amount, self.currency)
+
+    @property
+    def refund_money(self) -> Money | None:
+        if self.settled_at is None:
+            return None
+        return Money(self.refund_amount, self.currency)
 
 
 class ReturnRequestItem(TimestampedModel):

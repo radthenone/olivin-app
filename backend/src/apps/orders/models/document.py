@@ -73,6 +73,14 @@ class SalesDocument(TimestampedModel):
     year = models.PositiveSmallIntegerField(
         help_text="Rok numeracji — ten sam, co rok wystawienia",
     )
+    return_request = models.OneToOneField(
+        "orders.ReturnRequest",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="correction",
+        help_text="Rozliczony zwrot, który koryguje ten dokument (tylko korekta)",
+    )
     issued_on = models.DateField(help_text="Data wystawienia dokumentu")
     object_key = models.CharField(
         max_length=255,

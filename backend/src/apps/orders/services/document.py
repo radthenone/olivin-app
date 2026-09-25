@@ -14,9 +14,11 @@ from apps.orders.models import (
     DocumentCounter,
     Order,
     OrderStatus,
+    ReturnRequest,
     SalesDocument,
     SalesDocumentKind,
 )
+from common.money import Money
 from core.storage.storages import DocumentStorage
 
 # Data i rok dokumentu liczą się w czasie sklepu, nie serwera (UTC): wpłata
@@ -43,8 +45,19 @@ def issue_documents(order: Order) -> list[SalesDocument]:
     return [issue_document(order, kind) for kind in kinds_for(order)]
 
 
+def issue_correction(request: ReturnRequest) -> SalesDocument | None:
+    """Korekta rozliczonego zwrotu — jedna na zgłoszenie (ADR 0014, 0026)."""
+    if request.settled_at is None:
+        return None
+    return issue_document(
+        request.order, SalesDocumentKind.CORRECTION, return_request=request
+    )
+
+
 @transaction.atomic
-def issue_document(order: Order, kind: str) -> SalesDocument:
+def issue_document(
+    order: Order, kind: str, *, return_request: ReturnRequest | None = None
+) -> SalesDocument:
     """Jeden dokument danego rodzaju: istniejący albo nowo wystawiony.
 
     Blokada wiersza zamówienia szereguje równoległe uruchomienia zadania dla
@@ -53,7 +66,9 @@ def issue_document(order: Order, kind: str) -> SalesDocument:
     więc w numeracji nie zostaje luka.
     """
     order = Order.objects.select_for_update().get(pk=order.pk)
-    existing = SalesDocument.objects.filter(order=order, kind=kind).first()
+    existing = SalesDocument.objects.filter(
+        order=order, kind=kind, return_request=return_request
+    ).first()
     if existing is not None:
         return existing
 
@@ -64,6 +79,7 @@ def issue_document(order: Order, kind: str) -> SalesDocument:
         number=next_number(kind, issued_on.year),
         year=issued_on.year,
         issued_on=issued_on,
+        return_request=return_request,
     )
     # ponytail: plik zapisany przed commitem zostaje osierocony, gdy commit
     # padnie — sprzątanie bucketa dołożyć, jeśli to się kiedyś zdarzy.
@@ -136,6 +152,7 @@ def render_pdf(document: SalesDocument) -> bytes:
             "document": document,
             "order": order,
             "items": order.items.all(),  # type: ignore[missing-attribute]
+            **_correction_context(document),
             "seller": {
                 "name": settings.SELLER_NAME,
                 "address": settings.SELLER_ADDRESS,
@@ -148,3 +165,36 @@ def render_pdf(document: SalesDocument) -> bytes:
     pdf = HTML(string=html).write_pdf()
     assert pdf is not None
     return pdf
+
+
+def _correction_context(document: SalesDocument) -> dict:
+    """Dane korekty: dokument korygowany, przyczyna, pozycje i rozliczenie."""
+    request = document.return_request
+    if request is None:
+        return {}
+    from apps.orders.services.settlement import (
+        compensation_form,
+        item_value,
+        refunded_items,
+    )
+
+    corrected = (
+        SalesDocument.objects.filter(
+            order=document.order,
+            kind__in=(SalesDocumentKind.INVOICE, SalesDocumentKind.CONFIRMATION),
+        )
+        .order_by("-kind")
+        .first()
+    )
+    lines = [
+        {"item": line, "value": Money(item_value(line), request.currency)}
+        for line in refunded_items(request)
+    ]
+    return {
+        "return_request": request,
+        "corrected_document": corrected,
+        "returned_lines": lines,
+        "shipping_refund": request.compensation_money
+        - sum((line["value"] for line in lines), start=Money.zero(request.currency)),
+        "compensation_form": compensation_form(request),
+    }

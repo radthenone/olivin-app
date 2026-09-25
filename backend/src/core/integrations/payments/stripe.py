@@ -69,10 +69,15 @@ class StripeProvider:
             raise PaymentProviderError(str(error)) from error
         return Intent(id=intent.id, client_secret=intent.client_secret or "")
 
-    def refund(self, intent_id: str, *, idempotency_key: str) -> str:
+    def refund(
+        self, intent_id: str, *, idempotency_key: str, amount: int | None = None
+    ) -> str:
+        params: dict = {"payment_intent": intent_id}
+        if amount is not None:
+            params["amount"] = amount
         try:
             refund = self._client().v1.refunds.create(
-                params={"payment_intent": intent_id},
+                params=params,  # type: ignore[bad-argument-type]
                 options={"idempotency_key": idempotency_key},
             )
         except stripe.StripeError as error:
@@ -101,6 +106,7 @@ class StripeProvider:
             kind=kind,
             type=event.type,
             intent_id=_intent_id_of(obj),
+            refund_id=obj.get("id", "") if obj.get("object") == "refund" else "",
             payload=data,
         )
 

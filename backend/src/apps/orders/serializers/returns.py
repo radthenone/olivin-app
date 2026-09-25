@@ -79,10 +79,47 @@ class ReturnRequestSerializer(serializers.ModelSerializer):
     """Zgłoszenie zwrotu w postaci dla klienta."""
 
     items = ReturnRequestItemSerializer(many=True, read_only=True)
+    compensation_amount = MoneySerializer(
+        source="compensation_money",
+        read_only=True,
+        allow_null=True,
+        help_text="Zwracana kwota; pusta, dopóki zgłoszenia nie rozliczono",
+    )
+    coupon_code = serializers.CharField(
+        source="coupon.code",
+        read_only=True,
+        allow_null=True,
+        default=None,
+        help_text="Kod kuponu wydanego z kuponowej części zwrotu",
+    )
+    coupon_amount = MoneySerializer(
+        source="coupon.nominal_money",
+        read_only=True,
+        allow_null=True,
+        default=None,
+        help_text="Nominał kuponu ze zwrotu",
+    )
+    refund_amount = MoneySerializer(
+        source="refund_money",
+        read_only=True,
+        allow_null=True,
+        help_text="Pieniężna część zwrotu; pusta, dopóki nie rozliczono",
+    )
 
     class Meta:
         model = ReturnRequest
-        fields = ["id", "reason", "status", "items", "created_at"]
+        fields = [
+            "id",
+            "reason",
+            "status",
+            "items",
+            "compensation_amount",
+            "coupon_code",
+            "coupon_amount",
+            "refund_amount",
+            "refund_status",
+            "created_at",
+        ]
         read_only_fields = fields
 
 

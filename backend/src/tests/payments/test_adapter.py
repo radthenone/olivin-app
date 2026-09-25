@@ -83,6 +83,7 @@ class TestStripe:
 
         assert event.kind == kind
         assert event.intent_id == "pi_1"
+        assert event.refund_id == "re_1"
 
     def test_charge_refunded_nie_konczy_zwrotu(self):
         payload = _stripe_event(
