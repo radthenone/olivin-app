@@ -16,6 +16,11 @@ from apps.orders.serializers.order import (
     OrderSerializer,
     SalesDocumentSerializer,
 )
+from apps.orders.serializers.returns import (
+    ReturnOptionSerializer,
+    ReturnRequestCreateSerializer,
+    ReturnRequestSerializer,
+)
 
 __all__ = [
     "CartItemQuantitySerializer",
@@ -29,5 +34,8 @@ __all__ = [
     "OrderLookupSerializer",
     "OrderSerializer",
     "PromotionCodeSerializer",
+    "ReturnOptionSerializer",
+    "ReturnRequestCreateSerializer",
+    "ReturnRequestSerializer",
     "SalesDocumentSerializer",
 ]

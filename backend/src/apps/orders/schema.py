@@ -1,3 +1,4 @@
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
     OpenApiParameter,
     extend_schema,
@@ -13,6 +14,9 @@ from apps.orders.serializers import (
     OrderSerializer,
     CouponCodeSerializer,
     PromotionCodeSerializer,
+    ReturnOptionSerializer,
+    ReturnRequestCreateSerializer,
+    ReturnRequestSerializer,
     SalesDocumentSerializer,
 )
 from apps.payments.serializers import PaymentIntentSerializer
@@ -204,5 +208,52 @@ order_schema = extend_schema_view(
         ),
         parameters=[OrderLookupSerializer],
         responses={200: SalesDocumentSerializer(many=True)},
+    ),
+    return_options=extend_schema(
+        tags=["Orders"],
+        summary="Formularz zwrotu zamówienia",
+        description=(
+            "Pozycje doręczonego zamówienia z ilością, którą da się jeszcze "
+            "zwrócić, podstawami otwartymi dziś wraz z terminem (od daty "
+            "doręczenia) i żądaniami dostępnymi przy reklamacji. Odstąpienie "
+            "nie obejmuje grawerunku ani produktu na zamówienie. Zamówienie "
+            "niedoręczone zwraca pustą listę."
+        ),
+        parameters=[OrderLookupSerializer],
+        responses={200: ReturnOptionSerializer(many=True)},
+    ),
+    returns=[
+        extend_schema(
+            methods=["GET"],
+            tags=["Orders"],
+            summary="Zgłoszenia zwrotu zamówienia",
+            description="Zgłoszenia z decyzją sklepu dla każdej pozycji.",
+            parameters=[OrderLookupSerializer],
+            responses={200: ReturnRequestSerializer(many=True)},
+        ),
+        extend_schema(
+            methods=["POST"],
+            tags=["Orders"],
+            summary="Zgłoszenie zwrotu",
+            description=(
+                "Wyłącznie dla zamówienia `delivered`, w terminie wybranej "
+                "podstawy. Para obrączek wraca w całości. Przy reklamacji "
+                "każda pozycja wymaga `claimRequest` dopuszczonego przez "
+                "produkt. Pozycja z grawerunkiem poza reklamacją trafia do "
+                "stanu `to_agree`. Naruszenie reguł to 400."
+            ),
+            parameters=[OrderLookupSerializer],
+            request=ReturnRequestCreateSerializer,
+            responses={201: ReturnRequestSerializer},
+        ),
+    ],
+    return_detail=extend_schema(
+        tags=["Orders"],
+        summary="Zgłoszenie zwrotu po identyfikatorze",
+        parameters=[
+            OrderLookupSerializer,
+            OpenApiParameter("id", OpenApiTypes.UUID, OpenApiParameter.PATH),
+        ],
+        responses={200: ReturnRequestSerializer},
     ),
 )
