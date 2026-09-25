@@ -97,7 +97,7 @@ Decyzje właściciela z 16 września 2026 przeniesione do ADR-ów:
 | --- | --- | --- |
 | Złoto inwestycyjne i stawka podatku | Sprzedajemy; stawka przy wariancie, zwolnienie osobną flagą | [0013](adr/0013-stawka-vat-przy-wariancie.md) |
 | Podatek od kuponów ze zwrotu | Zwrot jest korektą, kupon formą zapłaty; tylko dla klientów indywidualnych | [0014](adr/0014-zwrot-jako-korekta-kupon-jako-zaplata.md) |
-| Forma rekompensaty przy zwrocie | Rozstrzyga podstawa zwrotu zapisana w `ReturnReason` | [0015](adr/0015-podstawa-zwrotu-decyduje-o-formie-rekompensaty.md) |
+| Forma rekompensaty przy zwrocie | Najpierw kupon do wysokości zapłaconej kuponem, reszta pieniędzmi; podstawa rozstrzyga tylko o terminie i dopuszczalności | [0031](adr/0031-zwrot-najpierw-kuponem-reszta-pieniedzmi.md) (zastąpił 0015) |
 | Fakturowanie i KSeF | Wyłącznie sprzedaż konsumencka, bez KSeF | [0016](adr/0016-sprzedaz-wylacznie-konsumencka.md) |
 | Sposób ustalania cen | Ręcznie, ze wstępnym wyliczeniem od próby i kursu kruszcu | [0017](adr/0017-cena-reczna-ze-wstepnym-wyliczeniem.md) |
 | Personalizacja produktów | Grawer opcjonalny, osobna pozycja ceny, wyłącza prawo odstąpienia | [0018](adr/0018-grawer-jako-opcja-wylaczajaca-zwrot.md) |
@@ -113,7 +113,8 @@ stanem obrotu wobec progu sprzedaży wysyłkowej
 ([0019](adr/0019-sprzedaz-do-ue-w-euro-po-polskim-vat.md)).
 
 Regulamin zwrotów i kuponów wymaga przeglądu przez prawnika przed uruchomieniem
-sprzedaży ([0015](adr/0015-podstawa-zwrotu-decyduje-o-formie-rekompensaty.md)),
+sprzedaży ([0031](adr/0031-zwrot-najpierw-kuponem-reszta-pieniedzmi.md)),
+z ręczną obsługą odstąpienia przed doręczeniem,
 wraz z wyłączeniem odstąpienia dla grawerunku i produktów na zamówienie
 ([0024](adr/0024-produkt-na-zamowienie-i-para-jako-jedna-pozycja.md)) oraz
 zapisem o przejściu ryzyka i procedurze zaginięcia przesyłki

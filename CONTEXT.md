@@ -31,7 +31,7 @@ Kamień osadzony w wariancie — rodzaj, masa w karatach, opcjonalnie czystość
 _Unikaj_: Stone (jako nazwa modelu), Diamond, Kamień jako atrybut tekstowy
 
 **Engraving**:
-Grawerunek zamawiany do wyrobu. Możliwość jego wykonania jest flagą na produkcie — nie każdy produkt ją ma. Wyceniany osobną pozycją doliczaną do ceny wariantu. Czyni wyrób towarem zindywidualizowanym, co wyłącza ustawowe prawo odstąpienia.
+Grawerunek zamawiany do wyrobu. Możliwość jego wykonania jest flagą na produkcie — nie każdy produkt ją ma. Wyceniany osobną pozycją doliczaną do ceny wariantu. Czyni wyrób towarem zindywidualizowanym, co wyłącza ustawowe prawo odstąpienia. Poza reklamacją wady zwrot, wymiana i naprawa wyrobu grawerowanego są zawsze uzgadniane z klientem indywidualnie — łącznie z odkupem po cenie złomu.
 _Unikaj_: Personalization, Customization, Grawer
 
 **Category**:
@@ -97,7 +97,7 @@ Pozycja zamówienia zawierająca kopię nazwy, ceny, stawki podatku i parametró
 _Unikaj_: OrderLine, LineItem
 
 **Order status**:
-Etap cyklu życia zamówienia: `pending`, `paid`, `in_production`, `packed`, `shipped`, `delivered`, `cancelled`, `returned`. Etap `in_production` występuje tylko, gdy zamówienie zawiera produkt wytwarzany na zamówienie. Przejścia są jednokierunkowe poza anulowaniem.
+Etap cyklu życia zamówienia: `pending`, `paid`, `in_production`, `packed`, `shipped`, `delivered`, `cancelled`, `returned`. Etap `in_production` występuje tylko, gdy zamówienie zawiera produkt wytwarzany na zamówienie. Przejścia są jednokierunkowe poza anulowaniem. Chwila przejścia w `delivered` jest datą doręczenia, od której biegną terminy zwrotu.
 _Unikaj_: State, Stage, Etap
 
 ## Płatności
@@ -135,19 +135,26 @@ Fakt użycia kuponu w konkretnym zamówieniu wraz z faktycznie naliczoną kwotą
 _Unikaj_: Usage, CouponUse
 
 **ReturnRequest**:
-Zgłoszenie zwrotu towaru przez klienta, oczekujące na rozpatrzenie. Forma
-rekompensaty po przyjęciu towaru zależy od `ReturnReason`, nie jest z góry
-kuponem.
-_Unikaj_: RMA, Refund, Reklamacja
+Zgłoszenie zwrotu towaru przez klienta, oczekujące na rozpatrzenie. Obejmuje
+wybrane pozycje zamówienia — para obrączek jest jedną pozycją i wraca w całości.
+Można je złożyć dopiero dla zamówienia doręczonego; odstąpienie przed
+doręczeniem obsługuje sklep poza systemem. Zwracana kwota wyczerpuje najpierw
+niezwróconą jeszcze kuponową część zamówienia — jako nowy kupon zaokrąglony
+w górę do pełnych 10 zł, ale nie ponad tę część — a resztę oddaje pieniędzmi.
+Kto płacił wyłącznie pieniędzmi, dostaje wyłącznie pieniądze. Zamiast
+rekompensaty klient może wybrać wymianę na ten sam wariant, jeśli jest na
+stanie; produkt na zamówienie wymienia się tylko w ramach reklamacji, przez
+ponowne wykonanie. Zamówienie przechodzi
+w `returned` dopiero, gdy przyjęte zwroty obejmą wszystkie jego pozycje.
+_Unikaj_: RMA, Refund, Reklamacja (to jedna z podstaw)
 
 **ReturnReason**:
-Podstawa zwrotu: odstąpienie ustawowe (14 dni; część zapłacona pieniędzmi wraca
-pieniędzmi, część zapłacona kuponem — nowym kuponem; wyłączone dla grawerunku
-i produktów na zamówienie), reklamacja (2 lata, zawsze pieniądze) albo zwrot
-dobrowolny ponad uprawnienia ustawowe (30 dni; wartość pozycji jako nowy kupon
-zaokrąglony w górę do pełnych 10 zł, z nowym terminem ważności). Rozstrzyga,
-czy wolno wydać kupon, czy należy się zwrot pieniędzy. Pole obowiązkowe — bez
-niego nie da się wykazać dopuszczalności kuponu ani rozliczyć podatku.
+Podstawa zwrotu: odstąpienie ustawowe (14 dni; wyłączone dla grawerunku
+i produktów na zamówienie), reklamacja (2 lata) albo zwrot dobrowolny ponad
+uprawnienia ustawowe (30 dni). Terminy biegną od daty doręczenia. Rozstrzyga,
+czy zwrot przysługuje, nie o formie rekompensaty. Reklamacja dotyczy wady
+wyrobu, nie uszkodzenia przez klienta; kończy się zwrotem pieniędzy, a naprawą
+albo wymianą tylko wtedy, gdy produkt je dopuszcza. Pole obowiązkowe.
 _Unikaj_: Reason, ReturnType, Powód
 
 ## Magazyn
@@ -183,13 +190,13 @@ _Unikaj_: Invoice (jako nazwa ogólna), Receipt, Paragon
 ## Opinie
 
 **Review**:
-Ocena od 1 do 5 z opcjonalnym krótkim komentarzem, bez zdjęć. Wymaga dostarczonego zamówienia z tym produktem i moderacji przed publikacją; jedna na klienta na produkt, edycja wraca do moderacji.
+Ocena od 1 do 5 z opcjonalnym krótkim komentarzem, bez zdjęć, podpisana nazwą użytkownika autora i datą. Wymaga dostarczonego zamówienia z tym produktem i moderacji przed publikacją; jedna na klienta na produkt, edycja wraca do moderacji. Sklep może opinię usunąć. Produkt pokazuje średnią ocen, bez liczby opinii.
 _Unikaj_: Rating, Comment, Feedback
 
 ## Konto
 
 **User**:
-Konto uwierzytelniania — tożsamość, poświadczenia, metody logowania.
+Konto uwierzytelniania — tożsamość, poświadczenia, metody logowania. Ma zawsze nazwę użytkownika: wybraną przez klienta albo nadaną automatycznie w postaci „anon” z losową liczbą; pod nią klient występuje publicznie.
 _Unikaj_: Account, Customer (to nie to samo)
 
 **Profile**:
@@ -205,11 +212,11 @@ Produkt zapisany przez zalogowanego klienta jako lubiany; lista bez limitu, wsp�
 _Unikaj_: Wishlist, Like, Ulubiony wariant
 
 **Watch**:
-Jednorazowa prośba zalogowanego klienta o powiadomienie, gdy konkretny wariant wróci na stan albo stanieje. Wygasa po wysłaniu powiadomienia. Dotyczy wariantu, bo to on ma stan i cenę; produkt na zamówienie można obserwować tylko pod kątem ceny. Komunikat jest marketingowy — podlega preferencjom powiadomień.
+Jednorazowa prośba zalogowanego klienta o powiadomienie, gdy konkretny wariant wróci na stan albo stanieje. Wygasa po wysłaniu powiadomienia. „Stanieje” oznacza obniżkę `Price` wariantu — promocja się nie liczy. Dotyczy wariantu, bo to on ma stan i cenę; produkt na zamówienie można obserwować tylko pod kątem ceny. Komunikat jest marketingowy — podlega preferencjom powiadomień.
 _Unikaj_: Subscription, Alert, Obserwowany produkt
 
 **Account anonymisation**:
-Usunięcie konta na życzenie klienta: dane osobowe zostają wymazane, konto zablokowane, listy i urządzenia skasowane, a zamówienia i dokumenty sprzedaży pozostają w formie bezosobowej przez okres wymagany prawem podatkowym. Niedostępne, dopóki trwa niedostarczone zamówienie. Eksport danych odbywa się na wniosek, poza aplikacją.
+Usunięcie konta na życzenie klienta: dane osobowe zostają wymazane, konto zablokowane, listy i urządzenia skasowane, a zamówienia i dokumenty sprzedaży pozostają w formie bezosobowej przez okres wymagany prawem podatkowym. Opinie zostają, a nazwa użytkownika zostaje zastąpiona nową nadaną automatycznie. Niewykorzystane kupony przepadają bez ostrzeżenia. Niedostępne, dopóki trwa niedostarczone zamówienie. Eksport danych odbywa się na wniosek, poza aplikacją.
 _Unikaj_: Delete account, Hard delete, Kasowanie konta
 
 ## Komunikacja
