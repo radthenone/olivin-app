@@ -1,7 +1,12 @@
+import secrets
+
 from django.db import migrations
 from django.db.models import Q
 
-from apps.accounts.usernames import generate_anon_username
+
+def generate_anon_username() -> str:
+    """Kopia generatora z `apps.accounts.usernames` — migracja nie importuje kodu aplikacji."""
+    return f"anon{10_000_000 + secrets.randbelow(90_000_000)}"
 
 
 def fill_empty_usernames(apps, schema_editor):

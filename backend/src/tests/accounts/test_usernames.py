@@ -13,7 +13,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.test import APIClient
 
-from apps.accounts.models import CustomUser
+from apps.accounts.models import CustomUser, Profile
 from apps.accounts.usernames import generate_anon_username
 from core.services.allauth.social_adapter import SocialAccountAdapter
 from tests.factories.accounts import ProfileFactory, UserFactory
@@ -177,6 +177,79 @@ class TestUsernameChangeInProfile:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         user.refresh_from_db()
         assert user.username == before
+
+    @pytest.mark.parametrize(
+        "reserved",
+        ["anon123", "Anonymous", "ANON_x", "admin", "Olivin", "support", "STAFF"],
+    )
+    def test_reserved_username_rejected(self, api_client: APIClient, reserved: str):
+        """Prefiks `anon` i nazwy zastrzeżone → 400."""
+        user = UserFactory(username="someone")
+        assert self._patch(api_client, user, reserved).status_code == 400
+
+    def test_own_anon_username_can_be_resent(self, api_client: APIClient):
+        """Formularz odsyłający bieżącą nazwę `anon…` bez zmian nie dostaje 400."""
+        user = UserFactory(username=None)
+        assert self._patch(api_client, user, user.username).status_code == 200
+
+    def test_db_collision_returns_400_not_500(self, api_client: APIClient):
+        """Wyścig: walidacja przepuściła, baza odrzuciła duplikat → 400, bez zmian."""
+        UserFactory(username="raced")
+        user = UserFactory(username="before", first_name="Stare")
+        with patch(
+            "apps.accounts.serializers.profile_serializer.ProfileSerializer.validate_username",
+            lambda self, value: value,
+        ):
+            profile = ProfileFactory(user=user, first_name="Stare")
+            api_client.force_authenticate(user=user)
+            response = cast(
+                Response,
+                api_client.patch(
+                    reverse("profile-detail", args=[profile.pk]),
+                    {"username": "raced", "first_name": "Nowe"},
+                    format="json",
+                ),
+            )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "username" in cast(dict, response.data)
+        user.refresh_from_db()
+        profile.refresh_from_db()
+        assert user.username == "before"
+        assert profile.first_name == "Stare"
+
+    def test_create_profile_saves_username(self, api_client: APIClient):
+        """POST profilu z `username` zapisuje nazwę (nie gubi jej po cichu)."""
+        user = UserFactory(username=None)
+        api_client.force_authenticate(user=user)
+        response = cast(
+            Response,
+            api_client.post(
+                reverse("profile-list"),
+                {"first_name": "Jan", "username": "jan.k"},
+                format="json",
+            ),
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert cast(dict, response.data)["username"] == "jan.k"
+        user.refresh_from_db()
+        assert user.username == "jan.k"
+
+    def test_create_profile_rejects_taken_username(self, api_client: APIClient):
+        """POST profilu z zajętą nazwą → 400, profil nie powstaje."""
+        UserFactory(username="Taken2")
+        user = UserFactory(username=None)
+        api_client.force_authenticate(user=user)
+        response = cast(
+            Response,
+            api_client.post(
+                reverse("profile-list"), {"username": "taken2"}, format="json"
+            ),
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert not Profile.objects.filter(user=user).exists()
 
 
 @pytest.mark.django_db
