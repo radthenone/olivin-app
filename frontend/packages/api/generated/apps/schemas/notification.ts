@@ -16,7 +16,8 @@ export interface Notification {
 
   * `order_status_changed` - Zmiana statusu zamówienia
   * `order_paid` - Zamówienie opłacone
-  * `document_ready` - Dokument gotowy */
+  * `document_ready` - Dokument gotowy
+  * `return_request_status_changed` - Zmiana stanu zgłoszenia zwrotu */
   readonly kind: NotificationKindEnum;
   /** Treść powiadomienia do wyświetlenia */
   readonly message: string;

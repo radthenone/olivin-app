@@ -27,7 +27,7 @@ export const NotificationsListResponse = zod.object({
   "previous": zod.url().nullish(),
   "results": zod.array(zod.object({
   "id": zod.uuid(),
-  "kind": zod.enum(['order_status_changed', 'order_paid', 'document_ready']).describe('\* `order_status_changed` - Zmiana statusu zamówienia\n\* `order_paid` - Zamówienie opłacone\n\* `document_ready` - Dokument gotowy').describe('Rodzaj zdarzenia\n\n\* `order_status_changed` - Zmiana statusu zamówienia\n\* `order_paid` - Zamówienie opłacone\n\* `document_ready` - Dokument gotowy'),
+  "kind": zod.enum(['order_status_changed', 'order_paid', 'document_ready', 'return_request_status_changed']).describe('\* `order_status_changed` - Zmiana statusu zamówienia\n\* `order_paid` - Zamówienie opłacone\n\* `document_ready` - Dokument gotowy\n\* `return_request_status_changed` - Zmiana stanu zgłoszenia zwrotu').describe('Rodzaj zdarzenia\n\n\* `order_status_changed` - Zmiana statusu zamówienia\n\* `order_paid` - Zamówienie opłacone\n\* `document_ready` - Dokument gotowy\n\* `return_request_status_changed` - Zmiana stanu zgłoszenia zwrotu'),
   "message": zod.string().describe('Treść powiadomienia do wyświetlenia'),
   "data": zod.unknown().describe('Dane zdarzenia, np. numer zamówienia'),
   "isRead": zod.boolean(),
@@ -50,7 +50,7 @@ export const NotificationsReadCreateParams = zod.object({
 
 export const NotificationsReadCreateResponse = zod.object({
   "id": zod.uuid(),
-  "kind": zod.enum(['order_status_changed', 'order_paid', 'document_ready']).describe('\* `order_status_changed` - Zmiana statusu zamówienia\n\* `order_paid` - Zamówienie opłacone\n\* `document_ready` - Dokument gotowy').describe('Rodzaj zdarzenia\n\n\* `order_status_changed` - Zmiana statusu zamówienia\n\* `order_paid` - Zamówienie opłacone\n\* `document_ready` - Dokument gotowy'),
+  "kind": zod.enum(['order_status_changed', 'order_paid', 'document_ready', 'return_request_status_changed']).describe('\* `order_status_changed` - Zmiana statusu zamówienia\n\* `order_paid` - Zamówienie opłacone\n\* `document_ready` - Dokument gotowy\n\* `return_request_status_changed` - Zmiana stanu zgłoszenia zwrotu').describe('Rodzaj zdarzenia\n\n\* `order_status_changed` - Zmiana statusu zamówienia\n\* `order_paid` - Zamówienie opłacone\n\* `document_ready` - Dokument gotowy\n\* `return_request_status_changed` - Zmiana stanu zgłoszenia zwrotu'),
   "message": zod.string().describe('Treść powiadomienia do wyświetlenia'),
   "data": zod.unknown().describe('Dane zdarzenia, np. numer zamówienia'),
   "isRead": zod.boolean(),
