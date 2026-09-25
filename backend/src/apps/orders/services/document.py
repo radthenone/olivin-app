@@ -72,7 +72,35 @@ def issue_document(order: Order, kind: str) -> SalesDocument:
         ContentFile(render_pdf(document)),
     )
     document.save()
+    _notify_document_ready(order, document)
     return document
+
+
+def _notify_document_ready(order: Order, document: SalesDocument) -> None:
+    """Powiadamia o nowo wystawionym dokumencie (#156, transakcyjne).
+
+    `robust=True`: awaria powiadomienia nie może cofnąć albo zablokować
+    innych callbacków tej transakcji — dokument jest już wystawiony.
+    E-mail idzie na `order.email` (kopia z chwili złożenia), nie na
+    `user.email`, który mógł się od tamtej pory zmienić.
+    """
+    from apps.notifications.models import NotificationKind
+    from apps.notifications.services import notify
+
+    recipient = order.user if order.user_id is not None else order.email  # type: ignore[missing-attribute]
+    payload = {
+        "order_number": order.number,
+        "document_kind": document.get_kind_display(),  # type: ignore[missing-attribute]
+    }
+    transaction.on_commit(
+        lambda: notify(
+            recipient,  # type: ignore[bad-argument-type]
+            NotificationKind.DOCUMENT_READY,
+            payload,
+            email=order.email,
+        ),
+        robust=True,
+    )
 
 
 @transaction.atomic

@@ -1059,6 +1059,121 @@ paths:
               schema:
                 $ref: '#/components/schemas/HealthCheckResponse'
           description: ''
+  /notifications/:
+    get:
+      operationId: notifications_list
+      description: |-
+        Powiadomienia klienta.
+
+        Actions:
+        - list: GET /notifications/ — powiadomienia zalogowanego klienta
+        - read: POST /notifications/{id}/read/ — oznaczenie jako odczytane
+      summary: Lista powiadomień klienta
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Notifications
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotificationList'
+          description: ''
+  /notifications/{id}/read/:
+    post:
+      operationId: notifications_read_create
+      description: |-
+        Powiadomienia klienta.
+
+        Actions:
+        - list: GET /notifications/ — powiadomienia zalogowanego klienta
+        - read: POST /notifications/{id}/read/ — oznaczenie jako odczytane
+      summary: Oznaczenie powiadomienia jako odczytane
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Notifications
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /notifications/preferences/:
+    get:
+      operationId: notifications_preferences_retrieve
+      description: |-
+        Preferencje powiadomień marketingowych klienta (`GET`/`PUT`).
+
+        Bez `PATCH`: dwa pola, oba zawsze przekazywane razem — jak przy edycji
+        profilu w jednym formularzu.
+      summary: Preferencje powiadomień klienta
+      tags:
+      - Notifications
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreference'
+          description: ''
+    put:
+      operationId: notifications_preferences_update
+      description: |-
+        Preferencje powiadomień marketingowych klienta (`GET`/`PUT`).
+
+        Bez `PATCH`: dwa pola, oba zawsze przekazywane razem — jak przy edycji
+        profilu w jednym formularzu.
+      summary: Zmiana preferencji powiadomień
+      tags:
+      - Notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationPreference'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NotificationPreference'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NotificationPreference'
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreference'
+          description: ''
   /orders/:
     get:
       operationId: orders_list
@@ -3224,6 +3339,73 @@ components:
       required:
       - amount
       - currency
+    Notification:
+      type: object
+      description: Powiadomienie klienta — tylko do odczytu; oznaczenie odczytania
+        ma osobny endpoint.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/NotificationKindEnum'
+          readOnly: true
+          description: |-
+            Rodzaj zdarzenia
+
+            * `order_status_changed` - Zmiana statusu zamówienia
+            * `order_paid` - Zamówienie opłacone
+            * `document_ready` - Dokument gotowy
+        message:
+          type: string
+          readOnly: true
+          description: Treść powiadomienia do wyświetlenia
+        data:
+          readOnly: true
+          description: Dane zdarzenia, np. numer zamówienia
+        isRead:
+          type: boolean
+          readOnly: true
+        readAt:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when the record was created
+      required:
+      - createdAt
+      - data
+      - id
+      - isRead
+      - kind
+      - message
+      - readAt
+    NotificationKindEnum:
+      enum:
+      - order_status_changed
+      - order_paid
+      - document_ready
+      type: string
+      description: |-
+        * `order_status_changed` - Zmiana statusu zamówienia
+        * `order_paid` - Zamówienie opłacone
+        * `document_ready` - Dokument gotowy
+    NotificationPreference:
+      type: object
+      description: Zgoda marketingowa klienta, osobno per kanał.
+      properties:
+        marketingEmail:
+          type: boolean
+          description: Zgoda na marketing e-mailem
+        marketingPush:
+          type: boolean
+          description: Zgoda na marketing push
     Order:
       type: object
       description: |-
@@ -3842,6 +4024,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Collection'
+    PaginatedNotificationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
     PaginatedOrderList:
       type: object
       required:

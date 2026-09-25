@@ -33,7 +33,11 @@ PASSWORD_HASHERS = [
 ]
 
 # --- Email w pamięci ---
+# `ACTUAL_EMAIL_BACKEND` to backend, którego `send_email_payloads_task`
+# używa naprawdę (`components/email.py`) — bez nadpisania zadanie łączyłoby
+# się z prawdziwym SMTP nawet w testach.
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+ACTUAL_EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
 # --- Cache ---
 CACHES = {
