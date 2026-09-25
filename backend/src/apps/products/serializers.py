@@ -142,7 +142,9 @@ class ProductVariantSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         rate = self.context.get("exchange_rate")
         if rate is not None:
-            data["price"] = MoneySerializer(price_in(instance, rate)).data
+            data["price"] = MoneySerializer(
+                price_in(instance, rate, self.context.get("metal_rates"))
+            ).data
         return data
 
     @extend_schema_field(ProductImageSerializer(many=True))

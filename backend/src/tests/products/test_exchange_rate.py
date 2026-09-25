@@ -8,6 +8,7 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -127,21 +128,39 @@ class TestRefreshTask:
         assert rate.source == "fake"
 
     def test_rate_younger_than_30_days_is_kept(self):
-        euro_rate()
+        euro_rate(effective_on=timezone.localdate() - timedelta(days=29))
 
+        assert refresh_exchange_rate() is False  # type: ignore[missing-argument]
         assert refresh_exchange_rate() is False  # type: ignore[missing-argument]
         assert ExchangeRate.objects.count() == 1
 
-    def test_rate_older_than_30_days_is_replaced(self):
-        old = euro_rate("4.500000", effective_on=date(2026, 7, 1))
-        ExchangeRate.objects.filter(pk=old.pk).update(
-            created_at=timezone.now() - timedelta(days=31)
-        )
+    def test_rate_quoted_30_days_ago_is_replaced(self, caplog):
+        euro_rate("4.500000", effective_on=timezone.localdate() - timedelta(days=30))
 
         assert refresh_exchange_rate() is True  # type: ignore[missing-argument]
         current = ExchangeRate.objects.current("EUR")
         assert current is not None
         assert current.rate == FakeExchangeRateProvider.rate
+        assert not [r for r in caplog.records if r.levelname == "ERROR"]
+
+    def test_stale_rate_is_logged(self, caplog):
+        euro_rate(effective_on=timezone.localdate() - timedelta(days=40))
+
+        refresh_exchange_rate()  # type: ignore[missing-argument]
+
+        assert any(r.levelname == "ERROR" for r in caplog.records)
+
+    def test_network_errors_are_retried(self):
+        assert requests.RequestException in refresh_exchange_rate.autoretry_for
+        assert refresh_exchange_rate.max_retries
+
+    def test_worker_start_queues_refresh(self):
+        from core.celery import app, refresh_exchange_rate_on_start
+
+        with patch.object(app, "send_task") as send:
+            refresh_exchange_rate_on_start()
+
+        send.assert_called_once_with("apps.products.tasks.refresh_exchange_rate")
 
 
 def _get(client: APIClient, url: str, **params: Any) -> Any:
@@ -193,3 +212,76 @@ class TestCatalogInEuro:
         response = _get(api_client, reverse("product-list"), currency="USD")
 
         assert response.status_code == 400
+
+    def test_metal_rates_are_loaded_once(self, api_client: APIClient):
+        """Próg kosztu w euro nie pyta o kurs kruszcu osobno dla każdego wariantu."""
+        euro_rate()
+        activate_rate(MetalRateFactory(price_per_gram=30000))
+        for _ in range(5):
+            ProductVariantFactory(product=PublishedProductFactory(), price=100000)
+        with patch(
+            "apps.products.models.metal_rate.MetalRateQuerySet.active_for"
+        ) as per_variant:
+            response = _get(api_client, reverse("product-list"), currency="EUR")
+
+        assert response.status_code == 200
+        per_variant.assert_not_called()
+
+
+@pytest.mark.django_db
+class TestCheckoutPreviewInEuro:
+    """Koszyk i dostawa w euro liczone tą samą funkcją co zamówienie (ADR 0019)."""
+
+    def test_cart_in_euro(self, api_client: APIClient, user):
+        from apps.orders.services.cart import add_item
+        from tests.factories.orders import CartFactory
+        from tests.factories.products import stock
+
+        euro_rate("4.000000")
+        cart = CartFactory(user=user)
+        variant = ProductVariantFactory(product=PublishedProductFactory(), price=10001)
+        stock(variant, 5)
+        add_item(cart, variant=variant, quantity=2)
+        api_client.force_authenticate(user)
+
+        body = _get(api_client, reverse("cart-detail"), currency="EUR").json()
+
+        item = body["items"][0]
+        assert item["unitPrice"] == {"amount": 2550, "currency": "EUR"}
+        assert item["lineTotal"] == {"amount": 5100, "currency": "EUR"}
+        assert body["total"] == {"amount": 5100, "currency": "EUR"}
+
+    def test_shipping_cost_in_euro(self, api_client: APIClient):
+        from apps.shipping.models import ShippingZone
+        from tests.factories.shipping import ShippingMethodFactory
+
+        euro_rate("4.000000")
+        ShippingMethodFactory(zone=ShippingZone.EU, rate=8001)
+
+        body = _get(
+            api_client, reverse("shipping-method-list"), zone="EU", currency="EUR"
+        ).json()
+
+        assert body[0]["cost"] == {"amount": 2001, "currency": "EUR"}
+
+
+@pytest.mark.django_db
+def test_sales_document_prints_rate_and_quote_date():
+    from django.template.loader import render_to_string
+
+    from tests.factories.orders import OrderFactory
+
+    order = OrderFactory(
+        currency="EUR",
+        exchange_rate=Decimal("4.265100"),
+        exchange_rate_on=date(2026, 9, 24),
+        exchange_rate_source="nbp",
+    )
+
+    html = render_to_string(
+        "orders/sales_document.html",
+        {"document": None, "order": order, "items": [], "seller": {}},
+    )
+
+    assert "NBP z dnia 2026-09-24" in html
+    assert "1 EUR = 4.265100 PLN" in html

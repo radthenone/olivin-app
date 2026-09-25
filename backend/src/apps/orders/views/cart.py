@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, cast
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, cast
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import status, viewsets
@@ -43,6 +44,9 @@ from apps.orders.services import (
     set_quantity,
     totals,
 )
+from apps.orders.services.currency import ConvertedLine, convert_cart
+from apps.products.currency import QUERY_PARAM, requested_rate
+from apps.products.models import ExchangeRate
 
 if TYPE_CHECKING:
     from apps.accounts.models import Customer, CustomUser
@@ -66,6 +70,8 @@ class CartPayload:
     totals: CartTotals
     promotion_code: str | None = None
     coupon_code: str | None = None
+    # Pozycje przeliczone na euro (`?currency=EUR`); puste — ceny w złotych.
+    lines: Mapping[Any, ConvertedLine] = field(default_factory=dict)
 
 
 def _empty_payload() -> CartPayload:
@@ -78,7 +84,7 @@ def _empty_payload() -> CartPayload:
     return CartPayload(cart_token=None, items=[], totals=totals([]))
 
 
-def _payload_of(cart: Cart) -> CartPayload:
+def _payload_of(cart: Cart, rate: ExchangeRate | None = None) -> CartPayload:
     """Koszyk z wyceną promocji — tą samą, którą dostanie zamówienie.
 
     Właściciel bierze się z koszyka, nie z żądania: limit na klienta liczy
@@ -87,10 +93,16 @@ def _payload_of(cart: Cart) -> CartPayload:
     """
     items = list(cart_items(cart))
     discounts = promotions_for(cart, items, user=cart.user)
+    summary = totals(items, discounts, cart.coupon)
+    lines: Mapping[Any, ConvertedLine] = {}
+    if rate is not None:
+        # Ta sama funkcja, którą liczy zamówienie do strefy EU (ADR 0019).
+        lines, summary = convert_cart(items, discounts, rate)
     return CartPayload(
         cart_token=cart.session_key or None,
         items=items,
-        totals=totals(items, discounts, cart.coupon),
+        totals=summary,
+        lines=lines,
         promotion_code=cart.promotion.code if cart.promotion else None,
         # Kupon wykorzystany gdzie indziej albo po terminie nie jest tu
         # pokazywany — liczy się jako zero, a zamówienie go odrzuci.
@@ -139,12 +151,13 @@ class CartDetailView(APIView):
     serializer_class = CartSerializer
 
     def get(self, request: Request) -> Response:
+        rate = requested_rate(request.query_params.get(QUERY_PARAM))
         cart = get_cart(user=user_of(request), token=token_of(request))
         if cart is None:
             return Response(CartSerializer(_empty_payload()).data)
 
         cart.touch_on_read()
-        return Response(CartSerializer(_payload_of(cart)).data)
+        return Response(CartSerializer(_payload_of(cart, rate)).data)
 
 
 @cart_merge_schema

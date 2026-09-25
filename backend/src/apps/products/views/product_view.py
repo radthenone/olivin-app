@@ -2,22 +2,22 @@ from __future__ import annotations
 
 from django.db.models import F, OuterRef, Prefetch, QuerySet, Subquery
 from django.utils.translation import gettext_lazy
-from rest_framework import serializers, viewsets
+from rest_framework import viewsets
 from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import AllowAny
 from rest_framework.settings import api_settings
 
 from apps.inventory.models import has_available_variant
 from apps.products.filters import MIN_PRICE, ProductFilterSet
+from apps.products.currency import QUERY_PARAM, requested_rate
 from apps.products.models import (
     EFFECTIVE_PRICE,
-    EURO,
     ExchangeRate,
     Product,
     ProductVariant,
 )
+from apps.products.pricing import active_metal_rates
 from apps.products.schema import product_schema
-from common.money import DEFAULT_CURRENCY
 from apps.products.serializers import ProductDetailSerializer, ProductListSerializer
 
 ORDERING_FIELDS = {
@@ -93,8 +93,6 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         )
         if self._exchange_rate() is not None:
             # Próg kosztowy przy przeliczeniu potrzebuje składników kosztu.
-            # ponytail: kurs kruszcu to jedno zapytanie na wariant w euro;
-            # słownik aktywnych kursów, gdy katalog w euro zacznie ważyć.
             variants = variants.prefetch_related("cost_components")
         cheapest = (
             ProductVariant.objects.with_effective_price()
@@ -121,32 +119,19 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         )
 
     def get_serializer_context(self) -> dict:
-        return {
-            **super().get_serializer_context(),
-            "exchange_rate": self._exchange_rate(),
-        }
+        context = super().get_serializer_context()
+        rate = self._exchange_rate()
+        if rate is not None:
+            # Kursy kruszców raz na żądanie, nie raz na wariant (próg kosztu).
+            context["metal_rates"] = active_metal_rates()
+        return {**context, "exchange_rate": rate}
 
     def _exchange_rate(self) -> ExchangeRate | None:
         """Kurs dla `?currency=EUR`; `None` dla cen w złotych (ADR 0019)."""
         if not hasattr(self, "_rate"):
-            self._rate = self._resolve_rate()
+            params = self.request.query_params  # type: ignore[missing-attribute]
+            self._rate = requested_rate(params.get(QUERY_PARAM))
         return self._rate
-
-    def _resolve_rate(self) -> ExchangeRate | None:
-        params = self.request.query_params  # type: ignore[missing-attribute]
-        currency = params.get("currency", DEFAULT_CURRENCY).upper()
-        if currency == DEFAULT_CURRENCY:
-            return None
-        if currency != EURO:
-            raise serializers.ValidationError(
-                {"currency": f"Obsługiwane waluty: {DEFAULT_CURRENCY}, {EURO}."}
-            )
-        rate = ExchangeRate.objects.current(EURO)
-        if rate is None:
-            raise serializers.ValidationError(
-                {"currency": "Kurs euro nie jest jeszcze dostępny."}
-            )
-        return rate
 
     def get_serializer_class(self):
         if self.action == "retrieve":

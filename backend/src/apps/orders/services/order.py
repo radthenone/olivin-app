@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass
-from decimal import ROUND_FLOOR
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
@@ -29,8 +28,12 @@ from apps.orders.models import (
     OrderStatus,
 )
 from apps.orders.services.cart import cart_items, promotions_for, totals
+from apps.orders.services.currency import (
+    ConvertedLine,
+    convert_cart,
+    convert_shipping,
+)
 from apps.products.models import EURO, ExchangeRate, ProductStatus
-from apps.products.pricing import price_in, round_up_to_half
 from apps.promotions.models import (
     Coupon,
     CouponRedemption,
@@ -116,14 +119,14 @@ def create_order(
     _reject_guest_above_limit(user=user, total=summary.total + shipping_cost)
 
     discount = summary.discount_amount
+    lines: dict[Any, ConvertedLine] = {}
     if rate is not None:
-        # Wszystko liczone w złotych (ceny źródłowe), zamówienie zapisane
-        # w euro. Rabat w dół, żeby towar po rabacie nie zszedł pod próg.
-        shipping_cost = rate.convert(shipping_cost)
-        discount = sum(
-            (_item_discount(applied.amount, rate) for applied in discounts.values()),
-            start=Money.zero(rate.currency),
-        )
+        # Warunki (limit gościa, próg darmowej dostawy, dostępność metody)
+        # liczone w złotych; zamówienie zapisane w euro tą samą funkcją,
+        # którą liczy podgląd kasy.
+        lines, converted = convert_cart(items, discounts, rate)
+        discount = converted.discount_amount
+        shipping_cost = convert_shipping(shipping_cost, rate)
 
     order = _build_order(
         address=address,
@@ -136,7 +139,7 @@ def create_order(
         coupon=summary.coupon_amount,
         rate=rate,
     )
-    _snapshot_items(order, items, discounts, rate)
+    _snapshot_items(order, items, discounts, lines)
     _record_redemptions(order, discounts)
     _redeem_coupon(order, coupon, summary.coupon_amount)
     _reserve_items(order, items)
@@ -464,6 +467,8 @@ def _build_order(
         currency=shipping_cost.currency or DEFAULT_CURRENCY,
         # Kopia kursu: późniejsza zmiana kursu nie rusza zamówienia (ADR 0019).
         exchange_rate=rate.rate if rate is not None else 1,
+        exchange_rate_on=rate.effective_on if rate is not None else None,
+        exchange_rate_source=rate.source if rate is not None else "",
         terms_document=terms,
         invoice_requested=invoice_requested,
         discount_amount=discount.amount,
@@ -481,20 +486,16 @@ def _exchange_rate_for(zone: ShippingZone) -> ExchangeRate | None:
     return rate
 
 
-def _item_discount(amount: Money, rate: ExchangeRate) -> Money:
-    return rate.convert(amount, rounding=ROUND_FLOOR)
-
-
 def _snapshot_items(
     order: Order,
     items: list[CartItem],
     discounts: Mapping[Any, AppliedPromotion],
-    rate: ExchangeRate | None = None,
+    lines: Mapping[Any, ConvertedLine],
 ) -> None:
     """Przepisuje pozycje koszyka na pozycje zamówienia (ADR 0010).
 
-    Z kursem ceny idą w walucie kursu: wariant przez `price_in` (,00/,50,
-    nie poniżej progu), grawer zaokrąglony tak samo jak cena katalogowa.
+    `lines` niesie pozycje przeliczone na euro (`convert_cart`); pusty
+    słownik oznacza sprzedaż w złotych.
     """
     snapshots = []
     for item in items:
@@ -504,10 +505,11 @@ def _snapshot_items(
         engraving = product.engraving_price or 0
         unit_price = variant.effective_price.amount
         discount = applied.amount.amount if applied else 0
-        if rate is not None:
-            unit_price = price_in(variant, rate).amount
-            engraving = round_up_to_half(rate.convert(Money(engraving))).amount
-            discount = _item_discount(applied.amount, rate).amount if applied else 0
+        line = lines.get(item.pk)
+        if line is not None:
+            unit_price = line.unit_price.amount
+            engraving = line.engraving_unit_price.amount
+            discount = line.discount.amount
         snapshots.append(
             OrderItem(
                 order=order,

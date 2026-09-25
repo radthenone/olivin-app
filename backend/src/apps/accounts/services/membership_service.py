@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from decimal import ROUND_HALF_UP
 from typing import TYPE_CHECKING
 
 from django.conf import settings
@@ -32,18 +33,20 @@ def paid_total(user: CustomUser) -> Money:
     poprzednim zamówieniu, więc pokryta nim część nie jest zapłatą drugi raz.
 
     Zamówienie zwrócone ma status `returned`, nie `delivered` — filtr po
-    statusie wystarcza, bez osobnego wykluczenia. Liczą się tylko zamówienia
-    w złotych, bo próg jest ustawieniem w groszach PLN (ADR 0019: ceny
-    źródłowe zawsze w złotych).
-    # ponytail: zamówienia w euro pominięte, doliczyć po kursie gdy sprzedaż UE urośnie.
+    statusie wystarcza, bez osobnego wykluczenia. Próg jest w groszach PLN,
+    więc zamówienie w euro wraca do złotych po kursie zapisanym w nim
+    samym (ADR 0019), zaokrąglone do grosza.
     """
-    orders = Order.objects.filter(
-        user=user, status=OrderStatus.DELIVERED, currency=DEFAULT_CURRENCY
-    )
+    orders = Order.objects.filter(user=user, status=OrderStatus.DELIVERED)
     zero = Money.zero(DEFAULT_CURRENCY)
     total = zero
     for order in orders:
         goods = order.goods_total - order.discount_money - order.coupon_money
+        if goods.currency != DEFAULT_CURRENCY:
+            goods = Money(
+                goods.multiply(order.exchange_rate, rounding=ROUND_HALF_UP).amount,
+                DEFAULT_CURRENCY,
+            )
         total += goods if goods > zero else zero
     return total
 

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import logging
 from datetime import timedelta
 
+import requests
 from celery import shared_task
 from django.conf import settings
 from django.core.mail import send_mail
@@ -13,8 +15,12 @@ from apps.products.services.pricing import recalculate_prices
 from core.integrations.exchange_rate import get_provider as get_exchange_rate_provider
 from core.integrations.metal_rate import get_provider
 
+logger = logging.getLogger(__name__)
+
 # Kurs euro odświeżany co 30 dni (ADR 0019, uzupełnienie 2026-09-22).
 EXCHANGE_RATE_TTL = timedelta(days=30)
+# Ponad to kurs uznajemy za przeterminowany — NBP nie odpowiadał od dni.
+EXCHANGE_RATE_STALE = timedelta(days=35)
 
 
 @shared_task
@@ -97,17 +103,32 @@ def propose_metal_rates() -> int:
     return created
 
 
-@shared_task
+@shared_task(
+    autoretry_for=(requests.RequestException,),
+    retry_backoff=60,
+    retry_backoff_max=3600,
+    max_retries=5,
+)
 def refresh_exchange_rate() -> bool:
     """Pobiera kurs euro, gdy obowiązujący ma 30 dni albo go nie ma.
 
-    Beat woła codziennie, a o odświeżeniu decyduje wiek kursu: pierwsze
-    wdrożenie dostaje kurs od razu, a restart beatu nie przesuwa terminu.
-    Nowy kurs działa bez aktywacji — inaczej niż `MetalRate` (ADR 0022).
+    Beat woła codziennie, a o odświeżeniu decyduje wiek notowania
+    (`effective_on`): pierwsze wdrożenie dostaje kurs od razu, a restart
+    beatu nie przesuwa terminu. Idempotentne — drugie wywołanie tego samego
+    dnia nic nie robi. Nowy kurs działa bez aktywacji, inaczej niż
+    `MetalRate` (ADR 0022). Błąd sieci NBP ponawia Celery z odstępem.
     """
+    today = timezone.localdate()
     current = ExchangeRate.objects.current(EURO)
-    if current is not None and timezone.now() - current.created_at < EXCHANGE_RATE_TTL:
+    if current is not None and today - current.effective_on < EXCHANGE_RATE_TTL:
         return False
+    if current is not None and today - current.effective_on > EXCHANGE_RATE_STALE:
+        logger.error(
+            "Kurs euro z %s jest starszy niż %s dni — sprzedaż UE liczy się "
+            "po nieaktualnym kursie.",
+            current.effective_on,
+            EXCHANGE_RATE_STALE.days,
+        )
     quote = get_exchange_rate_provider().quote(EURO)
     ExchangeRate.objects.update_or_create(
         base_currency=quote.base_currency,

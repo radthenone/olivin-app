@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
+from apps.products.models import EURO
 from apps.shipping.models import ShippingMethodKind, ShippingZone
+from common.money import DEFAULT_CURRENCY
 from core.api.serializers import MoneySerializer
 
 
@@ -26,6 +28,15 @@ class ShippingMethodQuerySerializer(serializers.Serializer):
         required=False,
         default=ShippingZone.PL,
         help_text="Strefa dostawy wynikająca z adresu klienta",
+    )
+    currency = serializers.ChoiceField(
+        choices=[DEFAULT_CURRENCY, EURO],
+        required=False,
+        default=DEFAULT_CURRENCY,
+        help_text=(
+            "Waluta kosztu. `order_value` zawsze w groszach PLN; EUR przelicza "
+            "koszt po bieżącym kursie, jak zamówienie do strefy EU (ADR 0019)."
+        ),
     )
 
 

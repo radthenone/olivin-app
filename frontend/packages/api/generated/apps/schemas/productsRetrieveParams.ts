@@ -10,7 +10,7 @@ import type { ProductsRetrieveLang } from './productsRetrieveLang';
 
 export type ProductsRetrieveParams = {
 /**
- * Waluta cen. EUR przelicza ceny złotowe po bieżącym kursie NBP i zaokrągla w górę do ,00/,50 (ADR 0019); brak kursu daje 400. Filtry ceny zawsze działają w złotych.
+ * Waluta cen. EUR przelicza ceny złotowe po bieżącym kursie NBP i zaokrągla w górę do ,00/,50 (ADR 0019); brak kursu daje 400. Filtry i progi (cena, darmowa dostawa) zawsze działają w złotych.
  */
 currency?: ProductsRetrieveCurrency;
 /**

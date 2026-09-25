@@ -71,6 +71,9 @@
     <tr><td class="amount">Dostawa ({{ order.shipping_method_name }})</td><td class="amount">{{ order.shipping_cost_money }}</td></tr>
     <tr><td class="amount"><strong>Razem</strong></td><td class="amount"><strong>{{ order.total }}</strong></td></tr>
   </table>
+  {% if order.exchange_rate_on %}
+  <p class="muted">Przeliczono z cen w PLN po kursie {{ order.exchange_rate_source|upper }} z dnia {{ order.exchange_rate_on|date:"Y-m-d" }}: 1 {{ order.currency }} = {{ order.exchange_rate }} PLN.</p>
+  {% endif %}
 
   {% for item in items %}{% if item.is_vat_exempt and item.vat_exemption_basis %}
   <p class="muted">{{ item.sku }}: zwolnienie z VAT — {{ item.vat_exemption_basis }}</p>

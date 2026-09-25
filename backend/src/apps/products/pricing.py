@@ -14,6 +14,7 @@ ani promocja nie schodzą poniżej niego.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal
 
@@ -50,6 +51,9 @@ class Margin:
 
 EMPTY_MARGIN = Margin()
 
+# Aktywne kursy kruszców wczytane raz: (kruszec, próba) → kurs.
+MetalRates = Mapping[tuple[str, str], MetalRate]
+
 
 def margin_for(variant: ProductVariant) -> Margin:
     """Narzut wariantu, a w jego braku narzut kategorii produktu.
@@ -84,20 +88,32 @@ def components_total(variant: ProductVariant) -> Money:
     return total
 
 
-def active_rate_for(variant: ProductVariant) -> MetalRate | None:
+def active_metal_rates() -> dict[tuple[str, str], MetalRate]:
+    """Wszystkie aktywne kursy kruszców jednym zapytaniem — dla list wariantów."""
+    return {(rate.metal, rate.fineness): rate for rate in MetalRate.objects.active()}
+
+
+def active_rate_for(
+    variant: ProductVariant, metal_rates: MetalRates | None = None
+) -> MetalRate | None:
+    if metal_rates is not None:
+        product = variant.product
+        return metal_rates.get((product.material, product.fineness))
     return MetalRate.objects.active_for(
         variant.product.material, variant.product.fineness
     )
 
 
-def cost_floor(variant: ProductVariant) -> Money | None:
+def cost_floor(
+    variant: ProductVariant, metal_rates: MetalRates | None = None
+) -> Money | None:
     """Koszt wariantu bez marży (`CONTEXT.md`, Cost floor).
 
     `None`, gdy nie ma aktywnego kursu dla kruszcu i próby produktu — wtedy
     składnika kruszcowego nie da się policzyć, a zgadywanie progu dałoby
     liczbę wyglądającą na prawdziwą.
     """
-    rate = active_rate_for(variant)
+    rate = active_rate_for(variant, metal_rates)
     if rate is None:
         return None
     return metal_component(variant, rate) + components_total(variant)
@@ -126,7 +142,11 @@ def round_up_to_half(amount: Money) -> Money:
     return Money(int(halves) * HALF_UNIT, amount.currency)
 
 
-def price_in(variant: ProductVariant, rate: ExchangeRate) -> Money:
+def price_in(
+    variant: ProductVariant,
+    rate: ExchangeRate,
+    metal_rates: MetalRates | None = None,
+) -> Money:
     """Cena wariantu w walucie kursu (ADR 0019).
 
     Przeliczona i zaokrąglona w górę do ,00/,50, ale nigdy poniżej kosztu
@@ -134,7 +154,7 @@ def price_in(variant: ProductVariant, rate: ExchangeRate) -> Money:
     w każdej walucie.
     """
     price = round_up_to_half(rate.convert(variant.effective_price))
-    floor = cost_floor(variant)
+    floor = cost_floor(variant, metal_rates)
     if floor is None:
         return price
     return max(price, round_up_to_half(rate.convert(floor)))

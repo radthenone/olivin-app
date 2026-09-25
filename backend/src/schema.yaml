@@ -18,6 +18,16 @@ paths:
           type: string
         description: Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany
           klient go nie wysyła — koszyk wynika z uwierzytelnienia.
+      - in: query
+        name: currency
+        schema:
+          type: string
+          enum:
+          - EUR
+          - PLN
+        description: Waluta cen. EUR przelicza ceny złotowe po bieżącym kursie NBP
+          i zaokrągla w górę do ,00/,50 (ADR 0019); brak kursu daje 400. Filtry i
+          progi (cena, darmowa dostawa) zawsze działają w złotych.
       tags:
       - Cart
       security:
@@ -1438,8 +1448,8 @@ paths:
           - EUR
           - PLN
         description: Waluta cen. EUR przelicza ceny złotowe po bieżącym kursie NBP
-          i zaokrągla w górę do ,00/,50 (ADR 0019); brak kursu daje 400. Filtry ceny
-          zawsze działają w złotych.
+          i zaokrągla w górę do ,00/,50 (ADR 0019); brak kursu daje 400. Filtry i
+          progi (cena, darmowa dostawa) zawsze działają w złotych.
       - in: query
         name: fineness
         schema:
@@ -1676,8 +1686,8 @@ paths:
           - EUR
           - PLN
         description: Waluta cen. EUR przelicza ceny złotowe po bieżącym kursie NBP
-          i zaokrągla w górę do ,00/,50 (ADR 0019); brak kursu daje 400. Filtry ceny
-          zawsze działają w złotych.
+          i zaokrągla w górę do ,00/,50 (ADR 0019); brak kursu daje 400. Filtry i
+          progi (cena, darmowa dostawa) zawsze działają w złotych.
       - in: query
         name: lang
         schema:
@@ -1752,6 +1762,20 @@ paths:
         wartości zamówienia, więc jest na liście zawsze.
       summary: Metody dostawy dostępne dla koszyka
       parameters:
+      - in: query
+        name: currency
+        schema:
+          enum:
+          - PLN
+          - EUR
+          type: string
+          default: PLN
+          minLength: 1
+        description: |-
+          Waluta kosztu. `order_value` zawsze w groszach PLN; EUR przelicza koszt po bieżącym kursie, jak zamówienie do strefy EU (ADR 0019).
+
+          * `PLN` - PLN
+          * `EUR` - EUR
       - in: query
         name: orderValue
         schema:

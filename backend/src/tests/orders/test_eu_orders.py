@@ -11,17 +11,20 @@ import pytest
 from apps.orders.services import OrderError, ShippingAddress, create_order
 from apps.orders.services.cart import add_item
 from apps.payments.services import start_payment
+from apps.payments.models import Payment
 from apps.products.models import ExchangeRate
+from apps.products.services import activate_rate
 from apps.shipping.models import ShippingZone
 from tests.factories.accounts import UserFactory
 from tests.factories.consents import ConsentDocumentFactory, ConsentFactory
 from tests.factories.orders import CartFactory
 from tests.factories.products import (
     EngravableProductFactory,
+    MetalRateFactory,
     ProductVariantFactory,
     stock,
 )
-from tests.factories.promotions import CouponFactory
+from tests.factories.promotions import CouponFactory, PromotionFactory
 from tests.factories.shipping import ShippingMethodFactory
 
 BERLIN = ShippingAddress(
@@ -33,12 +36,14 @@ BERLIN = ShippingAddress(
 )
 
 
-def _cart_with_item(*, price: int = 10001, engraving: str = ""):
+def _cart_with_item(*, price: int = 10001, engraving: str = "", **variant_fields):
     user = UserFactory()
     ConsentFactory(user=user, document=ConsentDocumentFactory(kind="terms"))
     cart = CartFactory(user=user)
     variant = ProductVariantFactory(
-        product=EngravableProductFactory(engraving_price=4900), price=price
+        product=EngravableProductFactory(engraving_price=4900),
+        price=price,
+        **variant_fields,
     )
     stock(variant, 5)
     add_item(cart, variant=variant, quantity=2, engraving_text=engraving)
@@ -68,6 +73,8 @@ class TestEuOrder:
 
         assert order.currency == "EUR"
         assert order.exchange_rate == Decimal("4.000000")
+        assert order.exchange_rate_on == date(2026, 9, 1)
+        assert order.exchange_rate_source == "test"
         item = order.items.get()
         # 100,01 zł / 4 = 25,0025 € → 25,50 €; grawer 49 zł / 4 = 12,25 € → 12,50 €.
         assert item.unit_price == 2550
@@ -125,6 +132,8 @@ class TestEuOrder:
 
         assert order.currency == "PLN"
         assert order.exchange_rate == Decimal("1.000000")
+        assert order.exchange_rate_on is None
+        assert order.exchange_rate_source == ""
         assert order.items.get().unit_price == 10001
 
     def test_eu_order_without_rate_is_rejected(self):
@@ -149,3 +158,54 @@ class TestEuOrder:
             )
 
         assert "coupon" in error.value.message_dict
+
+
+@pytest.mark.django_db
+class TestEuOrderWithPromotion:
+    """Promocja, grawer, dwie sztuki i płatna dostawa — wszystko w euro.
+
+    Koszt wariantu: 1 g × 300 zł = 300 zł → 75 € przy kursie 4.
+    Cena 600,01 zł → 150,0025 € → 150,50 €; dwie sztuki = 301 €.
+    """
+
+    @pytest.fixture(autouse=True)
+    def _setup(self, settings, fake_payment_provider):
+        settings.FREE_SHIPPING_THRESHOLD = None
+        activate_rate(MetalRateFactory(price_per_gram=30000))
+        _euro("4.000000")
+
+    def _order(self):
+        user, cart = _cart_with_item(
+            price=60001, engraving="A&J", metal_weight_grams=Decimal("1.000")
+        )
+        return create_order(
+            cart=cart, address=BERLIN, shipping_method=_eu_method(), user=user
+        )
+
+    def test_percent_discount_from_euro_line(self):
+        PromotionFactory(value=10)
+
+        order = self._order()
+        started = start_payment(order)
+
+        item = order.items.get()
+        assert item.unit_price == 15050
+        assert item.engraving_price == 1250
+        # 10% z 301 € = 30,10 € — nie przeliczone 120 zł / 4 = 30 €.
+        assert item.discount_amount == 3010
+        assert order.discount_amount == 3010
+        assert order.shipping_cost == 2001
+        assert order.total.amount == 30100 + 2500 - 3010 + 2001
+        payment = Payment.objects.get(order=order)
+        assert payment.amount == order.total.amount
+        assert payment.currency == "EUR"
+        assert started.payment == payment
+
+    def test_discount_never_below_converted_cost(self):
+        PromotionFactory(value=90)
+
+        order = self._order()
+
+        # Towar po rabacie zostaje na 2 × 75 € kosztu.
+        assert order.discount_amount == 30100 - 2 * 7500
+        assert order.goods_total.amount - order.discount_amount == 2 * 7500 + 2500
