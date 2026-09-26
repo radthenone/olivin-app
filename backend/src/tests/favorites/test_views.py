@@ -168,3 +168,12 @@ class TestFavoriteMergeApi:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == []
+
+    def test_rejects_oversized_merge_list(self, authenticated_client: APIClient):
+        oversized = [f"produkt-{index}" for index in range(501)]
+
+        response: Any = authenticated_client.post(
+            FAVORITES_MERGE_URL, {"products": oversized}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST

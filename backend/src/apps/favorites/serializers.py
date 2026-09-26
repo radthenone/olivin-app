@@ -37,9 +37,19 @@ class FavoriteWriteSerializer(serializers.Serializer):
     )
 
 
+MERGE_PRODUCTS_MAX_LENGTH = 500
+
+
 class FavoriteMergeSerializer(serializers.Serializer):
-    """Wejście do scalenia listy gościa: identyfikatory (slugi) produktów."""
+    """Wejście do scalenia listy gościa: identyfikatory (slugi) produktów.
+
+    Limit długości listy — bez niego zapytanie `IN (...)` i `bulk_create`
+    rosłyby bez ograniczenia wraz z tym, co przyśle klient (DoS).
+    """
 
     products = serializers.ListField(
-        child=serializers.SlugField(), allow_empty=True, default=list
+        child=serializers.SlugField(),
+        allow_empty=True,
+        default=list,
+        max_length=MERGE_PRODUCTS_MAX_LENGTH,
     )

@@ -3613,13 +3613,18 @@ components:
       - product
     FavoriteMerge:
       type: object
-      description: 'Wejście do scalenia listy gościa: identyfikatory (slugi) produktów.'
+      description: |-
+        Wejście do scalenia listy gościa: identyfikatory (slugi) produktów.
+
+        Limit długości listy — bez niego zapytanie `IN (...)` i `bulk_create`
+        rosłyby bez ograniczenia wraz z tym, co przyśle klient (DoS).
       properties:
         products:
           type: array
           items:
             type: string
             pattern: ^[-a-zA-Z0-9_]+$
+          maxItems: 500
     FavoriteProduct:
       type: object
       description: Produkt w kontekście listy ulubionych — tylko tyle, ile pokazuje

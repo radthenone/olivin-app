@@ -48,9 +48,11 @@ def merge_favorites(
     Nieistniejące i nieopublikowane identyfikatory są pomijane. `bulk_create`
     z `ignore_conflicts=True` zamiast pętli `get_or_create` — jedno zapytanie
     zamiast jednego na pozycję, a ograniczenie unikalności w bazie samo
-    odrzuca produkty już ulubione, więc scalenie jest idempotentne.
+    odrzuca produkty już ulubione, więc scalenie jest idempotentne. Duplikaty
+    w liście gościa są odsiewane przed zapytaniem — inaczej `IN (...)` rośnie
+    bez powodu, skoro slug jest unikalny.
     """
-    products = Product.objects.published().filter(slug__in=product_slugs)
+    products = Product.objects.published().filter(slug__in=set(product_slugs))
     Favorite.objects.bulk_create(
         [Favorite(user=user, product=product) for product in products],
         ignore_conflicts=True,

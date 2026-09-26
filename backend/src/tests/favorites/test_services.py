@@ -119,3 +119,17 @@ class TestMergeFavorites:
         merge_favorites(user=user, product_slugs=[product.slug])  # type: ignore[bad-argument-type]
 
         assert Favorite.objects.filter(user=user, product=product).count() == 1
+
+    def test_duplicate_slugs_in_input_do_not_duplicate_favorite(self):
+        """Duplikaty w liście gościa są odsiewane przed zapytaniem — jedna
+        pozycja `IN (...)`, jeden wpis ulubionych."""
+        user = UserFactory()
+        product = PublishedProductFactory()
+
+        merged = merge_favorites(
+            user=user,
+            product_slugs=[product.slug, product.slug],  # type: ignore[bad-argument-type]
+        )
+
+        assert Favorite.objects.filter(user=user, product=product).count() == 1
+        assert list(merged) == list(Favorite.objects.filter(user=user))

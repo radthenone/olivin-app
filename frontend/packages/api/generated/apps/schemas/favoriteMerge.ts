@@ -8,7 +8,11 @@
 
 /**
  * Wejście do scalenia listy gościa: identyfikatory (slugi) produktów.
+
+Limit długości listy — bez niego zapytanie `IN (...)` i `bulk_create`
+rosłyby bez ograniczenia wraz z tym, co przyśle klient (DoS).
  */
 export interface FavoriteMerge {
+  /** @maxItems 500 */
   products?: string[];
 }

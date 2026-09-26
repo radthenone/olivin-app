@@ -61,11 +61,13 @@ export const FavoritesMergeCreateQueryParams = zod.object({
 })
 
 export const favoritesMergeCreateBodyProductsItemRegExp = new RegExp('^[-a-zA-Z0-9_]+$');
+export const favoritesMergeCreateBodyProductsMax = 500;
+
 
 
 export const FavoritesMergeCreateBody = zod.object({
-  "products": zod.array(zod.string().regex(favoritesMergeCreateBodyProductsItemRegExp)).optional()
-}).describe('Wejście do scalenia listy gościa: identyfikatory (slugi) produktów.')
+  "products": zod.array(zod.string().regex(favoritesMergeCreateBodyProductsItemRegExp)).max(favoritesMergeCreateBodyProductsMax).optional()
+}).describe('Wejście do scalenia listy gościa: identyfikatory (slugi) produktów.\n\nLimit długości listy — bez niego zapytanie `IN (...)` i `bulk_create`\nrosłyby bez ograniczenia wraz z tym, co przyśle klient (DoS).')
 
 export const favoritesMergeCreateResponseResultsItemProductOneSlugRegExp = new RegExp('^[-a-zA-Z0-9_]+$');
 
