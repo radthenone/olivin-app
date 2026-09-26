@@ -15,6 +15,11 @@ def _average_rating(obj: Product) -> float | None:
     return round(float(value), 1) if value is not None else None
 
 
+def _is_favorite(obj: Product) -> bool:
+    """Serduszko z adnotacji `is_favorite`; `False`, gdy widok jej nie doda."""
+    return bool(getattr(obj, "is_favorite", False))
+
+
 def _engraving_in_currency(data: dict, product: Product, context: dict) -> dict:
     """Cena grawerunku w walucie z `?currency=` — jak cena wariantu (ADR 0019)."""
     rate = context.get("exchange_rate")
@@ -187,6 +192,9 @@ class ProductListSerializer(serializers.ModelSerializer):
     average_rating = serializers.SerializerMethodField(
         help_text="Średnia ocen opublikowanych opinii; pusta, gdy produkt nie ma żadnej."
     )
+    is_favorite = serializers.SerializerMethodField(
+        help_text="Czy zalogowany klient ma produkt w ulubionych; zawsze `false` dla gościa."
+    )
 
     class Meta:
         model = Product
@@ -203,6 +211,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             "engraving_price",
             "cheapest_variant",
             "average_rating",
+            "is_favorite",
         ]
         read_only_fields = fields
 
@@ -228,6 +237,10 @@ class ProductListSerializer(serializers.ModelSerializer):
     def get_average_rating(self, obj: Product) -> float | None:
         return _average_rating(obj)
 
+    @extend_schema_field(serializers.BooleanField())
+    def get_is_favorite(self, obj: Product) -> bool:
+        return _is_favorite(obj)
+
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     """Strona produktu — pełna lista wariantów."""
@@ -252,6 +265,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     average_rating = serializers.SerializerMethodField(
         help_text="Średnia ocen opublikowanych opinii; pusta, gdy produkt nie ma żadnej."
     )
+    is_favorite = serializers.SerializerMethodField(
+        help_text="Czy zalogowany klient ma produkt w ulubionych; zawsze `false` dla gościa."
+    )
 
     class Meta:
         model = Product
@@ -270,6 +286,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "images",
             "variants",
             "average_rating",
+            "is_favorite",
         ]
         read_only_fields = fields
 
@@ -281,6 +298,10 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.FloatField(allow_null=True))
     def get_average_rating(self, obj: Product) -> float | None:
         return _average_rating(obj)
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_is_favorite(self, obj: Product) -> bool:
+        return _is_favorite(obj)
 
     @extend_schema_field(ProductImageSerializer(many=True))
     def get_images(self, obj: Product) -> list[dict]:

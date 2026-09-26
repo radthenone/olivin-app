@@ -91,7 +91,8 @@ export const ProductsListResponse = zod.object({
   "certificateUrl": zod.url().nullable().describe('Adres certyfikatu podpisany na czas; pusty, gdy kamień nie ma certyfikatu.')
 }).describe('Kamień z parametrami i adresem certyfikatu, jeśli jest.\n\nAdres jest podpisany na czas, bo certyfikat leży w prywatnym buckecie\n`documents` (ADR 0025). Stały odnośnik do dokumentu laboratorium byłby\ndostępny dla każdego, kto go raz zobaczył.'))
 }).describe('Wariant widziany przez klienta.\n\nCena jest tą, którą klient faktycznie zapłaci: ręczna ma pierwszeństwo\nprzed wyliczoną (ADR 0022). Klient nie musi wiedzieć, która to która.').nullable(),
-  "averageRating": zod.number().nullable().describe('Średnia ocen opublikowanych opinii; pusta, gdy produkt nie ma żadnej.')
+  "averageRating": zod.number().nullable().describe('Średnia ocen opublikowanych opinii; pusta, gdy produkt nie ma żadnej.'),
+  "isFavorite": zod.boolean().describe('Czy zalogowany klient ma produkt w ulubionych; zawsze `false` dla gościa.')
 }).describe('Produkt na liście — reprezentuje go najtańszy wariant (`CONTEXT.md`).'))
 })
 
@@ -172,6 +173,7 @@ export const ProductsRetrieveResponse = zod.object({
   "certificateUrl": zod.url().nullable().describe('Adres certyfikatu podpisany na czas; pusty, gdy kamień nie ma certyfikatu.')
 }).describe('Kamień z parametrami i adresem certyfikatu, jeśli jest.\n\nAdres jest podpisany na czas, bo certyfikat leży w prywatnym buckecie\n`documents` (ADR 0025). Stały odnośnik do dokumentu laboratorium byłby\ndostępny dla każdego, kto go raz zobaczył.'))
 }).describe('Wariant widziany przez klienta.\n\nCena jest tą, którą klient faktycznie zapłaci: ręczna ma pierwszeństwo\nprzed wyliczoną (ADR 0022). Klient nie musi wiedzieć, która to która.')),
-  "averageRating": zod.number().nullable().describe('Średnia ocen opublikowanych opinii; pusta, gdy produkt nie ma żadnej.')
+  "averageRating": zod.number().nullable().describe('Średnia ocen opublikowanych opinii; pusta, gdy produkt nie ma żadnej.'),
+  "isFavorite": zod.boolean().describe('Czy zalogowany klient ma produkt w ulubionych; zawsze `false` dla gościa.')
 }).describe('Strona produktu — pełna lista wariantów.')
 

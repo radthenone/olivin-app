@@ -1,6 +1,17 @@
 from __future__ import annotations
 
-from django.db.models import Avg, F, OuterRef, Prefetch, Q, QuerySet, Subquery
+from django.db.models import (
+    Avg,
+    BooleanField,
+    Exists,
+    F,
+    OuterRef,
+    Prefetch,
+    Q,
+    QuerySet,
+    Subquery,
+    Value,
+)
 from django.utils.translation import gettext_lazy
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -25,10 +36,12 @@ from apps.products.schema import product_schema
 from apps.products.serializers import ProductDetailSerializer, ProductListSerializer
 from drf_spectacular.utils import extend_schema
 
+from apps.favorites.models import Favorite
 from apps.reviews.models import ReviewStatus
 from apps.reviews.serializers import ReviewSerializer
 
 AVERAGE_RATING = "average_rating"
+IS_FAVORITE = "is_favorite"
 
 ORDERING_FIELDS = {
     "price": F(MIN_PRICE).asc(nulls_last=True),
@@ -134,7 +147,20 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
                     )
                 }
             )
+            .annotate(**{IS_FAVORITE: self._is_favorite_subquery()})
         )
+
+    def _is_favorite_subquery(self) -> Exists | Value:
+        """Serduszko na liście/karcie bez zapytania per produkt (#200).
+
+        Gość nie ma ulubionych — dla niego adnotacja jest stałym `False`,
+        żeby nie liczyć podzapytania, którego wynik i tak nie zmieni się
+        w zależności od produktu.
+        """
+        user = self.request.user  # type: ignore[missing-attribute]
+        if not user.is_authenticated:
+            return Value(False, output_field=BooleanField())
+        return Exists(Favorite.objects.filter(user=user, product=OuterRef("pk")))
 
     @extend_schema(
         tags=["Reviews"],
