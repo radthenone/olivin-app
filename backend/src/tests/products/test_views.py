@@ -15,6 +15,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from tests.factories.categories import CategoryFactory
+from tests.factories.favorites import FavoriteFactory
 from tests.factories.products import (
     EngravableProductFactory,
     MadeToOrderProductFactory,
@@ -284,3 +285,54 @@ class TestQueryBudget:
         # stany magazynowe i tłumaczenia.
         with django_assert_max_num_queries(12):
             api_client.get(reverse("product-list"))
+
+
+@pytest.mark.django_db
+class TestIsFavoriteOnCatalog:
+    """Serduszko na liście i karcie produktu (#200) — bez zapytania na produkt."""
+
+    def test_gosc_widzi_false(self, api_client: APIClient):
+        PublishedProductFactory()
+
+        status_code, body = _get(api_client, reverse("product-list"))
+
+        assert status_code == status.HTTP_200_OK
+        assert body["results"][0]["isFavorite"] is False
+
+    def test_zalogowany_widzi_wlasny_ulubiony(
+        self, authenticated_client: APIClient, user
+    ):
+        product = PublishedProductFactory()
+        FavoriteFactory(user=user, product=product)
+        other_product = PublishedProductFactory()
+
+        status_code, body = _get(authenticated_client, reverse("product-list"))
+
+        assert status_code == status.HTTP_200_OK
+        by_slug = {row["slug"]: row["isFavorite"] for row in body["results"]}
+        assert by_slug[product.slug] is True
+        assert by_slug[other_product.slug] is False
+
+    def test_karta_produktu_tez_niesie_flage(
+        self, authenticated_client: APIClient, user
+    ):
+        product = PublishedProductFactory()
+        FavoriteFactory(user=user, product=product)
+
+        status_code, body = _get(authenticated_client, _detail(product.slug))
+
+        assert status_code == status.HTTP_200_OK
+        assert body["isFavorite"] is True
+
+    def test_budzet_zapytan_nie_rosnie_z_liczba_produktow(
+        self, authenticated_client: APIClient, django_assert_max_num_queries, user
+    ):
+        category = CategoryFactory()
+        for index in range(10):
+            product = PublishedProductFactory(category=category)
+            ProductVariantFactory(product=product, sku=f"C-{index}", price=100000)
+            if index % 2 == 0:
+                FavoriteFactory(user=user, product=product)
+
+        with django_assert_max_num_queries(12):
+            authenticated_client.get(reverse("product-list"))

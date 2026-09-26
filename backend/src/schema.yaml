@@ -1051,6 +1051,125 @@ paths:
           description: Permission denied
         '404':
           description: Profile not found
+  /favorites/:
+    get:
+      operationId: favorites_list
+      description: Ulubione klienta; produkt cofnięty do szkicu znika z listy.
+      summary: Ulubione produkty
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Favorites
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFavoriteList'
+          description: ''
+    post:
+      operationId: favorites_create
+      description: Idempotentne — dodanie już ulubionego produktu nie jest błędem.
+      summary: Dodanie do ulubionych
+      tags:
+      - Favorites
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FavoriteWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FavoriteWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FavoriteWrite'
+        required: true
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Favorite'
+          description: ''
+  /favorites/{slug}/:
+    delete:
+      operationId: favorites_destroy
+      description: Idempotentne — brak dopasowania też kończy się 204.
+      summary: Usunięcie z ulubionych
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - Favorites
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /favorites/merge/:
+    post:
+      operationId: favorites_merge_create
+      description: Identyfikatory (slugi) produktów z listy gościa trafiają do listy
+        konta; nieistniejące i nieopublikowane są pomijane.
+      summary: Scalenie listy gościa
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Favorites
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FavoriteMerge'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FavoriteMerge'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FavoriteMerge'
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFavoriteList'
+          description: ''
   /health/:
     get:
       operationId: health_retrieve
@@ -3471,6 +3590,77 @@ components:
         * `radiant` - Radiant
         * `heart` - Serce
         * `cabochon` - Kaboszon
+    Favorite:
+      type: object
+      description: 'Wpis ulubionych: produkt i data dodania.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        product:
+          allOf:
+          - $ref: '#/components/schemas/FavoriteProduct'
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when the record was created
+      required:
+      - createdAt
+      - id
+      - product
+    FavoriteMerge:
+      type: object
+      description: |-
+        Wejście do scalenia listy gościa: identyfikatory (slugi) produktów.
+
+        Limit długości listy — bez niego zapytanie `IN (...)` i `bulk_create`
+        rosłyby bez ograniczenia wraz z tym, co przyśle klient (DoS).
+      properties:
+        products:
+          type: array
+          items:
+            type: string
+            pattern: ^[-a-zA-Z0-9_]+$
+          maxItems: 500
+    FavoriteProduct:
+      type: object
+      description: Produkt w kontekście listy ulubionych — tylko tyle, ile pokazuje
+        karta.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z angielskiego brzmienia nazwy przy publikacji. Po publikacji nie da się
+            go zmienić.
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - id
+      - name
+      - slug
+    FavoriteWrite:
+      type: object
+      description: Wejście do dodania produktu do ulubionych.
+      properties:
+        product:
+          type: string
+          nullable: true
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z angielskiego brzmienia nazwy przy publikacji. Po publikacji nie da się
+            go zmienić.
+      required:
+      - product
     FinenessEnum:
       enum:
       - '333'
@@ -4459,6 +4649,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Collection'
+    PaginatedFavoriteList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Favorite'
     PaginatedMyReviewList:
       type: object
       required:
@@ -5100,6 +5313,11 @@ components:
           readOnly: true
           description: Średnia ocen opublikowanych opinii; pusta, gdy produkt nie
             ma żadnej.
+        isFavorite:
+          type: boolean
+          readOnly: true
+          description: Czy zalogowany klient ma produkt w ulubionych; zawsze `false`
+            dla gościa.
       required:
       - averageRating
       - category
@@ -5109,6 +5327,7 @@ components:
       - id
       - images
       - isEngravable
+      - isFavorite
       - isMadeToOrder
       - material
       - name
@@ -5228,6 +5447,11 @@ components:
           readOnly: true
           description: Średnia ocen opublikowanych opinii; pusta, gdy produkt nie
             ma żadnej.
+        isFavorite:
+          type: boolean
+          readOnly: true
+          description: Czy zalogowany klient ma produkt w ulubionych; zawsze `false`
+            dla gościa.
       required:
       - averageRating
       - category
@@ -5236,6 +5460,7 @@ components:
       - fineness
       - id
       - isEngravable
+      - isFavorite
       - isMadeToOrder
       - material
       - name

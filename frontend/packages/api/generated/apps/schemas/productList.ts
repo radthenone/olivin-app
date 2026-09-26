@@ -54,4 +54,6 @@ export interface ProductList {
      * @nullable
      */
   readonly averageRating: number | null;
+  /** Czy zalogowany klient ma produkt w ulubionych; zawsze `false` dla gościa. */
+  readonly isFavorite: boolean;
 }
