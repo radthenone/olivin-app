@@ -49,4 +49,9 @@ export interface ProductList {
   /** Cena grawerunku brutto; pusta, gdy produktu nie da się grawerować. */
   readonly engravingPrice: Money | null;
   readonly cheapestVariant: ProductVariant | null;
+  /**
+     * Średnia ocen opublikowanych opinii; pusta, gdy produkt nie ma żadnej.
+     * @nullable
+     */
+  readonly averageRating: number | null;
 }

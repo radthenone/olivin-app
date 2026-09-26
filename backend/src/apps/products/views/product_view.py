@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-from django.db.models import F, OuterRef, Prefetch, QuerySet, Subquery
+from django.db.models import Avg, F, OuterRef, Prefetch, Q, QuerySet, Subquery
 from django.utils.translation import gettext_lazy
 from rest_framework import viewsets
+from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import AllowAny
+from rest_framework.request import Request
+from rest_framework.response import Response
+
 from rest_framework.settings import api_settings
 
 from apps.inventory.models import has_available_variant
@@ -19,6 +23,12 @@ from apps.products.models import (
 from apps.products.pricing import active_metal_rates
 from apps.products.schema import product_schema
 from apps.products.serializers import ProductDetailSerializer, ProductListSerializer
+from drf_spectacular.utils import extend_schema
+
+from apps.reviews.models import ReviewStatus
+from apps.reviews.serializers import ReviewSerializer
+
+AVERAGE_RATING = "average_rating"
 
 ORDERING_FIELDS = {
     "price": F(MIN_PRICE).asc(nulls_last=True),
@@ -116,7 +126,30 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             # zmieniałaby się w zależności od tego, co jeszcze jest włączone.
             .annotate(**{MIN_PRICE: Subquery(cheapest)})
             .annotate(**{HAS_AVAILABLE: has_available_variant()})
+            .annotate(
+                **{
+                    AVERAGE_RATING: Avg(
+                        "reviews__rating",
+                        filter=Q(reviews__status=ReviewStatus.APPROVED),
+                    )
+                }
+            )
         )
+
+    @extend_schema(
+        tags=["Reviews"],
+        summary="Opinie o produkcie",
+        description="Opublikowane opinie o produkcie, paginowane, najnowsze pierwsze.",
+        responses={200: ReviewSerializer(many=True)},
+    )
+    @action(detail=True, methods=["get"], filter_backends=[])
+    def reviews(self, request: Request, *args, **kwargs) -> Response:
+        """Opublikowane opinie o produkcie, najnowsze pierwsze."""
+        product = self.get_object()
+        reviews = product.reviews.approved().select_related("user")  # type: ignore[missing-attribute]
+        page = self.paginate_queryset(reviews)
+        serializer = ReviewSerializer(page, many=True)
+        return self.get_paginated_response(serializer.data)
 
     def get_serializer_context(self) -> dict:
         context = super().get_serializer_context()

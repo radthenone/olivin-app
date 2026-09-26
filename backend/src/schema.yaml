@@ -1878,6 +1878,45 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProductDetail'
           description: ''
+  /products/{slug}/reviews/:
+    get:
+      operationId: products_reviews_list
+      description: Opublikowane opinie o produkcie, paginowane, najnowsze pierwsze.
+      summary: Opinie o produkcie
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: slug
+        schema:
+          type: string
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z angielskiego brzmienia nazwy przy publikacji. Po publikacji nie da się
+            go zmienić.
+        required: true
+      tags:
+      - Reviews
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReviewList'
+          description: ''
   /promotions/:
     get:
       operationId: promotions_list
@@ -1911,6 +1950,118 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedPromotionList'
+          description: ''
+  /reviews/:
+    get:
+      operationId: reviews_list
+      description: Wszystkie opinie zalogowanego klienta, niezależnie od statusu moderacji.
+      summary: Własne opinie klienta
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Reviews
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMyReviewList'
+          description: ''
+    post:
+      operationId: reviews_create
+      description: Wymaga dostarczonego zamówienia z tym produktem i jednej opinii
+        na klienta na produkt. Opinia trafia do moderacji.
+      summary: Nowa opinia
+      tags:
+      - Reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReviewCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReviewCreate'
+        required: true
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyReview'
+          description: ''
+  /reviews/{id}/:
+    patch:
+      operationId: reviews_partial_update
+      description: Edycja treści i oceny — opinia wraca do moderacji.
+      summary: Edycja opinii
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedReviewUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedReviewUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedReviewUpdate'
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyReview'
+          description: ''
+  /reviews/to-review/:
+    get:
+      operationId: reviews_to_review_list
+      description: Produkty z dostarczonych zamówień, których klient jeszcze nie ocenił.
+      summary: Produkty do oceny
+      tags:
+      - Reviews
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductToReview'
           description: ''
   /shipping-methods/:
     get:
@@ -3552,6 +3703,57 @@ components:
       required:
       - amount
       - currency
+    MyReview:
+      type: object
+      description: Własna opinia klienta, ze statusem moderacji.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        product:
+          type: string
+          nullable: true
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z angielskiego brzmienia nazwy przy publikacji. Po publikacji nie da się
+            go zmienić.
+          readOnly: true
+        rating:
+          type: integer
+          readOnly: true
+          description: Ocena w skali 1-5
+        comment:
+          type: string
+          readOnly: true
+          description: Krótki komentarz, opcjonalny
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReviewStatusEnum'
+          readOnly: true
+          description: |-
+            Publicznie widoczna wyłącznie w stanie approved
+
+            * `pending` - Oczekuje na moderację
+            * `approved` - Opublikowana
+            * `rejected` - Odrzucona
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when the record was created
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when the record was last updated
+      required:
+      - comment
+      - createdAt
+      - id
+      - product
+      - rating
+      - status
+      - updatedAt
     Notification:
       type: object
       description: Powiadomienie klienta — tylko do odczytu; oznaczenie odczytania
@@ -4257,6 +4459,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Collection'
+    PaginatedMyReviewList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MyReview'
     PaginatedNotificationList:
       type: object
       required:
@@ -4372,6 +4597,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Promotion'
+    PaginatedReviewList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Review'
     PatchedAddress:
       type: object
       properties:
@@ -4709,6 +4957,18 @@ components:
           allOf:
           - $ref: '#/components/schemas/RoleEnum'
           readOnly: true
+    PatchedReviewUpdate:
+      type: object
+      description: Wejście do edycji opinii — zawsze wraca do moderacji.
+      properties:
+        rating:
+          type: integer
+          maximum: 5
+          minimum: 1
+        comment:
+          type: string
+          default: ''
+          maxLength: 1000
     PaymentIntent:
       type: object
       description: |-
@@ -4833,7 +5093,15 @@ components:
           items:
             $ref: '#/components/schemas/ProductVariant'
           readOnly: true
+        averageRating:
+          type: number
+          format: double
+          nullable: true
+          readOnly: true
+          description: Średnia ocen opublikowanych opinii; pusta, gdy produkt nie
+            ma żadnej.
       required:
+      - averageRating
       - category
       - description
       - engravingPrice
@@ -4953,7 +5221,15 @@ components:
           - $ref: '#/components/schemas/ProductVariant'
           nullable: true
           readOnly: true
+        averageRating:
+          type: number
+          format: double
+          nullable: true
+          readOnly: true
+          description: Średnia ocen opublikowanych opinii; pusta, gdy produkt nie
+            ma żadnej.
       required:
+      - averageRating
       - category
       - cheapestVariant
       - engravingPrice
@@ -4964,6 +5240,29 @@ components:
       - material
       - name
       - productionTimeDays
+      - slug
+    ProductToReview:
+      type: object
+      description: Produkt z dostarczonego zamówienia, czekający na opinię klienta.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z angielskiego brzmienia nazwy przy publikacji. Po publikacji nie da się
+            go zmienić.
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - id
+      - name
       - slug
     ProductVariant:
       type: object
@@ -5559,6 +5858,67 @@ components:
       description: |-
         * `submitted` - Zgłoszone
         * `resolved` - Rozpatrzone
+    Review:
+      type: object
+      description: 'Opinia publiczna: podpisana nazwą użytkownika i datą.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+        rating:
+          type: integer
+          readOnly: true
+          description: Ocena w skali 1-5
+        comment:
+          type: string
+          readOnly: true
+          description: Krótki komentarz, opcjonalny
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when the record was created
+      required:
+      - comment
+      - createdAt
+      - id
+      - rating
+      - username
+    ReviewCreate:
+      type: object
+      description: Wejście do złożenia opinii.
+      properties:
+        product:
+          type: string
+          nullable: true
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z angielskiego brzmienia nazwy przy publikacji. Po publikacji nie da się
+            go zmienić.
+        rating:
+          type: integer
+          maximum: 5
+          minimum: 1
+        comment:
+          type: string
+          default: ''
+          maxLength: 1000
+      required:
+      - product
+      - rating
+    ReviewStatusEnum:
+      enum:
+      - pending
+      - approved
+      - rejected
+      type: string
+      description: |-
+        * `pending` - Oczekuje na moderację
+        * `approved` - Opublikowana
+        * `rejected` - Odrzucona
     RoleEnum:
       enum:
       - customer

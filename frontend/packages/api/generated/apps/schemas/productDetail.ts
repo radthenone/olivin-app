@@ -52,4 +52,9 @@ export interface ProductDetail {
   readonly engravingPrice: Money | null;
   readonly images: readonly ProductImage[];
   readonly variants: readonly ProductVariant[];
+  /**
+     * Średnia ocen opublikowanych opinii; pusta, gdy produkt nie ma żadnej.
+     * @nullable
+     */
+  readonly averageRating: number | null;
 }

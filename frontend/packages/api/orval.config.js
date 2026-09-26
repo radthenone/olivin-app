@@ -31,6 +31,7 @@ const APPS_TAGS = [
   "Products",
   "Profiles",
   "Promotions",
+  "Reviews",
   "Shipping",
   "Health",
 ];
