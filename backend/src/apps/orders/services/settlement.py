@@ -118,9 +118,15 @@ def settle_return_request(request: ReturnRequest) -> None:
     _notify_settled(request)
 
 
-def _exclude_not_refunded(
+def exclude_not_refunded(
     items: QuerySet[ReturnRequestItem],
 ) -> QuerySet[ReturnRequestItem]:
+    """Odsiewa naprawę i udaną wymianę — reszta liczy się jak zwrot pieniędzy.
+
+    Publiczne, bo tej samej reguły używa `services.returns` przy sprawdzaniu,
+    czy zamówienie ma przejść w `returned` (#198) — dwie kopie tej samej
+    definicji rozjechałyby się przy kolejnej zmianie.
+    """
     return items.exclude(claim_request=ClaimRequest.REPAIR).exclude(
         claim_request=ClaimRequest.REPLACEMENT, exchange_order__isnull=False
     )
@@ -128,7 +134,7 @@ def _exclude_not_refunded(
 
 def refunded_items(request: ReturnRequest) -> QuerySet[ReturnRequestItem]:
     """Przyjęte pozycje, za które oddaje się wartość — bez naprawy i udanej wymiany."""
-    return _exclude_not_refunded(
+    return exclude_not_refunded(
         request.items.filter(status=ReturnItemStatus.ACCEPTED)  # type: ignore[missing-attribute]
     ).select_related("order_item__order")
 
@@ -162,7 +168,7 @@ def _returned_before(item: ReturnRequestItem) -> int:
     settled_at = item.return_request.settled_at
     if settled_at is not None:
         earlier = earlier.filter(return_request__settled_at__lt=settled_at)
-    return _exclude_not_refunded(earlier).aggregate(total=Sum("quantity"))["total"] or 0
+    return exclude_not_refunded(earlier).aggregate(total=Sum("quantity"))["total"] or 0
 
 
 def _withdrawal_covers_order(order: Order) -> bool:

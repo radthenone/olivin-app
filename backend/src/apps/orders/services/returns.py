@@ -32,7 +32,7 @@ from apps.orders.models import (
 from apps.orders.models.returns import COMPLAINT_YEARS, RETURN_PERIODS
 from apps.orders.services.document import SHOP_TIME_ZONE
 from apps.orders.services.exchange import create_exchange_order
-from apps.orders.services.settlement import settle_return_request
+from apps.orders.services.settlement import exclude_not_refunded, settle_return_request
 
 
 @dataclass(frozen=True)
@@ -111,15 +111,14 @@ def claim_requests_for(item: OrderItem) -> list[str]:
 def exchange_available_for(item: OrderItem) -> bool:
     """Wymiana widoczna w formularzu (#198) — ostateczną dostępność sprawdza decyzja.
 
-    Produkt na zamówienie wymienia się zawsze w ramach reklamacji (ADR 0024);
-    produkt magazynowy tylko, gdy ma dziś jakikolwiek stan — dokładną ilość
-    sprawdza dopiero `services.exchange.can_exchange` przy przyjęciu.
+    Produkt magazynowy wymienia się przy każdej podstawie, gdy ma dziś
+    jakikolwiek stan (kryterium 1) — dokładną ilość sprawdza dopiero
+    `services.exchange.can_exchange` przy przyjęciu. Produkt na zamówienie
+    wyłącznie w ramach reklamacji, z flagą `replacement_available`
+    (kryterium 2, ADR 0024) — snapshot z pozycji, nie bieżąca flaga produktu.
     """
-    product = item.variant.product
-    if not product.replacement_available:
-        return False
-    if product.is_made_to_order:
-        return True
+    if item.is_made_to_order:
+        return item.variant.product.replacement_available
     return (item.variant.available or 0) > 0
 
 
@@ -141,7 +140,11 @@ def return_options(order: Order, *, now: datetime | None = None) -> list[ReturnO
     now = now or timezone.now()
     taken = taken_quantities(order)
     options = []
-    for item in order.items.select_related("variant__product"):  # type: ignore[missing-attribute]
+    # `variant__inventory`: `exchange_available_for()` czyta `variant.available`
+    # dla każdej pozycji — bez tego dociągałoby stan zapytaniem na pozycję.
+    for item in order.items.select_related(  # type: ignore[missing-attribute]
+        "variant__product", "variant__inventory"
+    ):
         deadlines: dict[str, datetime] = {
             reason: deadline
             for reason in ReturnReason
@@ -284,15 +287,17 @@ def decide_return_item(
         item.agreed_amount = agreed_amount
         item.decided_at = timezone.now()
         item.save()
-        if restock:
-            _restock(item)
         if (
             status == ReturnItemStatus.ACCEPTED
             and item.claim_request == ClaimRequest.REPLACEMENT
         ):
+            # Przed „wraca na stan": inaczej odebrany wadliwy egzemplarz
+            # spełniałby warunek dostępności dla własnej wymiany (#198).
             # Bez stanu (magazynowy) albo poza produkcją (na zamówienie) `None`
-            # — pozycja rozlicza się dalej jak zwykły zwrot pieniędzy (#198).
+            # — pozycja rozlicza się dalej jak zwykły zwrot pieniędzy.
             create_exchange_order(item)
+        if restock:
+            _restock(item)
         _resolve_request_if_decided(item.return_request)
         _mark_order_returned_if_complete(order)
     return item
@@ -363,6 +368,19 @@ def _validate_line(order: Order, reason: str, line: ReturnLine, taken: dict) -> 
                     )
                 }
             )
+    elif line.claim_request == ClaimRequest.REPLACEMENT:
+        # Poza reklamacją wymiana magazynowego wariantu jest dostępna zawsze
+        # (kryterium 1, #198) — produkt na zamówienie tylko w jej ramach
+        # (kryterium 2), bo tam to ponowne wykonanie, nie zdjęcie ze stanu.
+        if item.is_made_to_order:
+            raise ValidationError(
+                {
+                    "items": (
+                        f"Pozycja {item.sku}: produkt na zamówienie wymienia się "
+                        "wyłącznie w ramach reklamacji."
+                    )
+                }
+            )
     elif line.claim_request:
         raise ValidationError(
             {"items": "Żądanie reklamacyjne wybiera się wyłącznie przy reklamacji."}
@@ -397,15 +415,19 @@ def _resolve_request_if_decided(request: ReturnRequest) -> None:
 def _mark_order_returned_if_complete(order: Order) -> None:
     """Zamówienie przechodzi w `returned`, gdy przyjęte zwroty objęły wszystko.
 
-    Uwzględniona naprawa albo wymiana oddaje towar klientowi — to nie zwrot.
+    Uwzględniona naprawa albo udana wymiana oddaje towar klientowi — to nie
+    zwrot. Nieudana wymiana (bez stanu — `exchange_order` puste) rozlicza się
+    jak zwykły zwrot, więc liczy się do kompletu (#198, ta sama reguła co
+    `services.settlement.exclude_not_refunded`).
     """
     if not order.can_transition_to(OrderStatus.RETURNED):
         return
     accepted = dict(
-        ReturnRequestItem.objects.filter(
-            return_request__order=order, status=ReturnItemStatus.ACCEPTED
+        exclude_not_refunded(
+            ReturnRequestItem.objects.filter(
+                return_request__order=order, status=ReturnItemStatus.ACCEPTED
+            )
         )
-        .exclude(claim_request__in=(ClaimRequest.REPAIR, ClaimRequest.REPLACEMENT))
         .values_list("order_item")
         .annotate(total=Sum("quantity"))
     )
