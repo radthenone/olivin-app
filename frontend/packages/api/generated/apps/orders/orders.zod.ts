@@ -430,7 +430,8 @@ export const OrdersReturnOptionsListResponseItem = zod.object({
   "reason": zod.enum(['withdrawal', 'complaint', 'goodwill']).describe('\* `withdrawal` - Odstąpienie od umowy\n\* `complaint` - Reklamacja\n\* `goodwill` - Zwrot dobrowolny'),
   "deadline": zod.iso.datetime({"offset":true})
 }).describe('Otwarta podstawa zwrotu i chwila, do której można z niej skorzystać.')).describe('Podstawy, z których pozycję można dziś zwrócić'),
-  "claimRequests": zod.array(zod.enum(['refund', 'repair', 'replacement']).describe('\* `refund` - Zwrot pieniędzy\n\* `repair` - Naprawa\n\* `replacement` - Wymiana')).describe('Żądania dostępne przy reklamacji tej pozycji')
+  "claimRequests": zod.array(zod.enum(['refund', 'repair', 'replacement']).describe('\* `refund` - Zwrot pieniędzy\n\* `repair` - Naprawa\n\* `replacement` - Wymiana')).describe('Żądania dostępne przy reklamacji tej pozycji'),
+  "exchangeAvailable": zod.boolean().describe('Czy wymiana na ten sam wariant jest dziś możliwa (#198) — ostateczną dostępność sprawdza przyjęcie zgłoszenia')
 }).describe('Pozycja w formularzu zwrotu: co, z jakiej podstawy, do kiedy.')
 export const OrdersReturnOptionsListResponse = zod.array(OrdersReturnOptionsListResponseItem)
 

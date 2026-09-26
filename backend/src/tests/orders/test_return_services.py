@@ -346,6 +346,30 @@ class TestClaimRequests:
 
         assert options[0].claim_requests == [ClaimRequest.REFUND, ClaimRequest.REPAIR]
 
+    def test_exchange_available_reflects_stock_and_flags(self):
+        """Wymiana w formularzu (#198): flaga produktu i stan, nie sama flaga."""
+        order = _delivered_order()
+        in_stock = ProductVariantFactory(
+            product=ProductFactory(replacement_available=True)
+        )
+        stock(in_stock, 2)
+        out_of_stock = ProductVariantFactory(
+            product=ProductFactory(replacement_available=True)
+        )
+        made_to_order = ProductVariantFactory(
+            product=MadeToOrderProductFactory(replacement_available=True)
+        )
+        no_flag = ProductVariantFactory(product=ProductFactory())
+        _item(order, variant=in_stock)
+        _item(order, variant=out_of_stock)
+        _item(order, variant=made_to_order, is_made_to_order=True)
+        _item(order, variant=no_flag)
+
+        with freeze_time("2027-03-02"):
+            options = return_options(order)
+
+        assert [o.exchange_available for o in options] == [True, False, True, False]
+
 
 @pytest.mark.django_db
 class TestItemDecision:
@@ -545,6 +569,95 @@ class TestItemDecision:
 
         order.refresh_from_db()
         assert order.status == OrderStatus.RETURNED
+
+
+@pytest.mark.django_db
+class TestExchange:
+    """Wymiana na ten sam wariant zamiast rekompensaty (#198)."""
+
+    def _complaint_replacement(self, item):
+        order = item.order
+        with freeze_time("2027-03-02"):
+            request = _request(
+                order,
+                ReturnReason.COMPLAINT,
+                ReturnLine(item, item.quantity, ClaimRequest.REPLACEMENT),
+            )
+        return request.items.get()
+
+    def test_stocked_variant_in_stock_creates_zero_value_exchange_order(self):
+        """Wariant na stanie: wymiana zakłada zamówienie 0 zł i zdejmuje stan."""
+        order = _delivered_order()
+        variant = ProductVariantFactory(
+            product=ProductFactory(replacement_available=True)
+        )
+        item = _item(order, variant=variant, quantity=1, unit_price=10000)
+        stock(variant, 3)
+        return_item = self._complaint_replacement(item)
+
+        decide_return_item(return_item, status=ReturnItemStatus.ACCEPTED)
+
+        return_item.refresh_from_db()
+        exchange_order = return_item.exchange_order
+        assert exchange_order is not None
+        assert exchange_order.total.amount == 0
+        assert exchange_order.status == OrderStatus.PAID
+        assert exchange_order.coupon_amount == 0
+        assert exchange_order.discount_amount == 0
+        assert not exchange_order.payments.exists()  # type: ignore[missing-attribute]
+        movement = StockMovement.objects.get(
+            reason=StockMovementReason.SALE, item__variant=variant
+        )
+        assert movement.quantity == -1
+
+    def test_stocked_variant_without_stock_settles_as_refund_instead(self):
+        """Bez stanu w chwili przyjęcia wymiana nie powstaje — pozycję rozlicza zwrot."""
+        order = _delivered_order()
+        variant = ProductVariantFactory(
+            product=ProductFactory(replacement_available=True)
+        )
+        item = _item(order, variant=variant, quantity=1, unit_price=10000)
+        return_item = self._complaint_replacement(item)
+
+        decide_return_item(return_item, status=ReturnItemStatus.ACCEPTED)
+
+        return_item.refresh_from_db()
+        request = return_item.return_request
+        request.refresh_from_db()
+        assert return_item.exchange_order is None
+        assert request.compensation_amount == 10000
+
+    def test_made_to_order_item_exchange_goes_into_production_without_stock_check(self):
+        """Produkt na zamówienie wymienia się przez ponowne wykonanie (ADR 0024)."""
+        order = _delivered_order()
+        variant = ProductVariantFactory(
+            product=MadeToOrderProductFactory(replacement_available=True)
+        )
+        item = _item(order, variant=variant, is_made_to_order=True, quantity=1)
+        return_item = self._complaint_replacement(item)
+
+        decide_return_item(return_item, status=ReturnItemStatus.ACCEPTED)
+
+        return_item.refresh_from_db()
+        exchange_order = return_item.exchange_order
+        assert exchange_order is not None
+        assert exchange_order.status == OrderStatus.IN_PRODUCTION
+        assert exchange_order.total.amount == 0
+
+    def test_made_to_order_replacement_not_offered_outside_complaint(self):
+        """Wymiana produktu na zamówienie działa wyłącznie w ramach reklamacji."""
+        order = _delivered_order()
+        variant = ProductVariantFactory(
+            product=MadeToOrderProductFactory(replacement_available=True)
+        )
+        item = _item(order, variant=variant, is_made_to_order=True, quantity=1)
+
+        with freeze_time("2027-03-02"), pytest.raises(ValidationError):
+            _request(
+                order,
+                ReturnReason.GOODWILL,
+                ReturnLine(item, 1, ClaimRequest.REPLACEMENT),
+            )
 
 
 @pytest.mark.django_db

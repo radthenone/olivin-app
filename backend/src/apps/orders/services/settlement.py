@@ -21,8 +21,10 @@ from apps.orders.models import (
 )
 from apps.promotions.models import COUPON_NOMINAL_STEP, Coupon, CouponSource
 
-# Uwzględniona naprawa albo wymiana oddaje towar, nie pieniądze.
-_NOT_REFUNDED_CLAIMS = (ClaimRequest.REPAIR, ClaimRequest.REPLACEMENT)
+# Uwzględniona naprawa oddaje towar, nie pieniądze — zawsze. Wymiana też,
+# ale tylko gdy faktycznie doszła do skutku (jest zamówienie wymiany,
+# `services.exchange`, #198) — bez stanu magazynowego pozycja rozlicza się
+# jak zwykły zwrot pieniędzy.
 
 
 def split_compensation(amount: int, coupon_left: int) -> tuple[int, int]:
@@ -116,13 +118,19 @@ def settle_return_request(request: ReturnRequest) -> None:
     _notify_settled(request)
 
 
-def refunded_items(request: ReturnRequest) -> QuerySet[ReturnRequestItem]:
-    """Przyjęte pozycje, za które oddaje się wartość — bez naprawy i wymiany."""
-    return (
-        request.items.filter(status=ReturnItemStatus.ACCEPTED)  # type: ignore[missing-attribute]
-        .exclude(claim_request__in=_NOT_REFUNDED_CLAIMS)
-        .select_related("order_item__order")
+def _exclude_not_refunded(
+    items: QuerySet[ReturnRequestItem],
+) -> QuerySet[ReturnRequestItem]:
+    return items.exclude(claim_request=ClaimRequest.REPAIR).exclude(
+        claim_request=ClaimRequest.REPLACEMENT, exchange_order__isnull=False
     )
+
+
+def refunded_items(request: ReturnRequest) -> QuerySet[ReturnRequestItem]:
+    """Przyjęte pozycje, za które oddaje się wartość — bez naprawy i udanej wymiany."""
+    return _exclude_not_refunded(
+        request.items.filter(status=ReturnItemStatus.ACCEPTED)  # type: ignore[missing-attribute]
+    ).select_related("order_item__order")
 
 
 def item_value(item: ReturnRequestItem) -> int:
@@ -154,12 +162,7 @@ def _returned_before(item: ReturnRequestItem) -> int:
     settled_at = item.return_request.settled_at
     if settled_at is not None:
         earlier = earlier.filter(return_request__settled_at__lt=settled_at)
-    return (
-        earlier.exclude(claim_request__in=_NOT_REFUNDED_CLAIMS).aggregate(
-            total=Sum("quantity")
-        )["total"]
-        or 0
-    )
+    return _exclude_not_refunded(earlier).aggregate(total=Sum("quantity"))["total"] or 0
 
 
 def _withdrawal_covers_order(order: Order) -> bool:

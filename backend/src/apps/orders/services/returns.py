@@ -31,6 +31,7 @@ from apps.orders.models import (
 )
 from apps.orders.models.returns import COMPLAINT_YEARS, RETURN_PERIODS
 from apps.orders.services.document import SHOP_TIME_ZONE
+from apps.orders.services.exchange import create_exchange_order
 from apps.orders.services.settlement import settle_return_request
 
 
@@ -51,6 +52,7 @@ class ReturnOption:
     returnable_quantity: int
     deadlines: dict[str, datetime]
     claim_requests: list[str]
+    exchange_available: bool
 
     @property
     def deadline_rows(self) -> list[dict[str, object]]:
@@ -106,6 +108,21 @@ def claim_requests_for(item: OrderItem) -> list[str]:
     return claims
 
 
+def exchange_available_for(item: OrderItem) -> bool:
+    """Wymiana widoczna w formularzu (#198) — ostateczną dostępność sprawdza decyzja.
+
+    Produkt na zamówienie wymienia się zawsze w ramach reklamacji (ADR 0024);
+    produkt magazynowy tylko, gdy ma dziś jakikolwiek stan — dokładną ilość
+    sprawdza dopiero `services.exchange.can_exchange` przy przyjęciu.
+    """
+    product = item.variant.product
+    if not product.replacement_available:
+        return False
+    if product.is_made_to_order:
+        return True
+    return (item.variant.available or 0) > 0
+
+
 def taken_quantities(order: Order) -> dict:
     """Ilość każdej pozycji objęta nieodrzuconymi zgłoszeniami — jednym zapytaniem."""
     return dict(
@@ -137,6 +154,7 @@ def return_options(order: Order, *, now: datetime | None = None) -> list[ReturnO
                 returnable_quantity=item.quantity - taken.get(item.pk, 0),
                 deadlines=deadlines,
                 claim_requests=claim_requests_for(item),
+                exchange_available=exchange_available_for(item),
             )
         )
     return options
@@ -268,6 +286,13 @@ def decide_return_item(
         item.save()
         if restock:
             _restock(item)
+        if (
+            status == ReturnItemStatus.ACCEPTED
+            and item.claim_request == ClaimRequest.REPLACEMENT
+        ):
+            # Bez stanu (magazynowy) albo poza produkcją (na zamówienie) `None`
+            # — pozycja rozlicza się dalej jak zwykły zwrot pieniędzy (#198).
+            create_exchange_order(item)
         _resolve_request_if_decided(item.return_request)
         _mark_order_returned_if_complete(order)
     return item

@@ -5366,9 +5366,15 @@ components:
             $ref: '#/components/schemas/ClaimRequestEnum'
           readOnly: true
           description: Żądania dostępne przy reklamacji tej pozycji
+        exchangeAvailable:
+          type: boolean
+          readOnly: true
+          description: Czy wymiana na ten sam wariant jest dziś możliwa (#198) — ostateczną
+            dostępność sprawdza przyjęcie zgłoszenia
       required:
       - claimRequests
       - deadlines
+      - exchangeAvailable
       - isPair
       - orderItem
       - productName

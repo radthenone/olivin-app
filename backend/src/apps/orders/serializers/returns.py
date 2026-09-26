@@ -44,6 +44,13 @@ class ReturnOptionSerializer(serializers.Serializer):
         read_only=True,
         help_text="Żądania dostępne przy reklamacji tej pozycji",
     )
+    exchange_available = serializers.BooleanField(
+        read_only=True,
+        help_text=(
+            "Czy wymiana na ten sam wariant jest dziś możliwa (#198) — "
+            "ostateczną dostępność sprawdza przyjęcie zgłoszenia"
+        ),
+    )
 
 
 class ReturnRequestItemSerializer(serializers.ModelSerializer):
