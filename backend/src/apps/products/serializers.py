@@ -9,6 +9,12 @@ from apps.translations.serializers import TranslatedCharField
 from core.api.serializers import MoneySerializer
 
 
+def _average_rating(obj: Product) -> float | None:
+    """Średnia ocen z adnotacji `average_rating`; `None` bez opinii opublikowanych."""
+    value = getattr(obj, "average_rating", None)
+    return round(float(value), 1) if value is not None else None
+
+
 def _engraving_in_currency(data: dict, product: Product, context: dict) -> dict:
     """Cena grawerunku w walucie z `?currency=` — jak cena wariantu (ADR 0019)."""
     rate = context.get("exchange_rate")
@@ -178,6 +184,9 @@ class ProductListSerializer(serializers.ModelSerializer):
         help_text="Cena grawerunku brutto; pusta, gdy produktu nie da się grawerować.",
     )
     cheapest_variant = serializers.SerializerMethodField()
+    average_rating = serializers.SerializerMethodField(
+        help_text="Średnia ocen opublikowanych opinii; pusta, gdy produkt nie ma żadnej."
+    )
 
     class Meta:
         model = Product
@@ -193,6 +202,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             "is_engravable",
             "engraving_price",
             "cheapest_variant",
+            "average_rating",
         ]
         read_only_fields = fields
 
@@ -213,6 +223,10 @@ class ProductListSerializer(serializers.ModelSerializer):
         if not variants:
             return None
         return ProductVariantSerializer(variants[0], context=self.context).data
+
+    @extend_schema_field(serializers.FloatField(allow_null=True))
+    def get_average_rating(self, obj: Product) -> float | None:
+        return _average_rating(obj)
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
@@ -235,6 +249,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     )
     variants = ProductVariantSerializer(many=True, read_only=True)
     images = serializers.SerializerMethodField()
+    average_rating = serializers.SerializerMethodField(
+        help_text="Średnia ocen opublikowanych opinii; pusta, gdy produkt nie ma żadnej."
+    )
 
     class Meta:
         model = Product
@@ -252,6 +269,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "engraving_price",
             "images",
             "variants",
+            "average_rating",
         ]
         read_only_fields = fields
 
@@ -259,6 +277,10 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return _engraving_in_currency(
             super().to_representation(instance), instance, self.context
         )
+
+    @extend_schema_field(serializers.FloatField(allow_null=True))
+    def get_average_rating(self, obj: Product) -> float | None:
+        return _average_rating(obj)
 
     @extend_schema_field(ProductImageSerializer(many=True))
     def get_images(self, obj: Product) -> list[dict]:
