@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import pytest
 from django.core.exceptions import ValidationError
+from django.db.models import UniqueConstraint
 
 from apps.orders.models import OrderStatus
 from apps.reviews.models import Review, ReviewStatus
@@ -54,6 +57,29 @@ class TestCreateReview:
 
         with pytest.raises(ValidationError):
             create_review(user=user, product=product, rating=3, comment="")
+
+    def test_race_between_duplicate_check_and_save_becomes_validation_error(self):
+        """Wyścig dwóch równoległych żądań: obie kontrole (`exists()` na wejściu
+        i `validate_constraints()` w `full_clean()`) przechodzą tuż przed tym, jak
+        druga opinia trafia do bazy — `IntegrityError` ma zamienić się w 400,
+        nie wywrócić widoku."""
+        user = UserFactory()
+        product = PublishedProductFactory()
+        _delivered_purchase(user, product)
+        ReviewFactory(user=user, product=product)  # opinia "drugiego żądania"
+
+        class _AlwaysFalseExists:
+            """Atrapa querysetu: udaje, że duplikatu jeszcze nie ma."""
+
+            def exists(self) -> bool:
+                return False
+
+        with (
+            patch.object(Review.objects, "filter", return_value=_AlwaysFalseExists()),
+            patch.object(UniqueConstraint, "validate", return_value=None),
+        ):
+            with pytest.raises(ValidationError, match="już oceniony"):
+                create_review(user=user, product=product, rating=3, comment="")
 
 
 @pytest.mark.django_db

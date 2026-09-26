@@ -157,6 +157,23 @@ class TestToReviewApi:
         slugs = [row["slug"] for row in response.json()]
         assert slugs == [product.slug]
 
+    def test_query_count_does_not_grow_with_product_count(
+        self,
+        authenticated_client: APIClient,
+        user: CustomUser,
+        django_assert_num_queries,
+    ):
+        """Tłumaczenia nazwy są prefetchowane — bez tego każdy produkt dobijałby bazę."""
+        one_product = PublishedProductFactory()
+        _delivered_purchase(user, one_product)
+        with django_assert_num_queries(2):
+            authenticated_client.get(TO_REVIEW_URL)
+
+        for _ in range(3):
+            _delivered_purchase(user, PublishedProductFactory())
+        with django_assert_num_queries(2):
+            authenticated_client.get(TO_REVIEW_URL)
+
     def test_excludes_already_reviewed_product(
         self, authenticated_client: APIClient, user: CustomUser
     ):
