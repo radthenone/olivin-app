@@ -165,7 +165,23 @@ def cancel_order(order: Order) -> Order:
     kuponem) — też od razu: towar wraca na stan, kupon do użycia. Opłacone
     pieniędzmi pociąga zwrot u operatora —
     `apps.payments.services.request_cancellation`.
+
+    Zamówienie wymiany za zwrot (#198) jest zawsze `paid` i zawsze 0 zł, więc
+    bez tej odmowy trafiłoby na tę samą ścieżkę co zwykłe zamówienie pokryte
+    kuponem: towar wróciłby na stan, a pozycja zwrotu, która je wywołała,
+    zostałaby rozliczona jak udana wymiana — klient bez towaru i bez zwrotu
+    pieniędzy. Cofnięcie takiego zamówienia idzie przez sklep, nie przez
+    samoobsługę klienta.
     """
+    if hasattr(order, "return_exchange_item"):
+        raise OrderError(
+            {
+                "status": (
+                    "Zamówienie wymiany za zwrot nie podlega samodzielnemu "
+                    "anulowaniu — skontaktuj się ze sklepem."
+                )
+            }
+        )
     if is_covered_by_coupon(order):
         _cancel_paid_without_payment(order)
         return order

@@ -201,6 +201,15 @@ class ReturnRequestItem(TimestampedModel):
         validators=[MinValueValidator(0)],
         help_text="Uzgodniona kwota w groszach, w walucie zamówienia",
     )
+    exchange_order = models.OneToOneField(
+        "orders.Order",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        editable=False,
+        related_name="return_exchange_item",
+        help_text="Zamówienie 0 zł wymiany na ten sam wariant (#198)",
+    )
     decided_at = models.DateTimeField(null=True, blank=True, editable=False)
 
     class Meta:

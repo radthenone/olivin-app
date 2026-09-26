@@ -23,4 +23,6 @@ export interface ReturnOption {
   readonly deadlines: readonly ReturnDeadline[];
   /** Żądania dostępne przy reklamacji tej pozycji */
   readonly claimRequests: readonly ClaimRequestEnum[];
+  /** Czy wymiana na ten sam wariant jest dziś możliwa (#198) — ostateczną dostępność sprawdza przyjęcie zgłoszenia */
+  readonly exchangeAvailable: boolean;
 }

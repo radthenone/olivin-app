@@ -223,6 +223,7 @@ class ReturnRequestItemInline(admin.TabularInline):
         "agreed_resolution",
         "agreed_amount",
         "decided_at",
+        "exchange_order",
     )
     readonly_fields = (
         "order_item",
@@ -230,6 +231,7 @@ class ReturnRequestItemInline(admin.TabularInline):
         "claim_request",
         "status",
         "decided_at",
+        "exchange_order",
     )
 
     def has_add_permission(self, request: HttpRequest, obj=None) -> bool:
