@@ -3572,6 +3572,7 @@ components:
             * `order_paid` - Zamówienie opłacone
             * `document_ready` - Dokument gotowy
             * `return_request_status_changed` - Zmiana stanu zgłoszenia zwrotu
+            * `return_settled` - Rozliczenie zwrotu
         message:
           type: string
           readOnly: true
@@ -3606,12 +3607,14 @@ components:
       - order_paid
       - document_ready
       - return_request_status_changed
+      - return_settled
       type: string
       description: |-
         * `order_status_changed` - Zmiana statusu zamówienia
         * `order_paid` - Zamówienie opłacone
         * `document_ready` - Dokument gotowy
         * `return_request_status_changed` - Zmiana stanu zgłoszenia zwrotu
+        * `return_settled` - Rozliczenie zwrotu
     NotificationPreference:
       type: object
       description: Zgoda marketingowa klienta, osobno per kanał.
@@ -5381,6 +5384,20 @@ components:
         * `withdrawal` - Odstąpienie od umowy
         * `complaint` - Reklamacja
         * `goodwill` - Zwrot dobrowolny
+    ReturnRefundStatusEnum:
+      enum:
+      - none
+      - pending
+      - refunded
+      - manual
+      - manual_done
+      type: string
+      description: |-
+        * `none` - Bez zwrotu pieniędzy
+        * `pending` - Zlecony u operatora
+        * `refunded` - Zwrócony
+        * `manual` - Do zwrotu ręcznego
+        * `manual_done` - Zwrócony przelewem
     ReturnRequest:
       type: object
       description: Zgłoszenie zwrotu w postaci dla klienta.
@@ -5408,16 +5425,48 @@ components:
           items:
             $ref: '#/components/schemas/ReturnRequestItem'
           readOnly: true
+        compensationAmount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+          nullable: true
+          description: Zwracana kwota; pusta, dopóki zgłoszenia nie rozliczono
+        couponCode:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Kod kuponu wydanego z kuponowej części zwrotu
+        couponAmount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+          nullable: true
+          description: Nominał kuponu ze zwrotu
+        refundAmount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+          nullable: true
+          description: Pieniężna część zwrotu; pusta, dopóki nie rozliczono
+        refundStatus:
+          allOf:
+          - $ref: '#/components/schemas/ReturnRefundStatusEnum'
+          readOnly: true
         createdAt:
           type: string
           format: date-time
           readOnly: true
           description: Timestamp when the record was created
       required:
+      - compensationAmount
+      - couponAmount
+      - couponCode
       - createdAt
       - id
       - items
       - reason
+      - refundAmount
+      - refundStatus
       - status
     ReturnRequestCreate:
       type: object

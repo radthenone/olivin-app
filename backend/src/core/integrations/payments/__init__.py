@@ -3,6 +3,7 @@ from core.integrations.payments.base import (
     Intent,
     InvalidSignature,
     PaymentProvider,
+    PaymentProviderDeclined,
     PaymentProviderError,
     ProviderEvent,
 )
@@ -13,6 +14,7 @@ __all__ = [
     "Intent",
     "InvalidSignature",
     "PaymentProvider",
+    "PaymentProviderDeclined",
     "PaymentProviderError",
     "ProviderEvent",
     "get_provider",

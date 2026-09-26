@@ -1,7 +1,7 @@
 """Zgłoszenie zwrotu: dopuszczalność, terminy i decyzja per pozycja (#196).
 
-Rozliczenie pieniędzy i kuponów (ADR 0031) oraz wymiana to osobne etapy —
-tu powstaje zgłoszenie i decyzja sklepu, nic więcej.
+Rozpatrzone zgłoszenie rozlicza `services.settlement` (ADR 0031); wymiana
+to osobny etap.
 """
 
 from __future__ import annotations
@@ -31,6 +31,7 @@ from apps.orders.models import (
 )
 from apps.orders.models.returns import COMPLAINT_YEARS, RETURN_PERIODS
 from apps.orders.services.document import SHOP_TIME_ZONE
+from apps.orders.services.settlement import settle_return_request
 
 
 @dataclass(frozen=True)
@@ -365,6 +366,7 @@ def _resolve_request_if_decided(request: ReturnRequest) -> None:
     request.status = ReturnRequestStatus.RESOLVED
     request.save(update_fields=["status", "updated_at"])
     _notify(request)
+    settle_return_request(request)
 
 
 def _mark_order_returned_if_complete(order: Order) -> None:

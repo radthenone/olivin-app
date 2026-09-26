@@ -103,6 +103,7 @@ export * from './returnLineWrite';
 export * from './returnLineWriteClaimRequest';
 export * from './returnOption';
 export * from './returnReasonEnum';
+export * from './returnRefundStatusEnum';
 export * from './returnRequest';
 export * from './returnRequestCreate';
 export * from './returnRequestItem';

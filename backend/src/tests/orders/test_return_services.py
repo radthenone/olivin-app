@@ -575,5 +575,16 @@ class TestReturnNotifications:
             user=order.user, kind=NotificationKind.RETURN_REQUEST_STATUS_CHANGED
         )
         assert notifications.count() == 2
-        assert send.call_count == 2
-        assert send.call_args.kwargs["to"] == order.email
+        # Przyjęcie rozlicza zwrot (#197): dochodzi e-mail o rozliczeniu
+        # i o gotowej korekcie — każdy dokładnie raz, wszystkie na adres z zamówienia.
+        subjects = sorted(call.kwargs["subject"] for call in send.call_args_list)
+        assert subjects == sorted(
+            [
+                f"Zgłoszenie zwrotu do zamówienia {order.number}",
+                f"Zgłoszenie zwrotu do zamówienia {order.number}",
+                f"Rozliczenie zwrotu do zamówienia {order.number}",
+                f"Dokument do zamówienia {order.number} gotowy",
+            ]
+        )
+        assert send.call_count == 4
+        assert all(call.kwargs["to"] == order.email for call in send.call_args_list)

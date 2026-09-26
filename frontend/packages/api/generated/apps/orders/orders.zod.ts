@@ -472,6 +472,20 @@ export const OrdersReturnsListResponseItem = zod.object({
 }).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.').nullable(),
   "decidedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('Pozycja zgłoszenia z decyzją sklepu.')),
+  "compensationAmount": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.').nullable().describe('Zwracana kwota; pusta, dopóki zgłoszenia nie rozliczono'),
+  "couponCode": zod.string().nullable().describe('Kod kuponu wydanego z kuponowej części zwrotu'),
+  "couponAmount": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.').nullable().describe('Nominał kuponu ze zwrotu'),
+  "refundAmount": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.').nullable().describe('Pieniężna część zwrotu; pusta, dopóki nie rozliczono'),
+  "refundStatus": zod.enum(['none', 'pending', 'refunded', 'manual', 'manual_done']).describe('\* `none` - Bez zwrotu pieniędzy\n\* `pending` - Zlecony u operatora\n\* `refunded` - Zwrócony\n\* `manual` - Do zwrotu ręcznego\n\* `manual_done` - Zwrócony przelewem'),
   "createdAt": zod.iso.datetime({"offset":true}).describe('Timestamp when the record was created')
 }).describe('Zgłoszenie zwrotu w postaci dla klienta.')
 export const OrdersReturnsListResponse = zod.array(OrdersReturnsListResponseItem)
@@ -545,6 +559,20 @@ export const OrdersReturnsRetrieveResponse = zod.object({
 }).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.').nullable(),
   "decidedAt": zod.iso.datetime({"offset":true}).nullable()
 }).describe('Pozycja zgłoszenia z decyzją sklepu.')),
+  "compensationAmount": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.').nullable().describe('Zwracana kwota; pusta, dopóki zgłoszenia nie rozliczono'),
+  "couponCode": zod.string().nullable().describe('Kod kuponu wydanego z kuponowej części zwrotu'),
+  "couponAmount": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.').nullable().describe('Nominał kuponu ze zwrotu'),
+  "refundAmount": zod.object({
+  "amount": zod.number().describe('Kwota w najmniejszej jednostce waluty (grosze)'),
+  "currency": zod.string().describe('Kod waluty ISO 4217')
+}).describe('Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).\n\nKwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient\ndostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc\nnigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.').nullable().describe('Pieniężna część zwrotu; pusta, dopóki nie rozliczono'),
+  "refundStatus": zod.enum(['none', 'pending', 'refunded', 'manual', 'manual_done']).describe('\* `none` - Bez zwrotu pieniędzy\n\* `pending` - Zlecony u operatora\n\* `refunded` - Zwrócony\n\* `manual` - Do zwrotu ręcznego\n\* `manual_done` - Zwrócony przelewem'),
   "createdAt": zod.iso.datetime({"offset":true}).describe('Timestamp when the record was created')
 }).describe('Zgłoszenie zwrotu w postaci dla klienta.')
 

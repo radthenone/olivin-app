@@ -21,6 +21,7 @@ class NotificationKind(models.TextChoices):
         "return_request_status_changed",
         "Zmiana stanu zgłoszenia zwrotu",
     )
+    RETURN_SETTLED = "return_settled", "Rozliczenie zwrotu"
 
 
 # Transakcyjne docierają zawsze; rodzaje spoza tego zbioru są marketingowe
@@ -31,6 +32,7 @@ TRANSACTIONAL_KINDS: frozenset[str] = frozenset(
         NotificationKind.ORDER_PAID,
         NotificationKind.DOCUMENT_READY,
         NotificationKind.RETURN_REQUEST_STATUS_CHANGED,
+        NotificationKind.RETURN_SETTLED,
     }
 )
 

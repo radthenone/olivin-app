@@ -282,6 +282,14 @@ class Coupon(TimestampedModel):
         default=CouponSource.CAMPAIGN,
         help_text="Skąd kupon: kampania marketingowa albo przyjęty zwrot",
     )
+    source_order = models.ForeignKey(
+        "orders.Order",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="return_coupons",
+        help_text="Zamówienie, którego zwrot wydał kupon (ADR 0014)",
+    )
 
     class Meta:
         verbose_name = "Kupon"
