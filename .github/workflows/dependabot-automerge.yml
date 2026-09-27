@@ -25,11 +25,27 @@ jobs:
       # `--auto` nie merguje od razu: czeka, aż przejdą required status checks
       # z rulesetu gałęzi (Backend, Frontend, Pre-commit hooks). Major zostaje
       # do ręcznego przeczytania changelogu — dla grupy liczy się najwyższy typ.
+      # Tytuł idzie przez `env`, nie przez `${{ }}` w skrypcie — bez wstrzyknięcia.
       - name: Enable auto-merge for patch and minor updates
-        if: |
-          steps.meta.outputs.update-type == 'version-update:semver-patch' ||
-          steps.meta.outputs.update-type == 'version-update:semver-minor'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-        run: gh pr merge --auto --merge "$PR_URL"
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
+        run: |
+          case "$UPDATE_TYPE" in
+            version-update:semver-patch|version-update:semver-minor) ;;
+            version-update:semver-major) exit 0 ;;
+            *)
+              # Przy zmianie samego `>=` Dependabot nie podaje poprzedniej wersji, więc
+              # update-type wychodzi null. Major liczymy z tytułu "from >=A to >=B".
+              read -r old new <<<"$(sed -nE 's/.* from [^0-9]*([0-9]+(\.[0-9]+)?)[^ ]* to [^0-9]*([0-9]+(\.[0-9]+)?).*/\1 \3/p' <<<"$PR_TITLE")"
+              # W 0.x wersja minor też łamie API, dlatego dla nich porównujemy "0.y".
+              [[ $old == 0.* ]] || { old=${old%%.*}; new=${new%%.*}; }
+              if [ -z "$old" ] || [ "$old" != "$new" ]; then
+                echo "Skip auto-merge: '$PR_TITLE' ($old -> $new)"
+                exit 0
+              fi
+              ;;
+          esac
+          gh pr merge --auto --merge "$PR_URL"
