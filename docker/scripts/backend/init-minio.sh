@@ -14,14 +14,12 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 
 from core.storage.utils import sync_buckets
 
-result = sync_buckets("${S3_BUCKETS_NAMES}")
+result = sync_buckets()
 
 if result.created:
     print(f"✅ Utworzono buckety: {', '.join(result.created)}")
-if result.deleted:
-    print(f"🗑️  Usunięto buckety: {', '.join(result.deleted)}")
-if result.success and not result.created and not result.deleted:
-    print("✅ Wszystkie buckety są aktualne, brak zmian.")
+if result.updated:
+    print(f"✅ Odświeżono polityki bucketów: {', '.join(result.updated)}")
 
 result.exit_on_failure()
 END

@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import fakeredis
 import pytest
+from django.core.cache import cache
 from moto import mock_aws
 from rest_framework.test import APIClient
 
@@ -40,11 +41,16 @@ def mock_s3_storage(request):
 
     try:
         with mock_aws():
-            # Czasami trzeba stworzyć na szybko mockowy bucket do użycia przez django-storages
+            # Trzy buckety z ADR 0025, żeby testy widziały ten sam układ,
+            # co bootstrap MinIO — inaczej zapis trafiałby w nieistniejący
+            # bucket i test padał na czymś innym niż sprawdza.
             import boto3
 
+            from core.storage.buckets import ALL_BUCKETS
+
             s3 = boto3.client("s3", region_name="us-east-1")
-            s3.create_bucket(Bucket="test-bucket")
+            for bucket in ALL_BUCKETS:
+                s3.create_bucket(Bucket=bucket.name)
             yield
     finally:
         for key, previous_value in previous_env.items():
@@ -74,6 +80,50 @@ def mock_redis_connection(request):
         patch("redis.StrictRedis", return_value=mock_redis_instance),
     ):
         yield mock_redis_instance
+
+
+@pytest.fixture(autouse=True)
+def stub_translation_provider(settings):
+    """Silnik tłumaczeń dostępny w każdym teście.
+
+    Slug katalogu bierze się z angielskiego brzmienia nazwy, więc bez silnika
+    nie dałoby się założyć ani kategorii, ani opublikowanego produktu. To
+    odpowiednik działającego LibreTranslate w środowisku roboczym — testy,
+    które sprawdzają zachowanie przy niedostępnym silniku, podmieniają to
+    ustawienie u siebie.
+    """
+
+    settings.TRANSLATION_PROVIDER = "tests.shared.translation.StubProvider"
+
+
+@pytest.fixture(autouse=True)
+def fake_payment_provider(settings):
+    """Atrapa operatora płatności zamiast Stripe w każdym teście.
+
+    Test nie może obciążyć prawdziwej karty ani wymagać klucza w ciągłej
+    integracji. Atrapa pamięta intencje i zwroty na poziomie klasy, więc
+    czyści się je przed każdym testem.
+    """
+    from core.integrations.payments.fake import FakePaymentProvider
+
+    settings.PAYMENT_PROVIDER = "core.integrations.payments.fake.FakePaymentProvider"
+    FakePaymentProvider.reset()
+    yield FakePaymentProvider
+    FakePaymentProvider.reset()
+
+
+@pytest.fixture(autouse=True)
+def clear_throttle_history():
+    """Czyści cache między testami, żeby limity żądań się nie kumulowały.
+
+    DRF trzyma historię żądań w domyślnym cache'u, a ten w testach żyje przez
+    cały przebieg. Bez czyszczenia dwudziesty test uderzający w to samo API
+    dostaje 429 z powodu żądań wykonanych przez testy wcześniejsze.
+    """
+
+    cache.clear()
+    yield
+    cache.clear()
 
 
 @pytest.fixture

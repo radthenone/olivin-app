@@ -74,6 +74,35 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "CAMELIZE_NAMES": False,
+    # Dwa modele mają pole `kind` z różnymi wartościami; bez jawnych nazw
+    # spectacular nadałby jednemu z nich losowy przyrostek (`Kind0b9Enum`),
+    # który zmieniałby się z każdą kolejną kolizją i psuł klient Orval.
+    "ENUM_NAME_OVERRIDES": {
+        "StoneEnum": "apps.products.models.choices.Stone",
+        # Rozmiar pierścionka wychodzi jako `size` na wariancie i `second_size`
+        # w pozycji koszyka — bez tej pozycji spectacular nazwałby ten sam
+        # zbiór wartości dwa razy i klient dostałby dwa nietożsame typy.
+        "SizeEnum": "apps.products.models.choices.RingSize",
+        "ConsentKindEnum": "apps.consents.models.ConsentKind",
+        "ShippingMethodKindEnum": "apps.shipping.models.ShippingMethodKind",
+        "ShippingZoneEnum": "apps.shipping.models.ShippingZone",
+        "OrderStatusEnum": "apps.orders.models.order.OrderStatus",
+        "PaymentStatusEnum": "apps.payments.models.PaymentStatus",
+        "SalesDocumentKindEnum": "apps.orders.models.document.SalesDocumentKind",
+        "PromotionKindEnum": "apps.promotions.models.PromotionKind",
+        "NotificationKindEnum": "apps.notifications.models.NotificationKind",
+        "ReturnReasonEnum": "apps.orders.models.returns.ReturnReason",
+        "ClaimRequestEnum": "apps.orders.models.returns.ClaimRequest",
+        "ReturnRequestStatusEnum": "apps.orders.models.returns.ReturnRequestStatus",
+        "ReturnItemStatusEnum": "apps.orders.models.returns.ReturnItemStatus",
+        "ReturnRefundStatusEnum": "apps.orders.models.returns.ReturnRefundStatus",
+        "ReviewStatusEnum": "apps.reviews.models.ReviewStatus",
+        # Stan zdrowia to `ChoiceField` z listą wartości, bez klasy `Choices`,
+        # więc wpisujemy same wartości. Bez tego kolizja z `Order.status`
+        # przemianowała go na `HealthCheckResponseStatusEnum` i zmieniła
+        # kontrakt klienta przy okazji zupełnie innego modelu.
+        "StatusEnum": ["healthy", "unhealthy"],
+    },
     "POSTPROCESSING_HOOKS": [
         "drf_spectacular.hooks.postprocess_schema_enums",
         "drf_spectacular.contrib.djangorestframework_camel_case.camelize_serializer_fields",

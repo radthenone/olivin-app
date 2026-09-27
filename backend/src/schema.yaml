@@ -4,6 +4,496 @@ info:
   version: 1.0.0
   description: API documentation
 paths:
+  /cart/:
+    get:
+      operationId: cart_retrieve
+      description: Pozycje z ceną aktualną (koszyk nie zamraża cen), cena grawerunku
+        osobno, liczba pozycji i suma. Klient bez koszyka dostaje pusty koszyk, a
+        nie 404 — odczyt nie zakłada wiersza.
+      summary: Koszyk klienta albo gościa
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany
+          klient go nie wysyła — koszyk wynika z uwierzytelnienia.
+      - in: query
+        name: currency
+        schema:
+          type: string
+          enum:
+          - EUR
+          - PLN
+        description: Waluta cen. EUR przelicza ceny złotowe po bieżącym kursie NBP
+          i zaokrągla w górę do ,00/,50 (ADR 0019); brak kursu daje 400. Filtry i
+          progi (cena, darmowa dostawa) zawsze działają w złotych.
+      tags:
+      - Cart
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+  /cart/coupon/:
+    post:
+      operationId: cart_coupon_create
+      description: Wpisuje kupon; nowy kod zastępuje poprzedni. Nieznany, wykorzystany
+        albo przeterminowany kupon to 400. Kupon pokrywa towar po promocjach (`couponAmount`),
+        nigdy dostawę; nadwyżka nominału przepada. Limit żądań zakresu `auth` (10/min).
+        Bez tokenu gość dostaje nowy koszyk i jego token.
+      summary: Kupon w koszyku
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany
+          klient go nie wysyła — koszyk wynika z uwierzytelnienia.
+      tags:
+      - Cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CouponCode'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CouponCode'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CouponCode'
+        required: true
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+    delete:
+      operationId: cart_coupon_destroy
+      description: Kupon wraca do niewykorzystanych. Klient bez koszyka dostaje pusty
+        koszyk.
+      summary: Usunięcie kuponu z koszyka
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany
+          klient go nie wysyła — koszyk wynika z uwierzytelnienia.
+      tags:
+      - Cart
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+  /cart/items/:
+    post:
+      operationId: cart_items_create
+      description: Żądanie bez tokenu zakłada koszyk gościa i zwraca jego token w
+        polu `cartToken`. Pozycja o tej samej personalizacji dolicza sztuki; inny
+        grawerunek zakłada osobną pozycję.
+      summary: Dodanie pozycji do koszyka
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany
+          klient go nie wysyła — koszyk wynika z uwierzytelnienia.
+      tags:
+      - Cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CartItemWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CartItemWrite'
+        required: true
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+  /cart/items/{id}/:
+    patch:
+      operationId: cart_items_partial_update
+      description: Zero usuwa pozycję z koszyka.
+      summary: Zmiana liczby sztuk pozycji
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany
+          klient go nie wysyła — koszyk wynika z uwierzytelnienia.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Pozycja koszyka.
+        required: true
+      tags:
+      - Cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemQuantity'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemQuantity'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCartItemQuantity'
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+    delete:
+      operationId: cart_items_destroy
+      description: |-
+        Pozycje koszyka.
+
+        Actions:
+        - create:  POST /cart/items/        — dodaje pozycję; gość dostaje token
+        - partial_update: PATCH /cart/items/{id}/ — zmienia liczbę sztuk
+        - destroy: DELETE /cart/items/{id}/ — usuwa pozycję
+
+        Każda odpowiedź to cały koszyk, nie sama pozycja: po zmianie ilości
+        klient i tak potrzebuje nowej sumy, a osobne wywołanie po nią umiałoby
+        się rozjechać z tym, co właśnie zapisał.
+      summary: Usunięcie pozycji z koszyka
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany
+          klient go nie wysyła — koszyk wynika z uwierzytelnienia.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Pozycja koszyka.
+        required: true
+      tags:
+      - Cart
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+  /cart/merge/:
+    post:
+      operationId: cart_merge_create
+      description: 'Pozycje gościa trafiają do koszyka konta: te o tej samej personalizacji
+        sumują ilości w granicach limitu sztuk, pozostałe stają obok. Koszyk gościa
+        i jego token przestają istnieć.'
+      summary: Scalenie koszyka gościa z koszykiem konta
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany
+          klient go nie wysyła — koszyk wynika z uwierzytelnienia.
+      tags:
+      - Cart
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+  /cart/promotion-code/:
+    post:
+      operationId: cart_promotion_code_create
+      description: Aktywuje promocję kodową; nowy kod zastępuje poprzedni. Nieznany
+        albo nieaktywny kod to 400. Czy promocja obniży którąś pozycję, widać w `discountAmount`
+        — zależy od zakresu, limitów i progu koszyka. Bez tokenu gość dostaje nowy
+        koszyk i jego token.
+      summary: Kod promocyjny w koszyku
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany
+          klient go nie wysyła — koszyk wynika z uwierzytelnienia.
+      tags:
+      - Cart
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromotionCode'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PromotionCode'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PromotionCode'
+        required: true
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+          description: ''
+  /categories/:
+    get:
+      operationId: categories_list
+      description: Zwraca korzenie taksonomii wraz z całym zagnieżdżeniem. Odpowiedź
+        nie jest stronicowana — gałąź bez korzenia nie jest drzewem.
+      summary: Drzewo kategorii
+      parameters:
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - pl
+        description: Język pól tekstowych. Bez tego parametru brany jest nagłówek
+          `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi
+          do tekstu polskiego; slug nie jest tłumaczony.
+      tags:
+      - Categories
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+          description: ''
+  /categories/{slug}/:
+    get:
+      operationId: categories_retrieve
+      description: Zwraca wskazaną kategorię wraz z jej zagnieżdżonymi potomkami.
+        Adresem jest slug, nie identyfikator.
+      summary: Gałąź drzewa od wskazanej kategorii
+      parameters:
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - pl
+        description: Język pól tekstowych. Bez tego parametru brany jest nagłówek
+          `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi
+          do tekstu polskiego; slug nie jest tłumaczony.
+      - in: path
+        name: slug
+        schema:
+          type: string
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z nazwy przy zapisie. Po zapisaniu nie da się go zmienić.
+        required: true
+      tags:
+      - Categories
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+  /collections/:
+    get:
+      operationId: collections_list
+      description: Zwraca kolekcje, w których jest co najmniej jeden opublikowany
+        produkt. Produkty kolekcji pobiera się przez `GET /products/?collection=<slug>`.
+      summary: Lista kolekcji
+      parameters:
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - pl
+        description: Język pól tekstowych. Bez tego parametru brany jest nagłówek
+          `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi
+          do tekstu polskiego; slug nie jest tłumaczony.
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Collections
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCollectionList'
+          description: ''
+  /collections/{slug}/:
+    get:
+      operationId: collections_retrieve
+      description: Adresem jest slug. Pusta kolekcja to 404.
+      summary: Pojedyncza kolekcja
+      parameters:
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - pl
+        description: Język pól tekstowych. Bez tego parametru brany jest nagłówek
+          `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi
+          do tekstu polskiego; slug nie jest tłumaczony.
+      - in: path
+        name: slug
+        schema:
+          type: string
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z nazwy przy zapisie. Po zapisaniu nie da się go zmienić.
+        required: true
+      tags:
+      - Collections
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+          description: ''
+  /consents/:
+    post:
+      operationId: consents_create
+      description: Zalogowany klient udziela zgody na konto, gość — na podany e-mail.
+        Dokument musi być bieżącą wersją z `GET /consents/documents/`.
+      summary: Zapis zgody
+      tags:
+      - Consents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Consent'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Consent'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Consent'
+        required: true
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consent'
+          description: ''
+  /consents/documents/:
+    get:
+      operationId: consents_documents_list
+      description: Po jednej obowiązującej wersji regulaminu, polityki prywatności
+        i zgody marketingowej. Rodzaj bez dokumentu jest pominięty.
+      summary: Bieżące wersje dokumentów
+      tags:
+      - Consents
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConsentDocument'
+          description: ''
   /csrf/:
     get:
       operationId: csrf_list
@@ -39,6 +529,19 @@ paths:
         - partial_update: PATCH /api/v1/addresses/{id}/
         - destroy:        DELETE /api/v1/addresses/{id}/
         - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
       - Addresses
       security:
@@ -49,9 +552,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Address'
+                $ref: '#/components/schemas/PaginatedAddressList'
           description: ''
     post:
       operationId: customers_addresses_create
@@ -296,6 +797,19 @@ paths:
         - partial_update: PATCH /api/v1/profiles/{id}/
         - destroy:        DELETE /api/v1/profiles/{id}/
         - change_role:    PATCH /api/v1/profiles/{id}/change-role/
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
       - Profiles
       security:
@@ -306,9 +820,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Profile'
+                $ref: '#/components/schemas/PaginatedProfileList'
           description: ''
     post:
       operationId: customers_profile_create
@@ -539,6 +1051,125 @@ paths:
           description: Permission denied
         '404':
           description: Profile not found
+  /favorites/:
+    get:
+      operationId: favorites_list
+      description: Ulubione klienta; produkt cofnięty do szkicu znika z listy.
+      summary: Ulubione produkty
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Favorites
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFavoriteList'
+          description: ''
+    post:
+      operationId: favorites_create
+      description: Idempotentne — dodanie już ulubionego produktu nie jest błędem.
+      summary: Dodanie do ulubionych
+      tags:
+      - Favorites
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FavoriteWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FavoriteWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FavoriteWrite'
+        required: true
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Favorite'
+          description: ''
+  /favorites/{slug}/:
+    delete:
+      operationId: favorites_destroy
+      description: Idempotentne — brak dopasowania też kończy się 204.
+      summary: Usunięcie z ulubionych
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - Favorites
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /favorites/merge/:
+    post:
+      operationId: favorites_merge_create
+      description: Identyfikatory (slugi) produktów z listy gościa trafiają do listy
+        konta; nieistniejące i nieopublikowane są pomijane.
+      summary: Scalenie listy gościa
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Favorites
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FavoriteMerge'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FavoriteMerge'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FavoriteMerge'
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFavoriteList'
+          description: ''
   /health/:
     get:
       operationId: health_retrieve
@@ -556,6 +1187,1059 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthCheckResponse'
+          description: ''
+  /notifications/:
+    get:
+      operationId: notifications_list
+      description: |-
+        Powiadomienia klienta.
+
+        Actions:
+        - list: GET /notifications/ — powiadomienia zalogowanego klienta
+        - read: POST /notifications/{id}/read/ — oznaczenie jako odczytane
+      summary: Lista powiadomień klienta
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Notifications
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNotificationList'
+          description: ''
+  /notifications/{id}/read/:
+    post:
+      operationId: notifications_read_create
+      description: |-
+        Powiadomienia klienta.
+
+        Actions:
+        - list: GET /notifications/ — powiadomienia zalogowanego klienta
+        - read: POST /notifications/{id}/read/ — oznaczenie jako odczytane
+      summary: Oznaczenie powiadomienia jako odczytane
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Notifications
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /notifications/preferences/:
+    get:
+      operationId: notifications_preferences_retrieve
+      description: |-
+        Preferencje powiadomień marketingowych klienta (`GET`/`PUT`).
+
+        Bez `PATCH`: dwa pola, oba zawsze przekazywane razem — jak przy edycji
+        profilu w jednym formularzu.
+      summary: Preferencje powiadomień klienta
+      tags:
+      - Notifications
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreference'
+          description: ''
+    put:
+      operationId: notifications_preferences_update
+      description: |-
+        Preferencje powiadomień marketingowych klienta (`GET`/`PUT`).
+
+        Bez `PATCH`: dwa pola, oba zawsze przekazywane razem — jak przy edycji
+        profilu w jednym formularzu.
+      summary: Zmiana preferencji powiadomień
+      tags:
+      - Notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationPreference'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NotificationPreference'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NotificationPreference'
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreference'
+          description: ''
+  /orders/:
+    get:
+      operationId: orders_list
+      description: Historia zamówień wymaga zalogowania. Gość otwiera pojedyncze zamówienie
+        numerem i adresem e-mail.
+      summary: Własne zamówienia zalogowanego klienta
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Orders
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrderList'
+          description: ''
+    post:
+      operationId: orders_create
+      description: Zamówienie powstaje w statusie `pending` z kopią cen, kosztu dostawy
+        i grawerunku, zakłada rezerwacje stanu i czyści koszyk. Wymaga akceptacji
+        bieżącej wersji regulaminu; gość ponad 10 000 zł jest odrzucany.
+      summary: Złożenie zamówienia z koszyka
+      parameters:
+      - in: header
+        name: X-Cart-Token
+        schema:
+          type: string
+        description: Token koszyka gościa wydany przy pierwszym dodaniu pozycji. Zalogowany
+          klient go nie wysyła — koszyk wynika z uwierzytelnienia.
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderCreate'
+        required: true
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /orders/{number}/:
+    get:
+      operationId: orders_retrieve
+      description: Zalogowany klient widzi wyłącznie własne zamówienia. Gość podaje
+        dodatkowo `email` — sam numer zamówienia go nie otwiera.
+      summary: Zamówienie po numerze
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+          format: email
+          minLength: 1
+        description: Adres podany przy składaniu zamówienia
+        required: true
+      - in: path
+        name: number
+        schema:
+          type: string
+          pattern: ^[A-Z0-9]+$
+        required: true
+      tags:
+      - Orders
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /orders/{number}/cancel/:
+    post:
+      operationId: orders_cancel_create
+      description: Zamówienie `pending` jest anulowane od razu i zwalnia rezerwacje
+        (200). Zamówienie `paid` zleca zwrot u operatora i odpowiada 202 w statusie
+        `paid` — do `cancelled` przechodzi po zdarzeniu zwrotu, a towar wraca wtedy
+        na stan. Pozostałe statusy są odrzucane.
+      summary: Anulowanie zamówienia
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+          format: email
+          minLength: 1
+        description: Adres podany przy składaniu zamówienia
+        required: true
+      - in: path
+        name: number
+        schema:
+          type: string
+          pattern: ^[A-Z0-9]+$
+        required: true
+      tags:
+      - Orders
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /orders/{number}/documents/:
+    get:
+      operationId: orders_documents_list
+      description: Potwierdzenie zamówienia i — na prośbę klienta — faktura imienna,
+        wystawiane raz po opłaceniu zamówienia. Każdy dokument ma adres PDF podpisany
+        na czas (`S3_SIGNED_URL_TTL`); po wygaśnięciu trzeba pobrać listę ponownie.
+        Zamówienie tuż po zapłacie może mieć jeszcze pustą listę — dokumenty powstają
+        w tle.
+      summary: Dokumenty sprzedaży zamówienia
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+          format: email
+          minLength: 1
+        description: Adres podany przy składaniu zamówienia
+        required: true
+      - in: path
+        name: number
+        schema:
+          type: string
+          pattern: ^[A-Z0-9]+$
+        required: true
+      tags:
+      - Orders
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SalesDocument'
+          description: ''
+  /orders/{number}/payment/:
+    post:
+      operationId: orders_payment_create
+      description: Zakłada intencję płatniczą na kwotę do zapłaty z zamówienia i zwraca
+        `clientSecret` dla arkusza płatności (mobile) albo elementu (web). Każde wywołanie
+        to nowa próba; rezerwacje stanu są odnawiane na 30 minut. O zapłacie rozstrzyga
+        wyłącznie zdarzenie od operatora — status zamówienia trzeba odpytać.
+      summary: Rozpoczęcie zapłaty za zamówienie
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+          format: email
+          minLength: 1
+        description: Adres podany przy składaniu zamówienia
+        required: true
+      - in: path
+        name: number
+        schema:
+          type: string
+          pattern: ^[A-Z0-9]+$
+        required: true
+      tags:
+      - Orders
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentIntent'
+          description: ''
+  /orders/{number}/return-options/:
+    get:
+      operationId: orders_return_options_list
+      description: Pozycje doręczonego zamówienia z ilością, którą da się jeszcze
+        zwrócić, podstawami otwartymi dziś wraz z terminem (od daty doręczenia) i
+        żądaniami dostępnymi przy reklamacji. Odstąpienie nie obejmuje grawerunku
+        ani produktu na zamówienie. Zamówienie niedoręczone zwraca pustą listę.
+      summary: Formularz zwrotu zamówienia
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+          format: email
+          minLength: 1
+        description: Adres podany przy składaniu zamówienia
+        required: true
+      - in: path
+        name: number
+        schema:
+          type: string
+          pattern: ^[A-Z0-9]+$
+        required: true
+      tags:
+      - Orders
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReturnOption'
+          description: ''
+  /orders/{number}/returns/:
+    get:
+      operationId: orders_returns_list
+      description: Zgłoszenia z decyzją sklepu dla każdej pozycji.
+      summary: Zgłoszenia zwrotu zamówienia
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+          format: email
+          minLength: 1
+        description: Adres podany przy składaniu zamówienia
+        required: true
+      - in: path
+        name: number
+        schema:
+          type: string
+          pattern: ^[A-Z0-9]+$
+        required: true
+      tags:
+      - Orders
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReturnRequest'
+          description: ''
+    post:
+      operationId: orders_returns_create
+      description: Wyłącznie dla zamówienia `delivered`, w terminie wybranej podstawy.
+        Para obrączek wraca w całości. Przy reklamacji każda pozycja wymaga `claimRequest`
+        dopuszczonego przez produkt. Pozycja z grawerunkiem poza reklamacją trafia
+        do stanu `to_agree`. Naruszenie reguł to 400.
+      summary: Zgłoszenie zwrotu
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+          format: email
+          minLength: 1
+        description: Adres podany przy składaniu zamówienia
+        required: true
+      - in: path
+        name: number
+        schema:
+          type: string
+          pattern: ^[A-Z0-9]+$
+        required: true
+      tags:
+      - Orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReturnRequestCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReturnRequestCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReturnRequestCreate'
+        required: true
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnRequest'
+          description: ''
+  /orders/{number}/returns/{id}/:
+    get:
+      operationId: orders_returns_retrieve
+      description: Jedno zgłoszenie — wyłącznie przez swoje zamówienie.
+      summary: Zgłoszenie zwrotu po identyfikatorze
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+          format: email
+          minLength: 1
+        description: Adres podany przy składaniu zamówienia
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: number
+        schema:
+          type: string
+          pattern: ^[A-Z0-9]+$
+        required: true
+      tags:
+      - Orders
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnRequest'
+          description: ''
+  /payments/webhook/:
+    post:
+      operationId: payments_webhook_create
+      description: 'Wywoływane przez operatora, nie przez aplikację. Podpis zdarzenia
+        jest weryfikowany; to samo zdarzenie dostarczone ponownie zwraca `processed:
+        false` i niczego nie zmienia.'
+      summary: Zdarzenie od operatora płatności
+      tags:
+      - Payments
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookAck'
+          description: ''
+  /products/:
+    get:
+      operationId: products_list
+      description: Zwraca wyłącznie produkty opublikowane. Każdy z nich reprezentuje
+        jego najtańszy wariant; produkt bez wariantów ma tu wartość pustą.
+      summary: Lista opublikowanych produktów
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+        description: Slug kategorii; obejmuje również jej podkategorie
+      - in: query
+        name: collection
+        schema:
+          type: string
+        description: Slug kolekcji marketingowej
+      - in: query
+        name: currency
+        schema:
+          type: string
+          enum:
+          - EUR
+          - PLN
+        description: Waluta cen. EUR przelicza ceny złotowe po bieżącym kursie NBP
+          i zaokrągla w górę do ,00/,50 (ADR 0019); brak kursu daje 400. Filtry i
+          progi (cena, darmowa dostawa) zawsze działają w złotych.
+      - in: query
+        name: fineness
+        schema:
+          type: string
+          enum:
+          - '333'
+          - '375'
+          - '585'
+          - '750'
+          - '916'
+          - '925'
+          - '950'
+          - '999'
+        description: |-
+          Próba kruszcu
+
+          * `333` - 333 (8 karatów)
+          * `375` - 375 (9 karatów)
+          * `585` - 585 (14 karatów)
+          * `750` - 750 (18 karatów)
+          * `916` - 916 (22 karaty)
+          * `925` - 925 (srebro próby 925)
+          * `950` - 950 (platyna)
+          * `999` - 999 (kruszec inwestycyjny)
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - pl
+        description: Język pól tekstowych. Bez tego parametru brany jest nagłówek
+          `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi
+          do tekstu polskiego; slug nie jest tłumaczony.
+      - in: query
+        name: length
+        schema:
+          type: string
+          enum:
+          - '16'
+          - '18'
+          - '20'
+          - '36'
+          - '38'
+          - '40'
+          - '42'
+          - '45'
+          - '50'
+          - '55'
+          - '60'
+          - '70'
+          - '80'
+        description: |-
+          Długość w centymetrach
+
+          * `16` - 16 cm
+          * `18` - 18 cm
+          * `20` - 20 cm
+          * `36` - 36 cm
+          * `38` - 38 cm
+          * `40` - 40 cm
+          * `42` - 42 cm
+          * `45` - 45 cm
+          * `50` - 50 cm
+          * `55` - 55 cm
+          * `60` - 60 cm
+          * `70` - 70 cm
+          * `80` - 80 cm
+      - in: query
+        name: material
+        schema:
+          type: string
+          enum:
+          - gold
+          - palladium
+          - platinum
+          - silver
+        description: |-
+          Kruszec
+
+          * `gold` - Złoto
+          * `silver` - Srebro
+          * `platinum` - Platyna
+          * `palladium` - Pallad
+      - in: query
+        name: metalColor
+        schema:
+          type: string
+          enum:
+          - bicolor
+          - rose
+          - white
+          - yellow
+        description: |-
+          Kolor kruszcu
+
+          * `yellow` - Żółte
+          * `white` - Białe
+          * `rose` - Różowe
+          * `bicolor` - Dwukolorowe
+      - name: ordering
+        required: false
+        in: query
+        description: 'Kolejność listy: price, -price, newest, name, -name. Domyślnie
+          newest.'
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: priceMax
+        schema:
+          type: number
+        description: Cena najtańszego wariantu do (grosze)
+      - in: query
+        name: priceMin
+        schema:
+          type: number
+        description: Cena najtańszego wariantu od (grosze)
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Fraza szukana w nazwie i opisie
+      - in: query
+        name: size
+        schema:
+          type: string
+          enum:
+          - '10'
+          - '11'
+          - '12'
+          - '13'
+          - '14'
+          - '15'
+          - '16'
+          - '17'
+          - '18'
+          - '19'
+          - '20'
+          - '21'
+          - '22'
+          - '23'
+          - '24'
+          - '25'
+          - '26'
+          - '8'
+          - '9'
+        description: |-
+          Rozmiar pierścionka
+
+          * `8` - 8
+          * `9` - 9
+          * `10` - 10
+          * `11` - 11
+          * `12` - 12
+          * `13` - 13
+          * `14` - 14
+          * `15` - 15
+          * `16` - 16
+          * `17` - 17
+          * `18` - 18
+          * `19` - 19
+          * `20` - 20
+          * `21` - 21
+          * `22` - 22
+          * `23` - 23
+          * `24` - 24
+          * `25` - 25
+          * `26` - 26
+      - in: query
+        name: stone
+        schema:
+          type: string
+          enum:
+          - amber
+          - amethyst
+          - cubic_zirconia
+          - diamond
+          - emerald
+          - moissanite
+          - pearl
+          - ruby
+          - sapphire
+          - topaz
+        description: |-
+          Rodzaj kamienia
+
+          * `diamond` - Diament
+          * `sapphire` - Szafir
+          * `ruby` - Rubin
+          * `emerald` - Szmaragd
+          * `pearl` - Perła
+          * `amber` - Bursztyn
+          * `topaz` - Topaz
+          * `amethyst` - Ametyst
+          * `cubic_zirconia` - Cyrkonia
+          * `moissanite` - Moissanit
+      tags:
+      - Products
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProductListList'
+          description: ''
+  /products/{slug}/:
+    get:
+      operationId: products_retrieve
+      description: Adresem jest slug. Szkic nie jest dostępny pod żadnym adresem —
+        odpowiedzią jest 404, tak samo jak dla produktu nieistniejącego.
+      summary: Produkt wraz z pełną listą wariantów
+      parameters:
+      - in: query
+        name: currency
+        schema:
+          type: string
+          enum:
+          - EUR
+          - PLN
+        description: Waluta cen. EUR przelicza ceny złotowe po bieżącym kursie NBP
+          i zaokrągla w górę do ,00/,50 (ADR 0019); brak kursu daje 400. Filtry i
+          progi (cena, darmowa dostawa) zawsze działają w złotych.
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - pl
+        description: Język pól tekstowych. Bez tego parametru brany jest nagłówek
+          `Accept-Language`, a w jego braku polski. Brakujące tłumaczenie schodzi
+          do tekstu polskiego; slug nie jest tłumaczony.
+      - in: path
+        name: slug
+        schema:
+          type: string
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z angielskiego brzmienia nazwy przy publikacji. Po publikacji nie da się
+            go zmienić.
+        required: true
+      tags:
+      - Products
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+          description: ''
+  /products/{slug}/reviews/:
+    get:
+      operationId: products_reviews_list
+      description: Opublikowane opinie o produkcie, paginowane, najnowsze pierwsze.
+      summary: Opinie o produkcie
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: slug
+        schema:
+          type: string
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z angielskiego brzmienia nazwy przy publikacji. Po publikacji nie da się
+            go zmienić.
+        required: true
+      tags:
+      - Reviews
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReviewList'
+          description: ''
+  /promotions/:
+    get:
+      operationId: promotions_list
+      description: Promocje w okresie obowiązywania, które działają bez kodu. Zakres
+        to identyfikatory produktów, kolekcji i kategorii (kategoria obejmuje podkategorie)
+        albo `wholeCatalog`. Promocje kodowe nie są tu wymieniane — kod zna ten, komu
+        sklep go dał.
+      summary: Aktywne promocje bez kodu
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Promotions
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPromotionList'
+          description: ''
+  /reviews/:
+    get:
+      operationId: reviews_list
+      description: Wszystkie opinie zalogowanego klienta, niezależnie od statusu moderacji.
+      summary: Własne opinie klienta
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Reviews
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMyReviewList'
+          description: ''
+    post:
+      operationId: reviews_create
+      description: Wymaga dostarczonego zamówienia z tym produktem i jednej opinii
+        na klienta na produkt. Opinia trafia do moderacji.
+      summary: Nowa opinia
+      tags:
+      - Reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReviewCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReviewCreate'
+        required: true
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyReview'
+          description: ''
+  /reviews/{id}/:
+    patch:
+      operationId: reviews_partial_update
+      description: Edycja treści i oceny — opinia wraca do moderacji.
+      summary: Edycja opinii
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Reviews
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedReviewUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedReviewUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedReviewUpdate'
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyReview'
+          description: ''
+  /reviews/to-review/:
+    get:
+      operationId: reviews_to_review_list
+      description: Produkty z dostarczonych zamówień, których klient jeszcze nie ocenił.
+      summary: Produkty do oceny
+      tags:
+      - Reviews
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductToReview'
+          description: ''
+  /shipping-methods/:
+    get:
+      operationId: shipping_methods_list
+      description: Zwraca metody właściwe dla strefy, których górna wartość zamówienia
+        nie została przekroczona, wraz z kosztem policzonym dla podanej wartości koszyka.
+        Powyżej progu darmowej dostawy koszt wynosi zero. Odbiór osobisty nie ma górnej
+        wartości zamówienia, więc jest na liście zawsze.
+      summary: Metody dostawy dostępne dla koszyka
+      parameters:
+      - in: query
+        name: currency
+        schema:
+          enum:
+          - PLN
+          - EUR
+          type: string
+          default: PLN
+          minLength: 1
+        description: |-
+          Waluta kosztu. `order_value` zawsze w groszach PLN; EUR przelicza koszt po bieżącym kursie, jak zamówienie do strefy EU (ADR 0019).
+
+          * `PLN` - PLN
+          * `EUR` - EUR
+      - in: query
+        name: orderValue
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+        description: Wartość koszyka w groszach; domyślnie pusty koszyk
+      - in: query
+        name: zone
+        schema:
+          enum:
+          - PL
+          - EU
+          type: string
+          default: PL
+          minLength: 1
+        description: |-
+          Strefa dostawy wynikająca z adresu klienta
+
+          * `PL` - Polska
+          * `EU` - Unia Europejska
+      tags:
+      - Shipping
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShippingOffer'
           description: ''
 components:
   schemas:
@@ -745,7 +2429,7 @@ components:
             * `MZ` - Mozambique
             * `MM` - Myanmar
             * `NA` - Namibia
-            * `NR` - Nauru
+            * `NR` - Naoero
             * `NP` - Nepal
             * `NL` - Netherlands
             * `NC` - New Caledonia
@@ -850,6 +2534,524 @@ components:
     BlankEnum:
       enum:
       - ''
+    Cart:
+      type: object
+      description: |-
+        Pełny widok koszyka — krok pierwszy kasy (ADR 0030).
+
+        Rabat to suma promocji na pozycjach. Kupon to zapłata za towar po
+        rabatach — `total` jest już po nim, dostawy jeszcze nie zawiera.
+      properties:
+        cartToken:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Token koszyka gościa do odesłania nagłówkiem `X-Cart-Token`;
+            pusty przy koszyku zalogowanego klienta
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+          readOnly: true
+        itemCount:
+          type: integer
+          readOnly: true
+          description: Liczba pozycji, nie sztuk — para obrączek jest jedną pozycją
+        subtotal:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        discountAmount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        couponAmount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        total:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        promotionCode:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Kod promocji aktywowany w koszyku; pusty, gdy go nie ma
+        couponCode:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Kod kuponu wpisany w koszyku; pusty, gdy go nie ma
+      required:
+      - cartToken
+      - couponAmount
+      - couponCode
+      - discountAmount
+      - itemCount
+      - items
+      - promotionCode
+      - subtotal
+      - total
+    CartItem:
+      type: object
+      description: |-
+        Pozycja koszyka z wyceną liczoną przy odczycie, nie zamrożoną.
+
+        Cena idzie prosto z wariantu, bo koszyk ma pokazywać dzisiejszy cennik
+        (`CONTEXT.md`, CartItem). Kopia powstaje dopiero w pozycji zamówienia
+        (ADR 0010).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        variant:
+          allOf:
+          - $ref: '#/components/schemas/CartVariant'
+          readOnly: true
+        quantity:
+          type: integer
+          readOnly: true
+          description: Liczba sztuk pozycji, najwyżej 5
+        engravingText:
+          type: string
+          readOnly: true
+          description: Treść grawerunku; przy parze trafia na oba egzemplarze, o ile
+            drugi nie ma własnej. Puste oznacza wyrób bez grawerunku.
+        secondSize:
+          allOf:
+          - $ref: '#/components/schemas/SizeEnum'
+          readOnly: true
+          description: |-
+            Rozmiar drugiego egzemplarza pary. Wypełniony zamienia pozycję w parę; pierwszy rozmiar bierze się z wariantu.
+
+            * `8` - 8
+            * `9` - 9
+            * `10` - 10
+            * `11` - 11
+            * `12` - 12
+            * `13` - 13
+            * `14` - 14
+            * `15` - 15
+            * `16` - 16
+            * `17` - 17
+            * `18` - 18
+            * `19` - 19
+            * `20` - 20
+            * `21` - 21
+            * `22` - 22
+            * `23` - 23
+            * `24` - 24
+            * `25` - 25
+            * `26` - 26
+        secondEngravingText:
+          type: string
+          readOnly: true
+          description: Grawerunek drugiego egzemplarza, gdy ma być inny niż pierwszego
+        isPair:
+          type: boolean
+          readOnly: true
+        unitPrice:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        goodsPrice:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        engravingPrice:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        lineTotal:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+      required:
+      - engravingPrice
+      - engravingText
+      - goodsPrice
+      - id
+      - isPair
+      - lineTotal
+      - quantity
+      - secondEngravingText
+      - secondSize
+      - unitPrice
+      - variant
+    CartItemWrite:
+      type: object
+      description: |-
+        Dodanie pozycji do koszyka.
+
+        Wariant wskazuje się identyfikatorem i musi pochodzić z opublikowanego
+        produktu: szkic nie istnieje dla sklepu pod żadnym adresem, więc nie może
+        wejść do koszyka bocznymi drzwiami.
+      properties:
+        variant:
+          type: string
+          format: uuid
+          description: Identyfikator kupowanego wariantu
+        quantity:
+          type: integer
+          maximum: 5
+          minimum: 1
+          default: 1
+          description: Liczba sztuk pozycji, najwyżej 5
+        engravingText:
+          type: string
+          default: ''
+          description: Treść grawerunku; wymaga produktu grawerowalnego
+          maxLength: 50
+        secondSize:
+          default: ''
+          description: |-
+            Rozmiar drugiego egzemplarza pary (wyrób na zamówienie)
+
+            * `8` - 8
+            * `9` - 9
+            * `10` - 10
+            * `11` - 11
+            * `12` - 12
+            * `13` - 13
+            * `14` - 14
+            * `15` - 15
+            * `16` - 16
+            * `17` - 17
+            * `18` - 18
+            * `19` - 19
+            * `20` - 20
+            * `21` - 21
+            * `22` - 22
+            * `23` - 23
+            * `24` - 24
+            * `25` - 25
+            * `26` - 26
+          oneOf:
+          - $ref: '#/components/schemas/SizeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        secondEngravingText:
+          type: string
+          default: ''
+          description: Grawerunek drugiego egzemplarza, gdy ma być inny
+          maxLength: 50
+      required:
+      - variant
+    CartVariant:
+      type: object
+      description: |-
+        Tyle o wariancie, ile potrzebuje wiersz koszyka — nie cała karta produktu.
+
+        Miniatura jest tu, a nie po stronie klienta: bez niej rozwijana lista
+        koszyka musiałaby dociągać `GET /products/` po jednym żądaniu na wiersz,
+        żeby pokazać, co klient właściwie kupuje.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        sku:
+          type: string
+          readOnly: true
+          description: Oznaczenie magazynowe wariantu, unikalne w całym katalogu
+        productName:
+          type: string
+          readOnly: true
+        productSlug:
+          type: string
+          readOnly: true
+        metalColor:
+          allOf:
+          - $ref: '#/components/schemas/MetalColorEnum'
+          readOnly: true
+          description: |-
+            Kolor kruszcu
+
+            * `yellow` - Żółte
+            * `white` - Białe
+            * `rose` - Różowe
+            * `bicolor` - Dwukolorowe
+        size:
+          allOf:
+          - $ref: '#/components/schemas/SizeEnum'
+          readOnly: true
+          description: |-
+            Rozmiar pierścionka; puste dla wyrobów bez rozmiaru
+
+            * `8` - 8
+            * `9` - 9
+            * `10` - 10
+            * `11` - 11
+            * `12` - 12
+            * `13` - 13
+            * `14` - 14
+            * `15` - 15
+            * `16` - 16
+            * `17` - 17
+            * `18` - 18
+            * `19` - 19
+            * `20` - 20
+            * `21` - 21
+            * `22` - 22
+            * `23` - 23
+            * `24` - 24
+            * `25` - 25
+            * `26` - 26
+        length:
+          allOf:
+          - $ref: '#/components/schemas/LengthEnum'
+          readOnly: true
+          description: |-
+            Długość w centymetrach; puste dla wyrobów bez długości
+
+            * `16` - 16 cm
+            * `18` - 18 cm
+            * `20` - 20 cm
+            * `36` - 36 cm
+            * `38` - 38 cm
+            * `40` - 40 cm
+            * `42` - 42 cm
+            * `45` - 45 cm
+            * `50` - 50 cm
+            * `55` - 55 cm
+            * `60` - 60 cm
+            * `70` - 70 cm
+            * `80` - 80 cm
+        isMadeToOrder:
+          type: boolean
+          readOnly: true
+        thumbnailUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Najwęższy gotowy rozmiar zdjęcia wariantu, a gdy wariant swojego
+            nie ma — zdjęcia produktu. Pusty, gdy żadne zdjęcie nie jest jeszcze przetworzone.
+          readOnly: true
+      required:
+      - id
+      - isMadeToOrder
+      - length
+      - metalColor
+      - productName
+      - productSlug
+      - size
+      - sku
+      - thumbnailUrl
+    Category:
+      type: object
+      description: |-
+        Węzeł drzewa wraz z potomkami.
+
+        Narzut nie wychodzi na zewnątrz: to dana cenotwórcza panelu, nie treść
+        katalogu.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z nazwy przy zapisie. Po zapisaniu nie da się go zmienić.
+          pattern: ^[-a-zA-Z0-9_]+$
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+          readOnly: true
+      required:
+      - children
+      - id
+      - name
+      - slug
+    ClaimRequestEnum:
+      enum:
+      - refund
+      - repair
+      - replacement
+      type: string
+      description: |-
+        * `refund` - Zwrot pieniędzy
+        * `repair` - Naprawa
+        * `replacement` - Wymiana
+    ClarityEnum:
+      enum:
+      - FL
+      - IF
+      - VVS1
+      - VVS2
+      - VS1
+      - VS2
+      - SI1
+      - SI2
+      - I1
+      - I2
+      - I3
+      type: string
+      description: |-
+        * `FL` - FL — bez skaz
+        * `IF` - IF — bez skaz wewnętrznych
+        * `VVS1` - VVS1
+        * `VVS2` - VVS2
+        * `VS1` - VS1
+        * `VS2` - VS2
+        * `SI1` - SI1
+        * `SI2` - SI2
+        * `I1` - I1
+        * `I2` - I2
+        * `I3` - I3
+    Collection:
+      type: object
+      description: |-
+        Kolekcja na liście — bez produktów, z ich liczbą.
+
+        Lista kolekcji służy do nawigacji, nie do pokazania katalogu: zagnieżdżenie
+        produktów w każdej z nich zamieniłoby jedno żądanie w cały katalog.
+        Produkty pobiera się przez `GET /products/?collection=<slug>`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z nazwy przy zapisie. Po zapisaniu nie da się go zmienić.
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+          readOnly: true
+          description: Opis kampanii albo sezonu po polsku
+        productCount:
+          type: integer
+          readOnly: true
+          description: Liczba opublikowanych produktów w kolekcji
+      required:
+      - description
+      - id
+      - name
+      - productCount
+      - slug
+    ColourEnum:
+      enum:
+      - D
+      - E
+      - F
+      - G
+      - H
+      - I
+      - J
+      - K
+      - L
+      - M
+      - fancy
+      type: string
+      description: |-
+        * `D` - D — bezbarwny
+        * `E` - E
+        * `F` - F
+        * `G` - G
+        * `H` - H
+        * `I` - I
+        * `J` - J
+        * `K` - K
+        * `L` - L
+        * `M` - M
+        * `fancy` - Barwa fantazyjna
+    Consent:
+      type: object
+      description: |-
+        Zapis zgody: dokument z listy bieżących wersji plus podmiot.
+
+        Podmiot bierze się z żądania — zalogowany klient z uwierzytelnienia,
+        gość z pola `email`. Klient nie wskazuje użytkownika jawnie, więc nie
+        da się zapisać zgody w cudzym imieniu.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        document:
+          type: string
+          format: uuid
+          description: Wersja dokumentu, której dotyczy zgoda
+        email:
+          type: string
+          format: email
+          writeOnly: true
+          description: E-mail gościa; pomijany przy zalogowanym kliencie
+        kind:
+          type: string
+          readOnly: true
+        version:
+          type: string
+          readOnly: true
+          description: Kopia wersji dokumentu z chwili udzielenia zgody
+        grantedAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Chwila udzielenia zgody
+      required:
+      - document
+      - grantedAt
+      - id
+      - kind
+      - version
+    ConsentDocument:
+      type: object
+      description: |-
+        Bieżąca wersja dokumentu — tyle, ile klient potrzebuje, żeby ją
+        pokazać i odesłać w zgodzie.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/ConsentKindEnum'
+          readOnly: true
+          description: |-
+            Rodzaj dokumentu
+
+            * `terms` - Regulamin
+            * `privacy` - Polityka prywatności
+            * `marketing` - Komunikacja marketingowa
+        version:
+          type: string
+          readOnly: true
+          description: Oznaczenie wersji, np. 2026-09; unikalne w obrębie rodzaju
+        effectiveFrom:
+          type: string
+          format: date
+          readOnly: true
+          description: Dzień, od którego wersja obowiązuje. Najnowsza obowiązująca
+            wersja jest bieżącą; wcześniejsze zgody przestają być aktualne.
+      required:
+      - effectiveFrom
+      - id
+      - kind
+      - version
+    ConsentKindEnum:
+      enum:
+      - terms
+      - privacy
+      - marketing
+      type: string
+      description: |-
+        * `terms` - Regulamin
+        * `privacy` - Polityka prywatności
+        * `marketing` - Komunikacja marketingowa
     CountryEnum:
       enum:
       - PL
@@ -1258,7 +3460,7 @@ components:
         * `MZ` - Mozambique
         * `MM` - Myanmar
         * `NA` - Namibia
-        * `NR` - Nauru
+        * `NR` - Naoero
         * `NP` - Nepal
         * `NL` - Netherlands
         * `NC` - New Caledonia
@@ -1352,6 +3554,248 @@ components:
         * `YE` - Yemen
         * `ZM` - Zambia
         * `ZW` - Zimbabwe
+    CouponCode:
+      type: object
+      description: Kod kuponu wpisany w koszyku; wielkość liter nie ma znaczenia.
+      properties:
+        code:
+          type: string
+          description: Kod kuponu nadany przez sklep
+          maxLength: 32
+      required:
+      - code
+    CutEnum:
+      enum:
+      - brilliant
+      - princess
+      - emerald
+      - oval
+      - pear
+      - marquise
+      - cushion
+      - asscher
+      - radiant
+      - heart
+      - cabochon
+      type: string
+      description: |-
+        * `brilliant` - Brylantowy
+        * `princess` - Princessa
+        * `emerald` - Szmaragdowy
+        * `oval` - Owalny
+        * `pear` - Gruszka
+        * `marquise` - Markiza
+        * `cushion` - Poduszka
+        * `asscher` - Asscher
+        * `radiant` - Radiant
+        * `heart` - Serce
+        * `cabochon` - Kaboszon
+    Favorite:
+      type: object
+      description: 'Wpis ulubionych: produkt i data dodania.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        product:
+          allOf:
+          - $ref: '#/components/schemas/FavoriteProduct'
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when the record was created
+      required:
+      - createdAt
+      - id
+      - product
+    FavoriteMerge:
+      type: object
+      description: |-
+        Wejście do scalenia listy gościa: identyfikatory (slugi) produktów.
+
+        Limit długości listy — bez niego zapytanie `IN (...)` i `bulk_create`
+        rosłyby bez ograniczenia wraz z tym, co przyśle klient (DoS).
+      properties:
+        products:
+          type: array
+          items:
+            type: string
+            pattern: ^[-a-zA-Z0-9_]+$
+          maxItems: 500
+    FavoriteProduct:
+      type: object
+      description: Produkt w kontekście listy ulubionych — tylko tyle, ile pokazuje
+        karta.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z angielskiego brzmienia nazwy przy publikacji. Po publikacji nie da się
+            go zmienić.
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - id
+      - name
+      - slug
+    FavoriteWrite:
+      type: object
+      description: Wejście do dodania produktu do ulubionych.
+      properties:
+        product:
+          type: string
+          nullable: true
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z angielskiego brzmienia nazwy przy publikacji. Po publikacji nie da się
+            go zmienić.
+      required:
+      - product
+    FinenessEnum:
+      enum:
+      - '333'
+      - '375'
+      - '585'
+      - '750'
+      - '916'
+      - '925'
+      - '950'
+      - '999'
+      type: string
+      description: |-
+        * `333` - 333 (8 karatów)
+        * `375` - 375 (9 karatów)
+        * `585` - 585 (14 karatów)
+        * `750` - 750 (18 karatów)
+        * `916` - 916 (22 karaty)
+        * `925` - 925 (srebro próby 925)
+        * `950` - 950 (platyna)
+        * `999` - 999 (kruszec inwestycyjny)
+    Gemstone:
+      type: object
+      description: |-
+        Kamień z parametrami i adresem certyfikatu, jeśli jest.
+
+        Adres jest podpisany na czas, bo certyfikat leży w prywatnym buckecie
+        `documents` (ADR 0025). Stały odnośnik do dokumentu laboratorium byłby
+        dostępny dla każdego, kto go raz zobaczył.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/StoneEnum'
+          readOnly: true
+          description: |-
+            Rodzaj kamienia
+
+            * `diamond` - Diament
+            * `sapphire` - Szafir
+            * `ruby` - Rubin
+            * `emerald` - Szmaragd
+            * `pearl` - Perła
+            * `amber` - Bursztyn
+            * `topaz` - Topaz
+            * `amethyst` - Ametyst
+            * `cubic_zirconia` - Cyrkonia
+            * `moissanite` - Moissanit
+        carat:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,3})?$
+          readOnly: true
+          description: Masa w karatach
+        clarity:
+          allOf:
+          - $ref: '#/components/schemas/ClarityEnum'
+          readOnly: true
+          description: |-
+            Czystość; pusta, gdy nie była oznaczana
+
+            * `FL` - FL — bez skaz
+            * `IF` - IF — bez skaz wewnętrznych
+            * `VVS1` - VVS1
+            * `VVS2` - VVS2
+            * `VS1` - VS1
+            * `VS2` - VS2
+            * `SI1` - SI1
+            * `SI2` - SI2
+            * `I1` - I1
+            * `I2` - I2
+            * `I3` - I3
+        colour:
+          allOf:
+          - $ref: '#/components/schemas/ColourEnum'
+          readOnly: true
+          description: |-
+            Barwa; pusta, gdy nie była oznaczana
+
+            * `D` - D — bezbarwny
+            * `E` - E
+            * `F` - F
+            * `G` - G
+            * `H` - H
+            * `I` - I
+            * `J` - J
+            * `K` - K
+            * `L` - L
+            * `M` - M
+            * `fancy` - Barwa fantazyjna
+        cut:
+          allOf:
+          - $ref: '#/components/schemas/CutEnum'
+          readOnly: true
+          description: |-
+            Szlif; pusty, gdy nie był oznaczany
+
+            * `brilliant` - Brylantowy
+            * `princess` - Princessa
+            * `emerald` - Szmaragdowy
+            * `oval` - Owalny
+            * `pear` - Gruszka
+            * `marquise` - Markiza
+            * `cushion` - Poduszka
+            * `asscher` - Asscher
+            * `radiant` - Radiant
+            * `heart` - Serce
+            * `cabochon` - Kaboszon
+        laboratory:
+          type: string
+          readOnly: true
+          description: Laboratorium, które wystawiło certyfikat
+        certificateNumber:
+          type: string
+          readOnly: true
+          description: Numer certyfikatu nadany przez laboratorium
+        certificateUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Adres certyfikatu podpisany na czas; pusty, gdy kamień nie
+            ma certyfikatu.
+          readOnly: true
+      required:
+      - carat
+      - certificateNumber
+      - certificateUrl
+      - clarity
+      - colour
+      - cut
+      - id
+      - kind
+      - laboratory
     HealthCheckResponse:
       type: object
       properties:
@@ -1375,6 +3819,1020 @@ components:
       - database
       - redis
       - storage
+    LengthEnum:
+      enum:
+      - '16'
+      - '18'
+      - '20'
+      - '36'
+      - '38'
+      - '40'
+      - '42'
+      - '45'
+      - '50'
+      - '55'
+      - '60'
+      - '70'
+      - '80'
+      type: string
+      description: |-
+        * `16` - 16 cm
+        * `18` - 18 cm
+        * `20` - 20 cm
+        * `36` - 36 cm
+        * `38` - 38 cm
+        * `40` - 40 cm
+        * `42` - 42 cm
+        * `45` - 45 cm
+        * `50` - 50 cm
+        * `55` - 55 cm
+        * `60` - 60 cm
+        * `70` - 70 cm
+        * `80` - 80 cm
+    MaterialEnum:
+      enum:
+      - gold
+      - silver
+      - platinum
+      - palladium
+      type: string
+      description: |-
+        * `gold` - Złoto
+        * `silver` - Srebro
+        * `platinum` - Platyna
+        * `palladium` - Pallad
+    MetalColorEnum:
+      enum:
+      - yellow
+      - white
+      - rose
+      - bicolor
+      type: string
+      description: |-
+        * `yellow` - Żółte
+        * `white` - Białe
+        * `rose` - Różowe
+        * `bicolor` - Dwukolorowe
+    Money:
+      type: object
+      description: |-
+        Kwota jako para: liczba całkowita groszy i kod waluty (ADR 0009).
+
+        Kwota w API nie jest gołą liczbą ani łańcuchem z przecinkiem: klient
+        dostaje tę samą parę, którą backend trzyma w `common.money.Money`, więc
+        nigdzie po drodze nie powstaje liczba zmiennoprzecinkowa.
+      properties:
+        amount:
+          type: integer
+          readOnly: true
+          description: Kwota w najmniejszej jednostce waluty (grosze)
+        currency:
+          type: string
+          readOnly: true
+          description: Kod waluty ISO 4217
+      required:
+      - amount
+      - currency
+    MyReview:
+      type: object
+      description: Własna opinia klienta, ze statusem moderacji.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        product:
+          type: string
+          nullable: true
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z angielskiego brzmienia nazwy przy publikacji. Po publikacji nie da się
+            go zmienić.
+          readOnly: true
+        rating:
+          type: integer
+          readOnly: true
+          description: Ocena w skali 1-5
+        comment:
+          type: string
+          readOnly: true
+          description: Krótki komentarz, opcjonalny
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReviewStatusEnum'
+          readOnly: true
+          description: |-
+            Publicznie widoczna wyłącznie w stanie approved
+
+            * `pending` - Oczekuje na moderację
+            * `approved` - Opublikowana
+            * `rejected` - Odrzucona
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when the record was created
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when the record was last updated
+      required:
+      - comment
+      - createdAt
+      - id
+      - product
+      - rating
+      - status
+      - updatedAt
+    Notification:
+      type: object
+      description: Powiadomienie klienta — tylko do odczytu; oznaczenie odczytania
+        ma osobny endpoint.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/NotificationKindEnum'
+          readOnly: true
+          description: |-
+            Rodzaj zdarzenia
+
+            * `order_status_changed` - Zmiana statusu zamówienia
+            * `order_paid` - Zamówienie opłacone
+            * `document_ready` - Dokument gotowy
+            * `return_request_status_changed` - Zmiana stanu zgłoszenia zwrotu
+            * `return_settled` - Rozliczenie zwrotu
+        message:
+          type: string
+          readOnly: true
+          description: Treść powiadomienia do wyświetlenia
+        data:
+          readOnly: true
+          description: Dane zdarzenia, np. numer zamówienia
+        isRead:
+          type: boolean
+          readOnly: true
+        readAt:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when the record was created
+      required:
+      - createdAt
+      - data
+      - id
+      - isRead
+      - kind
+      - message
+      - readAt
+    NotificationKindEnum:
+      enum:
+      - order_status_changed
+      - order_paid
+      - document_ready
+      - return_request_status_changed
+      - return_settled
+      type: string
+      description: |-
+        * `order_status_changed` - Zmiana statusu zamówienia
+        * `order_paid` - Zamówienie opłacone
+        * `document_ready` - Dokument gotowy
+        * `return_request_status_changed` - Zmiana stanu zgłoszenia zwrotu
+        * `return_settled` - Rozliczenie zwrotu
+    NotificationPreference:
+      type: object
+      description: Zgoda marketingowa klienta, osobno per kanał.
+      properties:
+        marketingEmail:
+          type: boolean
+          description: Zgoda na marketing e-mailem
+        marketingPush:
+          type: boolean
+          description: Zgoda na marketing push
+    Order:
+      type: object
+      description: |-
+        Zamówienie w postaci, w jakiej ogląda je klient.
+
+        Kwoty wychodzą policzone: klient nie składa sumy z pozycji, bo to
+        backend rozstrzyga, ile jest do zapłaty (ADR 0012).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+          description: Numer, którym klient posługuje się w kontakcie ze sklepem
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          readOnly: true
+          description: |-
+            Etap cyklu życia zamówienia
+
+            * `pending` - Oczekuje na zapłatę
+            * `paid` - Opłacone
+            * `in_production` - W produkcji
+            * `packed` - Spakowane
+            * `shipped` - Wysłane
+            * `delivered` - Dostarczone
+            * `cancelled` - Anulowane
+            * `returned` - Zwrócone
+        deliveredAt:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Chwila przejścia w `delivered` — od niej biegną terminy zwrotu
+            (`CONTEXT.md`, ReturnReason). Ustawiana raz, nigdy nadpisywana.
+        email:
+          type: string
+          format: email
+          readOnly: true
+          description: Adres, pod który idzie potwierdzenie. Zawsze wypełniony — także
+            dla klienta z kontem, bo zamówienie ma zostać czytelne po anonimizacji
+            konta.
+        recipientName:
+          type: string
+          readOnly: true
+          description: Imię i nazwisko odbiorcy z chwili złożenia zamówienia
+        street:
+          type: string
+          readOnly: true
+        street2:
+          type: string
+          readOnly: true
+        city:
+          type: string
+          readOnly: true
+        postalCode:
+          type: string
+          readOnly: true
+        country:
+          type: string
+          readOnly: true
+          description: Kod kraju ISO 3166-1 alfa-2 z chwili złożenia zamówienia
+        shippingMethodName:
+          type: string
+          readOnly: true
+          description: Nazwa metody z chwili złożenia — cennik wolno potem zmienić
+        currency:
+          type: string
+          readOnly: true
+          description: Kod waluty ISO 4217
+        exchangeRate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,6})?$
+          readOnly: true
+          description: Kurs, po którym przeliczono ceny źródłowe na walutę zamówienia.
+            Jeden przy sprzedaży w złotych (ADR 0019).
+        termsVersion:
+          type: string
+          readOnly: true
+          description: Kopia oznaczenia wersji regulaminu z chwili złożenia
+        invoiceRequested:
+          type: boolean
+          readOnly: true
+          description: Klient poprosił o fakturę imienną — wystawiana na odbiorcę
+            i adres z zamówienia (ADR 0026)
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+          readOnly: true
+        shipments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Shipment'
+          readOnly: true
+        goodsTotal:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        shippingCost:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        discountAmount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        couponAmount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        total:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when the record was created
+      required:
+      - city
+      - country
+      - couponAmount
+      - createdAt
+      - currency
+      - deliveredAt
+      - discountAmount
+      - email
+      - exchangeRate
+      - goodsTotal
+      - id
+      - invoiceRequested
+      - items
+      - number
+      - postalCode
+      - recipientName
+      - shipments
+      - shippingCost
+      - shippingMethodName
+      - status
+      - street
+      - street2
+      - termsVersion
+      - total
+    OrderCreate:
+      type: object
+      description: |-
+        Złożenie zamówienia: adres, metoda dostawy i — dla gościa — e-mail.
+
+        Pozycji tu nie ma: biorą się z koszyka, który klient już zbudował
+        (ADR 0030). Przysłanie ich w żądaniu pozwalałoby zamówić coś innego niż
+        to, co klient widział w koszyku.
+      properties:
+        email:
+          description: Adres gościa; pomijany przy zalogowanym kliencie
+          oneOf:
+          - type: string
+            format: email
+            default: ''
+          - type: string
+            maxLength: 0
+        recipientName:
+          type: string
+          maxLength: 200
+        street:
+          type: string
+          maxLength: 255
+        street2:
+          type: string
+          default: ''
+          maxLength: 255
+        city:
+          type: string
+          maxLength: 100
+        postalCode:
+          type: string
+          maxLength: 20
+        country:
+          allOf:
+          - $ref: '#/components/schemas/CountryEnum'
+          description: |-
+            Kod kraju ISO 3166-1 alfa-2; sklep wysyła do Polski i Unii
+
+            * `PL` - Poland
+            * `US` - United States of America
+            * `GB` - United Kingdom
+            * `DE` - Germany
+            * `FR` - France
+            * `IT` - Italy
+            * `ES` - Spain
+            * `AF` - Afghanistan
+            * `AX` - Åland Islands
+            * `AL` - Albania
+            * `DZ` - Algeria
+            * `AS` - American Samoa
+            * `AD` - Andorra
+            * `AO` - Angola
+            * `AI` - Anguilla
+            * `AQ` - Antarctica
+            * `AG` - Antigua and Barbuda
+            * `AR` - Argentina
+            * `AM` - Armenia
+            * `AW` - Aruba
+            * `AU` - Australia
+            * `AT` - Austria
+            * `AZ` - Azerbaijan
+            * `BS` - Bahamas (The)
+            * `BH` - Bahrain
+            * `BD` - Bangladesh
+            * `BB` - Barbados
+            * `BY` - Belarus
+            * `BE` - Belgium
+            * `BZ` - Belize
+            * `BJ` - Benin
+            * `BM` - Bermuda
+            * `BT` - Bhutan
+            * `BO` - Bolivia
+            * `BQ` - Bonaire, Sint Eustatius and Saba
+            * `BA` - Bosnia and Herzegovina
+            * `BW` - Botswana
+            * `BV` - Bouvet Island
+            * `BR` - Brazil
+            * `IO` - British Indian Ocean Territory
+            * `BN` - Brunei
+            * `BG` - Bulgaria
+            * `BF` - Burkina Faso
+            * `BI` - Burundi
+            * `CV` - Cabo Verde
+            * `KH` - Cambodia
+            * `CM` - Cameroon
+            * `CA` - Canada
+            * `KY` - Cayman Islands
+            * `CF` - Central African Republic
+            * `TD` - Chad
+            * `CL` - Chile
+            * `CN` - China
+            * `CX` - Christmas Island
+            * `CC` - Cocos (Keeling) Islands
+            * `CO` - Colombia
+            * `KM` - Comoros
+            * `CG` - Congo
+            * `CK` - Cook Islands
+            * `CR` - Costa Rica
+            * `CI` - Côte d'Ivoire
+            * `HR` - Croatia
+            * `CU` - Cuba
+            * `CW` - Curaçao
+            * `CY` - Cyprus
+            * `CZ` - Czechia
+            * `CD` - Democratic Republic of the Congo
+            * `DK` - Denmark
+            * `DJ` - Djibouti
+            * `DM` - Dominica
+            * `DO` - Dominican Republic
+            * `EC` - Ecuador
+            * `EG` - Egypt
+            * `SV` - El Salvador
+            * `GQ` - Equatorial Guinea
+            * `ER` - Eritrea
+            * `EE` - Estonia
+            * `SZ` - Eswatini
+            * `ET` - Ethiopia
+            * `FK` - Falkland Islands (Malvinas)
+            * `FO` - Faroe Islands
+            * `FJ` - Fiji
+            * `FI` - Finland
+            * `GF` - French Guiana
+            * `PF` - French Polynesia
+            * `TF` - French Southern Territories
+            * `GA` - Gabon
+            * `GM` - Gambia
+            * `GE` - Georgia
+            * `GH` - Ghana
+            * `GI` - Gibraltar
+            * `GR` - Greece
+            * `GL` - Greenland
+            * `GD` - Grenada
+            * `GP` - Guadeloupe
+            * `GU` - Guam
+            * `GT` - Guatemala
+            * `GG` - Guernsey
+            * `GN` - Guinea
+            * `GW` - Guinea-Bissau
+            * `GY` - Guyana
+            * `HT` - Haiti
+            * `HM` - Heard Island and McDonald Islands
+            * `HN` - Honduras
+            * `HK` - Hong Kong
+            * `HU` - Hungary
+            * `IS` - Iceland
+            * `IN` - India
+            * `ID` - Indonesia
+            * `IR` - Iran
+            * `IQ` - Iraq
+            * `IE` - Ireland
+            * `IM` - Isle of Man
+            * `IL` - Israel
+            * `JM` - Jamaica
+            * `JP` - Japan
+            * `JE` - Jersey
+            * `JO` - Jordan
+            * `KZ` - Kazakhstan
+            * `KE` - Kenya
+            * `KI` - Kiribati
+            * `KW` - Kuwait
+            * `KG` - Kyrgyzstan
+            * `LA` - Laos
+            * `LV` - Latvia
+            * `LB` - Lebanon
+            * `LS` - Lesotho
+            * `LR` - Liberia
+            * `LY` - Libya
+            * `LI` - Liechtenstein
+            * `LT` - Lithuania
+            * `LU` - Luxembourg
+            * `MO` - Macao
+            * `MG` - Madagascar
+            * `MW` - Malawi
+            * `MY` - Malaysia
+            * `MV` - Maldives
+            * `ML` - Mali
+            * `MT` - Malta
+            * `MH` - Marshall Islands
+            * `MQ` - Martinique
+            * `MR` - Mauritania
+            * `MU` - Mauritius
+            * `YT` - Mayotte
+            * `MX` - Mexico
+            * `FM` - Micronesia
+            * `MD` - Moldova
+            * `MC` - Monaco
+            * `MN` - Mongolia
+            * `ME` - Montenegro
+            * `MS` - Montserrat
+            * `MA` - Morocco
+            * `MZ` - Mozambique
+            * `MM` - Myanmar
+            * `NA` - Namibia
+            * `NR` - Naoero
+            * `NP` - Nepal
+            * `NL` - Netherlands
+            * `NC` - New Caledonia
+            * `NZ` - New Zealand
+            * `NI` - Nicaragua
+            * `NE` - Niger
+            * `NG` - Nigeria
+            * `NU` - Niue
+            * `NF` - Norfolk Island
+            * `KP` - North Korea
+            * `MK` - North Macedonia
+            * `MP` - Northern Mariana Islands
+            * `NO` - Norway
+            * `OM` - Oman
+            * `PK` - Pakistan
+            * `PW` - Palau
+            * `PS` - Palestine
+            * `PA` - Panama
+            * `PG` - Papua New Guinea
+            * `PY` - Paraguay
+            * `PE` - Peru
+            * `PH` - Philippines
+            * `PN` - Pitcairn
+            * `PT` - Portugal
+            * `PR` - Puerto Rico
+            * `QA` - Qatar
+            * `RE` - Réunion
+            * `RO` - Romania
+            * `RU` - Russia
+            * `RW` - Rwanda
+            * `BL` - Saint Barthélemy
+            * `SH` - Saint Helena
+            * `KN` - Saint Kitts and Nevis
+            * `LC` - Saint Lucia
+            * `MF` - Saint Martin (French part)
+            * `PM` - Saint Pierre and Miquelon
+            * `VC` - Saint Vincent and the Grenadines
+            * `WS` - Samoa
+            * `SM` - San Marino
+            * `ST` - Sao Tome and Principe
+            * `SA` - Saudi Arabia
+            * `SN` - Senegal
+            * `RS` - Serbia
+            * `SC` - Seychelles
+            * `SL` - Sierra Leone
+            * `SG` - Singapore
+            * `SX` - Sint Maarten (Dutch part)
+            * `SK` - Slovakia
+            * `SI` - Slovenia
+            * `SB` - Solomon Islands
+            * `SO` - Somalia
+            * `ZA` - South Africa
+            * `GS` - South Georgia
+            * `KR` - South Korea
+            * `SS` - South Sudan
+            * `LK` - Sri Lanka
+            * `SD` - Sudan
+            * `SR` - Suriname
+            * `SJ` - Svalbard and Jan Mayen
+            * `SE` - Sweden
+            * `CH` - Switzerland
+            * `SY` - Syria
+            * `TW` - Taiwan
+            * `TJ` - Tajikistan
+            * `TZ` - Tanzania
+            * `TH` - Thailand
+            * `TL` - Timor-Leste
+            * `TG` - Togo
+            * `TK` - Tokelau
+            * `TO` - Tonga
+            * `TT` - Trinidad and Tobago
+            * `TN` - Tunisia
+            * `TR` - Türkiye
+            * `TM` - Turkmenistan
+            * `TC` - Turks and Caicos Islands
+            * `TV` - Tuvalu
+            * `UG` - Uganda
+            * `UA` - Ukraine
+            * `AE` - United Arab Emirates
+            * `UM` - United States Minor Outlying Islands
+            * `UY` - Uruguay
+            * `UZ` - Uzbekistan
+            * `VU` - Vanuatu
+            * `VA` - Vatican City
+            * `VE` - Venezuela
+            * `VN` - Vietnam
+            * `VG` - Virgin Islands (British)
+            * `VI` - Virgin Islands (U.S.)
+            * `WF` - Wallis and Futuna
+            * `EH` - Western Sahara
+            * `YE` - Yemen
+            * `ZM` - Zambia
+            * `ZW` - Zimbabwe
+        shippingMethod:
+          type: string
+          format: uuid
+          description: Metoda dostawy wybrana w trzecim kroku kasy
+        invoiceRequested:
+          type: boolean
+          default: false
+          description: Faktura imienna na odbiorcę i adres z zamówienia; potwierdzenie
+            zamówienia powstaje zawsze
+      required:
+      - city
+      - country
+      - postalCode
+      - recipientName
+      - shippingMethod
+      - street
+    OrderItem:
+      type: object
+      description: |-
+        Pozycja zamówienia — wyłącznie kopie z chwili złożenia (ADR 0010).
+
+        Nie ma tu odwołania do dzisiejszej ceny wariantu ani do jego stanu:
+        zamówienie ma pokazywać to, co klient kupił, a nie to, co jest w sklepie
+        teraz.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        variant:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Kupiony wariant — do odnalezienia karty produktu, nie do wyceny
+        productName:
+          type: string
+          readOnly: true
+        sku:
+          type: string
+          readOnly: true
+        quantity:
+          type: integer
+          readOnly: true
+          description: Liczba sztuk pozycji, najwyżej 5
+        size:
+          type: string
+          readOnly: true
+          description: Rozmiar pierwszego egzemplarza, skopiowany z wariantu
+        secondSize:
+          allOf:
+          - $ref: '#/components/schemas/SizeEnum'
+          readOnly: true
+          description: |-
+            Rozmiar drugiego egzemplarza pary (ADR 0024)
+
+            * `8` - 8
+            * `9` - 9
+            * `10` - 10
+            * `11` - 11
+            * `12` - 12
+            * `13` - 13
+            * `14` - 14
+            * `15` - 15
+            * `16` - 16
+            * `17` - 17
+            * `18` - 18
+            * `19` - 19
+            * `20` - 20
+            * `21` - 21
+            * `22` - 22
+            * `23` - 23
+            * `24` - 24
+            * `25` - 25
+            * `26` - 26
+        engravingText:
+          type: string
+          readOnly: true
+        secondEngravingText:
+          type: string
+          readOnly: true
+        isPair:
+          type: boolean
+          readOnly: true
+        isMadeToOrder:
+          type: boolean
+          readOnly: true
+          description: Czy wyrób powstaje dopiero po złożeniu zamówienia (ADR 0024)
+        unitPrice:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        goodsPrice:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        engravingTotal:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        lineTotal:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        discountAmount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        discountedTotal:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+      required:
+      - discountAmount
+      - discountedTotal
+      - engravingText
+      - engravingTotal
+      - goodsPrice
+      - id
+      - isMadeToOrder
+      - isPair
+      - lineTotal
+      - productName
+      - quantity
+      - secondEngravingText
+      - secondSize
+      - size
+      - sku
+      - unitPrice
+      - variant
+    OrderStatusEnum:
+      enum:
+      - pending
+      - paid
+      - in_production
+      - packed
+      - shipped
+      - delivered
+      - cancelled
+      - returned
+      type: string
+      description: |-
+        * `pending` - Oczekuje na zapłatę
+        * `paid` - Opłacone
+        * `in_production` - W produkcji
+        * `packed` - Spakowane
+        * `shipped` - Wysłane
+        * `delivered` - Dostarczone
+        * `cancelled` - Anulowane
+        * `returned` - Zwrócone
+    PaginatedAddressList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+    PaginatedCollectionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Collection'
+    PaginatedFavoriteList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Favorite'
+    PaginatedMyReviewList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MyReview'
+    PaginatedNotificationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+    PaginatedOrderList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+    PaginatedProductListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductList'
+    PaginatedProfileList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Profile'
+    PaginatedPromotionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Promotion'
+    PaginatedReviewList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Review'
     PatchedAddress:
       type: object
       properties:
@@ -1561,7 +5019,7 @@ components:
             * `MZ` - Mozambique
             * `MM` - Myanmar
             * `NA` - Namibia
-            * `NR` - Nauru
+            * `NR` - Naoero
             * `NP` - Nepal
             * `NL` - Netherlands
             * `NC` - New Caledonia
@@ -1661,6 +5119,15 @@ components:
         isDefault:
           type: boolean
           description: Is this the default address?
+    PatchedCartItemQuantity:
+      type: object
+      description: Zmiana liczby sztuk pozycji; zero usuwa ją z koszyka.
+      properties:
+        quantity:
+          type: integer
+          maximum: 5
+          minimum: 0
+          description: Nowa liczba sztuk, najwyżej 5; 0 usuwa pozycję
     PatchedProfile:
       type: object
       properties:
@@ -1672,6 +5139,11 @@ components:
           type: string
           format: email
           readOnly: true
+        username:
+          type: string
+          pattern: ^[A-Za-z0-9._-]+$
+          maxLength: 30
+          minLength: 3
         firstName:
           type: string
           description: User's first name
@@ -1698,6 +5170,482 @@ components:
           allOf:
           - $ref: '#/components/schemas/RoleEnum'
           readOnly: true
+    PatchedReviewUpdate:
+      type: object
+      description: Wejście do edycji opinii — zawsze wraca do moderacji.
+      properties:
+        rating:
+          type: integer
+          maximum: 5
+          minimum: 1
+        comment:
+          type: string
+          default: ''
+          maxLength: 1000
+    PaymentIntent:
+      type: object
+      description: |-
+        Rozpoczęta zapłata (`StartedPayment`): sekret i kwota intencji.
+
+        Sekret otwiera komponent płatności u klienta (ADR 0012) — nie jest
+        kluczem do konta sklepu i nie pozwala niczego obciążyć bez klienta.
+        Kwota wraca, żeby klient pokazał dokładnie tę, którą obciąży operator.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/PaymentStatusEnum'
+          readOnly: true
+        amount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        clientSecret:
+          type: string
+          readOnly: true
+          description: Sekret intencji dla arkusza płatności (mobile) i elementu (web)
+      required:
+      - amount
+      - clientSecret
+      - id
+      - status
+    PaymentStatusEnum:
+      enum:
+      - pending
+      - succeeded
+      - failed
+      - refunding
+      - refunded
+      - refund_failed
+      type: string
+      description: |-
+        * `pending` - Oczekuje na operatora
+        * `succeeded` - Zapłacona
+        * `failed` - Nieudana
+        * `refunding` - Zwrot w toku
+        * `refunded` - Zwrócona
+        * `refund_failed` - Zwrot odrzucony
+    ProductDetail:
+      type: object
+      description: Strona produktu — pełna lista wariantów.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        category:
+          type: string
+          description: Slug kategorii-liścia, do której należy produkt
+          readOnly: true
+        material:
+          allOf:
+          - $ref: '#/components/schemas/MaterialEnum'
+          readOnly: true
+          description: |-
+            Kruszec, z którego wykonany jest wyrób
+
+            * `gold` - Złoto
+            * `silver` - Srebro
+            * `platinum` - Platyna
+            * `palladium` - Pallad
+        fineness:
+          allOf:
+          - $ref: '#/components/schemas/FinenessEnum'
+          readOnly: true
+          description: |-
+            Próba kruszcu
+
+            * `333` - 333 (8 karatów)
+            * `375` - 375 (9 karatów)
+            * `585` - 585 (14 karatów)
+            * `750` - 750 (18 karatów)
+            * `916` - 916 (22 karaty)
+            * `925` - 925 (srebro próby 925)
+            * `950` - 950 (platyna)
+            * `999` - 999 (kruszec inwestycyjny)
+        isMadeToOrder:
+          type: boolean
+          readOnly: true
+          description: Wyrób wytwarzany po złożeniu zamówienia (ADR 0024). Nie ma
+            stanu magazynowego, ma za to czas realizacji.
+        productionTimeDays:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Czas realizacji w dniach; wymagany przy produkcie na zamówienie
+        isEngravable:
+          type: boolean
+          readOnly: true
+          description: Wyrób można grawerować (ADR 0018). Grawer jest osobną pozycją
+            ceny doliczaną do wariantu i wyłącza prawo odstąpienia.
+        engravingPrice:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+          nullable: true
+          description: Cena grawerunku brutto; pusta, gdy produktu nie da się grawerować.
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImage'
+          readOnly: true
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductVariant'
+          readOnly: true
+        averageRating:
+          type: number
+          format: double
+          nullable: true
+          readOnly: true
+          description: Średnia ocen opublikowanych opinii; pusta, gdy produkt nie
+            ma żadnej.
+        isFavorite:
+          type: boolean
+          readOnly: true
+          description: Czy zalogowany klient ma produkt w ulubionych; zawsze `false`
+            dla gościa.
+      required:
+      - averageRating
+      - category
+      - description
+      - engravingPrice
+      - fineness
+      - id
+      - images
+      - isEngravable
+      - isFavorite
+      - isMadeToOrder
+      - material
+      - name
+      - productionTimeDays
+      - slug
+      - variants
+    ProductImage:
+      type: object
+      description: |-
+        Zdjęcie z adresami wszystkich rozmiarów.
+
+        Model trzyma same klucze (ADR 0025), więc adresy powstają tutaj — host
+        i bucket zmieniają się razem ze środowiskiem.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        position:
+          type: integer
+          readOnly: true
+          description: Kolejność w galerii; mniejsza liczba wcześniej
+        isPrimary:
+          type: boolean
+          readOnly: true
+          description: Zdjęcie główne produktu — jedno na produkt
+        altText:
+          type: string
+          readOnly: true
+        urls:
+          type: object
+          additionalProperties:
+            type: string
+            format: uri
+          description: Adres zdjęcia dla każdej szerokości w pikselach
+          readOnly: true
+      required:
+      - altText
+      - id
+      - isPrimary
+      - position
+      - urls
+    ProductList:
+      type: object
+      description: Produkt na liście — reprezentuje go najtańszy wariant (`CONTEXT.md`).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+        category:
+          type: string
+          description: Slug kategorii-liścia, do której należy produkt
+          readOnly: true
+        material:
+          allOf:
+          - $ref: '#/components/schemas/MaterialEnum'
+          readOnly: true
+          description: |-
+            Kruszec, z którego wykonany jest wyrób
+
+            * `gold` - Złoto
+            * `silver` - Srebro
+            * `platinum` - Platyna
+            * `palladium` - Pallad
+        fineness:
+          allOf:
+          - $ref: '#/components/schemas/FinenessEnum'
+          readOnly: true
+          description: |-
+            Próba kruszcu
+
+            * `333` - 333 (8 karatów)
+            * `375` - 375 (9 karatów)
+            * `585` - 585 (14 karatów)
+            * `750` - 750 (18 karatów)
+            * `916` - 916 (22 karaty)
+            * `925` - 925 (srebro próby 925)
+            * `950` - 950 (platyna)
+            * `999` - 999 (kruszec inwestycyjny)
+        isMadeToOrder:
+          type: boolean
+          readOnly: true
+          description: Wyrób wytwarzany po złożeniu zamówienia (ADR 0024). Nie ma
+            stanu magazynowego, ma za to czas realizacji.
+        productionTimeDays:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Czas realizacji w dniach; wymagany przy produkcie na zamówienie
+        isEngravable:
+          type: boolean
+          readOnly: true
+          description: Wyrób można grawerować (ADR 0018). Grawer jest osobną pozycją
+            ceny doliczaną do wariantu i wyłącza prawo odstąpienia.
+        engravingPrice:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+          nullable: true
+          description: Cena grawerunku brutto; pusta, gdy produktu nie da się grawerować.
+        cheapestVariant:
+          allOf:
+          - $ref: '#/components/schemas/ProductVariant'
+          nullable: true
+          readOnly: true
+        averageRating:
+          type: number
+          format: double
+          nullable: true
+          readOnly: true
+          description: Średnia ocen opublikowanych opinii; pusta, gdy produkt nie
+            ma żadnej.
+        isFavorite:
+          type: boolean
+          readOnly: true
+          description: Czy zalogowany klient ma produkt w ulubionych; zawsze `false`
+            dla gościa.
+      required:
+      - averageRating
+      - category
+      - cheapestVariant
+      - engravingPrice
+      - fineness
+      - id
+      - isEngravable
+      - isFavorite
+      - isMadeToOrder
+      - material
+      - name
+      - productionTimeDays
+      - slug
+    ProductToReview:
+      type: object
+      description: Produkt z dostarczonego zamówienia, czekający na opinię klienta.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z angielskiego brzmienia nazwy przy publikacji. Po publikacji nie da się
+            go zmienić.
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - id
+      - name
+      - slug
+    ProductVariant:
+      type: object
+      description: |-
+        Wariant widziany przez klienta.
+
+        Cena jest tą, którą klient faktycznie zapłaci: ręczna ma pierwszeństwo
+        przed wyliczoną (ADR 0022). Klient nie musi wiedzieć, która to która.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        sku:
+          type: string
+          readOnly: true
+          description: Oznaczenie magazynowe wariantu, unikalne w całym katalogu
+        available:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Liczba sztuk do kupienia; pusta dla produktu na zamówienie,
+            który nie ma stanu magazynowego.
+        isAvailable:
+          type: boolean
+          readOnly: true
+        isLowStock:
+          type: boolean
+          readOnly: true
+          description: Ostatnie sztuki — stan dodatni, ale nie większy niż trzy.
+        metalColor:
+          allOf:
+          - $ref: '#/components/schemas/MetalColorEnum'
+          readOnly: true
+          description: |-
+            Kolor kruszcu
+
+            * `yellow` - Żółte
+            * `white` - Białe
+            * `rose` - Różowe
+            * `bicolor` - Dwukolorowe
+        size:
+          allOf:
+          - $ref: '#/components/schemas/SizeEnum'
+          readOnly: true
+          description: |-
+            Rozmiar pierścionka; puste dla wyrobów bez rozmiaru
+
+            * `8` - 8
+            * `9` - 9
+            * `10` - 10
+            * `11` - 11
+            * `12` - 12
+            * `13` - 13
+            * `14` - 14
+            * `15` - 15
+            * `16` - 16
+            * `17` - 17
+            * `18` - 18
+            * `19` - 19
+            * `20` - 20
+            * `21` - 21
+            * `22` - 22
+            * `23` - 23
+            * `24` - 24
+            * `25` - 25
+            * `26` - 26
+        length:
+          allOf:
+          - $ref: '#/components/schemas/LengthEnum'
+          readOnly: true
+          description: |-
+            Długość w centymetrach; puste dla wyrobów bez długości
+
+            * `16` - 16 cm
+            * `18` - 18 cm
+            * `20` - 20 cm
+            * `36` - 36 cm
+            * `38` - 38 cm
+            * `40` - 40 cm
+            * `42` - 42 cm
+            * `45` - 45 cm
+            * `50` - 50 cm
+            * `55` - 55 cm
+            * `60` - 60 cm
+            * `70` - 70 cm
+            * `80` - 80 cm
+        stone:
+          allOf:
+          - $ref: '#/components/schemas/StoneEnum'
+          readOnly: true
+          description: |-
+            Rodzaj kamienia; puste dla wyrobu bez kamienia
+
+            * `diamond` - Diament
+            * `sapphire` - Szafir
+            * `ruby` - Rubin
+            * `emerald` - Szmaragd
+            * `pearl` - Perła
+            * `amber` - Bursztyn
+            * `topaz` - Topaz
+            * `amethyst` - Ametyst
+            * `cubic_zirconia` - Cyrkonia
+            * `moissanite` - Moissanit
+        metalWeightGrams:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,3})?$
+          readOnly: true
+          description: Masa kruszcu w gramach — podstawa składnika kruszcowego ceny
+        price:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        vatRate:
+          type: string
+          format: decimal
+          pattern: ^-?0?(?:\.\d{0,4})?$
+          readOnly: true
+          nullable: true
+          description: Stawka podatku jako ułamek, np. 0.2300. Pusta wyłącznie przy
+            zwolnieniu.
+        isVatExempt:
+          type: boolean
+          readOnly: true
+          description: Zwolnienie przedmiotowe — złoto inwestycyjne. Nie jest stawką
+            zerową, tylko osobnym bytem (ADR 0013).
+        vatExemptionBasis:
+          type: string
+          readOnly: true
+          description: Podstawa prawna zwolnienia; wymagana przy zwolnieniu
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImage'
+          readOnly: true
+        gemstones:
+          type: array
+          items:
+            $ref: '#/components/schemas/Gemstone'
+          readOnly: true
+      required:
+      - available
+      - gemstones
+      - id
+      - images
+      - isAvailable
+      - isLowStock
+      - isVatExempt
+      - length
+      - metalColor
+      - metalWeightGrams
+      - price
+      - size
+      - sku
+      - stone
+      - vatExemptionBasis
+      - vatRate
     Profile:
       type: object
       properties:
@@ -1709,6 +5657,11 @@ components:
           type: string
           format: email
           readOnly: true
+        username:
+          type: string
+          pattern: ^[A-Za-z0-9._-]+$
+          maxLength: 30
+          minLength: 3
         firstName:
           type: string
           description: User's first name
@@ -1741,6 +5694,456 @@ components:
       - fullName
       - id
       - role
+    Promotion:
+      type: object
+      description: |-
+        Promocja widoczna w sklepie — bez kodu i bez limitów.
+
+        Limity są sprawą sklepu: klient dowie się o wyczerpaniu z wyceny
+        koszyka, a pokazywanie liczników zachęcałoby do wyścigu o ostatnie użycia.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          description: Nazwa promocji po polsku
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/PromotionKindEnum'
+          readOnly: true
+          description: |-
+            Procentowa albo kwotowa
+
+            * `percent` - Procentowa
+            * `amount` - Kwotowa
+        value:
+          type: integer
+          readOnly: true
+          description: Procent obniżki (1–100) albo kwota obniżki jednego egzemplarza
+            w groszach — zależnie od rodzaju
+        currency:
+          type: string
+          readOnly: true
+          description: Waluta kwoty obniżki i minimalnej wartości koszyka
+        wholeCatalog:
+          type: boolean
+          readOnly: true
+          description: Promocja na cały katalog — wtedy listy poniżej są pomijane
+        products:
+          type: array
+          items:
+            type: string
+            format: uuid
+          readOnly: true
+          description: Produkty objęte promocją
+        collections:
+          type: array
+          items:
+            type: string
+            format: uuid
+          readOnly: true
+          description: Kolekcje objęte promocją
+        categories:
+          type: array
+          items:
+            type: string
+            format: uuid
+          readOnly: true
+          description: Kategorie objęte promocją — razem z ich podkategoriami
+        startsAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Początek obowiązywania
+        endsAt:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Koniec obowiązywania; puste oznacza promocję bezterminową
+        minCartValue:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+          nullable: true
+          description: Minimalna wartość koszyka przed rabatami; pusta — bez progu
+        requiresPremium:
+          type: boolean
+          readOnly: true
+          description: Tylko dla klientów premium (`CONTEXT.md`, Membership).
+      required:
+      - categories
+      - collections
+      - currency
+      - endsAt
+      - id
+      - kind
+      - minCartValue
+      - name
+      - products
+      - requiresPremium
+      - startsAt
+      - value
+      - wholeCatalog
+    PromotionCode:
+      type: object
+      description: Kod promocyjny wpisany w koszyku; wielkość liter nie ma znaczenia.
+      properties:
+        code:
+          type: string
+          description: Kod promocji, np. LATO2026
+          maxLength: 32
+      required:
+      - code
+    PromotionKindEnum:
+      enum:
+      - percent
+      - amount
+      type: string
+      description: |-
+        * `percent` - Procentowa
+        * `amount` - Kwotowa
+    ReturnDeadline:
+      type: object
+      description: Otwarta podstawa zwrotu i chwila, do której można z niej skorzystać.
+      properties:
+        reason:
+          allOf:
+          - $ref: '#/components/schemas/ReturnReasonEnum'
+          readOnly: true
+        deadline:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - deadline
+      - reason
+    ReturnItemStatusEnum:
+      enum:
+      - pending
+      - to_agree
+      - accepted
+      - rejected
+      type: string
+      description: |-
+        * `pending` - Oczekuje na rozpatrzenie
+        * `to_agree` - Do uzgodnienia
+        * `accepted` - Uwzględniona
+        * `rejected` - Odrzucona
+    ReturnLineWrite:
+      type: object
+      properties:
+        orderItem:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+        claimRequest:
+          default: ''
+          description: |-
+            Wymagane przy reklamacji, niedozwolone przy innej podstawie
+
+            * `refund` - Zwrot pieniędzy
+            * `repair` - Naprawa
+            * `replacement` - Wymiana
+          oneOf:
+          - $ref: '#/components/schemas/ClaimRequestEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+      required:
+      - orderItem
+      - quantity
+    ReturnOption:
+      type: object
+      description: 'Pozycja w formularzu zwrotu: co, z jakiej podstawy, do kiedy.'
+      properties:
+        orderItem:
+          type: string
+          format: uuid
+          readOnly: true
+        productName:
+          type: string
+          readOnly: true
+        sku:
+          type: string
+          readOnly: true
+        isPair:
+          type: boolean
+          readOnly: true
+          description: Para obrączek wraca w całości — ilość równa kupionej
+        returnableQuantity:
+          type: integer
+          readOnly: true
+          description: Ilość nieobjęta żadnym nieodrzuconym zgłoszeniem
+        deadlines:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReturnDeadline'
+          readOnly: true
+          description: Podstawy, z których pozycję można dziś zwrócić
+        claimRequests:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClaimRequestEnum'
+          readOnly: true
+          description: Żądania dostępne przy reklamacji tej pozycji
+        exchangeAvailable:
+          type: boolean
+          readOnly: true
+          description: Czy wymiana na ten sam wariant jest dziś możliwa (#198) — ostateczną
+            dostępność sprawdza przyjęcie zgłoszenia
+      required:
+      - claimRequests
+      - deadlines
+      - exchangeAvailable
+      - isPair
+      - orderItem
+      - productName
+      - returnableQuantity
+      - sku
+    ReturnReasonEnum:
+      enum:
+      - withdrawal
+      - complaint
+      - goodwill
+      type: string
+      description: |-
+        * `withdrawal` - Odstąpienie od umowy
+        * `complaint` - Reklamacja
+        * `goodwill` - Zwrot dobrowolny
+    ReturnRefundStatusEnum:
+      enum:
+      - none
+      - pending
+      - refunded
+      - manual
+      - manual_done
+      type: string
+      description: |-
+        * `none` - Bez zwrotu pieniędzy
+        * `pending` - Zlecony u operatora
+        * `refunded` - Zwrócony
+        * `manual` - Do zwrotu ręcznego
+        * `manual_done` - Zwrócony przelewem
+    ReturnRequest:
+      type: object
+      description: Zgłoszenie zwrotu w postaci dla klienta.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reason:
+          allOf:
+          - $ref: '#/components/schemas/ReturnReasonEnum'
+          readOnly: true
+          description: |-
+            Podstawa zwrotu — obowiązkowa
+
+            * `withdrawal` - Odstąpienie od umowy
+            * `complaint` - Reklamacja
+            * `goodwill` - Zwrot dobrowolny
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReturnRequestStatusEnum'
+          readOnly: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReturnRequestItem'
+          readOnly: true
+        compensationAmount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+          nullable: true
+          description: Zwracana kwota; pusta, dopóki zgłoszenia nie rozliczono
+        couponCode:
+          type: string
+          readOnly: true
+          nullable: true
+          description: Kod kuponu wydanego z kuponowej części zwrotu
+        couponAmount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+          nullable: true
+          description: Nominał kuponu ze zwrotu
+        refundAmount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+          nullable: true
+          description: Pieniężna część zwrotu; pusta, dopóki nie rozliczono
+        refundStatus:
+          allOf:
+          - $ref: '#/components/schemas/ReturnRefundStatusEnum'
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when the record was created
+      required:
+      - compensationAmount
+      - couponAmount
+      - couponCode
+      - createdAt
+      - id
+      - items
+      - reason
+      - refundAmount
+      - refundStatus
+      - status
+    ReturnRequestCreate:
+      type: object
+      properties:
+        reason:
+          $ref: '#/components/schemas/ReturnReasonEnum'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReturnLineWrite'
+      required:
+      - items
+      - reason
+    ReturnRequestItem:
+      type: object
+      description: Pozycja zgłoszenia z decyzją sklepu.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        orderItem:
+          type: string
+          format: uuid
+          readOnly: true
+        productName:
+          type: string
+          readOnly: true
+        sku:
+          type: string
+          readOnly: true
+        quantity:
+          type: integer
+          readOnly: true
+        claimRequest:
+          allOf:
+          - $ref: '#/components/schemas/ClaimRequestEnum'
+          readOnly: true
+          description: |-
+            Żądanie reklamacyjne; puste przy innej podstawie
+
+            * `refund` - Zwrot pieniędzy
+            * `repair` - Naprawa
+            * `replacement` - Wymiana
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReturnItemStatusEnum'
+          readOnly: true
+        decisionNote:
+          type: string
+          readOnly: true
+          description: Uzasadnienie decyzji — obowiązkowe przy odrzuceniu
+        agreedResolution:
+          type: string
+          readOnly: true
+          description: Uzgodniona forma, np. odkup po cenie złomu (pozycja do uzgodnienia)
+        agreedAmount:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+          nullable: true
+        decidedAt:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - agreedAmount
+      - agreedResolution
+      - claimRequest
+      - decidedAt
+      - decisionNote
+      - id
+      - orderItem
+      - productName
+      - quantity
+      - sku
+      - status
+    ReturnRequestStatusEnum:
+      enum:
+      - submitted
+      - resolved
+      type: string
+      description: |-
+        * `submitted` - Zgłoszone
+        * `resolved` - Rozpatrzone
+    Review:
+      type: object
+      description: 'Opinia publiczna: podpisana nazwą użytkownika i datą.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+        rating:
+          type: integer
+          readOnly: true
+          description: Ocena w skali 1-5
+        comment:
+          type: string
+          readOnly: true
+          description: Krótki komentarz, opcjonalny
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when the record was created
+      required:
+      - comment
+      - createdAt
+      - id
+      - rating
+      - username
+    ReviewCreate:
+      type: object
+      description: Wejście do złożenia opinii.
+      properties:
+        product:
+          type: string
+          nullable: true
+          description: Angielski identyfikator w adresie. Puste pole zostanie wypełnione
+            z angielskiego brzmienia nazwy przy publikacji. Po publikacji nie da się
+            go zmienić.
+        rating:
+          type: integer
+          maximum: 5
+          minimum: 1
+        comment:
+          type: string
+          default: ''
+          maxLength: 1000
+      required:
+      - product
+      - rating
+    ReviewStatusEnum:
+      enum:
+      - pending
+      - approved
+      - rejected
+      type: string
+      description: |-
+        * `pending` - Oczekuje na moderację
+        * `approved` - Opublikowana
+        * `rejected` - Odrzucona
     RoleEnum:
       enum:
       - customer
@@ -1749,6 +6152,211 @@ components:
       description: |-
         * `customer` - Customer
         * `admin` - Admin
+    SalesDocument:
+      type: object
+      description: |-
+        Dokument sprzedaży do pobrania adresem podpisanym na czas (ADR 0025).
+
+        Adres wygasa po `S3_SIGNED_URL_TTL` — klient pobiera listę na nowo,
+        zamiast zapamiętywać odnośnik.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/SalesDocumentKindEnum'
+          readOnly: true
+          description: |-
+            Rodzaj dokumentu; korekta przychodzi ze zwrotami
+
+            * `confirmation` - Potwierdzenie zamówienia
+            * `invoice` - Faktura
+            * `correction` - Korekta
+        reference:
+          type: string
+          readOnly: true
+        number:
+          type: integer
+          readOnly: true
+          description: Numer ciągły w obrębie rodzaju i roku
+        year:
+          type: integer
+          readOnly: true
+          description: Rok numeracji — ten sam, co rok wystawienia
+        issuedOn:
+          type: string
+          format: date
+          readOnly: true
+          description: Data wystawienia dokumentu
+        url:
+          type: string
+          readOnly: true
+          description: Adres PDF podpisany na czas; po wygaśnięciu pobierz listę ponownie
+      required:
+      - id
+      - issuedOn
+      - kind
+      - number
+      - reference
+      - url
+      - year
+    SalesDocumentKindEnum:
+      enum:
+      - confirmation
+      - invoice
+      - correction
+      type: string
+      description: |-
+        * `confirmation` - Potwierdzenie zamówienia
+        * `invoice` - Faktura
+        * `correction` - Korekta
+    Shipment:
+      type: object
+      description: |-
+        Przesyłka zamówienia w postaci dla klienta (`CONTEXT.md`, Shipment).
+
+        Wartości zadeklarowanej przewoźnikowi tu nie ma — to sprawa sklepu
+        i przewoźnika (ADR 0028). Link śledzenia składa frontend z szablonu
+        przewoźnika na podstawie rodzaju metody dostawy (ADR 0027).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        trackingNumber:
+          type: string
+          readOnly: true
+          description: Numer śledzenia u przewoźnika; pusty do chwili nadania
+        shippingMethodKind:
+          allOf:
+          - $ref: '#/components/schemas/ShippingMethodKindEnum'
+          readOnly: true
+          description: |-
+            Rodzaj metody dostawy zamówienia — wybiera szablon linku śledzenia
+
+            * `parcel_locker` - Paczkomat
+            * `courier` - Kurier
+            * `pickup` - Odbiór osobisty
+            * `eu` - Przesyłka do Unii
+        pickupPointCode:
+          type: string
+          readOnly: true
+          description: Kod punktu odbioru; wypełniany wyłącznie dla paczkomatu
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when the record was created
+      required:
+      - createdAt
+      - id
+      - pickupPointCode
+      - shippingMethodKind
+      - trackingNumber
+    ShippingMethodKindEnum:
+      enum:
+      - parcel_locker
+      - courier
+      - pickup
+      - eu
+      type: string
+      description: |-
+        * `parcel_locker` - Paczkomat
+        * `courier` - Kurier
+        * `pickup` - Odbiór osobisty
+        * `eu` - Przesyłka do Unii
+    ShippingOffer:
+      type: object
+      description: |-
+        Metoda dostawy z kosztem policzonym dla konkretnej wartości koszyka.
+
+        Górna wartość zamówienia nie wychodzi na zewnątrz: klient nie ma jej po
+        co znać, bo metoda, której limit przekroczył, po prostu nie ma go na
+        liście. Ubezpieczenia też tu nie ma — jest wliczone w stawkę (ADR 0028).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/ShippingMethodKindEnum'
+          readOnly: true
+        zone:
+          allOf:
+          - $ref: '#/components/schemas/ShippingZoneEnum'
+          readOnly: true
+        cost:
+          allOf:
+          - $ref: '#/components/schemas/Money'
+          readOnly: true
+        isFree:
+          type: boolean
+          readOnly: true
+          description: Czy klient nie zapłaci za tę dostawę — z progu darmowej dostawy
+            albo ze stawki zero, jak przy odbiorze osobistym
+      required:
+      - cost
+      - id
+      - isFree
+      - kind
+      - name
+      - zone
+    ShippingZoneEnum:
+      enum:
+      - PL
+      - EU
+      type: string
+      description: |-
+        * `PL` - Polska
+        * `EU` - Unia Europejska
+    SizeEnum:
+      enum:
+      - '8'
+      - '9'
+      - '10'
+      - '11'
+      - '12'
+      - '13'
+      - '14'
+      - '15'
+      - '16'
+      - '17'
+      - '18'
+      - '19'
+      - '20'
+      - '21'
+      - '22'
+      - '23'
+      - '24'
+      - '25'
+      - '26'
+      type: string
+      description: |-
+        * `8` - 8
+        * `9` - 9
+        * `10` - 10
+        * `11` - 11
+        * `12` - 12
+        * `13` - 13
+        * `14` - 14
+        * `15` - 15
+        * `16` - 16
+        * `17` - 17
+        * `18` - 18
+        * `19` - 19
+        * `20` - 20
+        * `21` - 21
+        * `22` - 22
+        * `23` - 23
+        * `24` - 24
+        * `25` - 25
+        * `26` - 26
     StatusEnum:
       enum:
       - healthy
@@ -1757,6 +6365,39 @@ components:
       description: |-
         * `healthy` - healthy
         * `unhealthy` - unhealthy
+    StoneEnum:
+      enum:
+      - diamond
+      - sapphire
+      - ruby
+      - emerald
+      - pearl
+      - amber
+      - topaz
+      - amethyst
+      - cubic_zirconia
+      - moissanite
+      type: string
+      description: |-
+        * `diamond` - Diament
+        * `sapphire` - Szafir
+        * `ruby` - Rubin
+        * `emerald` - Szmaragd
+        * `pearl` - Perła
+        * `amber` - Bursztyn
+        * `topaz` - Topaz
+        * `amethyst` - Ametyst
+        * `cubic_zirconia` - Cyrkonia
+        * `moissanite` - Moissanit
+    WebhookAck:
+      type: object
+      description: Potwierdzenie odbioru zdarzenia; `processed` fałszywe przy powtórce.
+      properties:
+        processed:
+          type: boolean
+          readOnly: true
+      required:
+      - processed
   securitySchemes:
     XSessionTokenAuth:
       type: apiKey

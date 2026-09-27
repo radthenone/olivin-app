@@ -16,6 +16,8 @@ volumes:
     name: olivin-mobile-node_modules
   olivin-web-next:
     name: olivin-web-next
+  olivin-libretranslate:
+    name: olivin-libretranslate
 
 x-backend-build-dev: &backend-build-dev
   context: .
@@ -45,6 +47,8 @@ x-django: &django
       condition: service_healthy
     olivin-minio:
       condition: service_healthy
+    olivin-libretranslate:
+      condition: service_healthy
   networks:
     - olivin-network
 
@@ -54,6 +58,8 @@ x-celery: &celery
     olivin-redis:
       condition: service_healthy
     olivin-postgres:
+      condition: service_healthy
+    olivin-libretranslate:
       condition: service_healthy
   volumes:
     - ./backend/src:/app/src:z
@@ -126,6 +132,35 @@ services:
       - "8025:8025"
     networks:
       - olivin-network
+    profiles: ["dev", "backend", "full", "local", "web"]
+
+  # Silnik tłumaczeń dla środowiska roboczego (ADR 0027). W produkcji tę rolę
+  # pełni DeepL, wskazany przez TRANSLATION_PROVIDER.
+  #
+  # LT_LOAD_ONLY zawęża modele do polskiego i angielskiego — bez tego kontener
+  # pobiera komplet języków i pierwszy start ciągnie się kwadransami. Wolumen
+  # trzyma pobrane modele, żeby nie powtarzać tego przy każdym `up`.
+  olivin-libretranslate:
+    container_name: olivin-libretranslate
+    image: libretranslate/libretranslate:latest
+    environment:
+      LT_LOAD_ONLY: "pl,en"
+      LT_DISABLE_WEB_UI: "false"
+    ports:
+      - "${LIBRETRANSLATE_PORT:-5000}:5000"
+    volumes:
+      - olivin-libretranslate:/home/libretranslate/.local
+    networks:
+      - olivin-network
+    restart: unless-stopped
+    healthcheck:
+      # Pobranie modeli przy pierwszym starcie trwa, stąd długi start_period —
+      # bez niego Docker uznałby usługę za martwą, zanim zdąży wstać.
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/languages', timeout=5)\""]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 300s
     profiles: ["dev", "backend", "full", "local", "web"]
 
   olivin-django:

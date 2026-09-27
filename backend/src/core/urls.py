@@ -36,6 +36,18 @@ urlpatterns = [
     path("health/", HealthCheckView.as_view(), name="health_check"),
     # API
     path("customers/", include("apps.accounts.urls")),
+    path("cart/", include("apps.orders.urls")),
+    path("categories/", include("apps.categories.urls")),
+    path("orders/", include("apps.orders.order_urls")),
+    path("collections/", include("apps.collections.urls")),
+    path("consents/", include("apps.consents.urls")),
+    path("favorites/", include("apps.favorites.urls")),
+    path("notifications/", include("apps.notifications.urls")),
+    path("payments/", include("apps.payments.urls")),
+    path("products/", include("apps.products.urls")),
+    path("promotions/", include("apps.promotions.urls")),
+    path("reviews/", include("apps.reviews.urls")),
+    path("shipping-methods/", include("apps.shipping.urls")),
     # Headless API
     path("accounts/", include("allauth.urls")),
     path("_allauth/", include("allauth.headless.urls")),

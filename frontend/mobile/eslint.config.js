@@ -23,6 +23,15 @@ module.exports = defineConfig([
     },
   },
   {
+    // eslint-config-expo 57 włącza reguły React Compilera. Synchronizacja
+    // formularzy ze stanem serwera (setState w efekcie po zmianie danych
+    // zapytania) jest u nas świadomym wzorcem — do przepisania osobnym
+    // taskiem, nie przy okazji podbicia SDK. Do tego czasu ostrzeżenie.
+    rules: {
+      "react-hooks/set-state-in-effect": "warn",
+    },
+  },
+  {
     ignores: [
       ...sharedIgnores,
       // Pliki konfiguracyjne aplikacji Expo — CommonJS, poza grafem aplikacji.

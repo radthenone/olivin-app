@@ -2,7 +2,7 @@
 
 **Zasada tego pliku:** opisuje to, co JEST, nigdy to, co ma być. Plany mieszkają w zgłoszeniach na trackerze, decyzje w `docs/adr/`, słownik domeny w `CONTEXT.md`. Jeśli ten plik rozjedzie się z kodem, kod ma rację — zgłoś rozjazd zamiast budować na opisie.
 
-Zweryfikowano: 2026-09-11.
+Zweryfikowano: 2026-09-25.
 
 ## Gdzie czego szukać
 
@@ -18,21 +18,28 @@ Zweryfikowano: 2026-09-11.
 **Żywe:**
 
 - `backend/src/apps/accounts` — User, Profile, Address, managery, serializery, serwisy, widoki, schematy. Testy w `backend/src/tests/accounts/`.
+- `backend/src/apps/categories` — `Category` jako drzewo (rodzic jako klucz obcy do siebie, bez mptt), slug niezmienny, narzut domyślny. Panel do edycji, API **tylko do odczytu**: `GET /categories/` (drzewo zagnieżdżone, bez stronicowania) i `GET /categories/<slug>/`, oba `AllowAny`. Testy w `backend/src/tests/categories/`.
+- `backend/src/apps/translations` — `Translation` (model źródłowy i pole, język, tekst, źródło `auto`/`manual`) jako relacja generyczna na produkcie, zdjęciu, kategorii i kolekcji. Dwa wyzwalacze: publikacja produktu i obchód beat co 24 h; automat nigdy nie nadpisuje poprawki ręcznej. API katalogu przyjmuje `?lang=` i `Accept-Language`, z odwrotem na polski; slug nie jest tłumaczony. Testy w `backend/src/tests/translations/`.
+- `backend/src/apps/collections` — `Collection` (nazwa PL, slug niezmienny, relacja wiele-do-wielu z produktami). Panel z `filter_horizontal`, API **tylko do odczytu**: `GET /collections/` i `GET /collections/<slug>/`, `AllowAny`, wyłącznie kolekcje z co najmniej jednym opublikowanym produktem. Produkty kolekcji przez `GET /products/?collection=<slug>`. Testy w `backend/src/tests/collections/`.
+- `backend/src/apps/products` — `Product` (status `draft`/`published`, kategoria-liść, materiał i próba jako `choices`, flaga produktu na zamówienie z czasem realizacji, flaga grawerunku `is_engravable` z ceną `engraving_price` w groszach — jedno wymaga drugiego, ADR 0018) oraz `ProductVariant` (SKU, kolor kruszcu, rozmiar/długość, kamień, masa kruszcu, `price` i `manual_price` jako grosze, stawka VAT albo zwolnienie z podstawą prawną). Panel z wariantami inline i akcją publikacji; API **tylko do odczytu**: `GET /products/` (opublikowane, każdy z najtańszym wariantem; filtry cech, zakres ceny, kategoria z potomkami, sortowanie `?ordering=`, wyszukiwarka `?search=`) i `GET /products/<slug>/`, oba `AllowAny`. `Gemstone` 0..n przy wariancie (rodzaj, karaty, czystość, barwa, szlif, certyfikat PDF w buckecie `documents` z adresem podpisanym na czas). `ProductImage`: oryginał w buckecie `originals`, kadr `{x,y,width,height}`, zadanie Celery z Pillow tnie i zapisuje 400/800/1600 WebP w `products`; zdjęcie w `processing` nie wychodzi przez API. Wycena ze wzoru (ADR 0022) w `apps/products/pricing.py`: `MetalRate` z cyklem `proposed`/`active`/`archived`, `CostComponent` przy wariancie, marża wariantu nadpisująca marżę kategorii, próg kosztowy. Aktywacja kursu jest akcją w panelu — archiwizuje poprzedni kurs, kolejkuje przeliczenie cen i wysyła wiadomość do właściciela. Testy w `backend/src/tests/products/`.
+- `backend/src/apps/consents` — `ConsentDocument` (rodzaj `terms`/`privacy`/`marketing`, wersja unikalna w rodzaju, data obowiązywania; bieżąca = najnowsza już obowiązująca) i `Consent` (użytkownik XOR e-mail gościa, dokument, kopia wersji, data; constraint w bazie). `Consent.objects.has_current_consent(kind, user=|email=)` zwraca `False` po nowej wersji dokumentu. API: `GET /consents/documents/` (bieżące wersje, `AllowAny`, bez stronicowania) i `POST /consents/` (zalogowany na konto, gość po `email`; dokument musi być bieżący). Rejestracja **nie** wymaga zgody — wymuszenie przyjdzie z zamówieniem i osobnym biletem dla rejestracji. Testy w `backend/src/tests/consents/`.
+- `backend/src/apps/inventory` — `InventoryItem`, `StockMovement` (zmiana z przyczyną) i `Reservation` (wariant, ilość, `expires_at`, status `active`/`released`/`consumed`, zamówienie). Stan to **suma ruchów**, a `InventoryItem.reserved` to **suma aktywnych, nieprzeterminowanych rezerwacji** — żadne z nich nie jest kolumną. Serwis `apps/inventory/services.py`: `reserve()` (blokada wiersza stanu, TTL 30 min, produkt na zamówienie zwraca `None`), `release()` i `consume()` (ruch `sale`). Rezerwacja przestaje trzymać stan co do sekundy wygaśnięcia — zadanie beat `expire_reservations` co 5 minut tylko porządkuje statusy. Testy w `backend/src/tests/inventory/`.
+  Ruch zapisany jest nieedytowalny, korektę robi się kolejnym ruchem. Panel prowadzi magazyn, API go nie wystawia — dostępność wychodzi tylko jako `available` / `isAvailable` / `isLowStock` na wariancie. Produkt na zamówienie nie ma stanu i jest dostępny zawsze (ADR 0024). Starsze testy stanu w `backend/src/tests/products/test_inventory.py`.
 - `backend/src/core/` — settings (django-split-settings), integracje, storage, utils. Health check: **`GET /health/`** (nie pod `/api/`), zwraca stan bazy, Redisa i storage.
-- `backend/src/common/` — pola, modele bazowe w tym `TranslatableModel`, lokalizacja.
+- `backend/src/apps/orders` — **Zamówienie:** `Order` (numer losowy, nie kolejny; użytkownik albo e-mail gościa, kopia adresu, kopia metody dostawy i jej kosztu, `currency`/`exchange_rate` = PLN/1, `discount_amount`/`coupon_amount` = 0, wersja regulaminu) i `OrderItem` (kopia nazwy, SKU, ceny, VAT, grawerunku i rozmiarów — ADR 0010). Statusy `pending`→`paid`→(`in_production`)→`packed`→`shipped`→`delivered`, `cancelled`/`returned`; przejścia w mapie `ALLOWED_TRANSITIONS`, `in_production` tylko przy wyrobie na zamówienie. Przejście w `delivered` (każdą drogą przez `Order.save()`, także z panelu) zapisuje raz `delivered_at` — datę doręczenia, od której biegną terminy zwrotu; tylko do odczytu w panelu i w `GET /orders/{number}/` (`deliveredAt`). `POST /orders/` w jednej transakcji waliduje stan, zgodę na regulamin, limit gościa 10 000 zł i dostępność metody, robi snapshot, zakłada rezerwacje i czyści koszyk. `GET /orders/` tylko dla zalogowanego; `GET /orders/{number}/` gość otwiera numerem **i** `?email=`. `POST /orders/{number}/cancel/` — `pending` od razu, `paid` przez zwrot (patrz Payments). Zadania beat: `cancel_stale_orders` co godzinę. **Dokumenty sprzedaży** (ADR 0026): `SalesDocument` (rodzaj `confirmation`/`invoice`/`correction`, numer ciągły w obrębie rodzaju i roku z licznika `DocumentCounter` blokowanego `select_for_update`, rok i data wg czasu Warszawy, klucz PDF w buckecie `documents`). Zadanie `issue_sales_documents` startuje po commicie przejścia w `paid` (webhook), potwierdzenie zawsze, faktura imienna gdy `Order.invoice_requested` (pole `invoiceRequested` przy `POST /orders/`, dane nabywcy = odbiorca i adres z zamówienia); powtórka niczego nie dubluje. Sprzedawca na wydruku z ustawień `SELLER_NAME`/`SELLER_ADDRESS`/`SELLER_TAX_ID`. `GET /orders/{number}/documents/` — lista z adresem podpisanym na `S3_SIGNED_URL_TTL`, bez stronicowania, gość po `?email=`. Test równoległej numeracji wymaga Postgresa: `TEST_DATABASE=postgres` + `POSTGRES_*`, inaczej pomijany. Zamówienia gościa podpina do konta sygnał allauth `email_confirmed` — dopiero po potwierdzeniu adresu, nie przy rejestracji. **Koszyk:** `Cart` (użytkownik **albo** `session_key` gościa, ograniczenie w bazie; token wydawany przy pierwszym dodaniu pozycji w polu `cartToken` odpowiedzi, a klient podaje go z powrotem w nagłówku żądania `X-Cart-Token`) i `CartItem` (wariant, ilość ≤ 5, grawerunek, `second_size`/`second_engraving_text` dla pary). Koszyk **nie** zamraża ceny — wycena idzie z wariantu przy odczycie. Para tylko z wyrobu na zamówienie (ADR 0024). API `AllowAny`, bez stronicowania: `GET /cart/`, `POST /cart/items/`, `PATCH`/`DELETE /cart/items/{id}/`, `POST /cart/merge/` (tylko zalogowany); każda odpowiedź to cały koszyk z `discountAmount`/`couponAmount` (na razie zerowe). Sam odczyt koszyka też odświeża znacznik aktywności, najwyżej raz na dobę. Zadanie beat `purge_stale_guest_carts` co dobę kasuje koszyki gości bez aktywności 30 dni. Testy w `backend/src/tests/orders/`.
+- `backend/src/apps/shipping` — `ShippingMethod` (rodzaj `parcel_locker`/`courier`/`pickup`/`eu`, strefa `PL`/`EU`, stała stawka, górna wartość zamówienia jako `max_order_value`, aktywność). Ubezpieczenia nie ma w modelu — jest wliczone w stawkę (ADR 0028). Odbiór osobisty bez limitu pilnuje ograniczenie w bazie. Próg darmowej dostawy to **ustawienie** `FREE_SHIPPING_THRESHOLD` (grosze, `core/settings/components/shop.py`), nie model. API **tylko do odczytu**: `GET /shipping-methods/?order_value=&zone=`, `AllowAny`, bez stronicowania — metody z kosztem policzonym dla wartości koszyka; metoda w innej walucie niż koszyk jest odfiltrowana, nie zgłaszana błędem. Mutacje wyłącznie w panelu (ADR 0021). `Shipment` (zamówienie, numer śledzenia, `declared_value`, kod punktu odbioru) wpisywany **wyłącznie w panelu** — adapter przewoźnika to późniejszy bilet (ADR 0027); klient widzi go tylko do odczytu jako `shipments` w `GET /orders/` i `/orders/{number}/` (numer śledzenia, `shippingMethodKind`, kod punktu, `createdAt`) — `declared_value` nie wychodzi przez API. Testy w `backend/src/tests/shipping/`.
+- `backend/src/common/` — pola, modele bazowe w tym `TranslatableModel`, lokalizacja, pieniądze (`money/`) i slugi katalogu (`slugs.py`).
 - `frontend/mobile/` — aplikacja Expo: ekrany auth (logowanie, rejestracja, MFA, weryfikacja e-mail, reset hasła, logowanie kodem), konto, profil.
 - `frontend/web/` — aplikacja Next.js 16 (App Router, Tailwind v4). **Jedna trasa**: strona główna ze stanem zdrowia backendu. Zero ekranów sklepu.
 - `frontend/packages/` — `@olivin/config` (tsconfig, eslint, prettier, loader env), `@olivin/tokens` (tokeny designu, CommonJS + d.ts), `@olivin/api` (klient Orval obu schematów + kontrakt transportu), `@olivin/schemas` i `@olivin/money` (**puste** szkielety).
 
 **Puste szkielety po `startapp` — dziewięć linii kodu każdy, zero modeli, zero migracji:**
 
-`products`, `categories`, `orders`, `payments`, `discounts`, `inventory`, `shipping`, `reviews`, `notifications`, `analytics`
+`reviews`, `notifications`
 
-Nie zakładaj, że którakolwiek z nich cokolwiek zawiera. Nie ma modelu Product, nie ma Order, nie ma Cart.
+Nie zakładaj, że którakolwiek z nich cokolwiek zawiera. `Cart`, `Order`, `Payment`, stan magazynowy i rezerwacje już są.
 
 **Nie istnieje po stronie frontendu:** `features/catalog`, `features/cart`, `features/checkout`, `features/orders`, `features/payments`. Są tylko `auth`, `account`, `profile`.
-
-**Znany defekt:** `apps/products` ma jednocześnie `models.py` i pusty katalog `models/` (oraz `selectors/`, `serializers/`, `views/`). Pakiet przesłania moduł. Katalogi są puste, więc git ich nie śledzi.
 
 ## Wersje i narzędzia (lockfile = prawda)
 
@@ -43,10 +50,10 @@ Nie zakładaj, że którakolwiek z nich cokolwiek zawiera. Nie ma modelu Product
 | Django / DRF | **6.0.8** / 3.18.1 (`uv.lock`) — Django podbity o wersję główną w #51 |
 | Typecheck BE | **Pyrefly** — `task lints:backend:typecheck`. Nie MyPy. |
 | Lint BE | Ruff |
-| Node | 20.19.2 (`.nvmrc`) |
+| Node | 22.23.2 (`.nvmrc`) — React Native 0.86 wymaga ^20.19.4 albo ^22.13 |
 | Frontend PM | **Bun** — `bun install --frozen-lockfile` |
-| Expo / RN / React | SDK 54 / 0.81.5 / 19.1 |
-| Web | Next.js 16 (Turbopack), Tailwind v4, React 19.1 (przypięty do wersji z Expo) |
+| Expo / RN / React | SDK 57 / 0.86.3 / 19.2 |
+| Web | Next.js 16 (Turbopack), Tailwind v4, React 19.2 (przypięty do wersji z Expo) |
 | Monorepo JS | Bun workspaces (`linker = "hoisted"`) + Turborepo 2 |
 | Styling mobile | NativeWind 4.2 (Tailwind v3) |
 | Stan | TanStack Query (serwer) + Zustand (klient) |
@@ -80,14 +87,15 @@ Komendy w **bash** (Git Bash na Windowsie). Nie PowerShell.
 | `EXPO_PUBLIC_EMULATOR_URL` | `10.0.2.2:8020` (emulator Androida) |
 | `EXPO_PUBLIC_VERSION` | `v1` — wersjonowanie API (`URLPathVersioning`) |
 | Sieć Docker | **`olivin-network`** — musi istnieć przed `docker compose up` |
+| `FREE_SHIPPING_THRESHOLD` | **50000** groszy — próg darmowej dostawy wspólny dla sklepu (`components/shop.py`); pusta wartość wyłącza |
 
 Zmienne ładowane z `.env` oraz `.envs/dev/**` przez `dotenv:` w `Taskfile.yml`.
 
 ## Docker Compose (dev)
 
-`docker-compose.yml` definiuje **osiem** usług:
+`docker-compose.yml` definiuje **dziewięć** usług backendu (plus `olivin-web`):
 
-`olivin-postgres` (PostgreSQL 16), `olivin-redis` (cache + broker), `olivin-minio` (S3-compatible), `olivin-mailhog` (SMTP dev), `olivin-django`, `olivin-celery-worker`, `olivin-celery-beat`, `olivin-celery-flower`.
+`olivin-postgres` (PostgreSQL 16), `olivin-redis` (cache + broker), `olivin-minio` (S3-compatible), `olivin-mailhog` (SMTP dev), `olivin-libretranslate` (silnik tłumaczeń, `LT_LOAD_ONLY=pl,en`), `olivin-django`, `olivin-celery-worker`, `olivin-celery-beat`, `olivin-celery-flower`.
 
 Profile: `dev`, `backend`, `full`, `local`, `test`.
 
@@ -115,7 +123,7 @@ Testy integracyjne: `docker-compose.test.yml`, próg pokrycia **60%**.
 
 Generowane są też schematy Zod (`.zod.ts`) dla obu wejść.
 
-`APPS_TAGS` w `frontend/packages/api/orval.config.js` (obecnie): **`Addresses`, `Profiles`, `Health`**. Nowy viewset domenowy bez dopisania tagu nie trafi do klienta — cichy błąd.
+`APPS_TAGS` w `frontend/packages/api/orval.config.js` (obecnie): **`Addresses`, `Cart`, `Categories`, `Collections`, `Consents`, `Orders`, `Products`, `Profiles`, `Shipping`, `Health`**. Nowy viewset domenowy bez dopisania tagu nie trafi do klienta — cichy błąd.
 
 Sekwencja po zmianie API: backend → migracje → regeneracja `schema.yaml` → tag w `APPS_TAGS` → `task ovral:generate` → `task lints:frontend:typecheck`. Bramka: `task ovral:check` (offline, w CI).
 
@@ -136,18 +144,37 @@ OAuth wymaga **Dev Client**, nie działa w Expo Go.
 
 ## Storage
 
-- **Brak `apps/files`.** Storage w `backend/src/core/storage/` — MinIO w dev, S3 w prod przez `USE_AWS`.
-- Buckety: static, media, profiles, products, private-media.
+- **Brak `apps/files`.** Storage w `backend/src/core/storage/` — MinIO w dev, S3 w prod przez `USE_AWS`. Model trzyma **sam klucz obiektu**, bez hosta i bucketa; adres składa `core.storage.object_url` w warstwie serializacji.
+- Buckety (ADR 0025, `core/storage/buckets.py`): `products` (odczyt publiczny), `originals` (prywatny), `documents` (prywatny, adres podpisany na czas). Nazwy przez `S3_BUCKET_PRODUCTS` / `S3_BUCKET_ORIGINALS` / `S3_BUCKET_DOCUMENTS`, czas ważności podpisu przez `S3_SIGNED_URL_TTL`. Zdjęć profilowych nie ma; pliki statyczne Django nie mają bucketa. Bootstrap: `sync_buckets()` z `docker/scripts/backend/init-minio.sh` — zakłada i nakłada polityki, **niczego nie kasuje**.
+- Pipeline zdjęć (ADR 0025): klient wysyła oryginał (≤ ~2000 px, ≤ 10 MB) + kadr `{x,y,w,h}`; Celery + Pillow: crop → 400/800/1600 WebP q80–85; rekord ze statusem processing/ready; klucz bez hosta/bucketa, URL składa serializer.
+- PDF (ADR 0026): WeasyPrint z szablonu `apps/orders/templates/orders/sales_document.html`, bezpośrednio z taska (`apps/orders/services/document.py`); Pango/Cairo/HarfBuzz i DejaVu w obrazie `runtime-base` i w CI. `django-weasyprint` — nie.
+
+## Konwencje API (rozstrzygnięte 2026-09-19)
+
+**W kodzie globalnie** (`core/settings/components/auth.py`, `core/api/`): paginacja, backendy filtrów, limity żądań i domyślna permisja. Limity trzymają historię w cache'u — `CACHES` wskazuje Redisa (`components/cache.py`, `REDIS_CACHE_URL`, domyślnie baza 1), bo pamięć procesu mnoży limit przez liczbę workerów. Reszta punktów niżej dotyczy widoków, które dopiero powstaną.
+
+- Permisje: globalnie `IsAuthenticated` zostaje. `AllowAny` odczyt: products, categories, collections, aktywne promotions, shipping-methods. Koszyk gościa po `session_key`. Zapis własnych danych: zalogowany + queryset filtrowany po `request.user`. **Bez django-guardian.**
+- Mutacje katalogu, promocji, kursów kruszcu, metod dostawy — **wyłącznie Django admin** (ADR 0021). Zero POST/PUT/DELETE na te zasoby w API. Staff nie ma osobnego API.
+- Paginacja: `PageNumberPagination`, `page_size=24`, max 100. Mobile: `useInfiniteQuery` po `?page=N`; web: strony numerowane z URL. Cursor — nie, dopóki katalog nie liczy dziesiątek tysięcy.
+- Filtry: `django-filter` po cechach z `choices` (material, fineness na Product; metal_color, size/length, stone na Variant), cena min/max, kategoria z potomkami, kolekcja; sort: cena / nowość / nazwa. Wyszukiwarka: Postgres `SearchVector`. **Bez tagów, bez Elasticsearch.** Testy jednostkowe chodzą na SQLite, więc wyszukiwarka ma szew (`apps/products/search.py`): pełny tekst na PostgreSQL, dopasowanie po fragmencie poza nim. Gałąź postgresową pokrywa test z markerem `integration`.
+- Slug: jeden, angielski, z nazwy EN przy publikacji, niezmienny (zmiana = 301) — **w kodzie**: `common/slugs.py` bierze angielskie brzmienie z `Translation`, a nie z nazwy polskiej bez ogonków. Slug wpisany w panelu ma pierwszeństwo i nie rusza silnika. Bez angielskiej nazwy zapis jest odrzucany, nigdy nie ma cichego odwrotu do polskiego. Produkt dostaje adres dopiero przy publikacji — szkic ma `slug = NULL`. Web: Next i18n routing `/pl/` `/en/`, `NEXT_LOCALE`, hreflang, sitemap z API, OG, schema.org Product, robots.txt. Mobile: język z urządzenia, deep link `olivin://product/<slug>`.
+- i18n interfejsu: pliki tłumaczeń web/mobile, poza bazą. Tłumaczenia treści katalogu: baza (`Translation`, ADR 0027) — **w kodzie**, silnik przez `TRANSLATION_PROVIDER` (domyślnie LibreTranslate — usługa jest w `docker-compose.yml`; produkcja DeepL).
+- Throttling DRF (wbudowany): anon 60/min, user 300/min; osobny scope `auth` 10/min, włączany na widoku przez `throttle_scope` — czeka na logowanie i walidację kuponu. Stripe webhook: podpis + idempotencja przez `WebhookEvent`. Stripe Radar włączony. Limity: max 5 szt. na pozycję, gość max 10 000 zł (powyżej wymaga konta).
+- Staff: TOTP obowiązkowe dla `is_staff` (allauth); e-mail do właściciela po aktywacji `MetalRate`; `LogEntry` admina jako audyt.
+- Celery beat (`DatabaseScheduler` jest; aplikacja Celery ładowana z `core/__init__.py`): `propose_metal_rates` pierwszego dnia miesiąca i `translate_published_catalog` co 24 h — **w kodzie**; sprzątanie koszyków gości co dobę, rezerwacje co 5 min (TTL 30 min), `pending` > 24 h → `cancelled` co godzinę — **w kodzie**; MetalRate miesięcznie → proposed; NBP dziennie; porzucone koszyki e-mail po 24 h (opt-in). `Watch` zdarzeniowo, nie cyklicznie.
+- Analityka: Umami self-hosted (kontener + baza na tym samym Postgresie), bez cookies; baner web: „niezbędne” + „marketing” (off), bez „analityczne”. `apps/analytics` usunięta. Mobile: nic.
+- Testy: backend pytest per app + factory_boy, markery, 60%; MSW w `packages/api` wspólny web+mobile; Playwright smoke web; Maestro smoke mobile (ADR 0020). Kolejność: backend → MSW → Playwright → Maestro.
+- Paczki instalowane przy bilecie, nie z góry: backend `weasyprint`, `deepl`; frontend `msw`, `expo-notifications`, `expo-file-system`, `expo-sharing`, widget InPost (web script, mobile WebView). **Nie**: guardian, django-weasyprint, elasticsearch, GA, Plausible CE.
 
 ## Payments
 
-- `stripe` w `pyproject.toml`, `apps/payments` **pusty**.
-- **Brak** jakiejkolwiek zależności Stripe w `frontend/package.json`.
-- Nie implementuj Stripe bez jawnego zadania.
+- `backend/src/apps/payments` — `Payment` (zamówienie, `intent_id` u operatora, kwota, waluta, status `pending`/`succeeded`/`failed`/`refunding`/`refunded`/`refund_failed`, przyczyna zwrotu) i `WebhookEvent` (unikalny `event_id`, rodzaj, ładunek, `processed_at`). Adapter w `core/integrations/payments/` (`PAYMENT_PROVIDER`: Stripe domyślnie, atrapa `FakePaymentProvider` w testach) z `create_intent`, `refund`, `verify_signature`.
+- `POST /orders/{number}/payment/` — nowa próba na kwotę z zamówienia, odnawia rezerwacje na 30 min, zwraca `clientSecret`. `POST /payments/webhook/` (poza klientem Orval) — podpis, zdarzenie przetwarzane raz; sukces → `paid` i ruch `sale`, porażka zostawia `pending`. `POST /orders/{number}/cancel/` dla `paid` zleca zwrot (202), `cancelled` i ruch `return` dopiero po zdarzeniu zwrotu. Wpłata na zamówienie, które już nie czeka na zapłatę, albo bez towaru przy rozliczeniu — zwracana automatycznie. Panel płatności tylko do odczytu. Testy w `backend/src/tests/payments/`.
+- **Brak** jakiejkolwiek zależności Stripe w `frontend/package.json` — ekrany kasy to osobny bilet.
 
 ## Integracje
 
-Adaptery w **`core/integrations/`** (mail, allauth). Settings i Celery mogą jeszcze wskazywać legacy `core.services.*` — nowy kod pisz pod `core/integrations/`.
+Adaptery w **`core/integrations/`** — kurs kruszcu (`metal_rate/`, dostawca przez `METAL_RATE_PROVIDER`, domyślnie zastępczy `LastActiveRateProvider`, ADR 0027). Mail i allauth siedzą jeszcze w legacy `core.services.*` — nowy kod pisz pod `core/integrations/`.
 
 ## Struktura katalogów (stan obecny)
 

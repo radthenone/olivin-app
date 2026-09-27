@@ -25,7 +25,8 @@ configureMobileApi();
 export default function RootLayout() {
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-      <StatusBar backgroundColor="#ffffff" style="dark" />
+      {/* expo-status-bar 57 nie ma backgroundColor — tło paska wynika z edge-to-edge. */}
+      <StatusBar style="dark" />
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <RootNavigator />

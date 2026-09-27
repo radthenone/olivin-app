@@ -1,0 +1,198 @@
+from __future__ import annotations
+
+from django.db.models import (
+    Avg,
+    BooleanField,
+    Exists,
+    F,
+    OuterRef,
+    Prefetch,
+    Q,
+    QuerySet,
+    Subquery,
+    Value,
+)
+from django.utils.translation import gettext_lazy
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter
+from rest_framework.permissions import AllowAny
+from rest_framework.request import Request
+from rest_framework.response import Response
+
+from rest_framework.settings import api_settings
+
+from apps.inventory.models import has_available_variant
+from apps.products.filters import MIN_PRICE, ProductFilterSet
+from apps.products.currency import QUERY_PARAM, requested_rate
+from apps.products.models import (
+    EFFECTIVE_PRICE,
+    ExchangeRate,
+    Product,
+    ProductVariant,
+)
+from apps.products.pricing import active_metal_rates
+from apps.products.schema import product_schema
+from apps.products.serializers import ProductDetailSerializer, ProductListSerializer
+from drf_spectacular.utils import extend_schema
+
+from apps.favorites.models import Favorite
+from apps.reviews.models import ReviewStatus
+from apps.reviews.serializers import ReviewSerializer
+
+AVERAGE_RATING = "average_rating"
+IS_FAVORITE = "is_favorite"
+
+ORDERING_FIELDS = {
+    "price": F(MIN_PRICE).asc(nulls_last=True),
+    "-price": F(MIN_PRICE).desc(nulls_last=True),
+    "newest": F("created_at").desc(),
+    "name": F("name").asc(),
+    "-name": F("name").desc(),
+}
+DEFAULT_ORDERING = "newest"
+
+# Produkt, którego nie da się kupić, schodzi na koniec listy przy **każdym**
+# sortowaniu (`CONTEXT.md`, InventoryItem). Nie znika — wariant bez stanu
+# zostaje widoczny jako niedostępny.
+HAS_AVAILABLE = "has_available_variant"
+
+
+class ProductOrderingFilter(OrderingFilter):
+    """Sortowanie po nazwach z listy, nie po nazwach kolumn.
+
+    `?ordering=price` musi zadziałać, choć „cena" nie jest kolumną produktu,
+    tylko adnotacją z najtańszego wariantu. Kolejność jest podana wprost jako
+    wyrażenie, bo produkt bez wariantów ma tę adnotację pustą, a puste wartości
+    PostgreSQL i SQLite układają w przeciwnych miejscach.
+    """
+
+    # `gettext_lazy`, bo DRF deklaruje to pole jako tekst leniwy — zwykły
+    # łańcuch byłby niespójnym nadpisaniem.
+    ordering_description = gettext_lazy(
+        "Kolejność listy: price, -price, newest, name, -name. Domyślnie newest."
+    )
+
+    def get_valid_fields(self, queryset, view, context=None):
+        return [(key, key) for key in ORDERING_FIELDS]
+
+    def filter_queryset(self, request, queryset, view):
+        requested = request.query_params.get(self.ordering_param) or DEFAULT_ORDERING
+        expression = ORDERING_FIELDS.get(requested, ORDERING_FIELDS[DEFAULT_ORDERING])
+        # Rozstrzygnięcie remisu identyfikatorem: bez niego strona druga
+        # potrafi powtórzyć pozycję ze strony pierwszej.
+        return queryset.order_by(F(HAS_AVAILABLE).desc(), expression, "-id")
+
+
+@product_schema
+class ProductViewSet(viewsets.ReadOnlyModelViewSet):
+    """Katalog produktów dla sklepu.
+
+    Actions:
+    - list:     GET /products/         — opublikowane, każdy z najtańszym wariantem
+    - retrieve: GET /products/{slug}/  — produkt z pełną listą wariantów
+
+    Tylko odczyt: katalog prowadzi właściciel w panelu, nie API (ADR 0021).
+    Szkic nie jest widoczny pod żadnym adresem — queryset go nie zawiera, więc
+    wejście na adres szkicu kończy się tym samym 404 co adres nieistniejący.
+    """
+
+    permission_classes = [AllowAny]
+    lookup_field = "slug"
+    filterset_class = ProductFilterSet
+    # Globalne backendy zostają (ADR/konwencje z #98); dochodzi sortowanie,
+    # bo lista katalogu jest jedynym miejscem, które go potrzebuje.
+    filter_backends = [
+        *api_settings.DEFAULT_FILTER_BACKENDS,
+        ProductOrderingFilter,
+    ]
+
+    def get_queryset(self) -> QuerySet[Product]:
+        variants = (
+            ProductVariant.objects.with_effective_price()
+            .select_related("inventory")
+            .prefetch_related("inventory__movements", "gemstones")
+            .order_by(EFFECTIVE_PRICE, "sku")
+        )
+        if self._exchange_rate() is not None:
+            # Próg kosztowy przy przeliczeniu potrzebuje składników kosztu.
+            variants = variants.prefetch_related("cost_components")
+        cheapest = (
+            ProductVariant.objects.with_effective_price()
+            .filter(product=OuterRef("pk"))
+            .order_by(EFFECTIVE_PRICE, "sku")
+            .values(EFFECTIVE_PRICE)[:1]
+        )
+        return (
+            Product.objects.published()
+            .select_related("category")
+            .prefetch_related("translations", "category__translations")
+            .prefetch_related(
+                Prefetch("variants", queryset=variants),
+                "images",
+                "images__translations",
+                "variants__images",
+                "variants__images__translations",
+            )
+            # Podzapytanie, a nie `Min()` po złączeniu: agregat liczyłby się
+            # z wariantów już przyciętych filtrami cech, więc cena produktu
+            # zmieniałaby się w zależności od tego, co jeszcze jest włączone.
+            .annotate(**{MIN_PRICE: Subquery(cheapest)})
+            .annotate(**{HAS_AVAILABLE: has_available_variant()})
+            .annotate(
+                **{
+                    AVERAGE_RATING: Avg(
+                        "reviews__rating",
+                        filter=Q(reviews__status=ReviewStatus.APPROVED),
+                    )
+                }
+            )
+            .annotate(**{IS_FAVORITE: self._is_favorite_subquery()})
+        )
+
+    def _is_favorite_subquery(self) -> Exists | Value:
+        """Serduszko na liście/karcie bez zapytania per produkt (#200).
+
+        Gość nie ma ulubionych — dla niego adnotacja jest stałym `False`,
+        żeby nie liczyć podzapytania, którego wynik i tak nie zmieni się
+        w zależności od produktu.
+        """
+        user = self.request.user  # type: ignore[missing-attribute]
+        if not user.is_authenticated:
+            return Value(False, output_field=BooleanField())
+        return Exists(Favorite.objects.filter(user=user, product=OuterRef("pk")))
+
+    @extend_schema(
+        tags=["Reviews"],
+        summary="Opinie o produkcie",
+        description="Opublikowane opinie o produkcie, paginowane, najnowsze pierwsze.",
+        responses={200: ReviewSerializer(many=True)},
+    )
+    @action(detail=True, methods=["get"], filter_backends=[])
+    def reviews(self, request: Request, *args, **kwargs) -> Response:
+        """Opublikowane opinie o produkcie, najnowsze pierwsze."""
+        product = self.get_object()
+        reviews = product.reviews.approved().select_related("user")  # type: ignore[missing-attribute]
+        page = self.paginate_queryset(reviews)
+        serializer = ReviewSerializer(page, many=True)
+        return self.get_paginated_response(serializer.data)
+
+    def get_serializer_context(self) -> dict:
+        context = super().get_serializer_context()
+        rate = self._exchange_rate()
+        if rate is not None:
+            # Kursy kruszców raz na żądanie, nie raz na wariant (próg kosztu).
+            context["metal_rates"] = active_metal_rates()
+        return {**context, "exchange_rate": rate}
+
+    def _exchange_rate(self) -> ExchangeRate | None:
+        """Kurs dla `?currency=EUR`; `None` dla cen w złotych (ADR 0019)."""
+        if not hasattr(self, "_rate"):
+            params = self.request.query_params  # type: ignore[missing-attribute]
+            self._rate = requested_rate(params.get(QUERY_PARAM))
+        return self._rate
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return ProductDetailSerializer
+        return ProductListSerializer

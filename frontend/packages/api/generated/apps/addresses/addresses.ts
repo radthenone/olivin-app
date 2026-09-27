@@ -26,6 +26,8 @@ import type {
 
 import type {
   Address,
+  CustomersAddressesListParams,
+  PaginatedAddressList,
   PatchedAddress
 } from '../schemas';
 
@@ -65,7 +67,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 export type customersAddressesListResponse200 = {
-  data: Address[]
+  data: PaginatedAddressList
   status: 200
 }
 
@@ -76,12 +78,19 @@ export type customersAddressesListResponseSuccess = (customersAddressesListRespo
 
 export type customersAddressesListResponse = (customersAddressesListResponseSuccess)
 
-export const getCustomersAddressesListUrl = () => {
+export const getCustomersAddressesListUrl = (params?: CustomersAddressesListParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/customers/addresses/`
+  return stringifiedParams.length > 0 ? `/customers/addresses/?${stringifiedParams}` : `/customers/addresses/`
 }
 
 /**
@@ -96,9 +105,9 @@ Actions:
 - destroy:        DELETE /api/v1/addresses/{id}/
 - set_default:    PATCH /api/v1/addresses/{id}/set-default/
  */
-export const customersAddressesList = async ( options?: RequestInit): Promise<customersAddressesListResponse> => {
+export const customersAddressesList = async (params?: CustomersAddressesListParams, options?: RequestInit): Promise<customersAddressesListResponse> => {
 
-  return appInstance<customersAddressesListResponse>(getCustomersAddressesListUrl(),
+  return appInstance<customersAddressesListResponse>(getCustomersAddressesListUrl(params),
   {
     ...options,
     method: 'GET'
@@ -111,23 +120,23 @@ export const customersAddressesList = async ( options?: RequestInit): Promise<cu
 
 
 
-export const getCustomersAddressesListQueryKey = () => {
+export const getCustomersAddressesListQueryKey = (params?: CustomersAddressesListParams,) => {
     return [
-    `/customers/addresses/`
+    `/customers/addresses/`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getCustomersAddressesListQueryOptions = <TData = Awaited<ReturnType<typeof customersAddressesList>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+export const getCustomersAddressesListQueryOptions = <TData = Awaited<ReturnType<typeof customersAddressesList>>, TError = ErrorType<unknown>>(params?: CustomersAddressesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getCustomersAddressesListQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getCustomersAddressesListQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof customersAddressesList>>> = ({ signal }) => customersAddressesList({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof customersAddressesList>>> = ({ signal }) => customersAddressesList(params, { signal, ...requestOptions });
 
 
 
@@ -141,7 +150,7 @@ export type CustomersAddressesListQueryError = ErrorType<unknown>
 
 
 export function useCustomersAddressesList<TData = Awaited<ReturnType<typeof customersAddressesList>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesList>>, TError, TData>> & Pick<
+ params: undefined |  CustomersAddressesListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof customersAddressesList>>,
           TError,
@@ -151,7 +160,7 @@ export function useCustomersAddressesList<TData = Awaited<ReturnType<typeof cust
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCustomersAddressesList<TData = Awaited<ReturnType<typeof customersAddressesList>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesList>>, TError, TData>> & Pick<
+ params?: CustomersAddressesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof customersAddressesList>>,
           TError,
@@ -161,16 +170,16 @@ export function useCustomersAddressesList<TData = Awaited<ReturnType<typeof cust
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCustomersAddressesList<TData = Awaited<ReturnType<typeof customersAddressesList>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ params?: CustomersAddressesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCustomersAddressesList<TData = Awaited<ReturnType<typeof customersAddressesList>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ params?: CustomersAddressesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersAddressesList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getCustomersAddressesListQueryOptions(options)
+  const queryOptions = getCustomersAddressesListQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

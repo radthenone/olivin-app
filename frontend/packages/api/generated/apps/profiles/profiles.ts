@@ -25,6 +25,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CustomersProfileListParams,
+  PaginatedProfileList,
   PatchedProfile,
   Profile
 } from '../schemas';
@@ -65,7 +67,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 export type customersProfileListResponse200 = {
-  data: Profile[]
+  data: PaginatedProfileList
   status: 200
 }
 
@@ -76,12 +78,19 @@ export type customersProfileListResponseSuccess = (customersProfileListResponse2
 
 export type customersProfileListResponse = (customersProfileListResponseSuccess)
 
-export const getCustomersProfileListUrl = () => {
+export const getCustomersProfileListUrl = (params?: CustomersProfileListParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/customers/profile/`
+  return stringifiedParams.length > 0 ? `/customers/profile/?${stringifiedParams}` : `/customers/profile/`
 }
 
 /**
@@ -96,9 +105,9 @@ Actions:
 - destroy:        DELETE /api/v1/profiles/{id}/
 - change_role:    PATCH /api/v1/profiles/{id}/change-role/
  */
-export const customersProfileList = async ( options?: RequestInit): Promise<customersProfileListResponse> => {
+export const customersProfileList = async (params?: CustomersProfileListParams, options?: RequestInit): Promise<customersProfileListResponse> => {
 
-  return appInstance<customersProfileListResponse>(getCustomersProfileListUrl(),
+  return appInstance<customersProfileListResponse>(getCustomersProfileListUrl(params),
   {
     ...options,
     method: 'GET'
@@ -111,23 +120,23 @@ export const customersProfileList = async ( options?: RequestInit): Promise<cust
 
 
 
-export const getCustomersProfileListQueryKey = () => {
+export const getCustomersProfileListQueryKey = (params?: CustomersProfileListParams,) => {
     return [
-    `/customers/profile/`
+    `/customers/profile/`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getCustomersProfileListQueryOptions = <TData = Awaited<ReturnType<typeof customersProfileList>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+export const getCustomersProfileListQueryOptions = <TData = Awaited<ReturnType<typeof customersProfileList>>, TError = ErrorType<unknown>>(params?: CustomersProfileListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getCustomersProfileListQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getCustomersProfileListQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof customersProfileList>>> = ({ signal }) => customersProfileList({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof customersProfileList>>> = ({ signal }) => customersProfileList(params, { signal, ...requestOptions });
 
 
 
@@ -141,7 +150,7 @@ export type CustomersProfileListQueryError = ErrorType<unknown>
 
 
 export function useCustomersProfileList<TData = Awaited<ReturnType<typeof customersProfileList>>, TError = ErrorType<unknown>>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileList>>, TError, TData>> & Pick<
+ params: undefined |  CustomersProfileListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileList>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof customersProfileList>>,
           TError,
@@ -151,7 +160,7 @@ export function useCustomersProfileList<TData = Awaited<ReturnType<typeof custom
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCustomersProfileList<TData = Awaited<ReturnType<typeof customersProfileList>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileList>>, TError, TData>> & Pick<
+ params?: CustomersProfileListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileList>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof customersProfileList>>,
           TError,
@@ -161,16 +170,16 @@ export function useCustomersProfileList<TData = Awaited<ReturnType<typeof custom
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useCustomersProfileList<TData = Awaited<ReturnType<typeof customersProfileList>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ params?: CustomersProfileListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCustomersProfileList<TData = Awaited<ReturnType<typeof customersProfileList>>, TError = ErrorType<unknown>>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ params?: CustomersProfileListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof customersProfileList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getCustomersProfileListQueryOptions(options)
+  const queryOptions = getCustomersProfileListQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

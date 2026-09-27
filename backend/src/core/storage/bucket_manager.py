@@ -1,3 +1,4 @@
+import json
 import os
 from typing import Any
 
@@ -5,6 +6,12 @@ import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from django.conf import settings
+
+from core.storage.buckets import (
+    DEFAULT_URL_TTL_SECONDS,
+    Bucket,
+    public_read_policy,
+)
 
 
 class S3BucketManager:
@@ -121,6 +128,64 @@ class S3BucketManager:
         """
         if not self.bucket_exists(bucket_name):
             self.create_bucket(bucket_name)
+
+    def apply_access(self, bucket: Bucket) -> None:
+        """Nakłada na bucket politykę wynikającą z jego przeznaczenia (ADR 0025).
+
+        Polityka jest nakładana przy każdym uruchomieniu, a nie tylko przy
+        tworzeniu bucketu: inaczej bucket założony wcześniej ręcznie zostałby
+        z polityką, której nikt nie pilnuje.
+        """
+        if bucket.is_public:
+            self.client.put_bucket_policy(
+                Bucket=bucket.name,
+                Policy=json.dumps(public_read_policy(bucket.name)),
+            )
+            return
+        # Prywatny znaczy „bez polityki wpuszczającej kogokolwiek". Kasujemy
+        # tę, która ewentualnie została — brak polityki to odmowa domyślna.
+        try:
+            self.client.delete_bucket_policy(Bucket=bucket.name)
+        except ClientError:
+            pass
+
+    def ensure(self, bucket: Bucket) -> bool:
+        """Zakłada bucket, jeśli trzeba, i nakłada jego politykę.
+
+        Returns:
+            bool: True, jeśli bucket powstał w tym wywołaniu.
+        """
+        created = not self.bucket_exists(bucket.name)
+        if created:
+            self.create_bucket(bucket.name)
+        self.apply_access(bucket)
+        return created
+
+    def bucket_policy(self, bucket_name: str) -> dict | None:
+        """Polityka bucketu albo `None`, gdy żadnej nie ma."""
+        try:
+            response = self.client.get_bucket_policy(Bucket=bucket_name)
+        except ClientError:
+            return None
+        return json.loads(response["Policy"])
+
+    def presigned_url(
+        self,
+        bucket: Bucket,
+        key: str,
+        expires_in: int = DEFAULT_URL_TTL_SECONDS,
+    ) -> str:
+        """Adres do prywatnego obiektu, ważny przez zadany czas.
+
+        Jedyna droga do bucketa `documents`: dokument sprzedaży i certyfikat
+        kamienia są dostępne dla tego, komu sklep poda odnośnik, i tylko na
+        czas jego ważności.
+        """
+        return self.client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": bucket.name, "Key": key},
+            ExpiresIn=expires_in,
+        )
 
     def delete_bucket(self, bucket_name: str) -> None:
         """Usuń bucket z dostawcy magazynu S3.

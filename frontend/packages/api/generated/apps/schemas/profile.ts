@@ -11,6 +11,12 @@ export interface Profile {
   readonly id: string;
   readonly email: string;
   /**
+     * @minLength 3
+     * @maxLength 30
+     * @pattern ^[A-Za-z0-9._-]+$
+     */
+  username?: string;
+  /**
      * User's first name
      * @maxLength 150
      */

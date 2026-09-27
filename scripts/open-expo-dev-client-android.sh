@@ -42,7 +42,8 @@ fi
 bundle_url="http://${device_host}:${port}"
 encoded_bundle_url="${bundle_url//:/%3A}"
 encoded_bundle_url="${encoded_bundle_url//\//%2F}"
-url="exp+frontend://expo-development-client/?url=${encoded_bundle_url}"
+# Schemat dev clienta to "exp+<slug>" z app.config.js (slug: olivin).
+url="exp+olivin://expo-development-client/?url=${encoded_bundle_url}"
 
 echo "Resetuję dev client na urządzeniu ${serial}..."
 adb -s "$serial" shell am force-stop com.olivin.frontend >/dev/null 2>&1 || true

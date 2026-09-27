@@ -40,7 +40,7 @@ export function isProfileComplete(profile?: Profile | null) {
 export const profileService = {
   async getCurrentProfile() {
     const response = await customersProfileList();
-    return response.data[0] ?? null;
+    return response.data.results?.[0] ?? null;
   },
 
   async saveRequiredData(data: ProfileRequiredData) {

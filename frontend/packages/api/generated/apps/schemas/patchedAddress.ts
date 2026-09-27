@@ -191,7 +191,7 @@ export interface PatchedAddress {
   * `MZ` - Mozambique
   * `MM` - Myanmar
   * `NA` - Namibia
-  * `NR` - Nauru
+  * `NR` - Naoero
   * `NP` - Nepal
   * `NL` - Netherlands
   * `NC` - New Caledonia

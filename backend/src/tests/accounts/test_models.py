@@ -89,12 +89,13 @@ class TestCustomUserModel:
         with pytest.raises(IntegrityError):
             CustomUser.objects.create_user(email="dup@test.com", password="pass")
 
-    def test_username_moze_byc_null(self, db):
-        """Wiele użytkowników może mieć username=None (NULL nie łamie UNIQUE)."""
+    def test_username_never_empty(self, db):
+        """Konta bez wybranej nazwy dostają różne, niepuste nazwy (#195)."""
         u1 = UserFactory(username=None)
-        u2 = UserFactory(username=None)
-        assert u1.username is None
-        assert u2.username is None
+        u2 = UserFactory(username="")
+        assert u1.username
+        assert u2.username
+        assert u1.username != u2.username
 
     def test_username_unikalny_gdy_podany(self, db):
         """Dwóch użytkowników z tym samym username powinno rzucić IntegrityError."""

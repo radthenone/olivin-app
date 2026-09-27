@@ -22,4 +22,7 @@ class TimestampedModel(models.Model):
 
     class Meta:
         abstract = True
-        ordering = ["-created_at"]
+        # Identyfikator jako rozstrzygnięcie remisu: sam `created_at` nie jest
+        # unikalny, a przy paginacji dwa rekordy z tą samą chwilą utworzenia
+        # potrafią powtórzyć się na jednej stronie i zniknąć z następnej.
+        ordering = ["-created_at", "-id"]

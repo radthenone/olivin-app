@@ -59,21 +59,10 @@ class AsyncAccountAdapter(DefaultAccountAdapter):
         task = cast(Any, send_email_payloads_task)
         on_commit(lambda: task.delay([payload]))
 
-    # Sygnatura celowo dopuszcza None — patrz docstring. Allauth nie ma stubów,
-    # więc checker porównuje z własną rekonstrukcją typu i widzi niezgodność.
-    def clean_username(  # pyrefly: ignore[bad-override]
-        self, username: str | None, shallow: bool = False
-    ) -> str | None:
-        """
-        Zabezpieczenie dla kont społecznościowych, gdzie username wymuszamy na None.
-        Domyślny walidator Allauth wyrzuca TypeError (NoneType ma brak domyślnej długości).
-        """
-        if username is None:
-            return None
-        return super().clean_username(username, shallow)
+    def populate_username(self, request, user) -> None:
+        """Nie wyprowadza nazwy z e-maila/imienia (domyślne allauth).
 
-    def populate_username(self, request, user):
-        if hasattr(user, "username") and getattr(user, "username") is None:
-            pass
-        else:
-            super().populate_username(request, user)
+        Pustą nazwę zostawia modelowi: `CustomUser.save()` nadaje unikalne
+        `anon<liczba>` z ponowieniem przy kolizji (#195). Dotyczy też kont
+        społecznościowych — allauth woła tę metodę z `SocialAccountAdapter.save_user`.
+        """

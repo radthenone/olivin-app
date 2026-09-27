@@ -5,12 +5,16 @@ Testing settings for Olivin project.
 import os
 
 # --- Database: SQLite in-memory, bez migracji ---
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": ":memory:",
+# `TEST_DATABASE=postgres` zostawia Postgresa z `components/database.py` —
+# dla testów blokad wierszy, których SQLite nie odtworzy (`select_for_update`
+# jest tam bez skutku, a zapis blokuje całą bazę).
+if os.environ.get("TEST_DATABASE") != "postgres":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": ":memory:",
+        }
     }
-}
 
 
 class DisableMigrations:
@@ -29,7 +33,14 @@ PASSWORD_HASHERS = [
 ]
 
 # --- Email w pamięci ---
+# `ACTUAL_EMAIL_BACKEND` to backend, którego `send_email_payloads_task`
+# używa naprawdę (`components/email.py`) — bez nadpisania zadanie łączyłoby
+# się z prawdziwym SMTP nawet w testach.
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+ACTUAL_EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
+# --- Kurs walut bez sieci ---
+EXCHANGE_RATE_PROVIDER = "core.integrations.exchange_rate.fake.FakeExchangeRateProvider"
 
 # --- Cache ---
 CACHES = {
@@ -45,17 +56,11 @@ CELERY_BROKER_URL = "memory://"
 CELERY_RESULT_BACKEND = "cache+memory://"
 
 # --- Storage ---
-# Dla testów integracyjnych korzystamy z realnej konfiguracji z env/compose.
-# Dla testów lokalnych bez infrastruktury zachowujemy bezpieczne fallbacki.
-DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-
-# Pozwól nadpisać wartości przez env (docker-compose.test.yml). Domyślnie
-# fallback do "testing"/"test-bucket" dla testów jednostkowych.
+# Testy integracyjne korzystają z realnego MinIO z compose; testy jednostkowe
+# z mocka w `tests/conftest.py`. Nazwy bucketów biorą się z ADR 0025
+# (`core/storage/buckets.py`), więc nie ma ich tutaj.
 AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", "testing")
 AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", "testing")
-AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME") or (
-    os.environ.get("S3_BUCKETS_NAMES", "").split(",")[0].strip() or "test-bucket"
-)
 AWS_S3_ENDPOINT_URL = os.environ.get("AWS_S3_ENDPOINT_URL")
 AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "us-east-1")
 AWS_S3_USE_SSL = os.environ.get("AWS_S3_USE_SSL", "False").lower() == "true"

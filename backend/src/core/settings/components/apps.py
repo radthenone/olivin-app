@@ -15,6 +15,7 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     "corsheaders",
     "rest_framework",
+    "django_filters",
     "django_celery_beat",
     "djangorestframework_camel_case",
     "storages",
@@ -37,11 +38,14 @@ APPLICATION_APPS = [
     "apps.payments",
     "apps.shipping",
     "apps.reviews",
+    "apps.favorites",
     "apps.inventory",
-    "apps.discounts",
+    "apps.promotions",
     "apps.notifications",
-    "apps.analytics",
     "apps.categories",
+    "apps.collections",
+    "apps.consents",
+    "apps.translations",
     "apps.products",
 ]
 
