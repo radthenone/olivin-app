@@ -10,7 +10,6 @@
 // a goły `export default { id, setup }` omija błąd resolvowania pakietu
 // ("Cannot find package '@opencode/plugin'") w lokalnych pluginach .js.
 
-
 const DONE = "<promise>DONE</promise>"
 const LIMIT = { goal: 25, loop: 10 }
 const UNIT = { s: 1e3, m: 6e4, h: 36e5 }
@@ -92,11 +91,13 @@ export default {
 
       let messages
       try {
-        messages = await ctx.session.context({ sessionID: id })
+        const res = await ctx.session.context({ sessionID: id })
+        // Wrapper pluginu koduje wynik schematem endpointu HTTP (`{ data: [...] }`) — przyjmij oba kształty.
+        messages = Array.isArray(res) ? res : res?.data ?? []
       } catch (err) {
         return stopLoop(id, `context: ${err?.message ?? err}`)
       }
-      const last = [...(messages ?? [])].reverse().find((msg) => msg.type === "assistant")
+      const last = [...messages].reverse().find((msg) => msg.type === "assistant")
       if (!last || last.type !== "assistant") return stopLoop(id, "brak odpowiedzi modelu")
       // Esc w TUI przerywa turę — wiadomość dostaje błąd / finish=error.
       if (last.error) return stopLoop(id, last.error?.message ?? last.error?.name ?? "błąd tury")
@@ -126,9 +127,12 @@ export default {
         if (event.type !== "session.idle") continue
         const id = event.data?.sessionID
         if (!id) continue
-        await onIdle(id).catch((err) => console.error(`[kit-loop] idle: ${err?.message ?? err}`))
+        // Wyjątek nie może zostawić pętli w `loops` bez kolejnej tury — zatrzymaj ją jawnie.
+        await onIdle(id).catch((err) => stopLoop(id, `idle: ${err?.message ?? err}`))
       }
-    })()
+    })().catch((err) => {
+      if (!controller.signal.aborted) console.error(`[kit-loop] strumień zdarzeń: ${err?.message ?? err}`)
+    })
 
     return () => {
       controller.abort()
