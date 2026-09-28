@@ -32,6 +32,7 @@ CELERY_IMPORTS = (
     "apps.orders.tasks",
     "apps.promotions.tasks",
     "apps.inventory.tasks",
+    "apps.notifications.tasks",
 )
 
 CELERY_BEAT_SCHEDULE = {

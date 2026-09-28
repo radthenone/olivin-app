@@ -93,3 +93,16 @@ PAYMENT_PROVIDER = str(
 )
 STRIPE_SECRET_KEY = str(os.environ.get("STRIPE_SECRET_KEY", ""))
 STRIPE_WEBHOOK_SECRET = str(os.environ.get("STRIPE_WEBHOOK_SECRET", ""))
+
+# Kanał push (issue #202, ADR 0027). Domyślnie donikąd — dev/test nic nie
+# wysyłają; produkcja wskazuje Expo jawną konfiguracją.
+PUSH_PROVIDER = str(
+    os.environ.get(
+        "PUSH_PROVIDER",
+        "core.integrations.push.noop.NoopPushProvider",
+    )
+)
+EXPO_PUSH_URL = str(
+    os.environ.get("EXPO_PUSH_URL", "https://exp.host/--/api/v2/push/send")
+)
+EXPO_ACCESS_TOKEN = str(os.environ.get("EXPO_ACCESS_TOKEN", ""))
