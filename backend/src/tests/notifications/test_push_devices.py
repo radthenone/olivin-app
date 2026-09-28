@@ -74,7 +74,7 @@ class TestPushDeviceRegistration:
 
         assert response.status_code == status.HTTP_201_CREATED
         device = PushDevice.objects.get(token="ExponentPushToken[abc]")
-        assert device.user_id == user.pk
+        assert device.user.pk == user.pk
         assert device.platform == "ios"
 
     def test_lists_only_own_devices(self, authenticated_client: APIClient, user):

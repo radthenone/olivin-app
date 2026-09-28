@@ -170,10 +170,15 @@ def notify(
         if not _should_send_push(user, kind):
             return
         try:
+            from typing import Any, cast
+
             from apps.notifications.tasks import send_push_notification
 
             assert user is not None
-            send_push_notification.delay(
+            # `cast(Any, ...)` jak w `send_notification_email`: pyrefly
+            # widzi w udekorowanym zadaniu Celery `list[str]`, nie callable.
+            task = cast(Any, send_push_notification)
+            task.delay(
                 user_id=str(user.pk),
                 title=subject,
                 body=message,
