@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from apps.notifications.models import Notification, NotificationPreference
+from apps.notifications.models import Notification, NotificationPreference, PushDevice
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -20,3 +20,25 @@ class NotificationPreferenceSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotificationPreference
         fields = ["marketing_email", "marketing_push"]
+
+
+class PushDeviceSerializer(serializers.ModelSerializer):
+    """Urządzenie push — zapis po tokenie; odczyt bez wrażliwych pól."""
+
+    class Meta:
+        model = PushDevice
+        fields = ["token", "platform", "last_used_at"]
+        read_only_fields = ["last_used_at"]
+
+
+class PushDeviceWriteSerializer(serializers.Serializer):
+    """Rejestracja urządzenia: token Expo i platforma."""
+
+    token = serializers.CharField(max_length=255)
+    platform = serializers.ChoiceField(choices=["ios", "android"])
+
+    def validate_token(self, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError("Token nie może być pusty.")
+        return value
