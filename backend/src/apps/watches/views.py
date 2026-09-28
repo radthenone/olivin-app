@@ -54,6 +54,14 @@ class WatchViewSet(
         return Response(WatchSerializer(watch).data, status=status.HTTP_201_CREATED)
 
     def destroy(self, request: Request, *args, **kwargs) -> Response:
-        """Usunięcie po id wpisu — cudzy wpis nie znika (idempotentne 204)."""
-        remove_watch(user=request.user, watch_id=kwargs["pk"])  # type: ignore[bad-argument-type]
+        """Usunięcie po id wpisu — cudzy wpis nie znika (idempotentne 204).
+
+        Usunięcie jest idempotentne także dla identyfikatora, który nie jest
+        UUID: filtr z taką wartością rzuciłby `ValidationError` z warstwy
+        modelu, a klient wołający „przestań obserwować” ma dostać 204.
+        """
+        try:
+            remove_watch(user=request.user, watch_id=kwargs["pk"])  # type: ignore[bad-argument-type]
+        except DjangoValidationError:
+            pass
         return Response(status=status.HTTP_204_NO_CONTENT)
