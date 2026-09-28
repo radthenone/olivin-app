@@ -24,7 +24,7 @@ class TestWatchDefaults:
     def test_cascade_on_user_delete(self):
         """Anonimizacja/kasowanie konta kasuje obserwowane (issue #201)."""
         watch = WatchFactory()
-        user_id = watch.user_id
+        user_id = watch.user_id  # type: ignore[missing-attribute]
 
         watch.user.delete()
 
