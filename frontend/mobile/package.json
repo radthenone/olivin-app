@@ -22,7 +22,7 @@
     "@olivin/tokens": "workspace:*",
     "@react-navigation/bottom-tabs": "^7.19.2",
     "@react-navigation/elements": "^2.9.43",
-    "@react-navigation/native": "^7.1.8",
+    "@react-navigation/native": "^7.5.0",
     "@tanstack/react-query": "^5.102.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
