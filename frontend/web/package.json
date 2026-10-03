@@ -27,7 +27,7 @@
     "@olivin/config": "workspace:*",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.3.3",
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.6.3",
     "@types/react": "~19.2.0",
     "@types/react-dom": "~19.2.0",
     "eslint": "^9.25.0",
