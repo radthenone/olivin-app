@@ -1,19 +1,147 @@
-# Overlay olivin-app — wyłącznie stan faktyczny tego repo
+# Overlay projektu — TYLKO unikalne informacje tego repo
+
+> Reużywalna zasada architektoniczna (zadziałałaby w innym projekcie tej samej kategorii)?
+> Nie wpisuj jej tu — zaproponuj zmianę w instruction-kit (`core:repo-first`, sekcja
+> "Nowa zasada architektoniczna — dokąd ją zapisać"). Tu tylko fakty **tego** repo.
 
 **Zasada tego pliku:** opisuje to, co JEST, nigdy to, co ma być. Plany mieszkają w zgłoszeniach na trackerze, decyzje w `docs/adr/`, słownik domeny w `CONTEXT.md`. Jeśli ten plik rozjedzie się z kodem, kod ma rację — zgłoś rozjazd zamiast budować na opisie.
 
-Zweryfikowano: 2026-09-25.
-
 ## Gdzie czego szukać
 
-| Czego szukasz | Gdzie |
-| --- | --- |
-| Znaczenie pojęcia domenowego | `CONTEXT.md` |
-| Dlaczego zdecydowano tak, a nie inaczej | `docs/adr/` |
-| Co ma powstać | zgłoszenia na trackerze |
+| Czego szukasz                                         | Gdzie                                   |
+| ----------------------------------------------------- | --------------------------------------- |
+| Znaczenie pojęcia domenowego                          | `CONTEXT.md`                            |
+| Dlaczego zdecydowano tak, a nie inaczej               | `docs/adr/`                             |
+| Co ma powstać                                         | zgłoszenia na trackerze                 |
 | Wzorzec implementacji sklepu (referencja, nie prawda) | `backend/src/_temp/`, `frontend/_temp/` |
 
-## Stan implementacji — mierzony, nie deklarowany
+## Codegen
+
+Źródło prawdy: MCP `get_codegen` / klucz `codegen: orval|none|graphql` w `.ai/project.profile.yaml` (nie ten plik).
+Domyślnie `orval`. Przy `orval`: po zmianie API → uruchom komendę regeneracji klienta
+(nazwa taska specyficzna dla tego repo — uzupełnij niżej) → commit klienta.
+
+Task regeneracji klienta w tym repo: `task ovral:generate` (namespace to `ovral`, nie `orval`). Bramka offline w CI: `task ovral:check`.
+
+### Orval — dual schema
+
+**Nie edytuj `frontend/packages/api/generated/**` ręcznie.\*\*
+
+| Wejście  | Plik (nie HTTP)                                                                   | Mutator               |
+| -------- | --------------------------------------------------------------------------------- | --------------------- |
+| Allauth  | `backend/src/allauth-schema.json` (snapshot; odśwież `task ovral:schema:allauth`) | `src/auth-mutator.ts` |
+| DRF apps | `backend/src/schema.yaml` (pilnowany przez `backend:schema:check`)                | `src/app-mutator.ts`  |
+
+Generowane są też schematy Zod (`.zod.ts`) dla obu wejść.
+
+`APPS_TAGS` w `frontend/packages/api/orval.config.js` (obecnie): **`Addresses`, `Cart`, `Categories`, `Collections`, `Consents`, `Orders`, `Products`, `Profiles`, `Shipping`, `Health`**. Nowy viewset domenowy bez dopisania tagu nie trafi do klienta — cichy błąd.
+
+Sekwencja po zmianie API: backend → migracje → regeneracja `schema.yaml` → tag w `APPS_TAGS` → `task ovral:generate` → `task lints:frontend:typecheck`.
+
+## Git
+
+Baza PR-ów — opcjonalnie. Bez tej linii agenci biorą `dev`, gdy nie jest w tyle za default
+branchem, inaczej default branch. Wymuszenie: dopisz w osobnej linii np. `base: dev`
+(sama linia, od początku wiersza).
+
+## Ścieżki
+
+Katalog kodu każdego Tieru — moduły Stacków odwołują się do tych kluczy zamiast zakładać
+`backend/` czy `frontend/`. Stack każdego Tieru: `.ai/project.profile.yaml`. Uzupełnia
+`/kit-project-begin` (MCP `list_questions`); Tier `none` — usuń linię.
+
+- backend: `backend/`
+- web: `frontend/web/`
+- mobile: `frontend/mobile/`
+- Taskfile: `Taskfile.yml` — główny punkt wejścia komend
+
+## Taskfile
+
+Preferuj `task <namespace>:<nazwa>` zamiast surowych komend Docker/bash.
+Lista: `task --list`.
+
+Główny plik `Taskfile.yml`, importy z `taskfiles/`. Istniejące namespace'y: `backend`, `db`, `mobile`, `web`, `emulator`, `shell`, `packages`, `ovral`, `test`, `lints`, `precommit`.
+
+Argumenty tasków po `--`, np. `task db:migrations:make -- accounts`.
+
+Przykłady: `task backend:run`, `task db:migrate`, `task test:backend-local -- src/tests/accounts/`, `task mobile:run` (Dev Client), `task ovral:generate`, `task lints:frontend:typecheck`.
+
+Namespace `mobile:` obsługuje aplikację Expo. Namespace `lints:frontend:*` obejmuje **wszystkie** workspace'y JavaScriptu i idzie przez Turborepo.
+
+Web: `task web:run` (dev, port 3000), `task web:build`, `task web:tokens` (regeneracja `app/tokens.css` z pakietu tokenów).
+
+### Shell
+
+Komendy w **bash** (Git Bash na Windowsie). Nie PowerShell.
+
+## Docker (dev)
+
+`docker-compose.yml` definiuje **dziewięć** usług backendu (plus `olivin-web`):
+
+| Kontener                | Rola                                   |
+| ----------------------- | -------------------------------------- |
+| `olivin-postgres`       | PostgreSQL 16, port hosta **5434**     |
+| `olivin-redis`          | cache + broker                         |
+| `olivin-minio`          | S3-compatible                          |
+| `olivin-mailhog`        | SMTP dev                               |
+| `olivin-libretranslate` | silnik tłumaczeń, `LT_LOAD_ONLY=pl,en` |
+| `olivin-django`         | Backend                                |
+| `olivin-celery-worker`  | Celery worker                          |
+| `olivin-celery-beat`    | Celery beat                            |
+| `olivin-celery-flower`  | Flower                                 |
+
+Profile: `dev`, `backend`, `full`, `local`, `test`.
+
+Exec: `docker exec -it olivin-django <komenda>` albo task.
+Testy integracyjne: `docker-compose.test.yml`, próg pokrycia **60%**.
+
+### Porty i env
+
+| Zmienna / usługa           | Wartość dev                                                                                               |
+| -------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `DJANGO_PORT`              | **8020**                                                                                                  |
+| Postgres host              | **5434** (`olivin-postgres`)                                                                              |
+| `EXPO_PUBLIC_BACKEND_URL`  | `127.0.0.1:8020` (web / iOS)                                                                              |
+| `EXPO_PUBLIC_EMULATOR_URL` | `10.0.2.2:8020` (emulator Androida)                                                                       |
+| `EXPO_PUBLIC_VERSION`      | `v1` — wersjonowanie API (`URLPathVersioning`)                                                            |
+| Sieć Docker                | **`olivin-network`** — musi istnieć przed `docker compose up`                                             |
+| `FREE_SHIPPING_THRESHOLD`  | **50000** groszy — próg darmowej dostawy wspólny dla sklepu (`components/shop.py`); pusta wartość wyłącza |
+
+Zmienne ładowane z `.env` oraz `.envs/dev/**` przez `dotenv:` w `Taskfile.yml`.
+
+## Ścieżki paczek lokalnych (opcjonalnie)
+
+Jeśli projekt używa lokalnych forków — wpisz ścieżki tutaj. Domyślnie: brak.
+
+## Lockfile (weryfikacja wersji)
+
+- Backend: `backend/pyproject.toml`, `backend/uv.lock`
+- Frontend: `frontend/package.json`, `frontend/bun.lock`
+
+| Warstwa           | Wersja / narzędzie                                                           |
+| ----------------- | ---------------------------------------------------------------------------- |
+| Python            | 3.12.10 (`.python-version`)                                                  |
+| Backend PM        | **uv** — `uv sync --extra dev`                                               |
+| Django / DRF      | **6.0.8** / 3.18.1 (`uv.lock`) — Django podbity o wersję główną w #51        |
+| Typecheck BE      | **Pyrefly** — `task lints:backend:typecheck`. Nie MyPy.                      |
+| Lint BE           | Ruff                                                                         |
+| Node              | 22.23.2 (`.nvmrc`) — React Native 0.86 wymaga ^20.19.4 albo ^22.13           |
+| Frontend PM       | **Bun** — `bun install --frozen-lockfile`                                    |
+| Expo / RN / React | SDK 57 / 0.86.3 / 19.2                                                       |
+| Web               | Next.js 16 (Turbopack), Tailwind v4, React 19.2 (przypięty do wersji z Expo) |
+| Monorepo JS       | Bun workspaces (`linker = "hoisted"`) + Turborepo 2                          |
+| Styling mobile    | NativeWind 4.2 (Tailwind v3)                                                 |
+| Stan              | TanStack Query (serwer) + Zustand (klient)                                   |
+| Formularze        | react-hook-form + Zod                                                        |
+| Testy BE          | pytest 9, markery `unit` / `integration` / `slow`                            |
+| Testy FE          | **brak** — żadnego runnera w `package.json`                                  |
+
+## Stan implementacji vs instruction-kit
+
+Opisz tu **tylko** rozjazdy tego repo względem docelowych modułów MCP
+(np. brak `apps/files` jeszcze, inny auth). Nie kopiuj stanu produktu do modules/ w kicie.
+
+### Stan implementacji — mierzony, nie deklarowany
 
 **Żywe:**
 
@@ -41,66 +169,15 @@ Nie zakładaj, że którakolwiek z nich cokolwiek zawiera. `Cart`, `Order`, `Pay
 
 **Nie istnieje po stronie frontendu:** `features/catalog`, `features/cart`, `features/checkout`, `features/orders`, `features/payments`. Są tylko `auth`, `account`, `profile`.
 
-## Wersje i narzędzia (lockfile = prawda)
+### Co zostało z przebudowy
 
-| Warstwa | Wersja / narzędzie |
-| --- | --- |
-| Python | 3.12.10 (`.python-version`) |
-| Backend PM | **uv** — `uv sync --extra dev` |
-| Django / DRF | **6.0.8** / 3.18.1 (`uv.lock`) — Django podbity o wersję główną w #51 |
-| Typecheck BE | **Pyrefly** — `task lints:backend:typecheck`. Nie MyPy. |
-| Lint BE | Ruff |
-| Node | 22.23.2 (`.nvmrc`) — React Native 0.86 wymaga ^20.19.4 albo ^22.13 |
-| Frontend PM | **Bun** — `bun install --frozen-lockfile` |
-| Expo / RN / React | SDK 57 / 0.86.3 / 19.2 |
-| Web | Next.js 16 (Turbopack), Tailwind v4, React 19.2 (przypięty do wersji z Expo) |
-| Monorepo JS | Bun workspaces (`linker = "hoisted"`) + Turborepo 2 |
-| Styling mobile | NativeWind 4.2 (Tailwind v3) |
-| Stan | TanStack Query (serwer) + Zustand (klient) |
-| Formularze | react-hook-form + Zod |
-| Testy BE | pytest 9, markery `unit` / `integration` / `slow` |
-| Testy FE | **brak** — żadnego runnera w `package.json` |
+Wykonane: monorepo, web ze stroną główną, pakiety, bramka Orvala. **Niewykonane:** test przeglądarkowy (#55), web w docker-compose (#56), tożsamość wizualna (paleta w tokenach jest robocza).
 
-## Taskfile — obowiązkowy punkt wejścia
+## Odstępstwa od modułów
 
-Główny plik `Taskfile.yml`, importy z `taskfiles/`. Istniejące namespace'y: `backend`, `db`, `mobile`, `web`, `emulator`, `shell`, `packages`, `ovral`, `test`, `lints`, `precommit`.
-
-Argumenty tasków po `--`, np. `task db:migrations:make -- accounts`.
-
-Przykłady: `task backend:run`, `task db:migrate`, `task test:backend-local -- src/tests/accounts/`, `task mobile:run` (Dev Client), `task ovral:generate`, `task lints:frontend:typecheck`.
-
-Namespace `mobile:` obsługuje aplikację Expo. Namespace `lints:frontend:*` obejmuje **wszystkie** workspace'y JavaScriptu i idzie przez Turborepo.
-
-Web: `task web:run` (dev, port 3000), `task web:build`, `task web:tokens` (regeneracja `app/tokens.css` z pakietu tokenów).
-
-## Shell
-
-Komendy w **bash** (Git Bash na Windowsie). Nie PowerShell.
-
-## Porty i env
-
-| Zmienna / usługa | Wartość dev |
-| --- | --- |
-| `DJANGO_PORT` | **8020** |
-| Postgres host | **5434** (`olivin-postgres`) |
-| `EXPO_PUBLIC_BACKEND_URL` | `127.0.0.1:8020` (web / iOS) |
-| `EXPO_PUBLIC_EMULATOR_URL` | `10.0.2.2:8020` (emulator Androida) |
-| `EXPO_PUBLIC_VERSION` | `v1` — wersjonowanie API (`URLPathVersioning`) |
-| Sieć Docker | **`olivin-network`** — musi istnieć przed `docker compose up` |
-| `FREE_SHIPPING_THRESHOLD` | **50000** groszy — próg darmowej dostawy wspólny dla sklepu (`components/shop.py`); pusta wartość wyłącza |
-
-Zmienne ładowane z `.env` oraz `.envs/dev/**` przez `dotenv:` w `Taskfile.yml`.
-
-## Docker Compose (dev)
-
-`docker-compose.yml` definiuje **dziewięć** usług backendu (plus `olivin-web`):
-
-`olivin-postgres` (PostgreSQL 16), `olivin-redis` (cache + broker), `olivin-minio` (S3-compatible), `olivin-mailhog` (SMTP dev), `olivin-libretranslate` (silnik tłumaczeń, `LT_LOAD_ONLY=pl,en`), `olivin-django`, `olivin-celery-worker`, `olivin-celery-beat`, `olivin-celery-flower`.
-
-Profile: `dev`, `backend`, `full`, `local`, `test`.
-
-Exec: `docker exec -it olivin-django <komenda>` albo task.
-Testy integracyjne: `docker-compose.test.yml`, próg pokrycia **60%**.
+Świadome wyjątki tego repo od treści modułów kita — overlay ma pierwszeństwo przed bundlem.
+Dopisuje `/kit-project-edit` (tryb odstępstwa), jedna linia na wyjątek:
+`- <Module ID> — zamiast <X z modułu> robimy <Y>, bo <powód>.` Domyślnie: brak.
 
 ## Auth (allauth headless — nie JWT)
 
@@ -112,31 +189,16 @@ Testy integracyjne: `docker-compose.test.yml`, próg pokrycia **60%**.
 - Frontend: `src/core/auth/`, `src/features/auth/`, ekrany `authorize.tsx`, `oauthredirect.tsx`.
 - `djangorestframework-simplejwt` jest w zależnościach, ale **nie jest używany** — pozostałość.
 
-## Orval — dual schema
-
-**Nie edytuj `frontend/packages/api/generated/**` ręcznie.**
-
-| Wejście | Plik (nie HTTP) | Mutator |
-| --- | --- | --- |
-| Allauth | `backend/src/allauth-schema.json` (snapshot; odśwież `task ovral:schema:allauth`) | `src/auth-mutator.ts` |
-| DRF apps | `backend/src/schema.yaml` (pilnowany przez `backend:schema:check`) | `src/app-mutator.ts` |
-
-Generowane są też schematy Zod (`.zod.ts`) dla obu wejść.
-
-`APPS_TAGS` w `frontend/packages/api/orval.config.js` (obecnie): **`Addresses`, `Cart`, `Categories`, `Collections`, `Consents`, `Orders`, `Products`, `Profiles`, `Shipping`, `Health`**. Nowy viewset domenowy bez dopisania tagu nie trafi do klienta — cichy błąd.
-
-Sekwencja po zmianie API: backend → migracje → regeneracja `schema.yaml` → tag w `APPS_TAGS` → `task ovral:generate` → `task lints:frontend:typecheck`. Bramka: `task ovral:check` (offline, w CI).
-
 ## Web vs mobile (Expo, stan obecny)
 
-| Cel | Komenda |
-| --- | --- |
-| Mobile (domyślnie) | `task mobile:run` — Dev Client + Metro `--lan --dev-client` + Android |
-| Expo Go (bez modułów natywnych) | `task mobile:run:go` |
-| Metro sam | `task mobile:metro` |
-| Build Dev Client | `task mobile:build:android` |
-| Regeneracja projektu natywnego | `task mobile:prebuild:clean` |
-| Web | `task web:run` — Next dev na porcie 3000, natywnie, poza Dockerem |
+| Cel                             | Komenda                                                               |
+| ------------------------------- | --------------------------------------------------------------------- |
+| Mobile (domyślnie)              | `task mobile:run` — Dev Client + Metro `--lan --dev-client` + Android |
+| Expo Go (bez modułów natywnych) | `task mobile:run:go`                                                  |
+| Metro sam                       | `task mobile:metro`                                                   |
+| Build Dev Client                | `task mobile:build:android`                                           |
+| Regeneracja projektu natywnego  | `task mobile:prebuild:clean`                                          |
+| Web                             | `task web:run` — Next dev na porcie 3000, natywnie, poza Dockerem     |
 
 `web.output: "static"` w `app.config.js`. Platforma w kodzie przez `moduleSuffixes: [".native", ".web", ""]`. Pliki: `session-token.storage.native.ts` (SecureStore) vs `.web.ts` (cookies). Wybór klienta allauth: `src/core/auth/platform.ts`.
 
@@ -206,7 +268,3 @@ Adaptery w **`core/integrations/`** — kurs kruszcu (`metal_rate/`, dostawca pr
 
 - Backend: `task test:backend-local -- <ścieżka>`, `task lints:backend:ruff:check`, `task lints:backend:typecheck`
 - Frontend: `task lints:frontend:lint:check`, `task lints:frontend:typecheck`
-
-## Co zostało z przebudowy
-
-Wykonane: monorepo, web ze stroną główną, pakiety, bramka Orvala. **Niewykonane:** test przeglądarkowy (#55), web w docker-compose (#56), tożsamość wizualna (paleta w tokenach jest robocza).
