@@ -1,6 +1,11 @@
 from django.contrib import admin
 
-from apps.notifications.models import Notification, NotificationPreference, PushDevice
+from apps.notifications.models import (
+    NewsletterSubscription,
+    Notification,
+    NotificationPreference,
+    PushDevice,
+)
 
 
 @admin.register(Notification)
@@ -31,3 +36,16 @@ class PushDeviceAdmin(admin.ModelAdmin):
     list_filter = ("platform",)
     search_fields = ("user__email", "token")
     readonly_fields = ("user", "token", "platform", "last_used_at")
+
+
+@admin.register(NewsletterSubscription)
+class NewsletterSubscriptionAdmin(admin.ModelAdmin):
+    """Subskrypcje newslettera — do wglądu; zapis i wypis idą przez linki z maili."""
+
+    list_display = ("email", "status", "confirmed_at", "created_at")
+    list_filter = ("status",)
+    search_fields = ("email",)
+    readonly_fields = ("email", "status", "confirmed_at")
+
+    def has_add_permission(self, request) -> bool:
+        return False

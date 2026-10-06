@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from typing import TYPE_CHECKING
 
 from django.db import models
@@ -167,3 +168,47 @@ class PushDevice(TimestampedModel):
 
     def __str__(self) -> str:
         return f"{self.platform} — {self.user}"  # type: ignore[missing-attribute]
+
+
+class NewsletterStatus(models.TextChoices):
+    """Stan subskrypcji newslettera (`CONTEXT.md`, NewsletterSubscription)."""
+
+    PENDING = "pending", "Niepotwierdzona"
+    ACTIVE = "active", "Aktywna"
+    UNSUBSCRIBED = "unsubscribed", "Wypisana"
+
+
+class NewsletterSubscription(TimestampedModel):
+    """Zapis na newsletter bez konta, aktywny po potwierdzeniu linkiem (#203).
+
+    Adres jest przechowywany małymi literami, więc unikalność pola wystarcza
+    do deduplikacji. Token potwierdzenia jest odnawiany przy ponownym
+    zapisie po wypisie; token wypisu jest stały — każdy wysłany link działa.
+    Po założeniu konta na ten adres subskrypcja przechodzi w
+    `NotificationPreference.marketing_email` i znika (`newsletter.py`).
+    """
+
+    email = models.EmailField(unique=True, help_text="Adres zapisany małymi literami")
+    status = models.CharField(
+        max_length=16,
+        choices=NewsletterStatus.choices,
+        default=NewsletterStatus.PENDING,
+        help_text="Niepotwierdzona do kliknięcia linku, potem aktywna albo wypisana",
+    )
+    confirmation_token = models.UUIDField(
+        default=uuid.uuid4, unique=True, editable=False
+    )
+    unsubscribe_token = models.UUIDField(
+        default=uuid.uuid4, unique=True, editable=False
+    )
+    confirmed_at = models.DateTimeField(
+        null=True, blank=True, help_text="Chwila potwierdzenia linkiem"
+    )
+
+    class Meta:
+        verbose_name = "Subskrypcja newslettera"
+        verbose_name_plural = "Subskrypcje newslettera"
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self) -> str:
+        return f"{self.email} ({self.status})"
