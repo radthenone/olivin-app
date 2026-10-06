@@ -1,0 +1,28 @@
+# Profil projektu — jedyne miejsce konfiguracji kita (Tiery zamiast presetów).
+# Jeden Tier = jeden Stack albo `none`. Puste Tiery = sam core.
+# Wariant starszego podejścia: `react@legacy`, `angular@rxjs`.
+# Po zmianie: `kit-ai reload` odświeża pliki kita (agenci, mcp.json, hooki).
+
+name: olivin-app-kit-test
+language: pl
+clients: claude,codex,vscode,opencode,antigravity
+
+backend: django
+web: react
+mobile: expo
+
+codegen: orval
+
+include:
+  - arch:docker-structure
+  - arch:taskfile
+  - arch:ci-cd
+  - arch:monorepo-layout
+  - arch:fe-be-separation
+
+patterns:
+  - capability-provider
+  - webhooks
+
+overlays:
+  - .ai/project.md

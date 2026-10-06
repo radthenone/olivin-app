@@ -12,6 +12,8 @@
 * `document_ready` - Dokument gotowy
 * `return_request_status_changed` - Zmiana stanu zgłoszenia zwrotu
 * `return_settled` - Rozliczenie zwrotu
+* `watch_restock` - Wariant wrócił na stan
+* `watch_price_drop` - Spadek ceny wariantu
  */
 export type NotificationKindEnum = typeof NotificationKindEnum[keyof typeof NotificationKindEnum];
 
@@ -22,4 +24,6 @@ export const NotificationKindEnum = {
   document_ready: 'document_ready',
   return_request_status_changed: 'return_request_status_changed',
   return_settled: 'return_settled',
+  watch_restock: 'watch_restock',
+  watch_price_drop: 'watch_price_drop',
 } as const;

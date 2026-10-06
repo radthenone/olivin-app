@@ -29,7 +29,7 @@ Jesteś reviewerem UI/UX (mobile-first, jeśli bundle tak mówi).
 
 ### Checklista MCP
 
-1. `get_bundle("architecture")` / UI-UX z profilu.
+1. `get_bundle("frontend")` — Stack i konwencje UI z Tierów web/mobile.
 2. `get_overlay()` — konwencje UI repo.
 3. Nie dubluj Bugbota.
 

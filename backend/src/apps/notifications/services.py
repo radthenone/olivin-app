@@ -44,6 +44,15 @@ _TEMPLATES: dict[str, tuple[str, str]] = {
         "Zwrot do zamówienia {order_number} rozliczony na {compensation_amount}: "
         "{compensation_form}.",
     ),
+    "watch_restock": (
+        "Wariant {variant_sku} wrócił na stan",
+        "Obserwowany wariant {variant_sku} ({product_name}) jest znowu dostępny.",
+    ),
+    "watch_price_drop": (
+        "Cena wariantu {variant_sku} spadła",
+        "Obserwowany wariant {variant_sku} ({product_name}) stanieje: "
+        "było {old_price}, jest {new_price}.",
+    ),
 }
 
 

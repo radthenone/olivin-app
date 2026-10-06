@@ -32,4 +32,15 @@ def recalculate_prices(metal: str, fineness: str) -> int:
 
     if changed:
         ProductVariant.objects.bulk_update(changed, ["price", "updated_at"])
+        # `bulk_update` omija sygnały — wyzwalacz spadku ceny wołany wprost.
+        # Serwis sam odfiltruje warianty, które zdrożały albo stoją w miejscu.
+        try:
+            from apps.watches.services import notify_price_watches
+
+            for variant in changed:
+                notify_price_watches(variant)
+        except Exception:  # pragma: no cover - powiadomienie nie psuje wyceny
+            import logging
+
+            logging.getLogger(__name__).exception("Watch price check failed")
     return len(changed)

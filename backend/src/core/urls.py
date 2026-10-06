@@ -42,6 +42,7 @@ urlpatterns = [
     path("collections/", include("apps.collections.urls")),
     path("consents/", include("apps.consents.urls")),
     path("favorites/", include("apps.favorites.urls")),
+    path("watches/", include("apps.watches.urls")),
     path("notifications/", include("apps.notifications.urls")),
     path("payments/", include("apps.payments.urls")),
     path("products/", include("apps.products.urls")),
