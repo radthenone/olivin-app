@@ -109,6 +109,15 @@ Testy integracyjne: `docker-compose.test.yml`, próg pokrycia **60%**.
 
 Zmienne ładowane z `.env` oraz `.envs/dev/**` przez `dotenv:` w `Taskfile.yml`.
 
+### Serwer VPS — tylko lekkie komendy
+
+Dotyczy pracy na zdalnym serwerze (VPS, np. Mikrus), a nie na lokalnej maszynie dewelopera. Rozpoznasz go po Linuksie bez desktopu z małymi zasobami (`nproc` ≤ 2 albo `free -g` ≤ 8 GB) albo po kontenerze LXC (`systemd-detect-virt` → `lxc`). Na takim serwerze mogą działać cudze usługi produkcyjne, które nie mogą paść.
+
+- **Nie** uruchamiaj: `docker compose up/build/run`, `task test:backend`, `test:backend-cmd`, `test:backend-watch`, `test:backend-integration`, `test:backend-build`, `task web:run` (`next dev`), `web:build`, `web:e2e`.
+- **Wolno**: `task test:backend-local`, `test:backend-local-unit`, `lints:backend:ruff:check`, `lints:backend:typecheck`, `lints:frontend:lint:check`, `lints:frontend:typecheck`, `db:migrations:check`, `backend:schema:check`.
+- Resztę weryfikuje CI na GitHubie (ten sam zestaw bez Dockera + e2e) — push brancha i sprawdź checki PR.
+- Nie restartuj `dockerd` i nie czyść cudzych kontenerów ani obrazów (żadnego `docker system prune`).
+
 ## Ścieżki paczek lokalnych (opcjonalnie)
 
 Jeśli projekt używa lokalnych forków — wpisz ścieżki tutaj. Domyślnie: brak.
