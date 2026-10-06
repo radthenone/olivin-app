@@ -261,3 +261,25 @@ def send_promotion_announcement(promotion: Promotion) -> int:
             data={"promotion_id": str(promotion.pk)},
         )
     return len(recipients)
+
+
+def queue_promotion_announcement(promotion: Promotion) -> bool:
+    """Kolejkuje ogłoszenie raz na promocję; `False`, gdy już ogłoszona.
+
+    Warunkowy `UPDATE ... WHERE announced_at IS NULL` rozstrzyga wyścig
+    dwóch kliknięć w panelu — tylko jedno zmienia wiersz i kolejkuje zadanie.
+    Zadanie startuje po commicie, żeby nie wyprzedzić zapisu.
+    """
+    from apps.notifications import tasks
+    from apps.promotions.models import Promotion
+
+    claimed = Promotion.objects.filter(
+        pk=promotion.pk, announced_at__isnull=True
+    ).update(announced_at=timezone.now())
+    if not claimed:
+        return False
+    promotion_id = str(promotion.pk)
+    transaction.on_commit(
+        lambda: tasks.announce_promotion.delay(promotion_id=promotion_id)
+    )
+    return True
