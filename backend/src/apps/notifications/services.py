@@ -12,6 +12,7 @@ from apps.notifications.models import (
     TRANSACTIONAL_KINDS,
     Notification,
     NotificationPreference,
+    PushDevice,
 )
 from core.integrations.notifications.mail import send_notification_email
 
@@ -43,6 +44,15 @@ _TEMPLATES: dict[str, tuple[str, str]] = {
         "Zwrot do zamówienia {order_number} rozliczony na {compensation_amount}: "
         "{compensation_form}.",
     ),
+    "watch_restock": (
+        "Wariant {variant_sku} wrócił na stan",
+        "Obserwowany wariant {variant_sku} ({product_name}) jest znowu dostępny.",
+    ),
+    "watch_price_drop": (
+        "Cena wariantu {variant_sku} spadła",
+        "Obserwowany wariant {variant_sku} ({product_name}) stanieje: "
+        "było {old_price}, jest {new_price}.",
+    ),
 }
 
 
@@ -67,6 +77,60 @@ def _has_marketing_consent(user: CustomUser) -> bool:
     return NotificationPreference.for_user(user).marketing_email
 
 
+def _has_marketing_push_consent(user: CustomUser) -> bool:
+    return NotificationPreference.for_user(user).marketing_push
+
+
+def _should_send_push(user: CustomUser | None, kind: str) -> bool:
+    """Czy push dla tego rodzaju i klienta (issue #202).
+
+    Transakcyjne zawsze; marketingowe tylko za zgodą `marketing_push`.
+    Gość nigdy — nie ma urządzeń.
+    """
+    if user is None:
+        return False
+    if kind in TRANSACTIONAL_KINDS:
+        return True
+    return _has_marketing_push_consent(user)
+
+
+def register_push_device(*, user: CustomUser, token: str, platform: str) -> PushDevice:
+    """Rejestruje urządzenie push; powtórzenie odświeża właściciela i czas.
+
+    Token jest globalnie unikalny: to samo urządzenie po wylogowaniu
+    i zalogowaniu na inne konto przechodzi na nowe konto — stąd
+    `update_or_create` po tokenie, nie po parze (konto, token). Wyścig
+    dwóch równoległych rejestracji rozstrzyga ograniczenie unikalności.
+    """
+    from django.db import IntegrityError
+    from django.utils import timezone
+
+    from apps.notifications.models import PushDevice
+
+    token = token.strip()
+    try:
+        device, _ = PushDevice.objects.update_or_create(
+            token=token,
+            defaults={
+                "user": user,
+                "platform": platform,
+                "last_used_at": timezone.now(),
+            },
+        )
+    except IntegrityError:
+        device = PushDevice.objects.get(token=token)
+        device.user = user  # type: ignore[assignment]
+        device.platform = platform
+        device.last_used_at = timezone.now()
+        device.save(update_fields=["user", "platform", "last_used_at", "updated_at"])
+    return device
+
+
+def unregister_push_device(*, user: CustomUser, token: str) -> None:
+    """Wyrejestrowuje urządzenie; brak dopasowania też jest sukcesem."""
+    PushDevice.objects.filter(user=user, token=token.strip()).delete()
+
+
 def notify(
     user_or_email: CustomUser | str,
     kind: str,
@@ -75,6 +139,10 @@ def notify(
     email: str | None = None,
 ) -> Notification | None:
     """Zapisuje powiadomienie (dla konta) i wysyła e-mail (`CONTEXT.md`, Notification).
+
+    Kanał push (issue #202) jest kolejkowany jako zadanie Celery po commicie:
+    transakcyjne zawsze, marketingowe tylko za zgodą `marketing_push`.
+    Błąd pusha nie blokuje e-maila ani rekordu.
 
     Transakcyjne rodzaje (`TRANSACTIONAL_KINDS`) docierają zawsze; pozostałe
     (marketingowe) tylko za zgodą `NotificationPreference.marketing_email` —
@@ -102,12 +170,40 @@ def notify(
         user.email if user is not None else str(user_or_email)  # type: ignore[missing-attribute]
     )
 
+    subject, message = _render(kind, payload)
+
+    # Push jest niezależnym kanałem z własną zgodą (`marketing_push`):
+    # kolejkowanie przed bramką e-mailową, żeby marketing z samym `push`
+    # (bez `marketing_email`) też doszedł. Transakcyjne zawsze, gość nigdy.
+    def _send_push() -> None:
+        if not _should_send_push(user, kind):
+            return
+        try:
+            from typing import Any, cast
+
+            from apps.notifications.tasks import send_push_notification
+
+            assert user is not None
+            # `cast(Any, ...)` jak w `send_notification_email`: pyrefly
+            # widzi w udekorowanym zadaniu Celery `list[str]`, nie callable.
+            task = cast(Any, send_push_notification)
+            task.delay(
+                user_id=str(user.pk),
+                title=subject,
+                body=message,
+                data=payload,
+            )
+        except Exception:
+            # Push nie blokuje pozostałych kanałów — błąd kolejkowania
+            # kończy się logiem, nie wyjątkiem z callbacku po commicie.
+            logger.exception("Nie udało się zakolejkować pusha %r", kind)
+
+    transaction.on_commit(_send_push, robust=True)
+
     if kind not in TRANSACTIONAL_KINDS and not (
         user is not None and _has_marketing_consent(user)
     ):
         return None
-
-    subject, message = _render(kind, payload)
 
     notification: Notification | None = None
     if user is not None:

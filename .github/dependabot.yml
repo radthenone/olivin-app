@@ -74,3 +74,15 @@ updates:
       - dependency-name: tailwindcss
         update-types:
           - version-update:semver-major
+      # ESLint 10 nie ma jeszcze wsparcia w eslint-plugin-react (peer `eslint ^9.7`,
+      # ciągnięty przez eslint-config-next i eslint-config-expo) — lint pada na
+      # `contextOrFilename.getFilename is not a function` (PR #249). Major wchodzi
+      # ręcznie, gdy plugin ogłosi wsparcie.
+      - dependency-name: eslint
+        update-types:
+          - version-update:semver-major
+      # Typy Node mają odpowiadać runtime'owi z `.nvmrc`. Major typów idzie razem
+      # z podniesieniem Node, nie sam (PR #251 chciał v26 przy Node 22).
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major

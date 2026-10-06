@@ -18,7 +18,9 @@ export interface Notification {
   * `order_paid` - Zamówienie opłacone
   * `document_ready` - Dokument gotowy
   * `return_request_status_changed` - Zmiana stanu zgłoszenia zwrotu
-  * `return_settled` - Rozliczenie zwrotu */
+  * `return_settled` - Rozliczenie zwrotu
+  * `watch_restock` - Wariant wrócił na stan
+  * `watch_price_drop` - Spadek ceny wariantu */
   readonly kind: NotificationKindEnum;
   /** Treść powiadomienia do wyświetlenia */
   readonly message: string;

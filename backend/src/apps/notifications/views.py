@@ -9,11 +9,15 @@ from apps.notifications.models import Notification, NotificationPreference
 from apps.notifications.schema import (
     notification_preference_schema,
     notification_schema,
+    push_device_schema,
 )
 from apps.notifications.serializers import (
     NotificationPreferenceSerializer,
     NotificationSerializer,
+    PushDeviceSerializer,
+    PushDeviceWriteSerializer,
 )
+from apps.notifications.services import register_push_device, unregister_push_device
 
 
 @notification_schema
@@ -54,3 +58,44 @@ class NotificationPreferenceView(generics.RetrieveUpdateAPIView):
 
     def get_object(self) -> NotificationPreference:
         return NotificationPreference.for_user(self.request.user)  # type: ignore[bad-argument-type]
+
+
+@push_device_schema
+class PushDeviceViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """Urządzenia push klienta (`CONTEXT.md`, PushDevice).
+
+    Actions:
+    - list: GET /notifications/devices/ — urządzenia zalogowanego klienta
+    - create: POST /notifications/devices/ — rejestracja (idempotentna)
+    - destroy: DELETE /notifications/devices/{token}/ — wyrejestrowanie
+
+    Rejestracja po zalogowaniu w aplikacji mobilnej, wyrejestrowanie przy
+    wylogowaniu. Token w adresie jest URL-kodowany przez klienta.
+    """
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = PushDeviceSerializer
+    lookup_field = "token"
+    lookup_url_kwarg = "token"
+
+    def get_queryset(self):
+        from apps.notifications.models import PushDevice
+
+        return PushDevice.objects.filter(user=self.request.user)
+
+    def create(self, request, *args, **kwargs) -> Response:
+        payload = PushDeviceWriteSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        device = register_push_device(
+            user=request.user,
+            token=payload.validated_data["token"],
+            platform=payload.validated_data["platform"],
+        )
+        return Response(
+            PushDeviceSerializer(device).data, status=status.HTTP_201_CREATED
+        )
+
+    def destroy(self, request, *args, **kwargs) -> Response:
+        """Wyrejestrowanie po tokenie — brak dopasowania to też 204."""
+        unregister_push_device(user=request.user, token=kwargs["token"])
+        return Response(status=status.HTTP_204_NO_CONTENT)
