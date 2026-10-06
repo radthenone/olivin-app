@@ -6,6 +6,8 @@ import datetime
 from unittest.mock import patch
 
 import pytest
+from allauth.account.models import EmailAddress
+from allauth.account.signals import email_confirmed
 
 from apps.consents.models import Consent, ConsentKind
 from apps.notifications import newsletter
@@ -168,3 +170,72 @@ class TestUnsubscribe:
     def test_unknown_token_returns_false(self):
         assert newsletter.unsubscribe("00000000-0000-0000-0000-000000000000") is False
         assert newsletter.unsubscribe("garbage") is False
+
+
+def _confirm_account_email(user, email: str | None = None) -> None:
+    address = EmailAddress.objects.create(
+        user=user, email=email or user.email, verified=True, primary=True
+    )
+    email_confirmed.send(sender=EmailAddress, request=None, email_address=address)
+
+
+@pytest.mark.django_db
+class TestTransferToAccount:
+    """Przejście na konto dopiero po potwierdzeniu adresu konta — jak zamówienia gościa.
+
+    Samo założenie konta na cudzy adres nie może przejąć subskrypcji: konto
+    niepotwierdzone jest potem sprzątane, a subskrypcja przepadłaby razem z nim.
+    """
+
+    def test_confirmed_account_email_moves_active_subscription_to_preference(self):
+        NewsletterSubscription.objects.create(
+            email="client@test.com", status=NewsletterStatus.ACTIVE
+        )
+        user = UserFactory(email="Client@test.com")
+
+        _confirm_account_email(user)
+
+        assert NotificationPreference.for_user(user).marketing_email is True
+        assert not NewsletterSubscription.objects.exists()
+
+    def test_unconfirmed_account_does_not_take_subscription(self):
+        NewsletterSubscription.objects.create(
+            email="client@test.com", status=NewsletterStatus.ACTIVE
+        )
+
+        user = UserFactory(email="client@test.com")
+
+        assert NotificationPreference.for_user(user).marketing_email is False
+        assert NewsletterSubscription.objects.filter(
+            status=NewsletterStatus.ACTIVE
+        ).exists()
+
+    def test_pending_subscription_is_not_moved_on_email_confirmation(self):
+        NewsletterSubscription.objects.create(email="client@test.com")
+        user = UserFactory(email="client@test.com")
+
+        _confirm_account_email(user)
+
+        assert NotificationPreference.for_user(user).marketing_email is False
+        assert NewsletterSubscription.objects.filter(
+            status=NewsletterStatus.PENDING
+        ).exists()
+
+    def test_confirming_subscription_of_verified_account_moves_to_preference(self):
+        subscription = NewsletterSubscription.objects.create(email="client@test.com")
+        user = UserFactory(email="client@test.com")
+        _confirm_account_email(user)
+
+        assert newsletter.confirm(str(subscription.confirmation_token)) is True
+
+        assert NotificationPreference.for_user(user).marketing_email is True
+        assert not NewsletterSubscription.objects.exists()
+
+    def test_confirming_subscription_of_unverified_account_keeps_subscription(self):
+        subscription = NewsletterSubscription.objects.create(email="client@test.com")
+        user = UserFactory(email="client@test.com")
+
+        assert newsletter.confirm(str(subscription.confirmation_token)) is True
+
+        assert NotificationPreference.for_user(user).marketing_email is False
+        assert NewsletterSubscription.objects.get().status == NewsletterStatus.ACTIVE

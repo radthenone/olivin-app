@@ -9,6 +9,7 @@ tabeli i bez ujawniania identyfikatora konta.
 from __future__ import annotations
 
 import uuid
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.core import signing
@@ -22,6 +23,9 @@ from apps.notifications.models import (
     NotificationPreference,
 )
 from core.integrations.notifications.mail import send_notification_email
+
+if TYPE_CHECKING:
+    from apps.accounts.models import CustomUser
 
 _UNSUBSCRIBE_SALT = "newsletter-unsubscribe"
 
@@ -122,8 +126,8 @@ def subscribe(email: str) -> None:
 def confirm(token: str) -> bool:
     """Potwierdza niepotwierdzoną subskrypcję; `False` dla nieznanego linku.
 
-    Gdy na adres istnieje już konto, subskrypcja od razu przechodzi w jego
-    preferencje (`transfer_to_account`).
+    Gdy adres jest już potwierdzonym adresem konta, subskrypcja od razu
+    przechodzi w jego preferencje (`transfer_to_account`).
     """
     parsed = _parse_uuid(token)
     if parsed is None:
@@ -139,11 +143,15 @@ def confirm(token: str) -> bool:
     subscription.confirmed_at = timezone.now()
     subscription.save(update_fields=["status", "confirmed_at", "updated_at"])
 
-    from apps.accounts.models import CustomUser
+    from allauth.account.models import EmailAddress
 
-    user = CustomUser.objects.filter(email__iexact=subscription.email).first()
-    if user is not None:
-        transfer_to_account(user)
+    verified = (
+        EmailAddress.objects.filter(email__iexact=subscription.email, verified=True)
+        .select_related("user")
+        .first()
+    )
+    if verified is not None:
+        transfer_to_account(verified.user, email=subscription.email)
     return True
 
 
@@ -174,10 +182,15 @@ def unsubscribe(token: str) -> bool:
     return True
 
 
-def transfer_to_account(user) -> None:
-    """Przenosi aktywną subskrypcję adresu konta do `marketing_email` (#203)."""
+def transfer_to_account(user: CustomUser, *, email: str) -> None:
+    """Przenosi aktywną subskrypcję potwierdzonego adresu konta do `marketing_email`.
+
+    Subskrypcja znika — od teraz zgodę trzyma preferencja konta. Zgoda gościa
+    (`Consent`) zostaje jako historia. Niepotwierdzona subskrypcja czeka na
+    kliknięcie linku (`confirm` przeniesie ją wtedy sama).
+    """
     deleted, _ = NewsletterSubscription.objects.filter(
-        email=_normalise(user.email), status=NewsletterStatus.ACTIVE
+        email=_normalise(email), status=NewsletterStatus.ACTIVE
     ).delete()
     if deleted:
         preference = NotificationPreference.for_user(user)
