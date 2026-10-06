@@ -1346,6 +1346,94 @@ paths:
       responses:
         '204':
           description: No response body
+  /notifications/newsletter/confirm/:
+    post:
+      operationId: notifications_newsletter_confirm_create
+      description: Token z linku w mailu potwierdzenia. 404 dla nieznanego tokenu.
+      summary: Potwierdzenie zapisu na newsletter
+      tags:
+      - Notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterToken'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NewsletterToken'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NewsletterToken'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterDetail'
+          description: ''
+  /notifications/newsletter/subscribe/:
+    post:
+      operationId: notifications_newsletter_subscribe_create
+      description: Bez logowania. Zawsze 202 z tą samą treścią — odpowiedź nie zdradza,
+        czy adres był już zapisany. Na adres trafia link potwierdzenia; 400, gdy brak
+        bieżącej wersji zgody marketingowej.
+      summary: Zapis na newsletter
+      tags:
+      - Notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterSubscribe'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NewsletterSubscribe'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NewsletterSubscribe'
+        required: true
+      security:
+      - {}
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterDetail'
+          description: ''
+  /notifications/newsletter/unsubscribe/:
+    post:
+      operationId: notifications_newsletter_unsubscribe_create
+      description: Bez logowania, token z linku w stopce maila — subskrypcji albo
+        konta (wyłącza wtedy zgodę marketingową e-mail konta). 404 dla nieznanego
+        tokenu.
+      summary: Wypis z newslettera
+      tags:
+      - Notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterToken'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NewsletterToken'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NewsletterToken'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterDetail'
+          description: ''
   /notifications/preferences/:
     get:
       operationId: notifications_preferences_retrieve
@@ -4119,6 +4207,35 @@ components:
       - rating
       - status
       - updatedAt
+    NewsletterDetail:
+      type: object
+      description: Komunikat do wyświetlenia po zapisie, potwierdzeniu albo wypisie.
+      properties:
+        detail:
+          type: string
+          readOnly: true
+      required:
+      - detail
+    NewsletterSubscribe:
+      type: object
+      description: Zapis na newsletter — sam adres; zgodę marketingową dobiera backend.
+      properties:
+        email:
+          type: string
+          format: email
+          description: Adres do zapisu
+      required:
+      - email
+    NewsletterToken:
+      type: object
+      description: Token z linku w mailu — potwierdzenia albo wypisu.
+      properties:
+        token:
+          type: string
+          description: Token z linku w mailu
+          maxLength: 512
+      required:
+      - token
     Notification:
       type: object
       description: Powiadomienie klienta — tylko do odczytu; oznaczenie odczytania

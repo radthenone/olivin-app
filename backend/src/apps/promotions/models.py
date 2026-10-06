@@ -112,6 +112,12 @@ class Promotion(TimestampedModel):
         blank=True,
         help_text="Ile zamówień łącznie może z niej skorzystać; puste — bez limitu",
     )
+    announced_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        editable=False,
+        help_text="Chwila ogłoszenia klientom z panelu; ogłasza się raz (#203)",
+    )
     min_cart_value = MoneyAmountField(
         null=True,
         blank=True,

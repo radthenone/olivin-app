@@ -24,3 +24,17 @@ SHOP_OWNER_EMAIL = str(
     os.environ.get("SHOP_OWNER_EMAIL")
     or os.environ.get("DJANGO_SUPERUSER_EMAIL", "admin@example.com")
 )
+
+# Linki z maili newslettera (#203) prowadzą na ekrany web, które wołają API
+# potwierdzenia i wypisu. `{token}` podstawia backend.
+NEWSLETTER_CONFIRM_URL = str(
+    os.environ.get(
+        "NEWSLETTER_CONFIRM_URL", "http://localhost:3000/newsletter/confirm/{token}"
+    )
+)
+NEWSLETTER_UNSUBSCRIBE_URL = str(
+    os.environ.get(
+        "NEWSLETTER_UNSUBSCRIBE_URL",
+        "http://localhost:3000/newsletter/unsubscribe/{token}",
+    )
+)

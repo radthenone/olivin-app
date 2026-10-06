@@ -52,3 +52,19 @@ def send_push_notification(
             last_used_at=timezone.now()
         )
     return len(tokens) - len(invalid)
+
+
+@shared_task
+def announce_promotion(*, promotion_id: str) -> int:
+    """Ogłoszenie promocji w tle — akcja panelu kolejkuje je raz (#203).
+
+    Ochronę przed podwójnym ogłoszeniem trzyma `Promotion.announced_at`
+    ustawiane przed zakolejkowaniem (`queue_promotion_announcement`).
+    """
+    from apps.notifications.newsletter import send_promotion_announcement
+    from apps.promotions.models import Promotion
+
+    promotion = Promotion.objects.filter(pk=promotion_id).first()
+    if promotion is None:
+        return 0
+    return send_promotion_announcement(promotion)

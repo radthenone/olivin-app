@@ -25,6 +25,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  NewsletterDetail,
+  NewsletterSubscribe,
+  NewsletterToken,
   Notification,
   NotificationPreference,
   NotificationsDevicesListParams,
@@ -593,6 +596,306 @@ export const useNotificationsDevicesDestroy = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getNotificationsDevicesDestroyMutationOptions(options), queryClient);
+    }
+    export type notificationsNewsletterConfirmCreateResponse200 = {
+  data: NewsletterDetail
+  status: 200
+}
+
+export type notificationsNewsletterConfirmCreateResponseSuccess = (notificationsNewsletterConfirmCreateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type notificationsNewsletterConfirmCreateResponse = (notificationsNewsletterConfirmCreateResponseSuccess)
+
+export const getNotificationsNewsletterConfirmCreateUrl = () => {
+
+
+
+
+  return `/notifications/newsletter/confirm/`
+}
+
+/**
+ * Token z linku w mailu potwierdzenia. 404 dla nieznanego tokenu.
+ * @summary Potwierdzenie zapisu na newsletter
+ */
+export const notificationsNewsletterConfirmCreate = async (newsletterToken: NewsletterToken, options?: Parameters<typeof appInstance>[1]): Promise<notificationsNewsletterConfirmCreateResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return appInstance<notificationsNewsletterConfirmCreateResponse>(getNotificationsNewsletterConfirmCreateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newsletterToken)
+  }
+);}
+
+
+
+
+
+export const getNotificationsNewsletterConfirmCreateMutationKey = () => ['notificationsNewsletterConfirmCreate'] as const;
+
+export const getNotificationsNewsletterConfirmCreateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof notificationsNewsletterConfirmCreate>>, TError,NotificationsNewsletterConfirmCreateMutationVariables, TContext>, request?: SecondParameter<typeof appInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof notificationsNewsletterConfirmCreate>>, TError,NotificationsNewsletterConfirmCreateMutationVariables, TContext> => {
+
+const mutationKey = getNotificationsNewsletterConfirmCreateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof notificationsNewsletterConfirmCreate>>, NotificationsNewsletterConfirmCreateMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  notificationsNewsletterConfirmCreate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type NotificationsNewsletterConfirmCreateMutationResult = NonNullable<Awaited<ReturnType<typeof notificationsNewsletterConfirmCreate>>>
+    export type NotificationsNewsletterConfirmCreateMutationBody = BodyType<NewsletterToken>
+    export type NotificationsNewsletterConfirmCreateMutationError = ErrorType<unknown>
+    export type NotificationsNewsletterConfirmCreateMutationVariables = {data: BodyType<NewsletterToken>}
+
+    /**
+ * @summary Potwierdzenie zapisu na newsletter
+ */
+export const useNotificationsNewsletterConfirmCreate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof notificationsNewsletterConfirmCreate>>, TError,NotificationsNewsletterConfirmCreateMutationVariables, TContext>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof notificationsNewsletterConfirmCreate>>,
+        TError,
+        NotificationsNewsletterConfirmCreateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getNotificationsNewsletterConfirmCreateMutationOptions(options), queryClient);
+    }
+    export type notificationsNewsletterSubscribeCreateResponse202 = {
+  data: NewsletterDetail
+  status: 202
+}
+
+export type notificationsNewsletterSubscribeCreateResponseSuccess = (notificationsNewsletterSubscribeCreateResponse202) & {
+  headers: Headers;
+};
+;
+
+export type notificationsNewsletterSubscribeCreateResponse = (notificationsNewsletterSubscribeCreateResponseSuccess)
+
+export const getNotificationsNewsletterSubscribeCreateUrl = () => {
+
+
+
+
+  return `/notifications/newsletter/subscribe/`
+}
+
+/**
+ * Bez logowania. Zawsze 202 z tą samą treścią — odpowiedź nie zdradza, czy adres był już zapisany. Na adres trafia link potwierdzenia; 400, gdy brak bieżącej wersji zgody marketingowej.
+ * @summary Zapis na newsletter
+ */
+export const notificationsNewsletterSubscribeCreate = async (newsletterSubscribe: NewsletterSubscribe, options?: Parameters<typeof appInstance>[1]): Promise<notificationsNewsletterSubscribeCreateResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return appInstance<notificationsNewsletterSubscribeCreateResponse>(getNotificationsNewsletterSubscribeCreateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newsletterSubscribe)
+  }
+);}
+
+
+
+
+
+export const getNotificationsNewsletterSubscribeCreateMutationKey = () => ['notificationsNewsletterSubscribeCreate'] as const;
+
+export const getNotificationsNewsletterSubscribeCreateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof notificationsNewsletterSubscribeCreate>>, TError,NotificationsNewsletterSubscribeCreateMutationVariables, TContext>, request?: SecondParameter<typeof appInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof notificationsNewsletterSubscribeCreate>>, TError,NotificationsNewsletterSubscribeCreateMutationVariables, TContext> => {
+
+const mutationKey = getNotificationsNewsletterSubscribeCreateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof notificationsNewsletterSubscribeCreate>>, NotificationsNewsletterSubscribeCreateMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  notificationsNewsletterSubscribeCreate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type NotificationsNewsletterSubscribeCreateMutationResult = NonNullable<Awaited<ReturnType<typeof notificationsNewsletterSubscribeCreate>>>
+    export type NotificationsNewsletterSubscribeCreateMutationBody = BodyType<NewsletterSubscribe>
+    export type NotificationsNewsletterSubscribeCreateMutationError = ErrorType<unknown>
+    export type NotificationsNewsletterSubscribeCreateMutationVariables = {data: BodyType<NewsletterSubscribe>}
+
+    /**
+ * @summary Zapis na newsletter
+ */
+export const useNotificationsNewsletterSubscribeCreate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof notificationsNewsletterSubscribeCreate>>, TError,NotificationsNewsletterSubscribeCreateMutationVariables, TContext>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof notificationsNewsletterSubscribeCreate>>,
+        TError,
+        NotificationsNewsletterSubscribeCreateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getNotificationsNewsletterSubscribeCreateMutationOptions(options), queryClient);
+    }
+    export type notificationsNewsletterUnsubscribeCreateResponse200 = {
+  data: NewsletterDetail
+  status: 200
+}
+
+export type notificationsNewsletterUnsubscribeCreateResponseSuccess = (notificationsNewsletterUnsubscribeCreateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type notificationsNewsletterUnsubscribeCreateResponse = (notificationsNewsletterUnsubscribeCreateResponseSuccess)
+
+export const getNotificationsNewsletterUnsubscribeCreateUrl = () => {
+
+
+
+
+  return `/notifications/newsletter/unsubscribe/`
+}
+
+/**
+ * Bez logowania, token z linku w stopce maila — subskrypcji albo konta (wyłącza wtedy zgodę marketingową e-mail konta). 404 dla nieznanego tokenu.
+ * @summary Wypis z newslettera
+ */
+export const notificationsNewsletterUnsubscribeCreate = async (newsletterToken: NewsletterToken, options?: Parameters<typeof appInstance>[1]): Promise<notificationsNewsletterUnsubscribeCreateResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return appInstance<notificationsNewsletterUnsubscribeCreateResponse>(getNotificationsNewsletterUnsubscribeCreateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(newsletterToken)
+  }
+);}
+
+
+
+
+
+export const getNotificationsNewsletterUnsubscribeCreateMutationKey = () => ['notificationsNewsletterUnsubscribeCreate'] as const;
+
+export const getNotificationsNewsletterUnsubscribeCreateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof notificationsNewsletterUnsubscribeCreate>>, TError,NotificationsNewsletterUnsubscribeCreateMutationVariables, TContext>, request?: SecondParameter<typeof appInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof notificationsNewsletterUnsubscribeCreate>>, TError,NotificationsNewsletterUnsubscribeCreateMutationVariables, TContext> => {
+
+const mutationKey = getNotificationsNewsletterUnsubscribeCreateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof notificationsNewsletterUnsubscribeCreate>>, NotificationsNewsletterUnsubscribeCreateMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  notificationsNewsletterUnsubscribeCreate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type NotificationsNewsletterUnsubscribeCreateMutationResult = NonNullable<Awaited<ReturnType<typeof notificationsNewsletterUnsubscribeCreate>>>
+    export type NotificationsNewsletterUnsubscribeCreateMutationBody = BodyType<NewsletterToken>
+    export type NotificationsNewsletterUnsubscribeCreateMutationError = ErrorType<unknown>
+    export type NotificationsNewsletterUnsubscribeCreateMutationVariables = {data: BodyType<NewsletterToken>}
+
+    /**
+ * @summary Wypis z newslettera
+ */
+export const useNotificationsNewsletterUnsubscribeCreate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof notificationsNewsletterUnsubscribeCreate>>, TError,NotificationsNewsletterUnsubscribeCreateMutationVariables, TContext>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof notificationsNewsletterUnsubscribeCreate>>,
+        TError,
+        NotificationsNewsletterUnsubscribeCreateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getNotificationsNewsletterUnsubscribeCreateMutationOptions(options), queryClient);
     }
     export type notificationsPreferencesRetrieveResponse200 = {
   data: NotificationPreference
