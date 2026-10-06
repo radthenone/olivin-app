@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import datetime
-from typing import cast
+from typing import Any
 from unittest.mock import patch
 
 import pytest
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.response import Response
 from rest_framework.test import APIClient
 
 from apps.consents.models import ConsentKind
@@ -28,8 +27,9 @@ def marketing_document():
     )
 
 
-def _post(client: APIClient, name: str, data: dict) -> Response:
-    return cast(Response, client.post(reverse(name), data, format="json"))
+def _post(client: APIClient, name: str, data: dict) -> Any:
+    """Odpowiedź klienta testowego — `Any`, bo ma `.json()`, którego `Response` nie zna."""
+    return client.post(reverse(name), data, format="json")
 
 
 @pytest.mark.django_db

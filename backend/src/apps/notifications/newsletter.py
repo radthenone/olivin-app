@@ -9,7 +9,7 @@ tabeli i bez ujawniania identyfikatora konta.
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 from django.conf import settings
 from django.core import signing
@@ -247,8 +247,10 @@ def send_promotion_announcement(promotion: Promotion) -> int:
     push_user_ids = NotificationPreference.objects.filter(
         marketing_push=True, user__is_active=True
     ).values_list("user_id", flat=True)
+    # `cast(Any, ...)` jak w `notify()`: pyrefly nie widzi `.delay` zadania Celery.
+    push_task = cast(Any, tasks.send_push_notification)
     for user_id in push_user_ids:
-        tasks.send_push_notification.delay(
+        push_task.delay(
             user_id=str(user_id),
             title=subject,
             body=message,
@@ -273,7 +275,6 @@ def queue_promotion_announcement(promotion: Promotion) -> bool:
     if not claimed:
         return False
     promotion_id = str(promotion.pk)
-    transaction.on_commit(
-        lambda: tasks.announce_promotion.delay(promotion_id=promotion_id)
-    )
+    announce_task = cast(Any, tasks.announce_promotion)
+    transaction.on_commit(lambda: announce_task.delay(promotion_id=promotion_id))
     return True
