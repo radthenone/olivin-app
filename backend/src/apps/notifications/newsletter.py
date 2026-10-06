@@ -47,9 +47,7 @@ def _parse_uuid(token: str) -> uuid.UUID | None:
 
 
 def confirm_url(subscription: NewsletterSubscription) -> str:
-    return settings.NEWSLETTER_CONFIRM_URL.format(
-        token=subscription.confirmation_token
-    )
+    return settings.NEWSLETTER_CONFIRM_URL.format(token=subscription.confirmation_token)
 
 
 def subscription_unsubscribe_url(subscription: NewsletterSubscription) -> str:
@@ -100,9 +98,7 @@ def subscribe(email: str) -> None:
         raise NoMarketingDocumentError
     address = _normalise(email)
     subscription, created = (
-        NewsletterSubscription.objects.select_for_update().get_or_create(
-            email=address
-        )
+        NewsletterSubscription.objects.select_for_update().get_or_create(email=address)
     )
     if subscription.status == NewsletterStatus.ACTIVE:
         return
@@ -204,9 +200,7 @@ def _announcement_message(promotion: Promotion) -> tuple[str, str]:
     if promotion.code:
         lines.append(f"Kod promocji: {promotion.code}.")
     if promotion.ends_at is not None:
-        lines.append(
-            f"Trwa do {timezone.localtime(promotion.ends_at):%d.%m.%Y %H:%M}."
-        )
+        lines.append(f"Trwa do {timezone.localtime(promotion.ends_at):%d.%m.%Y %H:%M}.")
     return f"Nowa promocja: {promotion.name}", "\n".join(lines)
 
 

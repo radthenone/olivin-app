@@ -71,8 +71,9 @@ class TestAnnouncePromotion:
         mail, _ = _announce(PromotionFactory())
 
         bodies = {c.kwargs["to"]: c.kwargs["body"] for c in mail.call_args_list}
-        assert f"https://shop.test/unsub/{subscription.unsubscribe_token}" in (
-            bodies["sub@test.com"]
+        assert (
+            f"https://shop.test/unsub/{subscription.unsubscribe_token}"
+            in (bodies["sub@test.com"])
         )
         assert "https://shop.test/unsub/" in bodies["yes@test.com"]
 

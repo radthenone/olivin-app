@@ -5,28 +5,77 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('notifications', '0005_push_device'),
+        ("notifications", "0005_push_device"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='NewsletterSubscription',
+            name="NewsletterSubscription",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('created_at', models.DateTimeField(auto_now_add=True, help_text='Timestamp when the record was created')),
-                ('updated_at', models.DateTimeField(auto_now=True, help_text='Timestamp when the record was last updated')),
-                ('email', models.EmailField(help_text='Adres zapisany małymi literami', max_length=254, unique=True)),
-                ('status', models.CharField(choices=[('pending', 'Niepotwierdzona'), ('active', 'Aktywna'), ('unsubscribed', 'Wypisana')], default='pending', help_text='Niepotwierdzona do kliknięcia linku, potem aktywna albo wypisana', max_length=16)),
-                ('confirmation_token', models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
-                ('unsubscribe_token', models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
-                ('confirmed_at', models.DateTimeField(blank=True, help_text='Chwila potwierdzenia linkiem', null=True)),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        auto_now_add=True,
+                        help_text="Timestamp when the record was created",
+                    ),
+                ),
+                (
+                    "updated_at",
+                    models.DateTimeField(
+                        auto_now=True,
+                        help_text="Timestamp when the record was last updated",
+                    ),
+                ),
+                (
+                    "email",
+                    models.EmailField(
+                        help_text="Adres zapisany małymi literami",
+                        max_length=254,
+                        unique=True,
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("pending", "Niepotwierdzona"),
+                            ("active", "Aktywna"),
+                            ("unsubscribed", "Wypisana"),
+                        ],
+                        default="pending",
+                        help_text="Niepotwierdzona do kliknięcia linku, potem aktywna albo wypisana",
+                        max_length=16,
+                    ),
+                ),
+                (
+                    "confirmation_token",
+                    models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
+                ),
+                (
+                    "unsubscribe_token",
+                    models.UUIDField(default=uuid.uuid4, editable=False, unique=True),
+                ),
+                (
+                    "confirmed_at",
+                    models.DateTimeField(
+                        blank=True, help_text="Chwila potwierdzenia linkiem", null=True
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Subskrypcja newslettera',
-                'verbose_name_plural': 'Subskrypcje newslettera',
-                'ordering': ['-created_at', '-id'],
+                "verbose_name": "Subskrypcja newslettera",
+                "verbose_name_plural": "Subskrypcje newslettera",
+                "ordering": ["-created_at", "-id"],
             },
         ),
     ]

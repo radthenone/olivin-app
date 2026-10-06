@@ -4,15 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('promotions', '0004_coupon_source_order'),
+        ("promotions", "0004_coupon_source_order"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='promotion',
-            name='announced_at',
-            field=models.DateTimeField(blank=True, editable=False, help_text='Chwila ogłoszenia klientom z panelu; ogłasza się raz (#203)', null=True),
+            model_name="promotion",
+            name="announced_at",
+            field=models.DateTimeField(
+                blank=True,
+                editable=False,
+                help_text="Chwila ogłoszenia klientom z panelu; ogłasza się raz (#203)",
+                null=True,
+            ),
         ),
     ]
