@@ -132,6 +132,50 @@ export const NotificationsDevicesDestroyParams = zod.object({
 export const NotificationsDevicesDestroyResponse = zod.void()
 
 /**
+ * Token z linku w mailu potwierdzenia. 404 dla nieznanego tokenu.
+ * @summary Potwierdzenie zapisu na newsletter
+ */
+export const notificationsNewsletterConfirmCreateBodyTokenMax = 512;
+
+
+
+export const NotificationsNewsletterConfirmCreateBody = zod.object({
+  "token": zod.string().max(notificationsNewsletterConfirmCreateBodyTokenMax).describe('Token z linku w mailu')
+}).describe('Token z linku w mailu — potwierdzenia albo wypisu.')
+
+export const NotificationsNewsletterConfirmCreateResponse = zod.object({
+  "detail": zod.string()
+}).describe('Komunikat do wyświetlenia po zapisie, potwierdzeniu albo wypisie.')
+
+/**
+ * Bez logowania. Zawsze 202 z tą samą treścią — odpowiedź nie zdradza, czy adres był już zapisany. Na adres trafia link potwierdzenia; 400, gdy brak bieżącej wersji zgody marketingowej.
+ * @summary Zapis na newsletter
+ */
+export const NotificationsNewsletterSubscribeCreateBody = zod.object({
+  "email": zod.email().describe('Adres do zapisu')
+}).describe('Zapis na newsletter — sam adres; zgodę marketingową dobiera backend.')
+
+export const NotificationsNewsletterSubscribeCreateResponse = zod.object({
+  "detail": zod.string()
+}).describe('Komunikat do wyświetlenia po zapisie, potwierdzeniu albo wypisie.')
+
+/**
+ * Bez logowania, token z linku w stopce maila — subskrypcji albo konta (wyłącza wtedy zgodę marketingową e-mail konta). 404 dla nieznanego tokenu.
+ * @summary Wypis z newslettera
+ */
+export const notificationsNewsletterUnsubscribeCreateBodyTokenMax = 512;
+
+
+
+export const NotificationsNewsletterUnsubscribeCreateBody = zod.object({
+  "token": zod.string().max(notificationsNewsletterUnsubscribeCreateBodyTokenMax).describe('Token z linku w mailu')
+}).describe('Token z linku w mailu — potwierdzenia albo wypisu.')
+
+export const NotificationsNewsletterUnsubscribeCreateResponse = zod.object({
+  "detail": zod.string()
+}).describe('Komunikat do wyświetlenia po zapisie, potwierdzeniu albo wypisie.')
+
+/**
  * Preferencje powiadomień marketingowych klienta (`GET`/`PUT`).
  *
  * Bez `PATCH`: dwa pola, oba zawsze przekazywane razem — jak przy edycji
