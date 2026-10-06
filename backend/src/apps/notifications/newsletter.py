@@ -26,6 +26,7 @@ from core.integrations.notifications.mail import send_notification_email
 
 if TYPE_CHECKING:
     from apps.accounts.models import CustomUser
+    from apps.promotions.models import Promotion
 
 _UNSUBSCRIBE_SALT = "newsletter-unsubscribe"
 
@@ -196,3 +197,67 @@ def transfer_to_account(user: CustomUser, *, email: str) -> None:
         preference = NotificationPreference.for_user(user)
         preference.marketing_email = True
         preference.save(update_fields=["marketing_email", "updated_at"])
+
+
+def _announcement_message(promotion: Promotion) -> tuple[str, str]:
+    lines = [f"Nowa promocja w sklepie: {promotion.name}."]
+    if promotion.code:
+        lines.append(f"Kod promocji: {promotion.code}.")
+    if promotion.ends_at is not None:
+        lines.append(
+            f"Trwa do {timezone.localtime(promotion.ends_at):%d.%m.%Y %H:%M}."
+        )
+    return f"Nowa promocja: {promotion.name}", "\n".join(lines)
+
+
+def announcement_recipients() -> dict[str, str]:
+    """Adres → link wypisu; konta ze zgodą e-mail i aktywne subskrypcje.
+
+    Deduplikacja po adresie bez względu na wielkość liter. Konto wygrywa:
+    jego link wypisu wyłącza zgodę konta i subskrypcję na ten sam adres.
+    """
+    recipients: dict[str, str] = {
+        _normalise(subscription.email): subscription_unsubscribe_url(subscription)
+        for subscription in NewsletterSubscription.objects.filter(
+            status=NewsletterStatus.ACTIVE
+        )
+    }
+    account_emails = NotificationPreference.objects.filter(
+        marketing_email=True, user__is_active=True
+    ).values_list("user__email", flat=True)
+    for email in account_emails:
+        recipients[_normalise(email)] = account_unsubscribe_url(email)
+    return recipients
+
+
+def send_promotion_announcement(promotion: Promotion) -> int:
+    """Rozsyła ogłoszenie promocji; zwraca liczbę e-maili.
+
+    E-mail: konta ze zgodą `marketing_email` i potwierdzone subskrypcje,
+    każdy adres raz, z linkiem wypisu. Push: konta ze zgodą `marketing_push`
+    — kanał push sam pomija konta bez urządzeń.
+    """
+    from apps.notifications import tasks
+
+    subject, message = _announcement_message(promotion)
+    recipients = announcement_recipients()
+    for address, unsubscribe_link in recipients.items():
+        send_notification_email(
+            to=address,
+            subject=subject,
+            body=(
+                f"{message}\n\nNie chcesz dostawać takich wiadomości? "
+                f"Wypisz się: {unsubscribe_link}"
+            ),
+        )
+    push_user_ids = NotificationPreference.objects.filter(
+        marketing_push=True, user__is_active=True
+    ).values_list("user_id", flat=True)
+    for user_id in push_user_ids:
+        tasks.send_push_notification.delay(
+            user_id=str(user_id),
+            title=subject,
+            body=message,
+            data={"promotion_id": str(promotion.pk)},
+        )
+    return len(recipients)
