@@ -9,7 +9,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("notifications", "0003_notification_kind_return_settled"),
+        ("notifications", "0004_notification_kind_watch"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
