@@ -2,8 +2,8 @@
 
 `CONTEXT.md`, NewsletterSubscription. Wypis działa bez logowania na dwa
 sposoby: subskrypcja ma własny `unsubscribe_token`, a konto dostaje w
-mailu podpisany token adresu (`account_unsubscribe_token`) — bez nowej
-tabeli i bez ujawniania identyfikatora konta.
+mailu podpisany identyfikator konta (`account_unsubscribe_token`) — bez
+nowej tabeli i bez adresu e-mail w linku (link ląduje w logach).
 """
 
 from __future__ import annotations
@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from django.conf import settings
 from django.core import signing
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
@@ -56,14 +57,18 @@ def subscription_unsubscribe_url(subscription: NewsletterSubscription) -> str:
     )
 
 
-def account_unsubscribe_token(email: str) -> str:
-    """Podpisany token adresu konta — wypis z maila bez logowania."""
-    return signing.dumps(_normalise(email), salt=_UNSUBSCRIBE_SALT)
+def account_unsubscribe_token(user_pk: object) -> str:
+    """Podpisany identyfikator konta — wypis z maila bez logowania.
+
+    Podpisany, nie zaszyfrowany: treść jest czytelna, dlatego to `pk`
+    konta, a nie adres e-mail — link trafia do logów serwerów i proxy.
+    """
+    return signing.dumps(str(user_pk), salt=_UNSUBSCRIBE_SALT)
 
 
-def account_unsubscribe_url(email: str) -> str:
+def account_unsubscribe_url(user_pk: object) -> str:
     return settings.NEWSLETTER_UNSUBSCRIBE_URL.format(
-        token=account_unsubscribe_token(email)
+        token=account_unsubscribe_token(user_pk)
     )
 
 
@@ -166,14 +171,19 @@ def unsubscribe(token: str) -> bool:
                 status=NewsletterStatus.UNSUBSCRIBED, updated_at=timezone.now()
             )
         )
+    from apps.accounts.models import CustomUser
+
     try:
-        address = signing.loads(token, salt=_UNSUBSCRIBE_SALT)
-    except signing.BadSignature:
+        user_pk = signing.loads(token, salt=_UNSUBSCRIBE_SALT)
+        user = CustomUser.objects.filter(pk=user_pk).first()
+    except (signing.BadSignature, ValueError, ValidationError):
         return False
-    NotificationPreference.objects.filter(user__email__iexact=address).update(
+    if user is None:
+        return False
+    NotificationPreference.objects.filter(user=user).update(
         marketing_email=False, updated_at=timezone.now()
     )
-    NewsletterSubscription.objects.filter(email=address).update(
+    NewsletterSubscription.objects.filter(email=_normalise(user.email)).update(
         status=NewsletterStatus.UNSUBSCRIBED, updated_at=timezone.now()
     )
     return True
@@ -216,11 +226,11 @@ def announcement_recipients() -> dict[str, str]:
             status=NewsletterStatus.ACTIVE
         )
     }
-    account_emails = NotificationPreference.objects.filter(
+    accounts = NotificationPreference.objects.filter(
         marketing_email=True, user__is_active=True
-    ).values_list("user__email", flat=True)
-    for email in account_emails:
-        recipients[_normalise(email)] = account_unsubscribe_url(email)
+    ).values_list("user_id", "user__email")
+    for user_pk, email in accounts:
+        recipients[_normalise(email)] = account_unsubscribe_url(user_pk)
     return recipients
 
 

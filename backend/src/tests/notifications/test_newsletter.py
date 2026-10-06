@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import datetime
 from unittest.mock import patch
 
@@ -162,10 +163,31 @@ class TestUnsubscribe:
         user = UserFactory(email="client@test.com")
         NotificationPreference.objects.create(user=user, marketing_email=True)
 
-        token = newsletter.account_unsubscribe_token("Client@test.com")
+        token = newsletter.account_unsubscribe_token(user.pk)
 
         assert newsletter.unsubscribe(token) is True
         assert NotificationPreference.for_user(user).marketing_email is False
+
+    def test_account_token_also_unsubscribes_subscription_on_account_address(self):
+        user = UserFactory(email="client@test.com")
+        NewsletterSubscription.objects.create(
+            email="client@test.com", status=NewsletterStatus.ACTIVE
+        )
+
+        assert newsletter.unsubscribe(newsletter.account_unsubscribe_token(user.pk))
+
+        assert NewsletterSubscription.objects.get().status == (
+            NewsletterStatus.UNSUBSCRIBED
+        )
+
+    def test_account_token_does_not_carry_email_address(self):
+        """Link trafia do logów serwerów i proxy — bez adresu e-mail (PII)."""
+        user = UserFactory(email="client@test.com")
+
+        token = newsletter.account_unsubscribe_token(user.pk)
+
+        payload = base64.urlsafe_b64decode(token.split(":")[0] + "==")
+        assert b"client" not in payload
 
     def test_unknown_token_returns_false(self):
         assert newsletter.unsubscribe("00000000-0000-0000-0000-000000000000") is False
