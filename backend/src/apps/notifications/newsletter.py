@@ -8,6 +8,7 @@ nowej tabeli i bez adresu e-mail w linku (link ląduje w logach).
 
 from __future__ import annotations
 
+import logging
 import uuid
 from typing import TYPE_CHECKING, Any, cast
 
@@ -16,6 +17,7 @@ from django.core import signing
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import QuerySet
 from django.utils import timezone
 
 from apps.consents.models import Consent, ConsentDocument, ConsentKind
@@ -29,6 +31,8 @@ from core.integrations.notifications.mail import send_notification_email
 if TYPE_CHECKING:
     from apps.accounts.models import CustomUser
     from apps.promotions.models import Promotion
+
+logger = logging.getLogger(__name__)
 
 _UNSUBSCRIBE_SALT = "newsletter-unsubscribe"
 # Sekundy między kolejnymi mailami z linkiem potwierdzenia na ten sam adres.
@@ -301,5 +305,24 @@ def queue_promotion_announcement(promotion: Promotion) -> bool:
         return False
     promotion_id = str(promotion.pk)
     announce_task = cast(Any, tasks.announce_promotion)
-    transaction.on_commit(lambda: announce_task.delay(promotion_id=promotion_id))
+
+    def _queue() -> None:
+        try:
+            announce_task.delay(promotion_id=promotion_id)
+        except Exception:
+            # Nie da się zakolejkować (np. broker leży) — zwalniamy blokadę,
+            # żeby promocja nie została „ogłoszona” bez jednej wiadomości.
+            logger.exception("Nie udało się zakolejkować ogłoszenia %s", promotion_id)
+            Promotion.objects.filter(pk=promotion_id).update(announced_at=None)
+
+    transaction.on_commit(_queue)
     return True
+
+
+def reset_promotion_announcement(promotions: QuerySet[Promotion]) -> int:
+    """Zwalnia blokadę ogłoszenia — świadoma decyzja panelu po nieudanej wysyłce.
+
+    Bez automatycznego ponawiania zadania: część maili mogła już wyjść,
+    a ponowienie wysłałoby je drugi raz. Decyzję o powtórce podejmuje człowiek.
+    """
+    return promotions.exclude(announced_at=None).update(announced_at=None)

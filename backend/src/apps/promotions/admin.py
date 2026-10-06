@@ -33,7 +33,7 @@ class PromotionAdmin(admin.ModelAdmin):
     search_fields = ("name", "code")
     filter_horizontal = ("products", "collections", "categories")
     readonly_fields = ("announced_at",)
-    actions = ["announce"]
+    actions = ["announce", "reset_announcement"]
 
     @admin.action(description="Ogłoś promocję klientom")
     def announce(self, request: HttpRequest, queryset: QuerySet[Promotion]) -> None:
@@ -46,6 +46,16 @@ class PromotionAdmin(admin.ModelAdmin):
             request,
             f"Zakolejkowano ogłoszeń: {len(queued)}; pominięto już ogłoszonych: {skipped}.",
         )
+
+    @admin.action(description="Zresetuj ogłoszenie (pozwól ogłosić ponownie)")
+    def reset_announcement(
+        self, request: HttpRequest, queryset: QuerySet[Promotion]
+    ) -> None:
+        """Po nieudanej wysyłce — ponowne ogłoszenie może zdublować część maili."""
+        from apps.notifications.newsletter import reset_promotion_announcement
+
+        reset = reset_promotion_announcement(queryset)
+        self.message_user(request, f"Zresetowano ogłoszeń: {reset}.")
 
 
 class CouponRedemptionInline(admin.TabularInline):

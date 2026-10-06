@@ -53,3 +53,28 @@ class TestAnnounceAction:
             _announce_via_admin(admin_client, announced, fresh)
 
         task.delay.assert_called_once_with(promotion_id=str(fresh.pk))
+
+    def test_failed_queueing_releases_announcement_for_retry(self, admin_client):
+        """Broker niedostępny: promocja nie może zostać „ogłoszona” bez wysyłki."""
+        promotion = PromotionFactory()
+
+        with patch(TASK) as task:
+            task.delay.side_effect = ConnectionError("broker down")
+            _announce_via_admin(admin_client, promotion)
+
+        promotion.refresh_from_db()
+        assert promotion.announced_at is None
+
+    def test_reset_action_allows_announcing_again(self, admin_client):
+        promotion = PromotionFactory()
+        with patch(TASK):
+            _announce_via_admin(admin_client, promotion)
+
+        admin_client.post(
+            reverse("admin:promotions_promotion_changelist"),
+            {"action": "reset_announcement", "_selected_action": [str(promotion.pk)]},
+        )
+        with patch(TASK) as task:
+            _announce_via_admin(admin_client, promotion)
+
+        task.delay.assert_called_once_with(promotion_id=str(promotion.pk))
