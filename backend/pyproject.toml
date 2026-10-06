@@ -28,7 +28,7 @@ dependencies = [
     "psycopg2-binary>=2.9.13 ; sys_platform == 'win32'",
     "python-dotenv>=1.2.4",
     "redis>=8.1.0",
-    "stripe>=13.0.1",
+    "stripe>=16.0.0",
     "rich>=14.2.0",
     "pack-logger[django]",
     "django-countries>=9.1.0",
