@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.http import HttpRequest
 
 from apps.notifications.models import (
     NewsletterSubscription,
@@ -47,5 +48,5 @@ class NewsletterSubscriptionAdmin(admin.ModelAdmin):
     search_fields = ("email",)
     readonly_fields = ("email", "status", "confirmed_at")
 
-    def has_add_permission(self, request) -> bool:
+    def has_add_permission(self, request: HttpRequest) -> bool:
         return False

@@ -239,6 +239,9 @@ def announcement_recipients() -> dict[str, str]:
     Deduplikacja po adresie bez względu na wielkość liter. Konto wygrywa:
     jego link wypisu wyłącza zgodę konta i subskrypcję na ten sam adres.
     """
+    # ponytail: cała lista w pamięci i jedno zadanie mailowe na adres —
+    # sufit to dziesiątki tysięcy odbiorców; dalej batchowanie po kluczu
+    # (`iterator()` + paczki zadań `send_email_payloads_task`).
     recipients: dict[str, str] = {
         _normalise(subscription.email): subscription_unsubscribe_url(subscription)
         for subscription in NewsletterSubscription.objects.filter(
