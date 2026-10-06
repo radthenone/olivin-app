@@ -22,6 +22,6 @@
     "@olivin/config": "workspace:*",
     "dotenv": "^18.0.5",
     "orval": "^8.5.2",
-    "typescript": "~6.0.3"
+    "typescript": "~7.0.2"
   }
 }
