@@ -9,6 +9,7 @@ from unittest.mock import patch
 import pytest
 from allauth.account.models import EmailAddress
 from allauth.account.signals import email_confirmed
+from django.core.cache import cache
 
 from apps.consents.models import Consent, ConsentKind
 from apps.notifications import newsletter
@@ -88,15 +89,27 @@ class TestSubscribe:
         assert not NewsletterSubscription.objects.exists()
         assert not Consent.objects.exists()
 
-    def test_pending_resubscribe_resends_without_duplicate(
+    def test_pending_resubscribe_after_cooldown_resends_without_duplicate(
         self, marketing_document, subscribe
     ):
         subscribe("new@test.com")
+        cache.clear()  # minął cooldown ponownej wysyłki
+
         send = subscribe("NEW@test.com")
 
         assert NewsletterSubscription.objects.count() == 1
         assert Consent.objects.count() == 1
         send.assert_called_once()
+
+    def test_resubscribe_within_cooldown_sends_no_second_email(
+        self, marketing_document, subscribe
+    ):
+        """Ochrona przed zasypaniem cudzej skrzynki linkami potwierdzenia."""
+        subscribe("new@test.com")
+
+        send = subscribe("new@test.com")
+
+        send.assert_not_called()
 
     def test_active_resubscribe_sends_nothing(self, marketing_document, subscribe):
         NewsletterSubscription.objects.create(

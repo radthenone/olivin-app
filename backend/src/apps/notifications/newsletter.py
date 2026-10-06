@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from django.conf import settings
 from django.core import signing
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
@@ -30,6 +31,8 @@ if TYPE_CHECKING:
     from apps.promotions.models import Promotion
 
 _UNSUBSCRIBE_SALT = "newsletter-unsubscribe"
+# Sekundy między kolejnymi mailami z linkiem potwierdzenia na ten sam adres.
+_CONFIRMATION_COOLDOWN = 10 * 60
 
 
 class NoMarketingDocumentError(Exception):
@@ -73,6 +76,17 @@ def account_unsubscribe_url(user_pk: object) -> str:
 
 
 def _send_confirmation(subscription: NewsletterSubscription) -> None:
+    """Wysyła link potwierdzenia — najwyżej raz na `_CONFIRMATION_COOLDOWN` na adres.
+
+    Zapis jest anonimowy, więc bez limitu dałoby się zasypać cudzą skrzynkę
+    linkami. `cache.add` jest atomowe: z dwóch równoległych żądań wysyła jedno.
+    """
+    if not cache.add(
+        f"newsletter-confirmation:{subscription.email}",
+        True,
+        timeout=_CONFIRMATION_COOLDOWN,
+    ):
+        return
     link = confirm_url(subscription)
     transaction.on_commit(
         lambda: send_notification_email(
