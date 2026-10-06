@@ -101,6 +101,23 @@ class TestSubscribe:
         assert Consent.objects.count() == 1
         send.assert_called_once()
 
+    def test_pending_resubscribe_records_consent_on_new_document_version(
+        self, marketing_document, subscribe
+    ):
+        subscribe("new@test.com")
+        newer = ConsentDocumentFactory(
+            kind=ConsentKind.MARKETING,
+            version="2026-06",
+            effective_from=datetime.date(2026, 6, 1),
+        )
+
+        subscribe("new@test.com")
+
+        assert set(Consent.objects.values_list("document", flat=True)) == {
+            marketing_document.pk,
+            newer.pk,
+        }
+
     def test_resubscribe_within_cooldown_sends_no_second_email(
         self, marketing_document, subscribe
     ):

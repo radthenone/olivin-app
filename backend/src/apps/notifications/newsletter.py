@@ -109,8 +109,9 @@ def subscribe(email: str) -> None:
 
     Nie zwraca niczego, co różniłoby nowy adres od istniejącego — wywołujący
     (API) odpowiada zawsze tak samo. Aktywna subskrypcja nie dostaje maila;
-    niepotwierdzona — ponowny link; nowa albo wypisana — nową zgodę gościa
-    na bieżącą wersję zgody marketingowej i świeży token potwierdzenia.
+    niepotwierdzona — ponowny link (i zgodę na nową wersję dokumentu, jeśli
+    weszła); nowa albo wypisana — nową zgodę gościa na bieżącą wersję zgody
+    marketingowej, a wypisana także świeży token potwierdzenia.
     """
     document = ConsentDocument.objects.current(ConsentKind.MARKETING)
     if document is None:
@@ -121,19 +122,19 @@ def subscribe(email: str) -> None:
     )
     if subscription.status == NewsletterStatus.ACTIVE:
         return
-    if created or subscription.status == NewsletterStatus.UNSUBSCRIBED:
-        if not created:
-            subscription.status = NewsletterStatus.PENDING
-            subscription.confirmation_token = uuid.uuid4()
-            subscription.confirmed_at = None
-            subscription.save(
-                update_fields=[
-                    "status",
-                    "confirmation_token",
-                    "confirmed_at",
-                    "updated_at",
-                ]
-            )
+    resubscribed = subscription.status == NewsletterStatus.UNSUBSCRIBED
+    if resubscribed:
+        subscription.status = NewsletterStatus.PENDING
+        subscription.confirmation_token = uuid.uuid4()
+        subscription.confirmed_at = None
+        subscription.save(
+            update_fields=["status", "confirmation_token", "confirmed_at", "updated_at"]
+        )
+    # Po wypisie zgoda jest udzielana od nowa; przy niepotwierdzonej — tylko
+    # gdy od poprzedniego zapisu weszła nowa wersja zgody marketingowej.
+    if resubscribed or not Consent.objects.has_current_consent(
+        ConsentKind.MARKETING, email=address
+    ):
         Consent.objects.create(email=address, document=document)
     _send_confirmation(subscription)
 
