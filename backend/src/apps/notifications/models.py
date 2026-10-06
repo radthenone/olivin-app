@@ -120,3 +120,50 @@ class NotificationPreference(TimestampedModel):
         """Preferencje klienta; domyślne (bez zgody) przy pierwszym odczycie."""
         preference, _ = cls.objects.get_or_create(user=user)
         return preference
+
+
+class PushPlatform(models.TextChoices):
+    """Platforma urządzenia push — do statystyk i strojenia treści."""
+
+    IOS = "ios", "iOS"
+    ANDROID = "android", "Android"
+
+
+class PushDevice(TimestampedModel):
+    """Urządzenie klienta zarejestrowane do powiadomień push (`CONTEXT.md`).
+
+    Jedno konto może mieć wiele urządzeń; token Expo jest globalnie
+    unikalny — jedno urządzenie należy do jednego konta. Rejestracja jest
+    idempotentna: powtórzenie z tym samym tokenem odświeża właściciela
+    i czas użycia. `CASCADE` przy koncie realizuje anonimizację
+    (`CONTEXT.md`, Account anonymisation): skasowanie konta kasuje urządzenia.
+    """
+
+    user = models.ForeignKey(
+        "accounts.CustomUser",
+        on_delete=models.CASCADE,
+        related_name="push_devices",
+        help_text="Klient, do którego należy urządzenie",
+    )
+    token = models.CharField(
+        max_length=255,
+        unique=True,
+        help_text="Token push Expo (ExponentPushToken[...])",
+    )
+    platform = models.CharField(
+        max_length=16,
+        choices=PushPlatform.choices,
+        help_text="Platforma urządzenia",
+    )
+    last_used_at = models.DateTimeField(
+        default=timezone.now,
+        help_text="Ostatnia rejestracja lub wysyłka na to urządzenie",
+    )
+
+    class Meta:
+        verbose_name = "Urządzenie push"
+        verbose_name_plural = "Urządzenia push"
+        ordering = ["-last_used_at", "-id"]
+
+    def __str__(self) -> str:
+        return f"{self.platform} — {self.user}"  # type: ignore[missing-attribute]

@@ -27,8 +27,12 @@ import type {
 import type {
   Notification,
   NotificationPreference,
+  NotificationsDevicesListParams,
   NotificationsListParams,
-  PaginatedNotificationList
+  PaginatedNotificationList,
+  PaginatedPushDeviceList,
+  PushDevice,
+  PushDeviceWrite
 } from '../schemas';
 
 import { appInstance } from '../../../src/app-mutator';
@@ -248,6 +252,306 @@ export const useNotificationsReadCreate = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getNotificationsReadCreateMutationOptions(options), queryClient);
+    }
+    export type notificationsDevicesListResponse200 = {
+  data: PaginatedPushDeviceList
+  status: 200
+}
+
+export type notificationsDevicesListResponseSuccess = (notificationsDevicesListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type notificationsDevicesListResponse = (notificationsDevicesListResponseSuccess)
+
+export const getNotificationsDevicesListUrl = (params?: NotificationsDevicesListParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/notifications/devices/?${stringifiedParams}` : `/notifications/devices/`
+}
+
+/**
+ * Urządzenia push klienta (`CONTEXT.md`, PushDevice).
+
+Actions:
+- list: GET /notifications/devices/ — urządzenia zalogowanego klienta
+- create: POST /notifications/devices/ — rejestracja (idempotentna)
+- destroy: DELETE /notifications/devices/{token}/ — wyrejestrowanie
+
+Rejestracja po zalogowaniu w aplikacji mobilnej, wyrejestrowanie przy
+wylogowaniu. Token w adresie jest URL-kodowany przez klienta.
+ * @summary Lista urządzeń push klienta
+ */
+export const notificationsDevicesList = async (params?: NotificationsDevicesListParams, options?: RequestInit): Promise<notificationsDevicesListResponse> => {
+
+  return appInstance<notificationsDevicesListResponse>(getNotificationsDevicesListUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getNotificationsDevicesListQueryKey = (params?: NotificationsDevicesListParams,) => {
+    return [
+    `/notifications/devices/`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getNotificationsDevicesListQueryOptions = <TData = Awaited<ReturnType<typeof notificationsDevicesList>>, TError = ErrorType<unknown>>(params?: NotificationsDevicesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof notificationsDevicesList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getNotificationsDevicesListQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof notificationsDevicesList>>> = ({ signal }) => notificationsDevicesList(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof notificationsDevicesList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type NotificationsDevicesListQueryResult = NonNullable<Awaited<ReturnType<typeof notificationsDevicesList>>>
+export type NotificationsDevicesListQueryError = ErrorType<unknown>
+
+
+export function useNotificationsDevicesList<TData = Awaited<ReturnType<typeof notificationsDevicesList>>, TError = ErrorType<unknown>>(
+ params: undefined |  NotificationsDevicesListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof notificationsDevicesList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof notificationsDevicesList>>,
+          TError,
+          Awaited<ReturnType<typeof notificationsDevicesList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useNotificationsDevicesList<TData = Awaited<ReturnType<typeof notificationsDevicesList>>, TError = ErrorType<unknown>>(
+ params?: NotificationsDevicesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof notificationsDevicesList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof notificationsDevicesList>>,
+          TError,
+          Awaited<ReturnType<typeof notificationsDevicesList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useNotificationsDevicesList<TData = Awaited<ReturnType<typeof notificationsDevicesList>>, TError = ErrorType<unknown>>(
+ params?: NotificationsDevicesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof notificationsDevicesList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Lista urządzeń push klienta
+ */
+
+export function useNotificationsDevicesList<TData = Awaited<ReturnType<typeof notificationsDevicesList>>, TError = ErrorType<unknown>>(
+ params?: NotificationsDevicesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof notificationsDevicesList>>, TError, TData>>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getNotificationsDevicesListQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+export type notificationsDevicesCreateResponse201 = {
+  data: PushDevice
+  status: 201
+}
+
+export type notificationsDevicesCreateResponseSuccess = (notificationsDevicesCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type notificationsDevicesCreateResponse = (notificationsDevicesCreateResponseSuccess)
+
+export const getNotificationsDevicesCreateUrl = () => {
+
+
+
+
+  return `/notifications/devices/`
+}
+
+/**
+ * Urządzenia push klienta (`CONTEXT.md`, PushDevice).
+
+Actions:
+- list: GET /notifications/devices/ — urządzenia zalogowanego klienta
+- create: POST /notifications/devices/ — rejestracja (idempotentna)
+- destroy: DELETE /notifications/devices/{token}/ — wyrejestrowanie
+
+Rejestracja po zalogowaniu w aplikacji mobilnej, wyrejestrowanie przy
+wylogowaniu. Token w adresie jest URL-kodowany przez klienta.
+ * @summary Rejestracja urządzenia push
+ */
+export const notificationsDevicesCreate = async (pushDeviceWrite: PushDeviceWrite, options?: RequestInit): Promise<notificationsDevicesCreateResponse> => {
+
+  return appInstance<notificationsDevicesCreateResponse>(getNotificationsDevicesCreateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(pushDeviceWrite)
+  }
+);}
+
+
+
+
+export const getNotificationsDevicesCreateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof notificationsDevicesCreate>>, TError,{data: BodyType<PushDeviceWrite>}, TContext>, request?: SecondParameter<typeof appInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof notificationsDevicesCreate>>, TError,{data: BodyType<PushDeviceWrite>}, TContext> => {
+
+const mutationKey = ['notificationsDevicesCreate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof notificationsDevicesCreate>>, {data: BodyType<PushDeviceWrite>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  notificationsDevicesCreate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type NotificationsDevicesCreateMutationResult = NonNullable<Awaited<ReturnType<typeof notificationsDevicesCreate>>>
+    export type NotificationsDevicesCreateMutationBody = BodyType<PushDeviceWrite>
+    export type NotificationsDevicesCreateMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Rejestracja urządzenia push
+ */
+export const useNotificationsDevicesCreate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof notificationsDevicesCreate>>, TError,{data: BodyType<PushDeviceWrite>}, TContext>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof notificationsDevicesCreate>>,
+        TError,
+        {data: BodyType<PushDeviceWrite>},
+        TContext
+      > => {
+      return useMutation(getNotificationsDevicesCreateMutationOptions(options), queryClient);
+    }
+    export type notificationsDevicesDestroyResponse204 = {
+  data: void
+  status: 204
+}
+
+export type notificationsDevicesDestroyResponseSuccess = (notificationsDevicesDestroyResponse204) & {
+  headers: Headers;
+};
+;
+
+export type notificationsDevicesDestroyResponse = (notificationsDevicesDestroyResponseSuccess)
+
+export const getNotificationsDevicesDestroyUrl = (token: string,) => {
+
+
+
+
+  return `/notifications/devices/${token}/`
+}
+
+/**
+ * Wyrejestrowanie po tokenie — brak dopasowania to też 204.
+ * @summary Wyrejestrowanie urządzenia push
+ */
+export const notificationsDevicesDestroy = async (token: string, options?: RequestInit): Promise<notificationsDevicesDestroyResponse> => {
+
+  return appInstance<notificationsDevicesDestroyResponse>(getNotificationsDevicesDestroyUrl(token),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getNotificationsDevicesDestroyMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof notificationsDevicesDestroy>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof appInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof notificationsDevicesDestroy>>, TError,{token: string}, TContext> => {
+
+const mutationKey = ['notificationsDevicesDestroy'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof notificationsDevicesDestroy>>, {token: string}> = (props) => {
+          const {token} = props ?? {};
+
+          return  notificationsDevicesDestroy(token,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type NotificationsDevicesDestroyMutationResult = NonNullable<Awaited<ReturnType<typeof notificationsDevicesDestroy>>>
+
+    export type NotificationsDevicesDestroyMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Wyrejestrowanie urządzenia push
+ */
+export const useNotificationsDevicesDestroy = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof notificationsDevicesDestroy>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof notificationsDevicesDestroy>>,
+        TError,
+        {token: string},
+        TContext
+      > => {
+      return useMutation(getNotificationsDevicesDestroyMutationOptions(options), queryClient);
     }
     export type notificationsPreferencesRetrieveResponse200 = {
   data: NotificationPreference

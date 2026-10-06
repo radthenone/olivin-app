@@ -59,6 +59,67 @@ export const NotificationsReadCreateResponse = zod.object({
 }).describe('Powiadomienie klienta — tylko do odczytu; oznaczenie odczytania ma osobny endpoint.')
 
 /**
+ * Urządzenia push klienta (`CONTEXT.md`, PushDevice).
+
+Actions:
+- list: GET /notifications/devices/ — urządzenia zalogowanego klienta
+- create: POST /notifications/devices/ — rejestracja (idempotentna)
+- destroy: DELETE /notifications/devices/{token}/ — wyrejestrowanie
+
+Rejestracja po zalogowaniu w aplikacji mobilnej, wyrejestrowanie przy
+wylogowaniu. Token w adresie jest URL-kodowany przez klienta.
+ * @summary Lista urządzeń push klienta
+ */
+export const NotificationsDevicesListQueryParams = zod.object({
+  "page": zod.coerce.number().optional().describe('A page number within the paginated result set.'),
+  "pageSize": zod.coerce.number().optional().describe('Number of results to return per page.')
+})
+
+export const notificationsDevicesListResponseResultsItemTokenMax = 255;
+
+
+
+export const NotificationsDevicesListResponse = zod.object({
+  "count": zod.number(),
+  "next": zod.url().nullish(),
+  "previous": zod.url().nullish(),
+  "results": zod.array(zod.object({
+  "token": zod.string().max(notificationsDevicesListResponseResultsItemTokenMax).describe('Token push Expo (ExponentPushToken[...])'),
+  "platform": zod.enum(['ios', 'android']).describe('\* `ios` - iOS\n\* `android` - Android').describe('Platforma urządzenia\n\n\* `ios` - iOS\n\* `android` - Android'),
+  "lastUsedAt": zod.iso.datetime({"offset":true}).describe('Ostatnia rejestracja lub wysyłka na to urządzenie')
+}).describe('Urządzenie push — zapis po tokenie; odczyt bez wrażliwych pól.'))
+})
+
+/**
+ * Urządzenia push klienta (`CONTEXT.md`, PushDevice).
+
+Actions:
+- list: GET /notifications/devices/ — urządzenia zalogowanego klienta
+- create: POST /notifications/devices/ — rejestracja (idempotentna)
+- destroy: DELETE /notifications/devices/{token}/ — wyrejestrowanie
+
+Rejestracja po zalogowaniu w aplikacji mobilnej, wyrejestrowanie przy
+wylogowaniu. Token w adresie jest URL-kodowany przez klienta.
+ * @summary Rejestracja urządzenia push
+ */
+export const notificationsDevicesCreateBodyTokenMax = 255;
+
+
+
+export const NotificationsDevicesCreateBody = zod.object({
+  "token": zod.string().max(notificationsDevicesCreateBodyTokenMax),
+  "platform": zod.enum(['ios', 'android']).describe('\* `ios` - ios\n\* `android` - android')
+}).describe('Rejestracja urządzenia: token Expo i platforma.')
+
+/**
+ * Wyrejestrowanie po tokenie — brak dopasowania to też 204.
+ * @summary Wyrejestrowanie urządzenia push
+ */
+export const NotificationsDevicesDestroyParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+/**
  * Preferencje powiadomień marketingowych klienta (`GET`/`PUT`).
 
 Bez `PATCH`: dwa pola, oba zawsze przekazywane razem — jak przy edycji

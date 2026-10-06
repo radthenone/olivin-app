@@ -1251,6 +1251,101 @@ paths:
               schema:
                 $ref: '#/components/schemas/Notification'
           description: ''
+  /notifications/devices/:
+    get:
+      operationId: notifications_devices_list
+      description: |-
+        Urządzenia push klienta (`CONTEXT.md`, PushDevice).
+
+        Actions:
+        - list: GET /notifications/devices/ — urządzenia zalogowanego klienta
+        - create: POST /notifications/devices/ — rejestracja (idempotentna)
+        - destroy: DELETE /notifications/devices/{token}/ — wyrejestrowanie
+
+        Rejestracja po zalogowaniu w aplikacji mobilnej, wyrejestrowanie przy
+        wylogowaniu. Token w adresie jest URL-kodowany przez klienta.
+      summary: Lista urządzeń push klienta
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Notifications
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPushDeviceList'
+          description: ''
+    post:
+      operationId: notifications_devices_create
+      description: |-
+        Urządzenia push klienta (`CONTEXT.md`, PushDevice).
+
+        Actions:
+        - list: GET /notifications/devices/ — urządzenia zalogowanego klienta
+        - create: POST /notifications/devices/ — rejestracja (idempotentna)
+        - destroy: DELETE /notifications/devices/{token}/ — wyrejestrowanie
+
+        Rejestracja po zalogowaniu w aplikacji mobilnej, wyrejestrowanie przy
+        wylogowaniu. Token w adresie jest URL-kodowany przez klienta.
+      summary: Rejestracja urządzenia push
+      tags:
+      - Notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushDeviceWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PushDeviceWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PushDeviceWrite'
+        required: true
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PushDevice'
+          description: ''
+  /notifications/devices/{token}/:
+    delete:
+      operationId: notifications_devices_destroy
+      description: Wyrejestrowanie po tokenie — brak dopasowania to też 204.
+      summary: Wyrejestrowanie urządzenia push
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - Notifications
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /notifications/preferences/:
     get:
       operationId: notifications_preferences_retrieve
@@ -4896,6 +4991,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Promotion'
+    PaginatedPushDeviceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PushDevice'
     PaginatedReviewList:
       type: object
       required:
@@ -5915,6 +6033,59 @@ components:
       description: |-
         * `percent` - Procentowa
         * `amount` - Kwotowa
+    PushDevice:
+      type: object
+      description: Urządzenie push — zapis po tokenie; odczyt bez wrażliwych pól.
+      properties:
+        token:
+          type: string
+          description: Token push Expo (ExponentPushToken[...])
+          maxLength: 255
+        platform:
+          allOf:
+          - $ref: '#/components/schemas/PushDevicePlatformEnum'
+          description: |-
+            Platforma urządzenia
+
+            * `ios` - iOS
+            * `android` - Android
+        lastUsedAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Ostatnia rejestracja lub wysyłka na to urządzenie
+      required:
+      - lastUsedAt
+      - platform
+      - token
+    PushDevicePlatformEnum:
+      enum:
+      - ios
+      - android
+      type: string
+      description: |-
+        * `ios` - iOS
+        * `android` - Android
+    PushDeviceWrite:
+      type: object
+      description: 'Rejestracja urządzenia: token Expo i platforma.'
+      properties:
+        token:
+          type: string
+          maxLength: 255
+        platform:
+          $ref: '#/components/schemas/PushDeviceWritePlatformEnum'
+      required:
+      - platform
+      - token
+    PushDeviceWritePlatformEnum:
+      enum:
+      - ios
+      - android
+      type: string
+      description: |-
+        * `ios` - ios
+        * `android` - android
     ReturnDeadline:
       type: object
       description: Otwarta podstawa zwrotu i chwila, do której można z niej skorzystać.

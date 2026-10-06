@@ -42,6 +42,9 @@ ACTUAL_EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 # --- Kurs walut bez sieci ---
 EXCHANGE_RATE_PROVIDER = "core.integrations.exchange_rate.fake.FakeExchangeRateProvider"
 
+# --- Push donikąd w testach (nadpisywany atrapą w testach push) ---
+PUSH_PROVIDER = "core.integrations.push.noop.NoopPushProvider"
+
 # --- Cache ---
 CACHES = {
     "default": {

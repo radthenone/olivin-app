@@ -3,6 +3,8 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from apps.notifications.serializers import (
     NotificationPreferenceSerializer,
     NotificationSerializer,
+    PushDeviceSerializer,
+    PushDeviceWriteSerializer,
 )
 
 notification_schema = extend_schema_view(
@@ -30,5 +32,25 @@ notification_preference_schema = extend_schema_view(
         summary="Zmiana preferencji powiadomień",
         request=NotificationPreferenceSerializer,
         responses={200: NotificationPreferenceSerializer},
+    ),
+)
+
+push_device_schema = extend_schema_view(
+    list=extend_schema(
+        tags=["Notifications"],
+        summary="Lista urządzeń push klienta",
+        responses={200: PushDeviceSerializer(many=True)},
+    ),
+    create=extend_schema(
+        tags=["Notifications"],
+        summary="Rejestracja urządzenia push",
+        request=PushDeviceWriteSerializer,
+        responses={201: PushDeviceSerializer},
+    ),
+    destroy=extend_schema(
+        tags=["Notifications"],
+        summary="Wyrejestrowanie urządzenia push",
+        request=None,
+        responses={204: None},
     ),
 )
