@@ -44,6 +44,8 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .expo/
+# Cache Turborepo — z worktree turbo pisze go do roota repo, nie do frontend/
+.turbo/
 .metro-health-check*
 
 # Build outputs
