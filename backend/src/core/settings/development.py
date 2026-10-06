@@ -97,6 +97,8 @@ SPECTACULAR_SETTINGS = {
         "ReturnItemStatusEnum": "apps.orders.models.returns.ReturnItemStatus",
         "ReturnRefundStatusEnum": "apps.orders.models.returns.ReturnRefundStatus",
         "ReviewStatusEnum": "apps.reviews.models.ReviewStatus",
+        "WatchKindEnum": "apps.watches.models.WatchKind",
+        "WatchStatusEnum": "apps.watches.models.WatchStatus",
         # Stan zdrowia to `ChoiceField` z listą wartości, bez klasy `Choices`,
         # więc wpisujemy same wartości. Bez tego kolizja z `Order.status`
         # przemianowała go na `HealthCheckResponseStatusEnum` i zmieniła

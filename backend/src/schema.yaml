@@ -2241,6 +2241,86 @@ paths:
                 items:
                   $ref: '#/components/schemas/ShippingOffer'
           description: ''
+  /watches/:
+    get:
+      operationId: watches_list
+      description: Aktywne prośby klienta o powiadomienie (restock / price_drop).
+      summary: Obserwowane warianty
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: pageSize
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Watches
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedWatchList'
+          description: ''
+    post:
+      operationId: watches_create
+      description: Przycisk „powiadom mnie” przy niedostępnym wariancie (restock)
+        i przy cenie (price_drop). Idempotentne dla aktywnej prośby.
+      summary: Dodanie obserwowania
+      tags:
+      - Watches
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WatchWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WatchWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WatchWrite'
+        required: true
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Watch'
+          description: ''
+  /watches/{id}/:
+    delete:
+      operationId: watches_destroy
+      description: Idempotentne — brak dopasowania też kończy się 204.
+      summary: Usunięcie obserwowania
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Obserwowany wariant.
+        required: true
+      tags:
+      - Watches
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
 components:
   schemas:
     Address:
@@ -3965,6 +4045,8 @@ components:
             * `document_ready` - Dokument gotowy
             * `return_request_status_changed` - Zmiana stanu zgłoszenia zwrotu
             * `return_settled` - Rozliczenie zwrotu
+            * `watch_restock` - Wariant wrócił na stan
+            * `watch_price_drop` - Spadek ceny wariantu
         message:
           type: string
           readOnly: true
@@ -4000,6 +4082,8 @@ components:
       - document_ready
       - return_request_status_changed
       - return_settled
+      - watch_restock
+      - watch_price_drop
       type: string
       description: |-
         * `order_status_changed` - Zmiana statusu zamówienia
@@ -4007,6 +4091,8 @@ components:
         * `document_ready` - Dokument gotowy
         * `return_request_status_changed` - Zmiana stanu zgłoszenia zwrotu
         * `return_settled` - Rozliczenie zwrotu
+        * `watch_restock` - Wariant wrócił na stan
+        * `watch_price_drop` - Spadek ceny wariantu
     NotificationPreference:
       type: object
       description: Zgoda marketingowa klienta, osobno per kanał.
@@ -4833,6 +4919,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Review'
+    PaginatedWatchList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Watch'
     PatchedAddress:
       type: object
       properties:
@@ -6389,6 +6498,115 @@ components:
         * `amethyst` - Ametyst
         * `cubic_zirconia` - Cyrkonia
         * `moissanite` - Moissanit
+    Watch:
+      type: object
+      description: 'Prośba o powiadomienie: wariant, rodzaj, cena z chwili zapisu,
+        status.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        variant:
+          allOf:
+          - $ref: '#/components/schemas/WatchVariant'
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/WatchKindEnum'
+          readOnly: true
+          description: |-
+            Rodzaj wyzwalacza
+
+            * `restock` - Powrót na stan
+            * `price_drop` - Spadek ceny
+        priceAtWatch:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Cena w chwili zapisu (grosze) — tylko dla spadku ceny
+        currency:
+          type: string
+          readOnly: true
+          description: Kod waluty ISO 4217
+        status:
+          allOf:
+          - $ref: '#/components/schemas/WatchStatusEnum'
+          readOnly: true
+          description: |-
+            Aktywna czeka; wysłana wygasła
+
+            * `active` - Aktywna
+            * `sent` - Wysłana
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Timestamp when the record was created
+      required:
+      - createdAt
+      - currency
+      - id
+      - kind
+      - priceAtWatch
+      - status
+      - variant
+    WatchKindEnum:
+      enum:
+      - restock
+      - price_drop
+      type: string
+      description: |-
+        * `restock` - Powrót na stan
+        * `price_drop` - Spadek ceny
+    WatchStatusEnum:
+      enum:
+      - active
+      - sent
+      type: string
+      description: |-
+        * `active` - Aktywna
+        * `sent` - Wysłana
+    WatchVariant:
+      type: object
+      description: Wariant w kontekście obserwowanych — tyle, ile potrzebuje przycisk.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        sku:
+          type: string
+          readOnly: true
+          description: Oznaczenie magazynowe wariantu, unikalne w całym katalogu
+        effectivePrice:
+          type: integer
+          readOnly: true
+        available:
+          type: integer
+          nullable: true
+          readOnly: true
+        isAvailable:
+          type: boolean
+          readOnly: true
+      required:
+      - available
+      - effectivePrice
+      - id
+      - isAvailable
+      - sku
+    WatchWrite:
+      type: object
+      description: 'Wejście do dodania obserwowania: wariant po SKU i rodzaj.'
+      properties:
+        variant:
+          type: string
+          description: Oznaczenie magazynowe wariantu, unikalne w całym katalogu
+        kind:
+          $ref: '#/components/schemas/WatchKindEnum'
+      required:
+      - kind
+      - variant
     WebhookAck:
       type: object
       description: Potwierdzenie odbioru zdarzenia; `processed` fałszywe przy powtórce.
