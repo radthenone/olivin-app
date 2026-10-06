@@ -42,3 +42,21 @@ class PushDeviceWriteSerializer(serializers.Serializer):
         if not value:
             raise serializers.ValidationError("Token nie może być pusty.")
         return value
+
+
+class NewsletterSubscribeSerializer(serializers.Serializer):
+    """Zapis na newsletter — sam adres; zgodę marketingową dobiera backend."""
+
+    email = serializers.EmailField(help_text="Adres do zapisu")
+
+
+class NewsletterTokenSerializer(serializers.Serializer):
+    """Token z linku w mailu — potwierdzenia albo wypisu."""
+
+    token = serializers.CharField(max_length=512, help_text="Token z linku w mailu")
+
+
+class NewsletterDetailSerializer(serializers.Serializer):
+    """Komunikat do wyświetlenia po zapisie, potwierdzeniu albo wypisie."""
+
+    detail = serializers.CharField(read_only=True)
