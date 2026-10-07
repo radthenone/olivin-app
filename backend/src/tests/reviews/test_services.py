@@ -87,6 +87,7 @@ class TestUpdateReview:
     """Edycja własnej opinii wraca do moderacji."""
 
     def test_update_changes_content_and_restarts_moderation(self):
+        """Edycja zmienia treść i cofa opinię do moderacji."""
         review = ReviewFactory(status=ReviewStatus.APPROVED, rating=5, comment="Ok")
 
         updated = update_review(review, rating=2, comment="Jednak nie")
@@ -101,6 +102,7 @@ class TestProductsToReview:
     """Lista dostarczonych produktów bez wystawionej opinii."""
 
     def test_lists_delivered_product_without_review(self):
+        """Lista zawiera dostarczony produkt bez opinii."""
         user = UserFactory()
         product = PublishedProductFactory()
         _delivered_purchase(user, product)
@@ -108,6 +110,7 @@ class TestProductsToReview:
         assert list(products_to_review(user)) == [product]
 
     def test_excludes_already_reviewed_product(self):
+        """Lista pomija produkt już oceniony."""
         user = UserFactory()
         product = PublishedProductFactory()
         _delivered_purchase(user, product)
@@ -116,6 +119,7 @@ class TestProductsToReview:
         assert list(products_to_review(user)) == []
 
     def test_excludes_product_without_delivered_order(self):
+        """Lista pomija produkt bez dostarczonego zamówienia."""
         user = UserFactory()
         PublishedProductFactory()
 

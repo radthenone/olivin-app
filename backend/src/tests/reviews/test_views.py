@@ -45,6 +45,7 @@ class TestReviewCreateApi:
     """Złożenie opinii przez klienta."""
 
     def test_requires_authentication(self, api_client: APIClient):
+        """Złożenie opinii wymaga zalogowania."""
         response: Any = api_client.post(
             REVIEWS_URL, {"product": "x", "rating": 5}, format="json"
         )
@@ -56,6 +57,7 @@ class TestReviewCreateApi:
     def test_create_review_for_delivered_product(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Klient wystawia opinię o dostarczonym produkcie."""
         product = PublishedProductFactory()
         _delivered_purchase(user, product)
 
@@ -72,6 +74,7 @@ class TestReviewCreateApi:
     def test_rejects_review_without_delivered_order(
         self, authenticated_client: APIClient
     ):
+        """Opinia bez dostarczonego zamówienia jest odrzucana."""
         product = PublishedProductFactory()
 
         response: Any = authenticated_client.post(
@@ -83,6 +86,7 @@ class TestReviewCreateApi:
     def test_rejects_second_review_of_same_product(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Druga opinia o tym samym produkcie jest odrzucana."""
         product = PublishedProductFactory()
         _delivered_purchase(user, product)
         ReviewFactory(user=user, product=product)
@@ -101,6 +105,7 @@ class TestReviewUpdateApi:
     def test_update_own_review_restarts_moderation(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Edycja własnej opinii cofa ją do moderacji."""
         review = ReviewFactory(user=user, status=ReviewStatus.APPROVED, rating=5)
 
         response: Any = authenticated_client.patch(
@@ -117,6 +122,7 @@ class TestReviewUpdateApi:
     def test_cannot_update_other_customers_review(
         self, authenticated_client: APIClient
     ):
+        """Klient nie zmieni cudzej opinii."""
         review = ReviewFactory()
 
         response: Any = authenticated_client.patch(
@@ -133,6 +139,7 @@ class TestReviewListApi:
     def test_list_returns_only_own_reviews_any_status(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Lista zwraca tylko własne opinie, w każdym statusie."""
         mine = ReviewFactory(user=user, status=ReviewStatus.PENDING)
         ReviewFactory()
 
@@ -149,6 +156,7 @@ class TestToReviewApi:
     def test_lists_delivered_products_without_review(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Lista zawiera dostarczone produkty bez opinii."""
         product = PublishedProductFactory()
         _delivered_purchase(user, product)
 
@@ -177,6 +185,7 @@ class TestToReviewApi:
     def test_excludes_already_reviewed_product(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Lista pomija produkt już oceniony."""
         product = PublishedProductFactory()
         _delivered_purchase(user, product)
         ReviewFactory(user=user, product=product)
@@ -193,6 +202,7 @@ class TestProductReviewsPublicApi:
     def test_returns_only_approved_reviews_signed_with_username(
         self, api_client: APIClient
     ):
+        """Lista zwraca tylko opublikowane opinie podpisane nazwą użytkownika."""
         product = PublishedProductFactory()
         approved = ReviewFactory(
             product=product, status=ReviewStatus.APPROVED, comment="Super"
@@ -209,6 +219,7 @@ class TestProductReviewsPublicApi:
         assert results[0]["comment"] == "Super"
 
     def test_does_not_require_authentication(self, api_client: APIClient):
+        """Lista nie wymaga logowania."""
         product = PublishedProductFactory()
         response: Any = api_client.get(_product_reviews_url(product.slug))
         assert response.status_code == status.HTTP_200_OK
@@ -219,6 +230,7 @@ class TestProductAverageRating:
     """Średnia ocen opublikowanych w API produktu (lista i karta)."""
 
     def test_average_rating_counts_only_approved_reviews(self, api_client: APIClient):
+        """Średnia liczy tylko opublikowane opinie."""
         product = PublishedProductFactory()
         ProductVariantFactory(product=product)
         ReviewFactory(product=product, status=ReviewStatus.APPROVED, rating=4)
@@ -240,6 +252,7 @@ class TestProductAverageRating:
     def test_average_rating_is_null_without_approved_reviews(
         self, api_client: APIClient
     ):
+        """Bez opublikowanych opinii średnia jest pusta."""
         product = PublishedProductFactory()
         ProductVariantFactory(product=product)
 
