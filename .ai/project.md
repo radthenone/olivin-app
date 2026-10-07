@@ -107,7 +107,7 @@ Testy integracyjne: `docker-compose.test.yml`, próg pokrycia **60%**.
 | Sieć Docker                | **`olivin-network`** — musi istnieć przed `docker compose up`                                             |
 | `FREE_SHIPPING_THRESHOLD`  | **50000** groszy — próg darmowej dostawy wspólny dla sklepu (`components/shop.py`); pusta wartość wyłącza |
 
-Zmienne ładowane z `.env` oraz `.envs/dev/**` przez `dotenv:` w `Taskfile.yml`.
+Zmienne ładowane z `.env` oraz `.envs/dev/**` przez `dotenv:` w `Taskfile.yml` i `core/envs.py`; przy `DJANGO_ENVIRONMENT=testing` (pytest) `core/envs.py` nie czyta żadnego z tych plików.
 
 ### Serwer VPS — tylko lekkie komendy
 

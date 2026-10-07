@@ -13,8 +13,8 @@ DEV_ENV_FILES = (
 )
 
 
-def load_valid_envs():
-    """Load `.env` files for the environment named by `DJANGO_ENVIRONMENT`.
+def load_valid_envs() -> None:
+    """Ładuje pliki `.env` zależnie od `DJANGO_ENVIRONMENT`.
 
     Testy (`testing`) nie czytają żadnych plików — wynik nie zależy od tego,
     co leży na maszynie dewelopera. Pozostałe środowiska ładują `.env`

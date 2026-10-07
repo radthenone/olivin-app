@@ -1,4 +1,8 @@
+"""Ładowanie plików `.env` w `core/envs.py`."""
+
 from __future__ import annotations
+
+import os
 
 import pytest
 
@@ -30,7 +34,7 @@ class TestLoadValidEnvs:
 
         envs.load_valid_envs()
 
-        assert PROBE not in envs.os.environ
+        assert PROBE not in os.environ
 
     def test_development_loads_dev_env_files(self, project_with_dev_env, monkeypatch):
         """W środowisku roboczym pliki `.envs/dev` dalej są ładowane."""
@@ -38,7 +42,7 @@ class TestLoadValidEnvs:
 
         envs.load_valid_envs()
 
-        assert envs.os.environ[PROBE] == "from-dev-env"
+        assert os.environ[PROBE] == "from-dev-env"
 
     def test_legacy_django_env_is_ignored(self, project_with_dev_env, monkeypatch):
         """Martwe `DJANGO_ENV` nie przełącza ładowania — źródłem prawdy jest `DJANGO_ENVIRONMENT`."""
@@ -47,4 +51,4 @@ class TestLoadValidEnvs:
 
         envs.load_valid_envs()
 
-        assert PROBE not in envs.os.environ
+        assert PROBE not in os.environ
