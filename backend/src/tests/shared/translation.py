@@ -21,6 +21,7 @@ class StubProvider:
     def translate(
         self, texts: list[str], *, target_language: str, source_language: str
     ) -> list[str]:
+        """Zwraca tekst z doklejonym znacznikiem języka."""
         return [f"{PREFIX}{text}" for text in texts]
 
 
@@ -30,4 +31,5 @@ class BrokenProvider:
     def translate(
         self, texts: list[str], *, target_language: str, source_language: str
     ) -> list[str]:
+        """Zawsze kończy się błędem silnika."""
         raise ConnectionError("silnik tłumaczeń nie odpowiada")
