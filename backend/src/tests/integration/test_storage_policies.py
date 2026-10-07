@@ -30,6 +30,7 @@ def _fetch(url: str) -> int:
 
 @pytest.fixture(scope="module")
 def manager() -> S3BucketManager:
+    """Menedżer bucketów połączony z prawdziwym MinIO."""
     result = sync_buckets()
     assert result.success, result.errors
     return S3BucketManager()
@@ -37,6 +38,7 @@ def manager() -> S3BucketManager:
 
 @pytest.fixture
 def key() -> str:
+    """Unikalny klucz obiektu testowego."""
     return f"test/{uuid.uuid4()}.txt"
 
 
@@ -45,7 +47,10 @@ def _put(manager: S3BucketManager, bucket, key: str) -> None:
 
 
 class TestBucketsExist:
-    def test_bootstrap_zaklada_wszystkie_trzy(self, manager: S3BucketManager):
+    """Bootstrap zakłada buckety w MinIO."""
+
+    def test_bootstrap_creates_all_three(self, manager: S3BucketManager):
+        """Bootstrap zakłada wszystkie trzy buckety."""
         existing = set(manager.list_buckets())
 
         assert {bucket.name for bucket in ALL_BUCKETS} <= existing
@@ -54,15 +59,17 @@ class TestBucketsExist:
 class TestPublicBucket:
     """`products` — odczyt publiczny, adres bez podpisu."""
 
-    def test_obiekt_jest_do_pobrania_bez_podpisu(
+    def test_object_is_downloadable_without_signature(
         self, manager: S3BucketManager, key: str
     ):
+        """Obiekt da się pobrać bez podpisu."""
         _put(manager, PRODUCTS, key)
         endpoint = manager.client.meta.endpoint_url.rstrip("/")
 
         assert _fetch(f"{endpoint}/{PRODUCTS.name}/{key}") == 200
 
-    def test_polityka_nie_pozwala_wylistowac_zawartosci(self, manager: S3BucketManager):
+    def test_policy_does_not_allow_listing(self, manager: S3BucketManager):
+        """Polityka nie pozwala wylistować zawartości."""
         endpoint = manager.client.meta.endpoint_url.rstrip("/")
 
         assert _fetch(f"{endpoint}/{PRODUCTS.name}/") != 200
@@ -72,30 +79,34 @@ class TestPrivateBuckets:
     """`originals` i `documents` — bez podpisu nic nie wychodzi."""
 
     @pytest.mark.parametrize("bucket", [ORIGINALS, DOCUMENTS])
-    def test_obiekt_nie_jest_do_pobrania_bez_podpisu(
+    def test_object_is_not_downloadable_without_signature(
         self, manager: S3BucketManager, key: str, bucket
     ):
+        """Obiektu nie da się pobrać bez podpisu."""
         _put(manager, bucket, key)
         endpoint = manager.client.meta.endpoint_url.rstrip("/")
 
         assert _fetch(f"{endpoint}/{bucket.name}/{key}") == 403
 
     @pytest.mark.parametrize("bucket", [ORIGINALS, DOCUMENTS])
-    def test_nie_maja_polityki_wpuszczajacej(self, manager: S3BucketManager, bucket):
+    def test_have_no_public_policy(self, manager: S3BucketManager, bucket):
+        """Prywatne buckety nie mają polityki wpuszczającej."""
         assert manager.bucket_policy(bucket.name) is None
 
 
 class TestSignedUrl:
     """Adres podpisany na czas to jedyna droga do `documents`."""
 
-    def test_podpisany_adres_pobiera_dokument(self, manager: S3BucketManager, key: str):
+    def test_signed_url_downloads_document(self, manager: S3BucketManager, key: str):
+        """Podpisany adres pobiera dokument."""
         _put(manager, DOCUMENTS, key)
 
         url = manager.presigned_url(DOCUMENTS, key, expires_in=60)
 
         assert _fetch(url) == 200
 
-    def test_podpisany_adres_wygasa(self, manager: S3BucketManager, key: str):
+    def test_signed_url_expires(self, manager: S3BucketManager, key: str):
+        """Podpisany adres wygasa."""
         _put(manager, DOCUMENTS, key)
 
         url = manager.presigned_url(DOCUMENTS, key, expires_in=1)
@@ -109,7 +120,8 @@ class TestSignedUrl:
 class TestPolicyIsReappliedOnRestart:
     """Polityka wraca przy każdym starcie, nie tylko przy zakładaniu bucketu."""
 
-    def test_zdjeta_polityka_wraca_po_bootstrapie(self, manager: S3BucketManager):
+    def test_removed_policy_returns_after_bootstrap(self, manager: S3BucketManager):
+        """Zdjęta polityka wraca po bootstrapie."""
         manager.client.delete_bucket_policy(Bucket=PRODUCTS.name)
         assert manager.bucket_policy(PRODUCTS.name) is None
 
