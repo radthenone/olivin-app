@@ -25,6 +25,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AccountAnonymisation,
+  AccountAnonymisationDetail,
   CustomersProfileListParams,
   PaginatedProfileList,
   PatchedProfile,
@@ -81,7 +83,212 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
-export type customersProfileListResponse200 = {
+export type customersAccountAnonymiseCreateResponse204 = {
+  data: void
+  status: 204
+}
+
+export type customersAccountAnonymiseCreateResponse400 = {
+  data: void
+  status: 400
+}
+
+export type customersAccountAnonymiseCreateResponse409 = {
+  data: AccountAnonymisationDetail
+  status: 409
+}
+
+export type customersAccountAnonymiseCreateResponseSuccess = (customersAccountAnonymiseCreateResponse204) & {
+  headers: Headers;
+};
+export type customersAccountAnonymiseCreateResponseError = (customersAccountAnonymiseCreateResponse400 | customersAccountAnonymiseCreateResponse409) & {
+  headers: Headers;
+};
+
+export type customersAccountAnonymiseCreateResponse = (customersAccountAnonymiseCreateResponseSuccess | customersAccountAnonymiseCreateResponseError)
+
+export const getCustomersAccountAnonymiseCreateUrl = () => {
+
+
+
+
+  return `/customers/account/anonymise/`
+}
+
+/**
+ * Nieodwracalne. Konto z hasłem potwierdza hasłem (`password`), konto bez hasła — kodem z maila (`code`, patrz `/code/`). 400 przy złym potwierdzeniu, 409 gdy trwa niedostarczone zamówienie.
+ * @summary Usunięcie konta (anonimizacja)
+ */
+export const customersAccountAnonymiseCreate = async (accountAnonymisation?: AccountAnonymisation, options?: Parameters<typeof appInstance>[1]): Promise<customersAccountAnonymiseCreateResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return appInstance<customersAccountAnonymiseCreateResponse>(getCustomersAccountAnonymiseCreateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(accountAnonymisation)
+  }
+);}
+
+
+
+
+
+export const getCustomersAccountAnonymiseCreateMutationKey = () => ['customersAccountAnonymiseCreate'] as const;
+
+export const getCustomersAccountAnonymiseCreateMutationOptions = <TError = ErrorType<void | AccountAnonymisationDetail>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersAccountAnonymiseCreate>>, TError,CustomersAccountAnonymiseCreateMutationVariables, TContext>, request?: SecondParameter<typeof appInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof customersAccountAnonymiseCreate>>, TError,CustomersAccountAnonymiseCreateMutationVariables, TContext> => {
+
+const mutationKey = getCustomersAccountAnonymiseCreateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof customersAccountAnonymiseCreate>>, CustomersAccountAnonymiseCreateMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  customersAccountAnonymiseCreate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CustomersAccountAnonymiseCreateMutationResult = NonNullable<Awaited<ReturnType<typeof customersAccountAnonymiseCreate>>>
+    export type CustomersAccountAnonymiseCreateMutationBody = BodyType<AccountAnonymisation> | undefined
+    export type CustomersAccountAnonymiseCreateMutationError = ErrorType<void | AccountAnonymisationDetail>
+    export type CustomersAccountAnonymiseCreateMutationVariables = {data?: BodyType<AccountAnonymisation>}
+
+    /**
+ * @summary Usunięcie konta (anonimizacja)
+ */
+export const useCustomersAccountAnonymiseCreate = <TError = ErrorType<void | AccountAnonymisationDetail>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersAccountAnonymiseCreate>>, TError,CustomersAccountAnonymiseCreateMutationVariables, TContext>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof customersAccountAnonymiseCreate>>,
+        TError,
+        CustomersAccountAnonymiseCreateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCustomersAccountAnonymiseCreateMutationOptions(options), queryClient);
+    }
+    export type customersAccountAnonymiseCodeCreateResponse202 = {
+  data: AccountAnonymisationDetail
+  status: 202
+}
+
+export type customersAccountAnonymiseCodeCreateResponse400 = {
+  data: void
+  status: 400
+}
+
+export type customersAccountAnonymiseCodeCreateResponseSuccess = (customersAccountAnonymiseCodeCreateResponse202) & {
+  headers: Headers;
+};
+export type customersAccountAnonymiseCodeCreateResponseError = (customersAccountAnonymiseCodeCreateResponse400) & {
+  headers: Headers;
+};
+
+export type customersAccountAnonymiseCodeCreateResponse = (customersAccountAnonymiseCodeCreateResponseSuccess | customersAccountAnonymiseCodeCreateResponseError)
+
+export const getCustomersAccountAnonymiseCodeCreateUrl = () => {
+
+
+
+
+  return `/customers/account/anonymise/code/`
+}
+
+/**
+ * Tylko dla konta bez hasła (logowanie społecznościowe): wysyła kod na adres konta, ważny 15 minut. 400 dla konta z hasłem.
+ * @summary Kod potwierdzenia usunięcia konta
+ */
+export const customersAccountAnonymiseCodeCreate = async ( options?: Parameters<typeof appInstance>[1]): Promise<customersAccountAnonymiseCodeCreateResponse> => {
+
+  return appInstance<customersAccountAnonymiseCodeCreateResponse>(getCustomersAccountAnonymiseCodeCreateUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCustomersAccountAnonymiseCodeCreateMutationKey = () => ['customersAccountAnonymiseCodeCreate'] as const;
+
+export const getCustomersAccountAnonymiseCodeCreateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersAccountAnonymiseCodeCreate>>, TError,void, TContext>, request?: SecondParameter<typeof appInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof customersAccountAnonymiseCodeCreate>>, TError,void, TContext> => {
+
+const mutationKey = getCustomersAccountAnonymiseCodeCreateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof customersAccountAnonymiseCodeCreate>>, void> = () => {
+
+
+          return  customersAccountAnonymiseCodeCreate(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CustomersAccountAnonymiseCodeCreateMutationResult = NonNullable<Awaited<ReturnType<typeof customersAccountAnonymiseCodeCreate>>>
+
+    export type CustomersAccountAnonymiseCodeCreateMutationError = ErrorType<void>
+
+
+    /**
+ * @summary Kod potwierdzenia usunięcia konta
+ */
+export const useCustomersAccountAnonymiseCodeCreate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof customersAccountAnonymiseCodeCreate>>, TError,void, TContext>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof customersAccountAnonymiseCodeCreate>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getCustomersAccountAnonymiseCodeCreateMutationOptions(options), queryClient);
+    }
+    export type customersProfileListResponse200 = {
   data: PaginatedProfileList
   status: 200
 }

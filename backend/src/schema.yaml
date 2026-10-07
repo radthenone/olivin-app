@@ -515,6 +515,60 @@ paths:
                     csrfToken:
                       type: string
           description: ''
+  /customers/account/anonymise/:
+    post:
+      operationId: customers_account_anonymise_create
+      description: Nieodwracalne. Konto z hasłem potwierdza hasłem (`password`), konto
+        bez hasła — kodem z maila (`code`, patrz `/code/`). 400 przy złym potwierdzeniu,
+        409 gdy trwa niedostarczone zamówienie.
+      summary: Usunięcie konta (anonimizacja)
+      tags:
+      - Profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountAnonymisation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AccountAnonymisation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AccountAnonymisation'
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: Konto zanonimizowane, sesja zakończona
+        '400':
+          description: Brak albo błędne potwierdzenie
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountAnonymisationDetail'
+          description: Trwa niedostarczone zamówienie
+  /customers/account/anonymise/code/:
+    post:
+      operationId: customers_account_anonymise_code_create
+      description: 'Tylko dla konta bez hasła (logowanie społecznościowe): wysyła
+        kod na adres konta, ważny 15 minut. 400 dla konta z hasłem.'
+      summary: Kod potwierdzenia usunięcia konta
+      tags:
+      - Profiles
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountAnonymisationDetail'
+          description: ''
+        '400':
+          description: Konto ma hasło — potwierdź hasłem
   /customers/addresses/:
     get:
       operationId: customers_addresses_list
@@ -2506,6 +2560,25 @@ paths:
           description: No response body
 components:
   schemas:
+    AccountAnonymisation:
+      type: object
+      description: 'Potwierdzenie anonimizacji: hasło konta albo kod z maila (konto
+        bez hasła).'
+      properties:
+        password:
+          type: string
+          writeOnly: true
+        code:
+          type: string
+          writeOnly: true
+          maxLength: 6
+    AccountAnonymisationDetail:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
     Address:
       type: object
       properties:

@@ -9,6 +9,29 @@ import * as zod from 'zod';
 
 
 /**
+ * Nieodwracalne. Konto z hasłem potwierdza hasłem (`password`), konto bez hasła — kodem z maila (`code`, patrz `/code/`). 400 przy złym potwierdzeniu, 409 gdy trwa niedostarczone zamówienie.
+ * @summary Usunięcie konta (anonimizacja)
+ */
+export const customersAccountAnonymiseCreateBodyCodeMax = 6;
+
+
+
+export const CustomersAccountAnonymiseCreateBody = zod.object({
+  "password": zod.string().optional(),
+  "code": zod.string().max(customersAccountAnonymiseCreateBodyCodeMax).optional()
+}).describe('Potwierdzenie anonimizacji: hasło konta albo kod z maila (konto bez hasła).')
+
+export const CustomersAccountAnonymiseCreateResponse = zod.void()
+
+/**
+ * Tylko dla konta bez hasła (logowanie społecznościowe): wysyła kod na adres konta, ważny 15 minut. 400 dla konta z hasłem.
+ * @summary Kod potwierdzenia usunięcia konta
+ */
+export const CustomersAccountAnonymiseCodeCreateResponse = zod.object({
+  "detail": zod.string()
+})
+
+/**
  * A viewset for viewing and editing profile instances.
  *
  * Actions:
