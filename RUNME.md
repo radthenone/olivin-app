@@ -46,3 +46,5 @@ task lints:backend:typecheck
 task lints:frontend:lint
 task lints:frontend:typecheck
 ```
+
+Testy jednostkowe nie czytają `.env` ani `.envs/dev/*` (`DJANGO_ENVIRONMENT=testing`), więc nie potrzebują uruchomionego compose. Na Windowsie render PDF (WeasyPrint) wymaga bibliotek GTK — bez nich testy dokumentów padają z `OSError: cannot load library 'libgobject-2.0-0'`.

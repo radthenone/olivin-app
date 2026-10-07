@@ -15,6 +15,7 @@ class TestFavoriteUniqueness:
     """Para użytkownik+produkt jest unikalna w bazie."""
 
     def test_rejects_duplicate_pair(self):
+        """Druga para użytkownik+produkt jest odrzucana."""
         user = UserFactory()
         product = PublishedProductFactory()
         FavoriteFactory(user=user, product=product)
@@ -23,6 +24,7 @@ class TestFavoriteUniqueness:
             FavoriteFactory(user=user, product=product)
 
     def test_same_product_allowed_for_different_users(self):
+        """Ten sam produkt może być ulubiony u różnych użytkowników."""
         product = PublishedProductFactory()
         FavoriteFactory(product=product)
         FavoriteFactory(product=product)  # inny użytkownik z fabryki — bez błędu

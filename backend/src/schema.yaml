@@ -515,20 +515,83 @@ paths:
                     csrfToken:
                       type: string
           description: ''
+  /customers/account/anonymise/:
+    post:
+      operationId: customers_account_anonymise_create
+      description: Nieodwracalne. Konto z hasłem potwierdza hasłem (`password`), konto
+        bez hasła — kodem z maila (`code`, patrz `/code/`). 400 przy złym potwierdzeniu,
+        409 gdy trwa niedostarczone zamówienie.
+      summary: Usunięcie konta (anonimizacja)
+      tags:
+      - Profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountAnonymisation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AccountAnonymisation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AccountAnonymisation'
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: Konto zanonimizowane, sesja zakończona
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountAnonymisationError'
+          description: Błędne hasło (`password`), kod (`code`) albo konto obsługi
+            sklepu (`detail`)
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountAnonymisationDetail'
+          description: Trwa niedostarczone zamówienie
+  /customers/account/anonymise/code/:
+    post:
+      operationId: customers_account_anonymise_code_create
+      description: 'Tylko dla konta bez hasła (logowanie społecznościowe): wysyła
+        kod na adres konta, ważny 15 minut. 400 dla konta z hasłem.'
+      summary: Kod potwierdzenia usunięcia konta
+      tags:
+      - Profiles
+      security:
+      - XSessionTokenAuth: []
+      - cookieAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountAnonymisationDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountAnonymisationDetail'
+          description: Konto ma hasło — potwierdź hasłem
   /customers/addresses/:
     get:
       operationId: customers_addresses_list
       description: |-
-        A viewset for viewing and editing address instances.
+        Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
 
         Actions:
-        - list:           GET  /api/v1/addresses/
-        - retrieve:       GET  /api/v1/addresses/{id}/
-        - create:         POST /api/v1/addresses/
-        - update:         PUT  /api/v1/addresses/{id}/
-        - partial_update: PATCH /api/v1/addresses/{id}/
-        - destroy:        DELETE /api/v1/addresses/{id}/
-        - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+        - list:           GET    /customers/addresses/
+        - retrieve:       GET    /customers/addresses/{id}/
+        - create:         POST   /customers/addresses/
+        - update:         PUT    /customers/addresses/{id}/
+        - partial_update: PATCH  /customers/addresses/{id}/
+        - destroy:        DELETE /customers/addresses/{id}/
+        - set_default:    PATCH  /customers/addresses/{id}/set-default/
       parameters:
       - name: page
         required: false
@@ -557,16 +620,16 @@ paths:
     post:
       operationId: customers_addresses_create
       description: |-
-        A viewset for viewing and editing address instances.
+        Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
 
         Actions:
-        - list:           GET  /api/v1/addresses/
-        - retrieve:       GET  /api/v1/addresses/{id}/
-        - create:         POST /api/v1/addresses/
-        - update:         PUT  /api/v1/addresses/{id}/
-        - partial_update: PATCH /api/v1/addresses/{id}/
-        - destroy:        DELETE /api/v1/addresses/{id}/
-        - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+        - list:           GET    /customers/addresses/
+        - retrieve:       GET    /customers/addresses/{id}/
+        - create:         POST   /customers/addresses/
+        - update:         PUT    /customers/addresses/{id}/
+        - partial_update: PATCH  /customers/addresses/{id}/
+        - destroy:        DELETE /customers/addresses/{id}/
+        - set_default:    PATCH  /customers/addresses/{id}/set-default/
       tags:
       - Addresses
       requestBody:
@@ -594,21 +657,23 @@ paths:
     get:
       operationId: customers_addresses_retrieve
       description: |-
-        A viewset for viewing and editing address instances.
+        Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
 
         Actions:
-        - list:           GET  /api/v1/addresses/
-        - retrieve:       GET  /api/v1/addresses/{id}/
-        - create:         POST /api/v1/addresses/
-        - update:         PUT  /api/v1/addresses/{id}/
-        - partial_update: PATCH /api/v1/addresses/{id}/
-        - destroy:        DELETE /api/v1/addresses/{id}/
-        - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+        - list:           GET    /customers/addresses/
+        - retrieve:       GET    /customers/addresses/{id}/
+        - create:         POST   /customers/addresses/
+        - update:         PUT    /customers/addresses/{id}/
+        - partial_update: PATCH  /customers/addresses/{id}/
+        - destroy:        DELETE /customers/addresses/{id}/
+        - set_default:    PATCH  /customers/addresses/{id}/set-default/
       parameters:
       - in: path
         name: id
         schema:
           type: string
+          format: uuid
+        description: A UUID string identifying this Address.
         required: true
       tags:
       - Addresses
@@ -625,21 +690,23 @@ paths:
     put:
       operationId: customers_addresses_update
       description: |-
-        A viewset for viewing and editing address instances.
+        Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
 
         Actions:
-        - list:           GET  /api/v1/addresses/
-        - retrieve:       GET  /api/v1/addresses/{id}/
-        - create:         POST /api/v1/addresses/
-        - update:         PUT  /api/v1/addresses/{id}/
-        - partial_update: PATCH /api/v1/addresses/{id}/
-        - destroy:        DELETE /api/v1/addresses/{id}/
-        - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+        - list:           GET    /customers/addresses/
+        - retrieve:       GET    /customers/addresses/{id}/
+        - create:         POST   /customers/addresses/
+        - update:         PUT    /customers/addresses/{id}/
+        - partial_update: PATCH  /customers/addresses/{id}/
+        - destroy:        DELETE /customers/addresses/{id}/
+        - set_default:    PATCH  /customers/addresses/{id}/set-default/
       parameters:
       - in: path
         name: id
         schema:
           type: string
+          format: uuid
+        description: A UUID string identifying this Address.
         required: true
       tags:
       - Addresses
@@ -667,21 +734,23 @@ paths:
     patch:
       operationId: customers_addresses_partial_update
       description: |-
-        A viewset for viewing and editing address instances.
+        Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
 
         Actions:
-        - list:           GET  /api/v1/addresses/
-        - retrieve:       GET  /api/v1/addresses/{id}/
-        - create:         POST /api/v1/addresses/
-        - update:         PUT  /api/v1/addresses/{id}/
-        - partial_update: PATCH /api/v1/addresses/{id}/
-        - destroy:        DELETE /api/v1/addresses/{id}/
-        - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+        - list:           GET    /customers/addresses/
+        - retrieve:       GET    /customers/addresses/{id}/
+        - create:         POST   /customers/addresses/
+        - update:         PUT    /customers/addresses/{id}/
+        - partial_update: PATCH  /customers/addresses/{id}/
+        - destroy:        DELETE /customers/addresses/{id}/
+        - set_default:    PATCH  /customers/addresses/{id}/set-default/
       parameters:
       - in: path
         name: id
         schema:
           type: string
+          format: uuid
+        description: A UUID string identifying this Address.
         required: true
       tags:
       - Addresses
@@ -709,21 +778,23 @@ paths:
     delete:
       operationId: customers_addresses_destroy
       description: |-
-        A viewset for viewing and editing address instances.
+        Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
 
         Actions:
-        - list:           GET  /api/v1/addresses/
-        - retrieve:       GET  /api/v1/addresses/{id}/
-        - create:         POST /api/v1/addresses/
-        - update:         PUT  /api/v1/addresses/{id}/
-        - partial_update: PATCH /api/v1/addresses/{id}/
-        - destroy:        DELETE /api/v1/addresses/{id}/
-        - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+        - list:           GET    /customers/addresses/
+        - retrieve:       GET    /customers/addresses/{id}/
+        - create:         POST   /customers/addresses/
+        - update:         PUT    /customers/addresses/{id}/
+        - partial_update: PATCH  /customers/addresses/{id}/
+        - destroy:        DELETE /customers/addresses/{id}/
+        - set_default:    PATCH  /customers/addresses/{id}/set-default/
       parameters:
       - in: path
         name: id
         schema:
           type: string
+          format: uuid
+        description: A UUID string identifying this Address.
         required: true
       tags:
       - Addresses
@@ -743,6 +814,8 @@ paths:
         name: id
         schema:
           type: string
+          format: uuid
+        description: A UUID string identifying this Address.
         required: true
       tags:
       - Addresses
@@ -777,8 +850,6 @@ paths:
                     is_default: true
                   summary: Address set as default
           description: Address set as default successfully
-        '400':
-          description: Address is already set as default
         '403':
           description: Permission denied
         '404':
@@ -1346,6 +1417,94 @@ paths:
       responses:
         '204':
           description: No response body
+  /notifications/newsletter/confirm/:
+    post:
+      operationId: notifications_newsletter_confirm_create
+      description: Token z linku w mailu potwierdzenia. 404 dla nieznanego tokenu.
+      summary: Potwierdzenie zapisu na newsletter
+      tags:
+      - Notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterToken'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NewsletterToken'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NewsletterToken'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterDetail'
+          description: ''
+  /notifications/newsletter/subscribe/:
+    post:
+      operationId: notifications_newsletter_subscribe_create
+      description: Bez logowania. Zawsze 202 z tą samą treścią — odpowiedź nie zdradza,
+        czy adres był już zapisany. Na adres trafia link potwierdzenia; 400, gdy brak
+        bieżącej wersji zgody marketingowej.
+      summary: Zapis na newsletter
+      tags:
+      - Notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterSubscribe'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NewsletterSubscribe'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NewsletterSubscribe'
+        required: true
+      security:
+      - {}
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterDetail'
+          description: ''
+  /notifications/newsletter/unsubscribe/:
+    post:
+      operationId: notifications_newsletter_unsubscribe_create
+      description: Bez logowania, token z linku w stopce maila — subskrypcji albo
+        konta (wyłącza wtedy zgodę marketingową e-mail konta). 404 dla nieznanego
+        tokenu.
+      summary: Wypis z newslettera
+      tags:
+      - Notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterToken'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NewsletterToken'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NewsletterToken'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterDetail'
+          description: ''
   /notifications/preferences/:
     get:
       operationId: notifications_preferences_retrieve
@@ -2418,6 +2577,34 @@ paths:
           description: No response body
 components:
   schemas:
+    AccountAnonymisation:
+      type: object
+      description: 'Potwierdzenie anonimizacji: hasło konta albo kod z maila (konto
+        bez hasła).'
+      properties:
+        password:
+          type: string
+          writeOnly: true
+        code:
+          type: string
+          writeOnly: true
+          maxLength: 6
+    AccountAnonymisationDetail:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    AccountAnonymisationError:
+      type: object
+      properties:
+        password:
+          type: string
+        code:
+          type: string
+        detail:
+          type: string
     Address:
       type: object
       properties:
@@ -4119,6 +4306,35 @@ components:
       - rating
       - status
       - updatedAt
+    NewsletterDetail:
+      type: object
+      description: Komunikat do wyświetlenia po zapisie, potwierdzeniu albo wypisie.
+      properties:
+        detail:
+          type: string
+          readOnly: true
+      required:
+      - detail
+    NewsletterSubscribe:
+      type: object
+      description: Zapis na newsletter — sam adres; zgodę marketingową dobiera backend.
+      properties:
+        email:
+          type: string
+          format: email
+          description: Adres do zapisu
+      required:
+      - email
+    NewsletterToken:
+      type: object
+      description: Token z linku w mailu — potwierdzenia albo wypisu.
+      properties:
+        token:
+          type: string
+          description: Token z linku w mailu
+          maxLength: 512
+      required:
+      - token
     Notification:
       type: object
       description: Powiadomienie klienta — tylko do odczytu; oznaczenie odczytania
@@ -4142,6 +4358,7 @@ components:
             * `return_settled` - Rozliczenie zwrotu
             * `watch_restock` - Wariant wrócił na stan
             * `watch_price_drop` - Spadek ceny wariantu
+            * `cart_reminder` - Przypomnienie o koszyku
         message:
           type: string
           readOnly: true
@@ -4179,6 +4396,7 @@ components:
       - return_settled
       - watch_restock
       - watch_price_drop
+      - cart_reminder
       type: string
       description: |-
         * `order_status_changed` - Zmiana statusu zamówienia
@@ -4188,6 +4406,7 @@ components:
         * `return_settled` - Rozliczenie zwrotu
         * `watch_restock` - Wariant wrócił na stan
         * `watch_price_drop` - Spadek ceny wariantu
+        * `cart_reminder` - Przypomnienie o koszyku
     NotificationPreference:
       type: object
       description: Zgoda marketingowa klienta, osobno per kanał.
@@ -5397,6 +5616,11 @@ components:
           allOf:
           - $ref: '#/components/schemas/RoleEnum'
           readOnly: true
+        pendingConsents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsentDocument'
+          readOnly: true
     PatchedReviewUpdate:
       type: object
       description: Wejście do edycji opinii — zawsze wraca do moderacji.
@@ -5915,11 +6139,17 @@ components:
           allOf:
           - $ref: '#/components/schemas/RoleEnum'
           readOnly: true
+        pendingConsents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsentDocument'
+          readOnly: true
       required:
       - age
       - email
       - fullName
       - id
+      - pendingConsents
       - role
     Promotion:
       type: object

@@ -53,16 +53,20 @@ def _page_size_for(query: dict[str, str]) -> int | None:
 class TestAnalyticsAppRemoved:
     """`apps.analytics` była pustym szkieletem — po jej usunięciu nie ma śladu."""
 
-    def test_nie_ma_w_zainstalowanych_aplikacjach(self):
+    def test_not_in_installed_apps(self):
+        """Nie ma jej w zainstalowanych aplikacjach."""
         assert "apps.analytics" not in settings.INSTALLED_APPS
 
-    def test_nie_ma_konfiguracji_aplikacji(self):
+    def test_no_app_config(self):
+        """Nie ma konfiguracji aplikacji."""
         assert not apps.is_installed("apps.analytics")
 
-    def test_nie_ma_kodu_w_repozytorium(self):
+    def test_no_code_in_repository(self):
+        """Nie ma kodu w repozytorium."""
         assert not list((APPS_DIR / "analytics").glob("**/*.py"))
 
-    def test_ustawienia_i_urls_nie_wspominaja_analytics(self):
+    def test_settings_and_urls_do_not_mention_analytics(self):
+        """Ustawienia i routing nie wspominają `analytics`."""
         watched = [
             CORE_DIR / "settings" / "components" / "apps.py",
             CORE_DIR / "urls.py",
@@ -74,23 +78,28 @@ class TestAnalyticsAppRemoved:
 class TestPagination:
     """Paginacja numerowana: 24 na stronę, maksimum 100 przez `?page_size`."""
 
-    def test_klasa_jest_domyslna(self):
+    def test_class_is_default(self):
+        """Klasa paginacji jest domyślna."""
         assert (
             settings.REST_FRAMEWORK["DEFAULT_PAGINATION_CLASS"]
             == "core.api.pagination.StandardPagination"
         )
 
-    def test_domyslny_rozmiar_strony(self):
+    def test_default_page_size(self):
+        """Domyślny rozmiar strony to 24."""
         assert StandardPagination.page_size == 24
         assert settings.REST_FRAMEWORK["PAGE_SIZE"] == 24
 
-    def test_klient_moze_zazadac_mniejszej_strony(self):
+    def test_client_can_request_smaller_page(self):
+        """Klient może zażądać mniejszej strony."""
         assert _page_size_for({"page_size": "5"}) == 5
 
-    def test_zadanie_powyzej_limitu_jest_przyciete_do_stu(self):
+    def test_request_above_limit_is_capped_at_hundred(self):
+        """Żądanie powyżej limitu jest przycinane do stu."""
         assert _page_size_for({"page_size": "500"}) == 100
 
-    def test_bez_parametru_obowiazuje_domyslna_wartosc(self):
+    def test_without_param_default_applies(self):
+        """Bez parametru obowiązuje wartość domyślna."""
         assert _page_size_for({}) == 24
 
 
@@ -98,7 +107,8 @@ class TestPagination:
 class TestPaginationOnLiveEndpoint:
     """Ten sam kształt odpowiedzi na żywym endpoincie, nie tylko w klasie."""
 
-    def test_lista_ma_koperte_paginacji(self, authenticated_client: APIClient, user):
+    def test_list_has_pagination_envelope(self, authenticated_client: APIClient, user):
+        """Lista ma kopertę paginacji."""
         ProfileFactory(user=user)
 
         response = cast(Response, authenticated_client.get(reverse("profile-list")))
@@ -106,7 +116,8 @@ class TestPaginationOnLiveEndpoint:
         assert response.status_code == status.HTTP_200_OK
         assert set(response.data) >= {"count", "next", "previous", "results"}  # type: ignore
 
-    def test_domyslnie_najwyzej_24_pozycje(self, api_client: APIClient):
+    def test_at_most_24_items_by_default(self, api_client: APIClient):
+        """Domyślnie lista ma najwyżej 24 pozycje."""
         user = UserFactory()
         _fill_addresses(ProfileFactory(user=user))
 
@@ -118,7 +129,8 @@ class TestPaginationOnLiveEndpoint:
         assert len(response.data["results"]) == 24  # type: ignore
         assert response.data["next"] is not None  # type: ignore
 
-    def test_page_size_zaweza_strone(self, api_client: APIClient):
+    def test_page_size_narrows_page(self, api_client: APIClient):
+        """`page_size` zawęża stronę."""
         user = UserFactory()
         _fill_addresses(ProfileFactory(user=user))
 
@@ -139,18 +151,21 @@ class TestOrdering:
     w stabilnej kolejności, więc taki test przechodziłby również bez poprawki.
     """
 
-    def test_model_bazowy_rozstrzyga_remis_identyfikatorem(self):
+    def test_base_model_breaks_ties_by_id(self):
+        """Model bazowy rozstrzyga remis identyfikatorem."""
         assert TimestampedModel._meta.ordering == ["-created_at", "-id"]
 
     @pytest.mark.parametrize("model", [Address, Profile])
-    def test_modele_kont_dziedzicza_ten_sam_porzadek(self, model):
+    def test_account_models_inherit_same_ordering(self, model):
+        """Modele kont dziedziczą ten sam porządek."""
         assert model._meta.ordering == ["-created_at", "-id"]
 
 
 class TestCache:
     """Historia limitów musi być wspólna dla procesów, nie procesowa."""
 
-    def test_domyslny_cache_jest_wspoldzielony(self):
+    def test_default_cache_is_shared(self):
+        """Domyślny cache jest współdzielony między procesami."""
         backend = cache_settings.CACHES["default"]["BACKEND"]
         assert backend == "django.core.cache.backends.redis.RedisCache"
 
@@ -158,22 +173,28 @@ class TestCache:
 class TestFilterBackends:
     """`django-filter` i `SearchFilter` są domyślne — widoki ich nie powtarzają."""
 
-    def test_backendy_filtrow(self):
+    def test_filter_backends(self):
+        """Domyślne backendy filtrów."""
         assert settings.REST_FRAMEWORK["DEFAULT_FILTER_BACKENDS"] == (
             "django_filters.rest_framework.DjangoFilterBackend",
             "core.api.filters.SearchFilter",
         )
 
-    def test_django_filters_jest_zainstalowane(self):
+    def test_django_filters_is_installed(self):
+        """`django_filters` jest zainstalowane."""
         assert "django_filters" in settings.INSTALLED_APPS
 
-    def test_widok_bez_pol_nie_oglasza_parametru_search(self):
+    def test_view_without_fields_does_not_announce_search(self):
+        """Widok bez pól wyszukiwania nie ogłasza parametru `search`."""
+
         class ListWithoutSearch:
             pass
 
         assert SearchFilter().get_schema_operation_parameters(ListWithoutSearch()) == []
 
-    def test_widok_z_polami_oglasza_parametr_search(self):
+    def test_view_with_fields_announces_search(self):
+        """Widok z polami wyszukiwania ogłasza parametr `search`."""
+
         class ListWithSearch:
             search_fields = ("name",)
 
@@ -185,14 +206,16 @@ class TestFilterBackends:
 class TestThrottling:
     """Limity żądań: anonim 60/min, zalogowany 300/min, zakres `auth` 10/min."""
 
-    def test_stawki(self):
+    def test_rates(self):
+        """Stawki limitów żądań."""
         assert settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] == {
             "anon": "60/min",
             "user": "300/min",
             "auth": "10/min",
         }
 
-    def test_klasy_domyslne(self):
+    def test_default_classes(self):
+        """Domyślne klasy limitów żądań."""
         assert settings.REST_FRAMEWORK["DEFAULT_THROTTLE_CLASSES"] == (
             "rest_framework.throttling.AnonRateThrottle",
             "rest_framework.throttling.UserRateThrottle",
@@ -200,7 +223,7 @@ class TestThrottling:
         )
 
     @pytest.mark.django_db
-    def test_anonim_dostaje_429_po_przekroczeniu(self, api_client: APIClient):
+    def test_anonymous_gets_429_when_exceeded(self, api_client: APIClient):
         """Podmieniamy stawkę, żeby nie wysyłać 61 żądań dla jednej asercji."""
 
         def health() -> int:
@@ -211,7 +234,7 @@ class TestThrottling:
             assert health() == status.HTTP_200_OK
             assert health() == status.HTTP_429_TOO_MANY_REQUESTS
 
-    def test_zakres_auth_obowiazuje_na_widoku_ktory_go_wlaczy(self):
+    def test_auth_scope_applies_on_opted_in_view(self):
         """Zakres `auth` czeka gotowy — sam z siebie nie ogranicza niczego."""
 
         class CouponValidationView(APIView):
@@ -235,24 +258,28 @@ class TestThrottling:
 class TestPermissions:
     """`IsAuthenticated` zostaje domyślne; `AllowAny` wyłącznie na widoku."""
 
-    def test_domyslna_permisja(self):
+    def test_default_permission(self):
+        """Domyślna permisja to `IsAuthenticated`."""
         assert settings.REST_FRAMEWORK["DEFAULT_PERMISSION_CLASSES"] == (
             "rest_framework.permissions.IsAuthenticated",
         )
 
-    def test_allow_any_nie_jest_globalne(self):
+    def test_allow_any_is_not_global(self):
+        """`AllowAny` nie jest globalne."""
         assert (
             "rest_framework.permissions.AllowAny"
             not in (settings.REST_FRAMEWORK["DEFAULT_PERMISSION_CLASSES"])
         )
 
-    def test_anonim_nie_wejdzie_na_konta(self, api_client: APIClient):
+    def test_anonymous_cannot_access_accounts(self, api_client: APIClient):
+        """Anonim nie wejdzie na konta."""
         response = cast(Response, api_client.get(reverse("profile-list")))
         assert response.status_code in (
             status.HTTP_401_UNAUTHORIZED,
             status.HTTP_403_FORBIDDEN,
         )
 
-    def test_health_zostaje_otwarty(self, api_client: APIClient):
+    def test_health_stays_open(self, api_client: APIClient):
+        """Endpoint `health` zostaje otwarty."""
         response = cast(Response, api_client.get("/health/"))
         assert response.status_code == status.HTTP_200_OK

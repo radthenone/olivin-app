@@ -55,8 +55,11 @@ def _paid_order(**kwargs):
 
 
 @pytest.mark.django_db
-class TestRozpoczecieZaplaty:
-    def test_intencja_na_kwote_z_zamowienia(self, fake_payment_provider):
+class TestStartPayment:
+    """Rozpoczęcie zapłaty za zamówienie."""
+
+    def test_intent_for_order_amount(self, fake_payment_provider):
+        """Intencja jest na kwotę z zamówienia."""
         order = placed_order(quantity=2)
 
         started = start_payment(order)
@@ -69,7 +72,8 @@ class TestRozpoczecieZaplaty:
         assert intent["amount"] == order.total.amount
         assert intent["reference"] == order.number
 
-    def test_kolejna_proba_tworzy_nowa_platnosc(self, fake_payment_provider):
+    def test_next_attempt_creates_new_payment(self, fake_payment_provider):
+        """Kolejna próba tworzy nową płatność."""
         order = placed_order()
 
         first = start_payment(order)
@@ -81,7 +85,8 @@ class TestRozpoczecieZaplaty:
         keys = {intent["idempotency_key"] for intent in fake_payment_provider.intents}
         assert len(keys) == 2
 
-    def test_proba_odnawia_rezerwacje_zamiast_ich_dublowac(self):
+    def test_attempt_renews_reservations_instead_of_duplicating(self):
+        """Próba odnawia rezerwacje zamiast ich dublować."""
         order = placed_order(quantity=2, on_hand=5)
 
         start_payment(order)
@@ -94,7 +99,8 @@ class TestRozpoczecieZaplaty:
         assert active.get().quantity == 2
         assert _available(order) == 3
 
-    def test_rezerwacja_po_terminie_wraca_na_pelne_pol_godziny(self):
+    def test_expired_reservation_returns_to_full_half_hour(self):
+        """Rezerwacja po terminie wraca na pełne pół godziny."""
         order = placed_order()
         Reservation.objects.filter(order=order).update(
             expires_at=timezone.now() - timedelta(minutes=1)
@@ -107,7 +113,8 @@ class TestRozpoczecieZaplaty:
         )
         assert active.expires_at > timezone.now() + timedelta(minutes=29)
 
-    def test_towar_wykupiony_po_wygasnieciu_blokuje_zaplate(self):
+    def test_goods_sold_after_expiry_block_payment(self):
+        """Towar wykupiony po wygaśnięciu blokuje zapłatę."""
         order = placed_order(quantity=1, on_hand=1)
         reservation = Reservation.objects.filter(order=order).get()
         reservation.expires_at = timezone.now() - timedelta(minutes=1)
@@ -120,7 +127,8 @@ class TestRozpoczecieZaplaty:
         assert "items" in error.value.message_dict
         assert not Payment.objects.exists()
 
-    def test_zamowienie_nie_pending_jest_odrzucone(self):
+    def test_non_pending_order_is_rejected(self):
+        """Zamówienie inne niż `pending` jest odrzucane."""
         order = placed_order()
         cancel_order(order)
 
@@ -129,7 +137,8 @@ class TestRozpoczecieZaplaty:
 
         assert "status" in error.value.message_dict
 
-    def test_odmowa_operatora_nie_zostawia_platnosci(self, fake_payment_provider):
+    def test_provider_refusal_leaves_no_payment(self, fake_payment_provider):
+        """Odmowa operatora nie zostawia płatności."""
         order = placed_order()
         fake_payment_provider.fail_with = "timeout"
 
@@ -141,8 +150,11 @@ class TestRozpoczecieZaplaty:
 
 
 @pytest.mark.django_db
-class TestZdarzenieZaplaty:
-    def test_sukces_przenosi_zamowienie_do_paid_i_zdejmuje_stan(self):
+class TestPaymentEvent:
+    """Zdarzenie zapłaty od operatora."""
+
+    def test_success_moves_order_to_paid_and_takes_stock(self):
+        """Sukces przenosi zamówienie do `paid` i zdejmuje stan."""
         order = placed_order(quantity=2, on_hand=5)
         started = start_payment(order)
 
@@ -164,7 +176,8 @@ class TestZdarzenieZaplaty:
         assert _on_hand(order) == 3
         assert _available(order) == 3
 
-    def test_to_samo_zdarzenie_drugi_raz_nic_nie_zmienia(self):
+    def test_same_event_twice_changes_nothing(self):
+        """To samo zdarzenie drugi raz nic nie zmienia."""
         order = placed_order(quantity=1, on_hand=5)
         started = start_payment(order)
         event = _event(EventKind.PAYMENT_SUCCEEDED, started.payment.intent_id)
@@ -175,7 +188,8 @@ class TestZdarzenieZaplaty:
         assert WebhookEvent.objects.count() == 1
         assert _on_hand(order) == 4
 
-    def test_porazka_zostawia_zamowienie_pending(self):
+    def test_failure_keeps_order_pending(self):
+        """Porażka zostawia zamówienie w `pending`."""
         order = placed_order()
         started = start_payment(order)
 
@@ -192,7 +206,8 @@ class TestZdarzenieZaplaty:
             == 1
         )
 
-    def test_sukces_po_porazce_tej_samej_intencji_rozlicza(self):
+    def test_success_after_failure_of_same_intent_settles(self):
+        """Sukces po porażce tej samej intencji rozlicza zamówienie."""
         order = placed_order()
         started = start_payment(order)
         intent_id = started.payment.intent_id
@@ -203,7 +218,8 @@ class TestZdarzenieZaplaty:
         order.refresh_from_db()
         assert order.status == OrderStatus.PAID
 
-    def test_rezerwacja_po_terminie_bierze_towar_od_nowa(self):
+    def test_expired_reservation_takes_goods_again(self):
+        """Rezerwacja po terminie bierze towar od nowa."""
         order = placed_order(quantity=1, on_hand=3)
         started = start_payment(order)
         Reservation.objects.filter(order=order).update(
@@ -216,7 +232,8 @@ class TestZdarzenieZaplaty:
         assert order.status == OrderStatus.PAID
         assert _on_hand(order) == 2
 
-    def test_brak_towaru_przy_rozliczeniu_oddaje_pieniadze(self, fake_payment_provider):
+    def test_missing_goods_at_settlement_refunds_money(self, fake_payment_provider):
+        """Brak towaru przy rozliczeniu oddaje pieniądze."""
         order = placed_order(quantity=1, on_hand=1)
         started = start_payment(order)
         reservation = Reservation.objects.filter(order=order).get(
@@ -243,7 +260,8 @@ class TestZdarzenieZaplaty:
         order.refresh_from_db()
         assert order.status == OrderStatus.CANCELLED
 
-    def test_druga_wplata_na_oplacone_zamowienie_wraca(self, fake_payment_provider):
+    def test_second_payment_for_paid_order_is_refunded(self, fake_payment_provider):
+        """Druga wpłata na opłacone zamówienie wraca do klienta."""
         order = placed_order()
         first = start_payment(order)
         second = start_payment(order)
@@ -259,7 +277,8 @@ class TestZdarzenieZaplaty:
         assert second.payment.refund_reason == RefundReason.ORDER_CLOSED
         assert _on_hand(order) == 4
 
-    def test_zdarzenie_obcej_intencji_jest_zapisane_i_pominiete(self):
+    def test_event_of_unknown_intent_is_stored_and_skipped(self):
+        """Zdarzenie obcej intencji jest zapisane i pominięte."""
         processed = handle_event(_event(EventKind.PAYMENT_SUCCEEDED, "pi_obca"))
 
         assert processed is True
@@ -267,8 +286,11 @@ class TestZdarzenieZaplaty:
 
 
 @pytest.mark.django_db
-class TestAnulowanieOplaconego:
-    def test_zwrot_u_operatora_a_status_czeka_na_zdarzenie(self, fake_payment_provider):
+class TestCancelPaidOrder:
+    """Anulowanie opłaconego zamówienia przez zwrot."""
+
+    def test_refund_at_provider_status_waits_for_event(self, fake_payment_provider):
+        """Zwrot idzie do operatora, a status czeka na zdarzenie."""
         order, payment = _paid_order()
 
         request_cancellation(order)
@@ -280,7 +302,8 @@ class TestAnulowanieOplaconego:
         assert payment.refund_reason == RefundReason.CANCELLATION
         assert fake_payment_provider.refunds[0]["intent_id"] == payment.intent_id
 
-    def test_zdarzenie_zwrotu_anuluje_i_przywraca_stan_ruchem(self):
+    def test_refund_event_cancels_and_restores_stock_by_movement(self):
+        """Zdarzenie zwrotu anuluje zamówienie i przywraca stan ruchem."""
         order, payment = _paid_order(quantity=2, on_hand=5)
         request_cancellation(order)
 
@@ -295,7 +318,8 @@ class TestAnulowanieOplaconego:
         reasons = list(item.movements.values_list("reason", flat=True))
         assert StockMovementReason.RETURN in reasons
 
-    def test_powtorzone_zdarzenie_zwrotu_nie_dubluje_ruchu(self):
+    def test_repeated_refund_event_does_not_duplicate_movement(self):
+        """Powtórzone zdarzenie zwrotu nie dubluje ruchu."""
         order, payment = _paid_order(quantity=1, on_hand=5)
         request_cancellation(order)
         event = _event(EventKind.REFUNDED, payment.intent_id, "evt_refund")
@@ -305,14 +329,16 @@ class TestAnulowanieOplaconego:
 
         assert _on_hand(order) == 5
 
-    def test_drugie_anulowanie_w_toku_zwrotu_jest_odrzucone(self):
+    def test_second_cancellation_during_refund_is_rejected(self):
+        """Drugie anulowanie w toku zwrotu jest odrzucane."""
         order, _ = _paid_order()
         request_cancellation(order)
 
         with pytest.raises(PaymentError):
             request_cancellation(order)
 
-    def test_nieudany_zwrot_zostawia_zamowienie_oplacone(self):
+    def test_failed_refund_keeps_order_paid(self):
+        """Nieudany zwrot zostawia zamówienie opłacone."""
         order, payment = _paid_order()
         request_cancellation(order)
 
@@ -323,9 +349,8 @@ class TestAnulowanieOplaconego:
         assert order.status == OrderStatus.PAID
         assert payment.status == PaymentStatus.REFUND_FAILED
 
-    def test_odrzucony_zwrot_mozna_zlecic_ponownie_nowym_kluczem(
-        self, fake_payment_provider
-    ):
+    def test_rejected_refund_can_be_retried_with_new_key(self, fake_payment_provider):
+        """Odrzucony zwrot można zlecić ponownie nowym kluczem."""
         order, payment = _paid_order(quantity=1, on_hand=5)
         request_cancellation(order)
         handle_event(_event(EventKind.REFUND_FAILED, payment.intent_id))
@@ -344,7 +369,8 @@ class TestAnulowanieOplaconego:
         assert order.status == OrderStatus.CANCELLED
         assert _on_hand(order) == 5
 
-    def test_zamowienie_pending_nie_idzie_przez_zwrot(self):
+    def test_pending_order_skips_refund(self):
+        """Zamówienie `pending` nie idzie przez zwrot."""
         order = placed_order()
 
         with pytest.raises(PaymentError):

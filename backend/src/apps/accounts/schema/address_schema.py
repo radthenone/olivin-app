@@ -36,7 +36,6 @@ address_schema = extend_schema_view(
                     ),
                 ],
             ),
-            400: OpenApiResponse(description="Address is already set as default"),
             403: OpenApiResponse(description="Permission denied"),
             404: OpenApiResponse(description="Address not found"),
         },

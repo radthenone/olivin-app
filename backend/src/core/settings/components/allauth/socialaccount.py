@@ -15,6 +15,10 @@ class GoogleOAuthApp(TypedDict, total=False):
 SOCIALACCOUNT_USER_MODEL_USERNAME_FIELD = "username"
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+# Nowe konto z logowania zewnętrznego wymaga zgód (#207): zamiast zakładać je
+# automatycznie, allauth headless przechodzi krok provider signup z tymi samymi
+# polami zgód co rejestracja e-mailem. Logowanie na istniejące konto bez zmian.
+SOCIALACCOUNT_AUTO_SIGNUP = False
 SOCIALACCOUNT_ADAPTER = "core.services.allauth.social_adapter.SocialAccountAdapter"
 
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "")

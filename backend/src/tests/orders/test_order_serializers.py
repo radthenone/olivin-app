@@ -11,6 +11,8 @@ from tests.factories.shipping import ShippingMethodFactory
 
 @pytest.mark.django_db
 class TestOrderCreateSerializerToAddress:
+    """Serializer zamówienia składa adres dostawy."""
+
     def test_returns_shipping_address_with_country_code(self):
         """Adres wychodzi jako `ShippingAddress`, a kraj jako goły kod ISO."""
         method = ShippingMethodFactory()

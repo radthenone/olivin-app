@@ -287,7 +287,12 @@ class StockMovement(TimestampedModel):
 
 
 def available_variants_subquery():
-    """Warianty produktu, które klient może dziś kupić.
+    """Warianty produktu (`OuterRef("pk")`), które klient może dziś kupić."""
+    return available_variants().filter(product=OuterRef("pk"))
+
+
+def available_variants():
+    """Warianty, które klient może dziś kupić.
 
     Produkt na zamówienie jest dostępny zawsze — nie ma stanu, bo powstaje
     po złożeniu zamówienia (ADR 0024). Pozostałe muszą mieć dodatnią różnicę
@@ -295,16 +300,11 @@ def available_variants_subquery():
     """
     from apps.products.models import ProductVariant
 
-    return (
-        ProductVariant.objects.filter(product=OuterRef("pk"))
-        .annotate(
-            variant_on_hand=Coalesce(_movement_total("inventory__pk"), 0),
-            variant_reserved=Coalesce(_reservation_total("pk"), 0),
-        )
-        .filter(
-            Q(product__is_made_to_order=True)
-            | Q(variant_on_hand__gt=F("variant_reserved"))
-        )
+    return ProductVariant.objects.annotate(
+        variant_on_hand=Coalesce(_movement_total("inventory__pk"), 0),
+        variant_reserved=Coalesce(_reservation_total("pk"), 0),
+    ).filter(
+        Q(product__is_made_to_order=True) | Q(variant_on_hand__gt=F("variant_reserved"))
     )
 
 

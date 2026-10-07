@@ -35,27 +35,32 @@ def _variant(**kwargs):
 
 
 @pytest.mark.django_db
-class TestTokenGoscia:
-    def test_pierwsze_dodanie_zaklada_koszyk_z_tokenem(self):
+class TestGuestToken:
+    """Token gościa wskazuje jego koszyk."""
+
+    def test_first_add_creates_cart_with_token(self):
+        """Pierwsze dodanie zakłada koszyk z tokenem."""
         cart = get_or_create_cart(user=None, token=None)
 
         assert cart.is_guest is True
         assert cart.session_key != ""
 
-    def test_kolejne_zadanie_z_tokenem_trafia_w_ten_sam_koszyk(self):
+    def test_next_request_with_token_hits_same_cart(self):
+        """Kolejne żądanie z tokenem trafia w ten sam koszyk."""
         first = get_or_create_cart(user=None, token=None)
 
         second = get_or_create_cart(user=None, token=first.session_key)
 
         assert second.pk == first.pk
 
-    def test_nieznany_token_dostaje_nowy_koszyk_zamiast_bledu(self):
+    def test_unknown_token_gets_new_cart_instead_of_error(self):
         """Koszyk mógł wygasnąć albo zostać scalony — klient zaczyna od nowa."""
         cart = get_or_create_cart(user=None, token="token-ktorego-nie-ma")
 
         assert cart.session_key != "token-ktorego-nie-ma"
 
-    def test_zalogowany_dostaje_koszyk_konta_mimo_tokenu(self):
+    def test_logged_in_gets_account_cart_despite_token(self):
+        """Zalogowany dostaje koszyk konta mimo tokenu."""
         user = UserFactory()
         guest = GuestCartFactory()
 
@@ -64,14 +69,18 @@ class TestTokenGoscia:
         assert cart.user_id == user.pk  # type: ignore[missing-attribute]
         assert cart.session_key == ""
 
-    def test_brak_koszyka_to_brak_wyniku_a_nie_nowy_wiersz(self):
+    def test_missing_cart_returns_none_instead_of_new_row(self):
+        """Brak koszyka to brak wyniku, a nie nowy wiersz."""
         assert get_cart(user=None, token=None) is None
         assert Cart.objects.count() == 0
 
 
 @pytest.mark.django_db
-class TestDodawaniePozycji:
-    def test_ta_sama_personalizacja_dolicza_sztuki(self):
+class TestAddingItems:
+    """Dodawanie pozycji do koszyka."""
+
+    def test_same_personalisation_adds_quantity(self):
+        """Ta sama personalizacja dolicza sztuki."""
         cart = CartFactory()
         variant = _variant()
         stock(variant, 10)
@@ -82,7 +91,8 @@ class TestDodawaniePozycji:
         assert cart.items.count() == 1
         assert item.quantity == 3
 
-    def test_inny_grawer_zaklada_osobna_pozycje(self):
+    def test_other_engraving_creates_separate_item(self):
+        """Inny grawer zakłada osobną pozycję."""
         cart = CartFactory()
         product = EngravableProductFactory(engraving_price=4900)
         variant = ProductVariantFactory(product=product)
@@ -93,7 +103,8 @@ class TestDodawaniePozycji:
 
         assert cart.items.count() == 2
 
-    def test_ponad_pieciu_sztuk_nie_da_sie_dodac(self):
+    def test_cannot_add_more_than_five(self):
+        """Ponad pięciu sztuk nie da się dodać."""
         cart = CartFactory()
         variant = _variant()
         stock(variant, 100)
@@ -103,7 +114,8 @@ class TestDodawaniePozycji:
 
         assert "quantity" in error.value.message_dict
 
-    def test_limit_obowiazuje_takze_przy_dokladaniu(self):
+    def test_limit_applies_when_adding_more(self):
+        """Limit obowiązuje także przy dokładaniu."""
         cart = CartFactory()
         variant = _variant()
         stock(variant, 100)
@@ -112,7 +124,8 @@ class TestDodawaniePozycji:
         with pytest.raises(ValidationError):
             add_item(cart, variant=variant, quantity=2)
 
-    def test_ilosc_ponad_stan_jest_odrzucona(self):
+    def test_quantity_above_stock_is_rejected(self):
+        """Ilość ponad stan jest odrzucana."""
         cart = CartFactory()
         variant = _variant()
         stock(variant, 2)
@@ -122,7 +135,8 @@ class TestDodawaniePozycji:
 
         assert "quantity" in error.value.message_dict
 
-    def test_produkt_na_zamowienie_omija_stan(self):
+    def test_made_to_order_product_skips_stock(self):
+        """Produkt na zamówienie omija stan."""
         cart = CartFactory()
         variant = ProductVariantFactory(product=MadeToOrderProductFactory())
 
@@ -130,7 +144,8 @@ class TestDodawaniePozycji:
 
         assert item.quantity == MAX_ITEM_QUANTITY
 
-    def test_grawer_na_produkcie_bez_grawerunku_jest_odrzucony(self):
+    def test_engraving_on_non_engravable_product_is_rejected(self):
+        """Grawer na produkcie bez grawerunku jest odrzucany."""
         cart = CartFactory()
         variant = _variant()
         stock(variant, 10)
@@ -142,8 +157,11 @@ class TestDodawaniePozycji:
 
 
 @pytest.mark.django_db
-class TestZmianaIlosci:
-    def test_zero_usuwa_pozycje(self):
+class TestQuantityChange:
+    """Zmiana ilości pozycji."""
+
+    def test_zero_removes_item(self):
+        """Zero usuwa pozycję."""
         item = CartItemFactory(quantity=2)
         stock(item.variant, 10)
 
@@ -151,7 +169,8 @@ class TestZmianaIlosci:
 
         assert CartItem.objects.filter(pk=item.pk).exists() is False
 
-    def test_ponad_stan_jest_odrzucone(self):
+    def test_above_stock_is_rejected(self):
+        """Ilość ponad stan jest odrzucana."""
         item = CartItemFactory(quantity=1)
         stock(item.variant, 2)
 
@@ -160,8 +179,11 @@ class TestZmianaIlosci:
 
 
 @pytest.mark.django_db
-class TestScalanie:
-    def test_pozycje_goscia_trafiaja_do_koszyka_konta(self):
+class TestMerge:
+    """Scalanie koszyka gościa z koszykiem konta."""
+
+    def test_guest_items_go_to_account_cart(self):
+        """Pozycje gościa trafiają do koszyka konta."""
         guest = GuestCartFactory()
         target = CartFactory()
         variant = _variant()
@@ -175,7 +197,8 @@ class TestScalanie:
             variant.pk
         ]
 
-    def test_koszyk_goscia_znika_razem_z_tokenem(self):
+    def test_guest_cart_disappears_with_token(self):
+        """Koszyk gościa znika razem z tokenem."""
         guest = GuestCartFactory()
         token = guest.session_key
         target = CartFactory()
@@ -184,7 +207,8 @@ class TestScalanie:
 
         assert get_cart(user=None, token=token) is None
 
-    def test_ta_sama_pozycja_sumuje_ilosci(self):
+    def test_same_item_sums_quantities(self):
+        """Ta sama pozycja sumuje ilości."""
         guest = GuestCartFactory()
         target = CartFactory()
         variant = _variant()
@@ -196,7 +220,8 @@ class TestScalanie:
 
         assert merged.items.get().quantity == 3
 
-    def test_scalanie_nie_omija_limitu_sztuk(self):
+    def test_merge_respects_quantity_limit(self):
+        """Scalanie nie omija limitu sztuk."""
         guest = GuestCartFactory()
         target = CartFactory()
         variant = _variant()
@@ -208,7 +233,7 @@ class TestScalanie:
 
         assert merged.items.get().quantity == MAX_ITEM_QUANTITY
 
-    def test_scalanie_przycina_ilosc_do_stanu(self):
+    def test_merge_caps_quantity_at_stock(self):
         """Koszyk gościa mógł leżeć tygodniami — jego ilości wymagają sprawdzenia na nowo."""
         guest = GuestCartFactory()
         target = CartFactory()
@@ -221,7 +246,8 @@ class TestScalanie:
 
         assert merged.items.get().quantity == 2
 
-    def test_pozycja_przenoszona_tez_jest_sprawdzana_wzgledem_stanu(self):
+    def test_moved_item_is_checked_against_stock(self):
+        """Przenoszona pozycja też jest sprawdzana względem stanu."""
         guest = GuestCartFactory()
         target = CartFactory()
         variant = _variant()
@@ -232,7 +258,8 @@ class TestScalanie:
 
         assert merged.items.get().quantity == 1
 
-    def test_pozycja_bez_stanu_zostaje_widoczna_zamiast_zniknac(self):
+    def test_item_without_stock_stays_visible(self):
+        """Pozycja bez stanu zostaje widoczna zamiast zniknąć."""
         guest = GuestCartFactory()
         target = CartFactory()
         variant = _variant()
@@ -243,7 +270,8 @@ class TestScalanie:
 
         assert merged.items.get().quantity == 1
 
-    def test_rozny_grawer_zostaje_osobna_pozycja(self):
+    def test_different_engraving_stays_separate_item(self):
+        """Różny grawer zostaje osobną pozycją."""
         guest = GuestCartFactory()
         target = CartFactory()
         product = EngravableProductFactory(engraving_price=4900)
@@ -258,8 +286,11 @@ class TestScalanie:
 
 
 @pytest.mark.django_db
-class TestPodsumowanie:
-    def test_suma_liczy_towar_i_grawerunek(self):
+class TestSummary:
+    """Podsumowanie koszyka."""
+
+    def test_total_counts_goods_and_engraving(self):
+        """Suma liczy towar i grawerunek."""
         cart = CartFactory()
         product = EngravableProductFactory(engraving_price=4900)
         variant = ProductVariantFactory(product=product, price=100000)
@@ -272,7 +303,8 @@ class TestPodsumowanie:
         assert summary.subtotal == Money(209800)
         assert summary.total == Money(209800)
 
-    def test_rabat_i_kupon_sa_na_razie_zerowe(self):
+    def test_discount_and_coupon_are_zero_by_default(self):
+        """Rabat i kupon są domyślnie zerowe."""
         cart = CartFactory()
         variant = _variant(price=100000)
         stock(variant, 10)
@@ -283,13 +315,15 @@ class TestPodsumowanie:
         assert summary.discount_amount == Money(0)
         assert summary.coupon_amount == Money(0)
 
-    def test_pusty_koszyk_ma_zerowa_sume(self):
+    def test_empty_cart_has_zero_total(self):
+        """Pusty koszyk ma zerową sumę."""
         summary = totals(cart_items(CartFactory()))
 
         assert summary.item_count == 0
         assert summary.total == Money(0)
 
-    def test_para_liczy_sie_jako_jedna_pozycja_i_dwa_egzemplarze(self):
+    def test_pair_counts_as_one_item_and_two_specimens(self):
+        """Para liczy się jako jedna pozycja i dwa egzemplarze."""
         cart = CartFactory()
         variant = ProductVariantFactory(
             product=MadeToOrderProductFactory(), price=100000, size=RingSize.S16

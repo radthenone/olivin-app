@@ -5,7 +5,12 @@ import { ErrorMessage } from "@ui/feedback/ErrorMessage";
 import { Button } from "@ui/primitives/Button";
 import { TextField } from "@ui/primitives/TextField";
 import { AuthShell } from "../components/AuthShell";
-import { registerSchema } from "../forms/register.schema";
+import { ConsentSwitches } from "../components/ConsentSwitches";
+import {
+  NO_CONSENTS,
+  registerSchema,
+  toSignupConsentsBody,
+} from "../forms/register.schema";
 import { useRegister } from "../hooks/use-register";
 
 /**
@@ -24,6 +29,7 @@ export function RegisterScreen() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [consents, setConsents] = useState(NO_CONSENTS);
   const [formError, setFormError] = useState<string | null>(null);
 
   function handleSubmit() {
@@ -35,6 +41,7 @@ export function RegisterScreen() {
       phoneNumber,
       password,
       passwordConfirm,
+      ...consents,
     });
 
     if (!parsed.success) {
@@ -50,6 +57,7 @@ export function RegisterScreen() {
       dateOfBirth: parsed.data.dateOfBirth,
       phoneNumber: parsed.data.phoneNumber,
       password: parsed.data.password,
+      ...toSignupConsentsBody(parsed.data),
     });
   }
 
@@ -155,10 +163,18 @@ export function RegisterScreen() {
         value={passwordConfirm}
       />
 
+      <ConsentSwitches
+        disabled={register.isPending}
+        onChange={(next) => {
+          setConsents(next);
+          setFormError(null);
+        }}
+        value={consents}
+      />
+
       <ErrorMessage
         message={
-          formError ??
-          (register.isError ? "Nie udało się utworzyć konta." : null)
+          formError ?? (register.isError ? register.error.message : null)
         }
       />
 

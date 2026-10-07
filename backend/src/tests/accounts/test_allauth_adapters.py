@@ -29,11 +29,13 @@ class PhoneNumberWithE164(Protocol):
     """Minimalny interfejs numeru telefonu zwracanego przez PhoneNumberField."""
 
     @property
-    def as_e164(self) -> str: ...
+    def as_e164(self) -> str:
+        """Numer w formacie E.164."""
+        ...
 
 
 @pytest.mark.django_db
-def test_account_adapter_tworzy_profil_po_udanym_signupie(rf):
+def test_account_adapter_creates_profile_after_successful_signup(rf):
     """Signup przez allauth powinien założyć profil w tej samej operacji."""
     user_model = get_user_model()
     user = user_model()
@@ -60,7 +62,7 @@ def test_account_adapter_tworzy_profil_po_udanym_signupie(rf):
 
 
 @pytest.mark.django_db
-def test_headless_signup_tworzy_profil(api_client):
+def test_headless_signup_creates_profile(api_client, consent_documents):
     """Rejestracja headless allauth powinna tworzyć użytkownika i profil."""
     response = api_client.post(
         "/_allauth/app/v1/auth/signup",
@@ -71,6 +73,8 @@ def test_headless_signup_tworzy_profil(api_client):
             "lastName": "Nowak",
             "dateOfBirth": "1992-02-20",
             "phoneNumber": "+48500100201",
+            "consent_terms": True,
+            "consent_privacy": True,
         },
         format="json",
     )

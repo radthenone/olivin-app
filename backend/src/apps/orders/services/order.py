@@ -88,6 +88,14 @@ def create_order(
     cokolwiek padło po drodze, transakcja cofa całość — klient nie zostaje
     ani z pustym koszykiem bez zamówienia, ani z zamówieniem bez rezerwacji.
     """
+    if user is not None:
+        from apps.accounts.models import CustomUser
+
+        # Blokada wiersza konta szereguje checkout z anonimizacją konta (#204):
+        # ta sprawdza trwające zamówienia pod tą samą blokadą.
+        locked = CustomUser.objects.select_for_update().get(pk=user.pk)
+        if not locked.is_active:
+            raise OrderError({"user": "Konto jest zablokowane."})
     items = list(cart_items(cart))
     if not items:
         raise OrderError({"cart": "Nie da się złożyć zamówienia z pustego koszyka."})

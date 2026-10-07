@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import os
-from unittest.mock import patch
 
-import fakeredis
 import pytest
 from django.core.cache import cache
 from moto import mock_aws
@@ -61,28 +59,6 @@ def mock_s3_storage(request):
 
 
 @pytest.fixture(autouse=True)
-def mock_redis_connection(request):
-    """Zastępuje wszystkie instancje Redis na FakeRedis w ramach testów.
-
-    Dla testów integracyjnych (marker `integration`) mock jest wyłączony,
-    bo testy mają korzystać z prawdziwego Redis.
-    """
-
-    if request.node.get_closest_marker("integration") is not None:
-        yield
-        return
-
-    server = fakeredis.FakeServer()
-    mock_redis_instance = fakeredis.FakeStrictRedis(server=server)
-
-    with (
-        patch("redis.Redis", return_value=mock_redis_instance),
-        patch("redis.StrictRedis", return_value=mock_redis_instance),
-    ):
-        yield mock_redis_instance
-
-
-@pytest.fixture(autouse=True)
 def stub_translation_provider(settings):
     """Silnik tłumaczeń dostępny w każdym teście.
 
@@ -128,11 +104,13 @@ def clear_throttle_history():
 
 @pytest.fixture
 def api_client() -> APIClient:
+    """Niezalogowany klient API."""
     return APIClient()
 
 
 @pytest.fixture
 def user(db) -> CustomUser:
+    """Zwykły użytkownik z hasłem."""
     return CustomUser.objects.create_user(
         email="user@test.com",
         password="testpass123!",
@@ -143,6 +121,7 @@ def user(db) -> CustomUser:
 
 @pytest.fixture
 def admin_user(db) -> CustomUser:
+    """Superużytkownik."""
     return CustomUser.objects.create_superuser(
         email="admin@test.com",
         password="adminpass123!",
@@ -151,5 +130,18 @@ def admin_user(db) -> CustomUser:
 
 @pytest.fixture
 def authenticated_client(api_client: APIClient, user: CustomUser) -> APIClient:
+    """Klient API zalogowany jako `user`."""
     api_client.force_authenticate(user=user)
     return api_client
+
+
+@pytest.fixture
+def consent_documents(db) -> dict:
+    """Bieżące wersje wszystkich rodzajów dokumentów zgód — wymagane do rejestracji."""
+    from apps.consents.models import ConsentKind
+    from tests.factories.consents import ConsentDocumentFactory
+
+    return {
+        kind: ConsentDocumentFactory(kind=kind, version=f"{kind}-2026")
+        for kind in ConsentKind.values
+    }

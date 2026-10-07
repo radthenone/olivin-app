@@ -107,7 +107,7 @@ Testy integracyjne: `docker-compose.test.yml`, próg pokrycia **60%**.
 | Sieć Docker                | **`olivin-network`** — musi istnieć przed `docker compose up`                                             |
 | `FREE_SHIPPING_THRESHOLD`  | **50000** groszy — próg darmowej dostawy wspólny dla sklepu (`components/shop.py`); pusta wartość wyłącza |
 
-Zmienne ładowane z `.env` oraz `.envs/dev/**` przez `dotenv:` w `Taskfile.yml`.
+Zmienne ładowane z `.env` oraz `.envs/dev/**` przez `dotenv:` w `Taskfile.yml` i `core/envs.py`; przy `DJANGO_ENVIRONMENT=testing` (pytest) `core/envs.py` nie czyta żadnego z tych plików.
 
 ### Serwer VPS — tylko lekkie komendy
 
@@ -181,6 +181,30 @@ Nie zakładaj, że którakolwiek z nich cokolwiek zawiera. `Cart`, `Order`, `Pay
 ### Co zostało z przebudowy
 
 Wykonane: monorepo, web ze stroną główną, pakiety, bramka Orvala. **Niewykonane:** test przeglądarkowy (#55), web w docker-compose (#56), tożsamość wizualna (paleta w tokenach jest robocza).
+
+## Nazewnictwo w kodzie
+
+Wszystkie identyfikatory po angielsku — klasy, funkcje, metody, zmienne, stałe, fixture,
+**także `test_*` i `class Test*`**. Docstringi i komentarze po polsku. Każda klasa i funkcja
+testowa ma docstring; opis zachowania idzie do docstringa, nie do nazwy.
+
+```python
+# Źle
+class TestLimitWartosci:
+    def test_pusty_koszyk_jest_odrzucony(self): ...
+
+# Dobrze
+class TestOrderValueLimit:
+    """Limit wartości zamówienia gościa."""
+
+    def test_empty_cart_is_rejected(self):
+        """Pusty koszyk jest odrzucany przy składaniu zamówienia."""
+```
+
+- `/tdd` i inne skille: „język domeny” z `CONTEXT.md` oznacza angielskie terminy
+  (`Cart`, `Order`, `CartReminder`), nie polskie definicje — nazwy testów buduj z nich.
+- Egzekwowanie: ruff `D101`–`D103` dla `backend/src/tests/` (`pyproject.toml`) i reguła
+  blokująca w `BUGBOT.md`.
 
 ## Odstępstwa od modułów
 

@@ -21,6 +21,7 @@ class TestAddFavorite:
     """Dodanie do ulubionych jest idempotentne."""
 
     def test_creates_favorite(self):
+        """Dodanie zakłada wpis ulubionych."""
         user = UserFactory()
         product = PublishedProductFactory()
 
@@ -31,6 +32,7 @@ class TestAddFavorite:
         assert Favorite.objects.filter(user=user, product=product).count() == 1
 
     def test_repeating_add_does_not_duplicate(self):
+        """Powtórne dodanie nie dubluje wpisu."""
         user = UserFactory()
         product = PublishedProductFactory()
         add_favorite(user=user, product=product)
@@ -45,6 +47,7 @@ class TestRemoveFavorite:
     """Usunięcie z ulubionych jest idempotentne."""
 
     def test_removes_existing_favorite(self):
+        """Usunięcie kasuje istniejący wpis."""
         favorite = FavoriteFactory()
 
         remove_favorite(
@@ -55,6 +58,7 @@ class TestRemoveFavorite:
         assert not Favorite.objects.filter(pk=favorite.pk).exists()
 
     def test_removing_missing_favorite_is_not_an_error(self):
+        """Usunięcie nieistniejącego wpisu nie jest błędem."""
         user = UserFactory()
         product = PublishedProductFactory()
 
@@ -71,6 +75,7 @@ class TestFavoritesFor:
     """Lista w API pomija produkty nieopublikowane, ale nie kasuje rekordu."""
 
     def test_lists_only_published_products(self):
+        """Lista obejmuje tylko produkty opublikowane."""
         user = UserFactory()
         published = FavoriteFactory(user=user, product=PublishedProductFactory())
         draft_favorite = FavoriteFactory(user=user, product=ProductFactory())
@@ -86,6 +91,7 @@ class TestMergeFavorites:
     """Scalenie listy gościa (slugi produktów) z listą konta."""
 
     def test_merges_new_products_into_account_list(self):
+        """Nowe produkty gościa trafiają na listę konta."""
         user = UserFactory()
         existing = PublishedProductFactory()
         FavoriteFactory(user=user, product=existing)
@@ -100,6 +106,7 @@ class TestMergeFavorites:
         assert products == {existing, guest_product}
 
     def test_skips_nonexistent_and_unpublished_slugs(self):
+        """Nieistniejące i nieopublikowane slugi są pomijane."""
         user = UserFactory()
         draft = ProductFactory()
 
@@ -112,6 +119,7 @@ class TestMergeFavorites:
         assert not Favorite.objects.filter(user=user).exists()
 
     def test_repeating_merge_is_idempotent(self):
+        """Powtórne scalenie niczego nie zmienia."""
         user = UserFactory()
         product = PublishedProductFactory()
         merge_favorites(user=user, product_slugs=[product.slug])  # type: ignore[bad-argument-type]

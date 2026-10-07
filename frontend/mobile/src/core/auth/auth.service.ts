@@ -17,7 +17,10 @@ import {
   postAllauthClientV1AuthCodeRequest,
   postAllauthClientV1AuthCodeConfirm,
 } from "@olivin/api/generated/auth/authentication-login-by-code/authentication-login-by-code";
-import { postAllauthClientV1AuthProviderToken } from "@olivin/api/generated/auth/authentication-providers/authentication-providers";
+import {
+  postAllauthClientV1AuthProviderSignup,
+  postAllauthClientV1AuthProviderToken,
+} from "@olivin/api/generated/auth/authentication-providers/authentication-providers";
 import { mapAllauthBodyToAuthState } from "./auth.mapper";
 
 type SocialProviderTokenInput =
@@ -43,9 +46,28 @@ function ensureExpectedStatus(
   message: string,
 ) {
   if (!expectedStatuses.includes(response.status)) {
-    throw new Error(message);
+    throw new Error(allauthErrorMessage(response.data) ?? message);
   }
 }
+
+/**
+ * Komunikaty walidacji allauth (`errors[].message` z 400), np. brak zgody
+ * albo brak obowiązującej wersji dokumentu — czytelniejsze niż ogólny błąd.
+ */
+function allauthErrorMessage(data: unknown): string | null {
+  const errors = (data as { errors?: { message?: unknown }[] } | null)?.errors;
+  if (!Array.isArray(errors)) return null;
+  const messages = errors
+    .map((error) => error.message)
+    .filter((text): text is string => typeof text === "string");
+  return messages.length ? messages.join("\n") : null;
+}
+
+export type SignupConsents = {
+  consent_terms: boolean;
+  consent_privacy: boolean;
+  consent_marketing: boolean;
+};
 
 /**
  * Orkiestruje przypadki użycia auth.
@@ -66,14 +88,16 @@ export const authService = {
     return mapAllauthBodyToAuthState(response.data);
   },
 
-  async signup(data: {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-    dateOfBirth: string;
-    phoneNumber: string;
-  }) {
+  async signup(
+    data: {
+      email: string;
+      password: string;
+      firstName: string;
+      lastName: string;
+      dateOfBirth: string;
+      phoneNumber: string;
+    } & SignupConsents,
+  ) {
     const response = await postAllauthClientV1AuthSignup(allauthClient, data);
     ensureExpectedStatus(response, [200, 401], "Nie udało się utworzyć konta.");
     return mapAllauthBodyToAuthState(response.data);
@@ -169,6 +193,19 @@ export const authService = {
       response,
       [200, 401],
       "Nie udało się zalogować social.",
+    );
+    return mapAllauthBodyToAuthState(response.data);
+  },
+
+  async providerSignup(data: { email: string } & SignupConsents) {
+    const response = await postAllauthClientV1AuthProviderSignup(
+      allauthClient,
+      data,
+    );
+    ensureExpectedStatus(
+      response,
+      [200, 401],
+      "Nie udało się dokończyć rejestracji.",
     );
     return mapAllauthBodyToAuthState(response.data);
   },

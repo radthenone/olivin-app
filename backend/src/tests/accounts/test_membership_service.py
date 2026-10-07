@@ -24,6 +24,7 @@ class TestPaidTotal:
     """Suma dostarczonych zamówień: po rabatach, bez dostawy, bez zwróconych."""
 
     def test_sums_delivered_orders_after_discount(self):
+        """Suma obejmuje dostarczone zamówienia po rabacie."""
         user = UserFactory()
         order = OrderFactory(
             user=user, status=OrderStatus.DELIVERED, discount_amount=10000
@@ -33,6 +34,7 @@ class TestPaidTotal:
         assert paid_total(user) == Money(90000)
 
     def test_excludes_shipping_cost(self):
+        """Koszt dostawy nie wlicza się do sumy."""
         user = UserFactory()
         order = OrderFactory(
             user=user,
@@ -58,6 +60,7 @@ class TestPaidTotal:
         assert paid_total(user) == Money(60000)
 
     def test_coupon_covering_everything_floors_at_zero(self):
+        """Kupon pokrywający całość daje zero, nie kwotę ujemną."""
         user = UserFactory()
         order = OrderFactory(
             user=user,
@@ -70,6 +73,7 @@ class TestPaidTotal:
         assert paid_total(user) == Money.zero()
 
     def test_excludes_returned_orders(self):
+        """Zwrócone zamówienia nie wliczają się do sumy."""
         user = UserFactory()
         returned = OrderFactory(user=user, status=OrderStatus.RETURNED)
         OrderItemFactory(order=returned, unit_price=100000, quantity=1)
@@ -77,6 +81,7 @@ class TestPaidTotal:
         assert paid_total(user) == Money.zero()
 
     def test_excludes_orders_not_yet_delivered(self):
+        """Zamówienia jeszcze niedostarczone nie wliczają się do sumy."""
         user = UserFactory()
         pending = OrderFactory(user=user, status=OrderStatus.PAID)
         OrderItemFactory(order=pending, unit_price=100000, quantity=1)
@@ -99,6 +104,7 @@ class TestPaidTotal:
         assert paid_total(user) == Money(42655)
 
     def test_sums_across_several_delivered_orders(self):
+        """Suma obejmuje kilka dostarczonych zamówień."""
         user = UserFactory()
         first = OrderFactory(user=user, status=OrderStatus.DELIVERED)
         OrderItemFactory(order=first, unit_price=50000, quantity=1)
@@ -113,6 +119,7 @@ class TestGrantPremiumIfEligible:
     """Premium nadawane bezterminowo po przekroczeniu progu; nigdy odbierane."""
 
     def test_grants_premium_above_threshold(self, settings):
+        """Suma powyżej progu nadaje premium."""
         settings.PREMIUM_MEMBERSHIP_THRESHOLD = 50000
         user = UserFactory()
         profile = ProfileFactory(user=user)
@@ -127,6 +134,7 @@ class TestGrantPremiumIfEligible:
         assert profile.membership_granted_at is not None
 
     def test_stays_regular_at_or_below_threshold(self, settings):
+        """Suma równa progowi albo niższa zostawia konto zwykłe."""
         settings.PREMIUM_MEMBERSHIP_THRESHOLD = 100000
         user = UserFactory()
         profile = ProfileFactory(user=user)
@@ -158,6 +166,7 @@ class TestGrantPremiumIfEligible:
         assert profile.membership_granted_at == granted_at
 
     def test_user_without_profile_is_ignored(self):
+        """Użytkownik bez profilu jest pomijany."""
         user = UserFactory()
 
         assert grant_premium_if_eligible(user) is None
@@ -165,19 +174,25 @@ class TestGrantPremiumIfEligible:
 
 @pytest.mark.django_db
 class TestIsPremium:
+    """Sprawdzanie statusu premium klienta."""
+
     def test_guest_is_never_premium(self):
+        """Gość nigdy nie jest premium."""
         assert is_premium(None) is False
 
     def test_user_without_profile_is_not_premium(self):
+        """Użytkownik bez profilu nie jest premium."""
         assert is_premium(UserFactory()) is False
 
     def test_regular_profile_is_not_premium(self):
+        """Zwykły profil nie jest premium."""
         user = UserFactory()
         ProfileFactory(user=user, membership=MembershipLevel.REGULAR)
 
         assert is_premium(user) is False
 
     def test_premium_profile_is_premium(self):
+        """Profil premium jest premium."""
         user = UserFactory()
         ProfileFactory(user=user, membership=MembershipLevel.PREMIUM)
 

@@ -30,6 +30,11 @@ export function mapAllauthBodyToAuthState(body: unknown): AuthState {
     return { status: "email_verification_required", flows };
   }
 
+  // Nowe konto z Google/Facebook czeka na zgody (krok provider signup).
+  if (flows.some((flow) => flow.id === "provider_signup" && flow.is_pending)) {
+    return { status: "provider_signup_required", flows };
+  }
+
   return { status: "unauthenticated", flows };
 }
 

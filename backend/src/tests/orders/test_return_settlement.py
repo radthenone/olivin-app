@@ -124,7 +124,7 @@ class TestSplitCompensation:
             (18000, 0, (0, 18000)),
         ],
     )
-    def test_adr_examples(self, amount, coupon_left, expected):
+    def test_split_matches_adr_examples(self, amount, coupon_left, expected):
         """Zamówienie 300 zł (200 kuponem): zwrot 180 / 250 / 300 / 185 zł i bez kuponu."""
         assert split_compensation(amount, coupon_left) == expected
 

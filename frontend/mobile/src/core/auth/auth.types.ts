@@ -1,6 +1,7 @@
 export type AuthFlow = {
   id: string;
   providers?: string[];
+  is_pending?: boolean;
 };
 
 export type AllauthUser = {
@@ -27,7 +28,8 @@ export type AuthState =
   | { status: "authenticated"; user: AllauthUser; flows: AuthFlow[] }
   | { status: "unauthenticated"; flows: AuthFlow[] }
   | { status: "mfa_required"; flows: AuthFlow[] }
-  | { status: "email_verification_required"; flows: AuthFlow[] };
+  | { status: "email_verification_required"; flows: AuthFlow[] }
+  | { status: "provider_signup_required"; flows: AuthFlow[] };
 
 /**
  * Sprawdza, czy nieznana odpowiedź wygląda jak body allauth.

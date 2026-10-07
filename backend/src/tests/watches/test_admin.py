@@ -14,6 +14,7 @@ class TestWatchAdmin:
     """Panel pokazuje wpisy, ale nie pozwala ich zakładać ani edytować."""
 
     def test_changelist_loads(self, admin_client):
+        """Lista wpisów w panelu się otwiera."""
         WatchFactory()
 
         response = admin_client.get(reverse("admin:watches_watch_changelist"))
@@ -21,11 +22,13 @@ class TestWatchAdmin:
         assert response.status_code == 200
 
     def test_add_view_is_forbidden(self, admin_client):
+        """Dodawanie wpisów w panelu jest zabronione."""
         response = admin_client.get(reverse("admin:watches_watch_add"))
 
         assert response.status_code == 403
 
     def test_delete_removes_watch(self, admin_client):
+        """Usunięcie w panelu kasuje wpis."""
         watch = WatchFactory()
 
         admin_client.post(

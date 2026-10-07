@@ -25,5 +25,6 @@ class CollectionFactory(DjangoModelFactory):
     def products(self, create: bool, extracted, **kwargs) -> None:
         # `self` to instancja modelu, nie deklaracja — stuby factory_boy
         # widzą tu jeszcze obiekt `PostGeneration`.
+        """Dołącza podane produkty do kolekcji."""
         if create and extracted:
             self.products.set(extracted)  # type: ignore[missing-attribute]

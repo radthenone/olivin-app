@@ -41,8 +41,11 @@ def _reserve(variant, quantity: int) -> Reservation:
 
 
 @pytest.mark.django_db
-class TestRezerwacjaObnizaDostepne:
-    def test_rezerwacja_zdejmuje_z_dostepnosci(self):
+class TestReservationReducesAvailability:
+    """Rezerwacja obniża dostępność wariantu."""
+
+    def test_reservation_reduces_availability(self):
+        """Rezerwacja zdejmuje sztuki z dostępności."""
         variant = ProductVariantFactory()
         stock(variant, 5)
 
@@ -51,7 +54,8 @@ class TestRezerwacjaObnizaDostepne:
         variant.refresh_from_db()
         assert variant.available == 3
 
-    def test_stan_z_ruchow_nie_zmienia_sie_przez_rezerwacje(self):
+    def test_stock_from_movements_is_unchanged(self):
+        """Stan z ruchów nie zmienia się przez rezerwację."""
         variant = ProductVariantFactory()
         item = stock(variant, 5)
 
@@ -61,7 +65,8 @@ class TestRezerwacjaObnizaDostepne:
         assert item.on_hand == 5
         assert item.reserved == 2
 
-    def test_rezerwacja_ponad_dostepne_jest_odrzucona(self):
+    def test_reservation_above_available_is_rejected(self):
+        """Rezerwacja ponad dostępne sztuki jest odrzucana."""
         variant = ProductVariantFactory()
         stock(variant, 2)
 
@@ -70,7 +75,8 @@ class TestRezerwacjaObnizaDostepne:
 
         assert Reservation.objects.count() == 0
 
-    def test_dwie_rezerwacje_sumuja_sie(self):
+    def test_two_reservations_add_up(self):
+        """Dwie rezerwacje sumują się."""
         variant = ProductVariantFactory()
         stock(variant, 5)
 
@@ -80,7 +86,8 @@ class TestRezerwacjaObnizaDostepne:
         variant.refresh_from_db()
         assert variant.available == 1
 
-    def test_druga_rezerwacja_ponad_reszte_jest_odrzucona(self):
+    def test_second_reservation_above_rest_is_rejected(self):
+        """Druga rezerwacja ponad resztę jest odrzucana."""
         variant = ProductVariantFactory()
         stock(variant, 5)
         reserve(variant, 4)
@@ -88,7 +95,8 @@ class TestRezerwacjaObnizaDostepne:
         with pytest.raises(InsufficientStock):
             reserve(variant, 2)
 
-    def test_wariant_bez_stanu_magazynowego_nie_da_sie_zarezerwowac(self):
+    def test_variant_without_inventory_cannot_be_reserved(self):
+        """Wariantu bez stanu magazynowego nie da się zarezerwować."""
         variant = ProductVariantFactory()
 
         with pytest.raises(InsufficientStock):
@@ -96,16 +104,18 @@ class TestRezerwacjaObnizaDostepne:
 
 
 @pytest.mark.django_db
-class TestProduktNaZamowienie:
+class TestMadeToOrderProduct:
     """Wyrób powstaje po złożeniu zamówienia — nie ma czego rezerwować (ADR 0024)."""
 
-    def test_rezerwacja_nic_nie_tworzy(self):
+    def test_reservation_creates_nothing(self):
+        """Rezerwacja niczego nie tworzy."""
         variant = ProductVariantFactory(product=MadeToOrderProductFactory())
 
         assert reserve(variant, 3) is None
         assert Reservation.objects.count() == 0
 
-    def test_dostepnosc_zostaje_nieograniczona(self):
+    def test_availability_stays_unlimited(self):
+        """Dostępność zostaje nieograniczona."""
         variant = ProductVariantFactory(product=MadeToOrderProductFactory())
 
         reserve(variant, 99)
@@ -115,8 +125,10 @@ class TestProduktNaZamowienie:
 
 
 @pytest.mark.django_db
-class TestWygasanie:
-    def test_po_trzydziestu_minutach_stan_wraca_bez_udzialu_zadania(self):
+class TestExpiry:
+    """Rezerwacja wygasa po trzydziestu minutach."""
+
+    def test_stock_returns_after_thirty_minutes_without_task(self):
         """Suma liczy tylko rezerwacje nieprzeterminowane — spóźnione zadanie
         nie zamraża stanu."""
         variant = ProductVariantFactory()
@@ -128,7 +140,8 @@ class TestWygasanie:
             variant.refresh_from_db()
             assert variant.available == 5
 
-    def test_tuz_przed_wygasnieciem_rezerwacja_dziala(self):
+    def test_reservation_holds_right_before_expiry(self):
+        """Tuż przed wygaśnięciem rezerwacja działa."""
         variant = ProductVariantFactory()
         stock(variant, 5)
         with freeze_time(NOW):
@@ -139,7 +152,8 @@ class TestWygasanie:
             variant.refresh_from_db()
             assert variant.available == 3
 
-    def test_zadanie_oznacza_przeterminowane_jako_zwolnione(self):
+    def test_task_marks_expired_as_released(self):
+        """Zadanie oznacza przeterminowane rezerwacje jako zwolnione."""
         variant = ProductVariantFactory()
         stock(variant, 5)
         with freeze_time(NOW):
@@ -152,7 +166,8 @@ class TestWygasanie:
         reservation.refresh_from_db()
         assert reservation.status == ReservationStatus.RELEASED
 
-    def test_zadanie_nie_rusza_swiezej_rezerwacji(self):
+    def test_task_keeps_fresh_reservation(self):
+        """Zadanie nie rusza świeżej rezerwacji."""
         variant = ProductVariantFactory()
         stock(variant, 5)
         reservation = _reserve(variant, 2)
@@ -161,7 +176,8 @@ class TestWygasanie:
         reservation.refresh_from_db()
         assert reservation.status == ReservationStatus.ACTIVE
 
-    def test_zadanie_nie_rusza_rozliczonej_rezerwacji(self):
+    def test_task_keeps_consumed_reservation(self):
+        """Zadanie nie rusza rozliczonej rezerwacji."""
         variant = ProductVariantFactory()
         stock(variant, 5)
         reservation = ReservationFactory(
@@ -178,8 +194,11 @@ class TestWygasanie:
 
 
 @pytest.mark.django_db
-class TestZwolnienie:
-    def test_zwolnienie_przywraca_dostepnosc(self):
+class TestRelease:
+    """Zwolnienie rezerwacji."""
+
+    def test_release_restores_availability(self):
+        """Zwolnienie przywraca dostępność."""
         variant = ProductVariantFactory()
         stock(variant, 5)
         reservation = _reserve(variant, 2)
@@ -190,7 +209,8 @@ class TestZwolnienie:
         assert variant.available == 5
         assert reservation.status == ReservationStatus.RELEASED
 
-    def test_zwolnienie_nie_rusza_stanu_z_ruchow(self):
+    def test_release_keeps_stock_from_movements(self):
+        """Zwolnienie nie rusza stanu z ruchów."""
         variant = ProductVariantFactory()
         item = stock(variant, 5)
         release(_reserve(variant, 2))
@@ -199,7 +219,8 @@ class TestZwolnienie:
         assert item.on_hand == 5
         assert item.movements.count() == 1
 
-    def test_zwolnienie_rozliczonej_rezerwacji_jest_odrzucone(self):
+    def test_release_of_consumed_reservation_is_rejected(self):
+        """Zwolnienie rozliczonej rezerwacji jest odrzucane."""
         variant = ProductVariantFactory()
         stock(variant, 5)
         reservation = _reserve(variant, 2)
@@ -208,8 +229,11 @@ class TestZwolnienie:
         with pytest.raises(ReservationNotActive):
             release(reservation)
 
-    def test_zwolnienie_przeterminowanej_przechodzi(self):
-        """To samo, co robi hurtem zadanie okresowe — tylko dla jednej sztuki."""
+    def test_release_of_expired_reservation_passes(self):
+        """Zwolnienie przeterminowanej rezerwacji przechodzi.
+
+        To samo, co robi hurtem zadanie okresowe — tylko dla jednej sztuki.
+        """
         variant = ProductVariantFactory()
         stock(variant, 5)
         with freeze_time(NOW):
@@ -222,10 +246,11 @@ class TestZwolnienie:
 
 
 @pytest.mark.django_db
-class TestRozliczenie:
+class TestConsume:
     """`consume()` zdejmuje towar ze stanu ruchem magazynowym, nie kolumną."""
 
-    def test_rozliczenie_tworzy_ruch_sprzedazy(self):
+    def test_consume_creates_sale_movement(self):
+        """Rozliczenie tworzy ruch sprzedaży."""
         variant = ProductVariantFactory()
         item = stock(variant, 5)
         reservation = _reserve(variant, 2)
@@ -237,7 +262,8 @@ class TestRozliczenie:
         assert movement.quantity == -2
         assert item.on_hand == 3
 
-    def test_po_rozliczeniu_rezerwacja_przestaje_obciazac_dostepnosc(self):
+    def test_consumed_reservation_no_longer_reduces_availability(self):
+        """Po rozliczeniu rezerwacja przestaje obciążać dostępność."""
         variant = ProductVariantFactory()
         stock(variant, 5)
         reservation = _reserve(variant, 2)
@@ -248,7 +274,7 @@ class TestRozliczenie:
         assert reservation.status == ReservationStatus.CONSUMED
         assert variant.available == 3
 
-    def test_rozliczenie_po_terminie_jest_odrzucone(self):
+    def test_consume_after_expiry_is_rejected(self):
         """Stan wrócił do sprzedaży i mógł zejść komu innemu — drugie zdjęcie
         zeszłoby poniżej zera."""
         variant = ProductVariantFactory()
@@ -263,7 +289,8 @@ class TestRozliczenie:
         item.refresh_from_db()
         assert item.on_hand == 1
 
-    def test_rozliczenie_dwa_razy_jest_odrzucone(self):
+    def test_consume_twice_is_rejected(self):
+        """Dwukrotne rozliczenie jest odrzucane."""
         variant = ProductVariantFactory()
         stock(variant, 5)
         reservation = _reserve(variant, 2)
@@ -272,7 +299,8 @@ class TestRozliczenie:
         with pytest.raises(ReservationNotActive):
             consume(reservation)
 
-    def test_rozliczenie_zwolnionej_rezerwacji_jest_odrzucone(self):
+    def test_consume_of_released_reservation_is_rejected(self):
+        """Rozliczenie zwolnionej rezerwacji jest odrzucane."""
         variant = ProductVariantFactory()
         stock(variant, 5)
         reservation = _reserve(variant, 2)
@@ -283,10 +311,11 @@ class TestRozliczenie:
 
 
 @pytest.mark.django_db
-class TestSumaZamiastKolumny:
+class TestSumInsteadOfColumn:
     """`InventoryItem.reserved` jest sumą aktywnych rezerwacji, nie polem."""
 
-    def test_wlasciwosc_liczy_aktywne_rezerwacje(self):
+    def test_property_counts_active_reservations(self):
+        """Właściwość liczy aktywne rezerwacje."""
         variant = ProductVariantFactory()
         item = stock(variant, 10)
         reserve(variant, 2)
@@ -296,7 +325,8 @@ class TestSumaZamiastKolumny:
         item.refresh_from_db()
         assert item.reserved == 5
 
-    def test_adnotacja_liczy_to_samo_co_wlasciwosc(self):
+    def test_annotation_matches_property(self):
+        """Adnotacja liczy to samo co właściwość."""
         from apps.inventory.models import AVAILABLE, RESERVED
 
         variant = ProductVariantFactory()

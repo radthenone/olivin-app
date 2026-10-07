@@ -62,7 +62,10 @@ def _eu_method():
 
 @pytest.mark.django_db
 class TestEuOrder:
+    """Zamówienie w euro do kraju Unii."""
+
     def test_order_is_in_euro_with_rate_snapshot(self, settings):
+        """Zamówienie jest w euro z zapisanym kursem."""
         settings.FREE_SHIPPING_THRESHOLD = None
         _euro("4.000000")
         user, cart = _cart_with_item(engraving="A&J")
@@ -85,6 +88,7 @@ class TestEuOrder:
         assert order.total.amount == 2 * 2550 + 2 * 1250 + 2001
 
     def test_later_rate_change_does_not_touch_order(self, settings):
+        """Późniejsza zmiana kursu nie rusza zamówienia."""
         settings.FREE_SHIPPING_THRESHOLD = None
         _euro("4.000000")
         user, cart = _cart_with_item()
@@ -105,6 +109,7 @@ class TestEuOrder:
         assert order.total == total
 
     def test_payment_intent_is_in_euro(self, settings, fake_payment_provider):
+        """Intencja płatności jest w euro."""
         settings.FREE_SHIPPING_THRESHOLD = None
         _euro()
         user, cart = _cart_with_item()
@@ -119,6 +124,7 @@ class TestEuOrder:
         assert fake_payment_provider.intents[0]["amount"] == order.total.amount
 
     def test_polish_order_stays_in_pln(self, settings):
+        """Zamówienie do Polski zostaje w złotych."""
         settings.FREE_SHIPPING_THRESHOLD = None
         _euro()
         user, cart = _cart_with_item()
@@ -137,6 +143,7 @@ class TestEuOrder:
         assert order.items.get().unit_price == 10001
 
     def test_eu_order_without_rate_is_rejected(self):
+        """Zamówienie unijne bez kursu jest odrzucane."""
         user, cart = _cart_with_item()
 
         with pytest.raises(OrderError) as error:
@@ -147,6 +154,7 @@ class TestEuOrder:
         assert "currency" in error.value.message_dict
 
     def test_pln_coupon_cannot_pay_euro_order(self):
+        """Kupon złotowy nie opłaci zamówienia w euro."""
         _euro()
         user, cart = _cart_with_item()
         cart.coupon = CouponFactory()
@@ -183,6 +191,7 @@ class TestEuOrderWithPromotion:
         )
 
     def test_percent_discount_from_euro_line(self):
+        """Rabat procentowy liczy się od pozycji w euro."""
         PromotionFactory(value=10)
 
         order = self._order()
@@ -202,6 +211,7 @@ class TestEuOrderWithPromotion:
         assert started.payment == payment
 
     def test_discount_never_below_converted_cost(self):
+        """Rabat nie schodzi poniżej przeliczonego kosztu."""
         PromotionFactory(value=90)
 
         order = self._order()

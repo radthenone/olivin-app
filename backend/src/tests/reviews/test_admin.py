@@ -14,6 +14,7 @@ class TestReviewAdminActions:
     """Akcje zbiorcze zmieniające status moderacji."""
 
     def test_approve_action_publishes_selected_reviews(self, admin_client):
+        """Akcja akceptacji publikuje zaznaczone opinie."""
         review = ReviewFactory(status=ReviewStatus.PENDING)
 
         admin_client.post(
@@ -25,6 +26,7 @@ class TestReviewAdminActions:
         assert review.status == ReviewStatus.APPROVED
 
     def test_reject_action_rejects_selected_reviews(self, admin_client):
+        """Akcja odrzucenia odrzuca zaznaczone opinie."""
         review = ReviewFactory(status=ReviewStatus.PENDING)
 
         admin_client.post(
@@ -36,6 +38,7 @@ class TestReviewAdminActions:
         assert review.status == ReviewStatus.REJECTED
 
     def test_delete_removes_review(self, admin_client):
+        """Usunięcie w panelu kasuje opinię."""
         review = ReviewFactory()
 
         admin_client.post(

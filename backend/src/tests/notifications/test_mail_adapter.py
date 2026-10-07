@@ -9,6 +9,7 @@ from core.integrations.notifications.mail import send_notification_email
 
 @pytest.mark.django_db
 def test_send_notification_email_lands_in_outbox(mailoutbox):
+    """Wysłany e-mail powiadomienia trafia do skrzynki testowej."""
     send_notification_email(
         to="klient@test.com", subject="Temat", body="Treść wiadomości"
     )

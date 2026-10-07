@@ -42,13 +42,15 @@ def _names(client, **params: Any) -> list[str]:
 class TestStockIsSumOfMovements:
     """Stan jest sumą ruchów, nie polem nadpisywanym."""
 
-    def test_pojedyncza_dostawa(self):
+    def test_single_delivery(self):
+        """Pojedyncza dostawa."""
         item = InventoryItemFactory()
         StockMovementFactory(item=item, quantity=7)
 
         assert item.on_hand == 7
 
-    def test_ruchy_sie_sumuja(self):
+    def test_movements_add_up(self):
+        """Ruchy się sumują."""
         item = InventoryItemFactory()
         StockMovementFactory(item=item, quantity=10)
         StockMovementFactory(item=item, quantity=-3, reason=StockMovementReason.SALE)
@@ -56,17 +58,19 @@ class TestStockIsSumOfMovements:
 
         assert item.on_hand == 8
 
-    def test_brak_ruchow_to_zero(self):
+    def test_no_movements_is_zero(self):
+        """Brak ruchów to zero."""
         assert InventoryItemFactory().on_hand == 0
 
-    def test_dostepne_to_stan_minus_rezerwacje(self):
+    def test_available_is_stock_minus_reservations(self):
+        """Dostępne to stan minus rezerwacje."""
         item = InventoryItemFactory()
         StockMovementFactory(item=item, quantity=10)
         ReservationFactory(variant=item.variant, quantity=2)
 
         assert item.available == 8
 
-    def test_korekta_nie_kasuje_historii(self):
+    def test_correction_keeps_history(self):
         """Korektę robi się kolejnym ruchem, a nie edycją poprzedniego —
         inaczej historia przestaje tłumaczyć dzisiejszy stan."""
         item = InventoryItemFactory()
@@ -78,13 +82,15 @@ class TestStockIsSumOfMovements:
         assert item.movements.count() == 2  # type: ignore[missing-attribute]
         assert item.on_hand == 6
 
-    def test_ruch_zerowy_nie_ma_sensu(self):
+    def test_zero_movement_is_rejected(self):
+        """Ruch zerowy jest odrzucany."""
         item = InventoryItemFactory()
 
         with pytest.raises(IntegrityError):
             StockMovementFactory(item=item, quantity=0)
 
-    def test_adnotacja_liczy_to_samo_co_wlasciwosc(self):
+    def test_annotation_matches_property(self):
+        """Adnotacja liczy to samo co właściwość."""
         from apps.inventory.models import InventoryItem
 
         item = InventoryItemFactory()
@@ -101,7 +107,8 @@ class TestStockIsSumOfMovements:
 class TestVariantAvailability:
     """Dostępność liczona na wariancie."""
 
-    def test_wariant_ze_stanem_jest_dostepny(self):
+    def test_variant_with_stock_is_available(self):
+        """Wariant ze stanem jest dostępny."""
         variant = ProductVariantFactory()
         stock(variant, 5)
 
@@ -109,13 +116,15 @@ class TestVariantAvailability:
         assert variant.available == 5
         assert variant.is_available
 
-    def test_wariant_bez_rekordu_magazynu_jest_niedostepny(self):
+    def test_variant_without_inventory_record_is_unavailable(self):
+        """Wariant bez rekordu magazynu jest niedostępny."""
         variant = ProductVariantFactory()
 
         assert variant.available == 0
         assert not variant.is_available
 
-    def test_wariant_z_zerowym_stanem_nie_znika_tylko_jest_niedostepny(self):
+    def test_variant_with_zero_stock_stays_but_unavailable(self):
+        """Wariant z zerowym stanem nie znika, tylko jest niedostępny."""
         variant = ProductVariantFactory()
         stock(variant, 0)
 
@@ -123,7 +132,8 @@ class TestVariantAvailability:
         assert variant.available == 0
         assert not variant.is_available
 
-    def test_rezerwacja_zdejmuje_z_dostepnosci(self):
+    def test_reservation_reduces_availability(self):
+        """Rezerwacja zdejmuje z dostępności."""
         variant = ProductVariantFactory()
         stock(variant, 5, reserved=5)
 
@@ -135,14 +145,16 @@ class TestVariantAvailability:
         ("quantity", "expected"),
         [(0, False), (1, True), (3, True), (4, False), (10, False)],
     )
-    def test_ostatnie_sztuki_przy_progu(self, quantity: int, expected: bool):
+    def test_last_items_at_threshold(self, quantity: int, expected: bool):
+        """Ostatnie sztuki przy progu."""
         variant = ProductVariantFactory()
         stock(variant, quantity)
 
         variant.refresh_from_db()
         assert variant.is_low_stock is expected
 
-    def test_prog_to_trzy_sztuki(self):
+    def test_threshold_is_three_items(self):
+        """Próg to trzy sztuki."""
         assert LOW_STOCK_THRESHOLD == 3
 
 
@@ -150,19 +162,22 @@ class TestVariantAvailability:
 class TestMadeToOrderHasNoStock:
     """Produkt na zamówienie nie ma stanu i jest dostępny zawsze (ADR 0024)."""
 
-    def test_nie_ma_liczby_sztuk(self):
+    def test_has_no_item_count(self):
+        """Nie ma liczby sztuk."""
         product = MadeToOrderProductFactory()
         variant = ProductVariantFactory(product=product)
 
         assert variant.available is None
 
-    def test_jest_dostepny_mimo_braku_stanu(self):
+    def test_is_available_without_stock(self):
+        """Jest dostępny mimo braku stanu."""
         product = MadeToOrderProductFactory()
         variant = ProductVariantFactory(product=product)
 
         assert variant.is_available
 
-    def test_nie_bywa_ostatnimi_sztukami(self):
+    def test_is_never_last_items(self):
+        """Nie bywa ostatnimi sztukami."""
         product = MadeToOrderProductFactory()
         variant = ProductVariantFactory(product=product)
 
@@ -173,7 +188,8 @@ class TestMadeToOrderHasNoStock:
 class TestAvailabilityInApi:
     """Odwiedzający widzi dostępność na wariancie."""
 
-    def test_wariant_niesie_trzy_pola(self, api_client):
+    def test_variant_has_three_fields(self, api_client):
+        """Wariant niesie trzy pola dostępności."""
         product = PublishedProductFactory()
         variant = ProductVariantFactory(product=product)
         stock(variant, 2)
@@ -184,7 +200,7 @@ class TestAvailabilityInApi:
         assert body["variants"][0]["isAvailable"] is True
         assert body["variants"][0]["isLowStock"] is True
 
-    def test_wariant_niedostepny_zostaje_w_odpowiedzi(self, api_client):
+    def test_unavailable_variant_stays_in_response(self, api_client):
         """Wariant bez stanu nie znika — jest widoczny jako niedostępny."""
         product = PublishedProductFactory()
         ProductVariantFactory(product=product, sku="BRAK")
@@ -194,7 +210,8 @@ class TestAvailabilityInApi:
         assert [v["sku"] for v in body["variants"]] == ["BRAK"]
         assert body["variants"][0]["isAvailable"] is False
 
-    def test_produkt_na_zamowienie_nie_ma_liczby_sztuk(self, api_client):
+    def test_made_to_order_product_has_no_item_count(self, api_client):
+        """Produkt na zamówienie nie ma liczby sztuk."""
         product = MadeToOrderProductFactory()
         ProductVariantFactory(product=product)
 
@@ -203,7 +220,8 @@ class TestAvailabilityInApi:
         assert body["variants"][0]["available"] is None
         assert body["variants"][0]["isAvailable"] is True
 
-    def test_najtanszy_wariant_na_liscie_tez_niesie_dostepnosc(self, api_client):
+    def test_cheapest_variant_on_list_has_availability(self, api_client):
+        """Najtańszy wariant na liście też niesie dostępność."""
         product = PublishedProductFactory()
         variant = ProductVariantFactory(product=product)
         stock(variant, 1)
@@ -221,6 +239,7 @@ class TestUnavailableProductsGoLast:
 
     @pytest.fixture
     def catalog(self):
+        """Katalog z produktami dostępnymi i niedostępnymi."""
         category = CategoryFactory()
         available = PublishedProductFactory(name="Dostepny", category=category)
         ProductVariantFactory(product=available, sku="A-1", price=200000)
@@ -232,15 +251,18 @@ class TestUnavailableProductsGoLast:
         return {"available": available, "empty": empty}
 
     @pytest.mark.parametrize("ordering", ["price", "-price", "newest", "name", "-name"])
-    def test_niedostepny_zawsze_na_koncu(self, api_client, catalog, ordering: str):
+    def test_unavailable_always_last(self, api_client, catalog, ordering: str):
+        """Niedostępny zawsze na końcu."""
         names = _names(api_client, ordering=ordering)
 
         assert names[-1] == "Pusty"
 
-    def test_niedostepny_nie_znika_z_listy(self, api_client, catalog):
+    def test_unavailable_stays_on_list(self, api_client, catalog):
+        """Niedostępny nie znika z listy."""
         assert sorted(_names(api_client)) == ["Dostepny", "Pusty"]
 
-    def test_produkt_na_zamowienie_liczy_sie_jako_dostepny(self, api_client):
+    def test_made_to_order_counts_as_available(self, api_client):
+        """Produkt na zamówienie liczy się jako dostępny."""
         category = CategoryFactory()
         made = MadeToOrderProductFactory(name="Obraczki", category=category)
         ProductVariantFactory(product=made, sku="M-1", price=300000)
@@ -249,9 +271,8 @@ class TestUnavailableProductsGoLast:
 
         assert _names(api_client, ordering="price") == ["Obraczki", "Pusty"]
 
-    def test_produkt_z_jednym_dostepnym_wariantem_liczy_sie_jako_dostepny(
-        self, api_client
-    ):
+    def test_product_with_one_available_variant_counts_as_available(self, api_client):
+        """Produkt z jednym dostępnym wariantem liczy się jako dostępny."""
         category = CategoryFactory()
         mixed = PublishedProductFactory(name="Czesciowy", category=category)
         ProductVariantFactory(product=mixed, sku="C-1", price=100000)
@@ -267,7 +288,8 @@ class TestUnavailableProductsGoLast:
 class TestNoWriteApi:
     """Magazyn prowadzi panel — API go nie wystawia (ADR 0021)."""
 
-    def test_nie_ma_adresu_magazynu(self, authenticated_client):
+    def test_no_inventory_endpoint(self, authenticated_client):
+        """Nie ma adresu magazynu w API."""
         from django.urls.exceptions import NoReverseMatch
 
         with pytest.raises(NoReverseMatch):
