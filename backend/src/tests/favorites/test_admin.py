@@ -14,6 +14,7 @@ class TestFavoriteAdmin:
     """Panel pokazuje wpisy, ale nie pozwala ich zakładać ani edytować."""
 
     def test_changelist_loads(self, admin_client):
+        """Lista wpisów w panelu się otwiera."""
         FavoriteFactory()
 
         response = admin_client.get(reverse("admin:favorites_favorite_changelist"))
@@ -21,6 +22,7 @@ class TestFavoriteAdmin:
         assert response.status_code == 200
 
     def test_add_view_is_forbidden(self, admin_client):
+        """Dodawanie wpisów w panelu jest zabronione."""
         response = admin_client.get(reverse("admin:favorites_favorite_add"))
 
         assert response.status_code == 403
@@ -38,6 +40,7 @@ class TestFavoriteAdmin:
         assert response.context["adminform"].form.fields == {}
 
     def test_delete_removes_favorite(self, admin_client):
+        """Usunięcie w panelu kasuje wpis."""
         favorite = FavoriteFactory()
 
         admin_client.post(
