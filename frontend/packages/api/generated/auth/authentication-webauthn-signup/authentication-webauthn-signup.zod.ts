@@ -243,7 +243,10 @@ export const PostAllauthClientV1AuthWebauthnSignupHeader = zod.object({
 })
 
 export const PostAllauthClientV1AuthWebauthnSignupBody = zod.object({
-  "email": zod.string().describe('The email address.\n')
+  "email": zod.string().describe('The email address.\n'),
+  "consent_terms": zod.boolean().describe('Zgoda na bieżącą wersję regulaminu (wymagana)'),
+  "consent_privacy": zod.boolean().describe('Zgoda na bieżącą wersję polityki prywatności (wymagana)'),
+  "consent_marketing": zod.boolean().optional().describe('Zgoda na komunikację marketingową e-mailem (opcjonalna)')
 })
 
 export const PostAllauthClientV1AuthWebauthnSignupResponse = zod.void()

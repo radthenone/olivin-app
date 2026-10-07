@@ -5,6 +5,7 @@
  * API documentation
  * OpenAPI spec version: 1.0.0
  */
+import type { ConsentDocument } from './consentDocument';
 import type { RoleEnum } from './roleEnum';
 
 export interface Profile {
@@ -36,4 +37,5 @@ export interface Profile {
   readonly age: number | null;
   phoneNumber?: string;
   readonly role: RoleEnum;
+  readonly pendingConsents: readonly ConsentDocument[];
 }

@@ -228,4 +228,10 @@ import type { Email } from './email';
 
 export interface BaseSignup {
   email: Email;
+  /** Zgoda na bieżącą wersję regulaminu (wymagana) */
+  consent_terms: boolean;
+  /** Zgoda na bieżącą wersję polityki prywatności (wymagana) */
+  consent_privacy: boolean;
+  /** Zgoda na komunikację marketingową e-mailem (opcjonalna) */
+  consent_marketing?: boolean;
 }
