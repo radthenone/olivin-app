@@ -1,11 +1,16 @@
 import { useState } from "react";
-import { Switch, Text, View } from "react-native";
+import { Text } from "react-native";
 import { Link } from "expo-router";
 import { ErrorMessage } from "@ui/feedback/ErrorMessage";
 import { Button } from "@ui/primitives/Button";
 import { TextField } from "@ui/primitives/TextField";
 import { AuthShell } from "../components/AuthShell";
-import { registerSchema } from "../forms/register.schema";
+import { ConsentSwitches } from "../components/ConsentSwitches";
+import {
+  NO_CONSENTS,
+  registerSchema,
+  toSignupConsentsBody,
+} from "../forms/register.schema";
 import { useRegister } from "../hooks/use-register";
 
 /**
@@ -24,9 +29,7 @@ export function RegisterScreen() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [consentTerms, setConsentTerms] = useState(false);
-  const [consentPrivacy, setConsentPrivacy] = useState(false);
-  const [consentMarketing, setConsentMarketing] = useState(false);
+  const [consents, setConsents] = useState(NO_CONSENTS);
   const [formError, setFormError] = useState<string | null>(null);
 
   function handleSubmit() {
@@ -38,9 +41,7 @@ export function RegisterScreen() {
       phoneNumber,
       password,
       passwordConfirm,
-      consentTerms,
-      consentPrivacy,
-      consentMarketing,
+      ...consents,
     });
 
     if (!parsed.success) {
@@ -56,9 +57,7 @@ export function RegisterScreen() {
       dateOfBirth: parsed.data.dateOfBirth,
       phoneNumber: parsed.data.phoneNumber,
       password: parsed.data.password,
-      consent_terms: parsed.data.consentTerms,
-      consent_privacy: parsed.data.consentPrivacy,
-      consent_marketing: parsed.data.consentMarketing,
+      ...toSignupConsentsBody(parsed.data),
     });
   }
 
@@ -164,39 +163,18 @@ export function RegisterScreen() {
         value={passwordConfirm}
       />
 
-      {(
-        [
-          ["Akceptuję regulamin (wymagane)", consentTerms, setConsentTerms],
-          [
-            "Akceptuję politykę prywatności (wymagane)",
-            consentPrivacy,
-            setConsentPrivacy,
-          ],
-          [
-            "Chcę otrzymywać informacje marketingowe e-mailem",
-            consentMarketing,
-            setConsentMarketing,
-          ],
-        ] as const
-      ).map(([label, value, setValue]) => (
-        <View className="flex-row items-center gap-3" key={label}>
-          <Switch
-            accessibilityLabel={label}
-            disabled={register.isPending}
-            onValueChange={(next) => {
-              setValue(next);
-              setFormError(null);
-            }}
-            value={value}
-          />
-          <Text className="flex-1 text-base text-neutral-950">{label}</Text>
-        </View>
-      ))}
+      <ConsentSwitches
+        disabled={register.isPending}
+        onChange={(next) => {
+          setConsents(next);
+          setFormError(null);
+        }}
+        value={consents}
+      />
 
       <ErrorMessage
         message={
-          formError ??
-          (register.isError ? "Nie udało się utworzyć konta." : null)
+          formError ?? (register.isError ? register.error.message : null)
         }
       />
 

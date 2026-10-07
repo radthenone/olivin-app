@@ -12,7 +12,9 @@ export default function AuthLayout() {
   const auth = useAuthContext();
   const canUsePrimaryAuth =
     auth.isUnauthenticated ||
-    (!auth.isMfaRequired && !auth.isEmailVerificationRequired);
+    (!auth.isMfaRequired &&
+      !auth.isEmailVerificationRequired &&
+      !auth.isProviderSignupRequired);
   const canVerifyEmail =
     auth.isUnauthenticated || auth.isEmailVerificationRequired;
 
@@ -33,6 +35,10 @@ export default function AuthLayout() {
 
       <Stack.Protected guard={auth.isMfaRequired}>
         <Stack.Screen name="mfa" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={auth.isProviderSignupRequired}>
+        <Stack.Screen name="provider-signup" />
       </Stack.Protected>
 
       <Stack.Protected guard={canVerifyEmail}>

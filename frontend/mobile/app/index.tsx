@@ -18,6 +18,10 @@ export default function IndexRoute() {
     return <Redirect href="/mfa" />;
   }
 
+  if (auth.isProviderSignupRequired) {
+    return <Redirect href="/provider-signup" />;
+  }
+
   if (auth.isEmailVerificationRequired) {
     return <Redirect href="/verify-email" />;
   }

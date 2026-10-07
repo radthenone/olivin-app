@@ -15,6 +15,7 @@ export function useAuth() {
     isUnauthenticated: status === "unauthenticated",
     isMfaRequired: status === "mfa_required",
     isEmailVerificationRequired: status === "email_verification_required",
+    isProviderSignupRequired: status === "provider_signup_required",
     user: status === "authenticated" ? session.data?.user : null,
     flows: session.data?.flows ?? [],
   };
