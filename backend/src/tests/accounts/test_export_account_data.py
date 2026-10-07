@@ -6,8 +6,11 @@ import json
 from io import StringIO
 
 import pytest
+from allauth.account.models import EmailAddress
+from allauth.socialaccount.models import SocialAccount
 from django.core.management import CommandError, call_command
 
+from apps.notifications.models import NewsletterSubscription
 from tests.factories.accounts import ProfileFactory, UserFactory
 from tests.factories.consents import ConsentFactory
 from tests.factories.favorites import FavoriteFactory
@@ -44,3 +47,22 @@ def test_exports_account_data_without_password() -> None:
 def test_unknown_account_fails() -> None:
     with pytest.raises(CommandError):
         export("nobody@test.com")
+
+
+def test_exports_non_editable_fields_and_related_records() -> None:
+    user = UserFactory(email="ola@test.com")
+    order = OrderFactory(user=user)
+    EmailAddress.objects.create(user=user, email="ola@test.com", verified=True)
+    SocialAccount.objects.create(
+        user=user, provider="google", uid="g-7", extra_data={"token": "secret"}
+    )
+    NewsletterSubscription.objects.create(email="ola@test.com")
+
+    data = export("ola@test.com")
+
+    assert data["orders"][0]["number"] == order.number
+    assert data["email_addresses"][0]["email"] == "ola@test.com"
+    assert data["social_accounts"] == [{"provider": "google", "uid": "g-7"}]
+    assert data["newsletter_subscriptions"][0]["email"] == "ola@test.com"
+    for key in ("notifications", "return_requests", "sales_documents"):
+        assert data[key] == []
