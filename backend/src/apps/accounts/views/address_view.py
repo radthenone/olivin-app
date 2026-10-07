@@ -5,7 +5,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.accounts.models import Address
+from apps.accounts.models import Address, Profile
 from apps.accounts.schema import address_schema
 from apps.accounts.serializers import AddressSerializer
 
@@ -53,7 +53,9 @@ class AddressViewSet(viewsets.ModelViewSet):
 
         # Zdjęcie flagi z pozostałych i ustawienie jej tu to jedna zmiana —
         # bez transakcji błąd zapisu zostawiłby profil bez adresu domyślnego.
+        # Blokada profilu kolejkuje równoległe wywołania dla tego samego konta.
         with transaction.atomic():
+            Profile.objects.select_for_update().get(pk=address.profile_id)  # type: ignore[missing-attribute]
             Address.objects.filter(profile__user=request.user).exclude(
                 pk=address.pk,
             ).update(is_default=False)
