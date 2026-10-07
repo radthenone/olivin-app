@@ -1,4 +1,5 @@
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiResponse, extend_schema, inline_serializer
+from rest_framework import serializers
 
 from apps.accounts.serializers import (
     AccountAnonymisationDetailSerializer,
@@ -16,7 +17,20 @@ account_anonymise_schema = extend_schema(
     request=AccountAnonymisationSerializer,
     responses={
         204: OpenApiResponse(description="Konto zanonimizowane, sesja zakończona"),
-        400: OpenApiResponse(description="Brak albo błędne potwierdzenie"),
+        400: OpenApiResponse(
+            response=inline_serializer(
+                name="AccountAnonymisationError",
+                fields={
+                    "password": serializers.CharField(required=False),
+                    "code": serializers.CharField(required=False),
+                    "detail": serializers.CharField(required=False),
+                },
+            ),
+            description=(
+                "Błędne hasło (`password`), kod (`code`) albo konto obsługi "
+                "sklepu (`detail`)"
+            ),
+        ),
         409: OpenApiResponse(
             response=AccountAnonymisationDetailSerializer,
             description="Trwa niedostarczone zamówienie",
@@ -34,6 +48,9 @@ account_anonymise_code_schema = extend_schema(
     request=None,
     responses={
         202: AccountAnonymisationDetailSerializer,
-        400: OpenApiResponse(description="Konto ma hasło — potwierdź hasłem"),
+        400: OpenApiResponse(
+            response=AccountAnonymisationDetailSerializer,
+            description="Konto ma hasło — potwierdź hasłem",
+        ),
     },
 )
