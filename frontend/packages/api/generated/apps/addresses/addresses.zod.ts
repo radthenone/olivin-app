@@ -9,16 +9,16 @@ import * as zod from 'zod';
 
 
 /**
- * A viewset for viewing and editing address instances.
+ * Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
  *
  * Actions:
- * - list:           GET  /api/v1/addresses/
- * - retrieve:       GET  /api/v1/addresses/{id}/
- * - create:         POST /api/v1/addresses/
- * - update:         PUT  /api/v1/addresses/{id}/
- * - partial_update: PATCH /api/v1/addresses/{id}/
- * - destroy:        DELETE /api/v1/addresses/{id}/
- * - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+ * - list:           GET    /customers/addresses/
+ * - retrieve:       GET    /customers/addresses/{id}/
+ * - create:         POST   /customers/addresses/
+ * - update:         PUT    /customers/addresses/{id}/
+ * - partial_update: PATCH  /customers/addresses/{id}/
+ * - destroy:        DELETE /customers/addresses/{id}/
+ * - set_default:    PATCH  /customers/addresses/{id}/set-default/
  */
 export const CustomersAddressesListQueryParams = zod.object({
   "page": zod.coerce.number().int().optional().describe('A page number within the paginated result set.'),
@@ -54,16 +54,16 @@ export const CustomersAddressesListResponse = zod.object({
 })
 
 /**
- * A viewset for viewing and editing address instances.
+ * Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
  *
  * Actions:
- * - list:           GET  /api/v1/addresses/
- * - retrieve:       GET  /api/v1/addresses/{id}/
- * - create:         POST /api/v1/addresses/
- * - update:         PUT  /api/v1/addresses/{id}/
- * - partial_update: PATCH /api/v1/addresses/{id}/
- * - destroy:        DELETE /api/v1/addresses/{id}/
- * - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+ * - list:           GET    /customers/addresses/
+ * - retrieve:       GET    /customers/addresses/{id}/
+ * - create:         POST   /customers/addresses/
+ * - update:         PUT    /customers/addresses/{id}/
+ * - partial_update: PATCH  /customers/addresses/{id}/
+ * - destroy:        DELETE /customers/addresses/{id}/
+ * - set_default:    PATCH  /customers/addresses/{id}/set-default/
  */
 export const customersAddressesCreateBodyStreetMax = 255;
 
@@ -111,19 +111,19 @@ export const CustomersAddressesCreateResponse = zod.object({
 })
 
 /**
- * A viewset for viewing and editing address instances.
+ * Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
  *
  * Actions:
- * - list:           GET  /api/v1/addresses/
- * - retrieve:       GET  /api/v1/addresses/{id}/
- * - create:         POST /api/v1/addresses/
- * - update:         PUT  /api/v1/addresses/{id}/
- * - partial_update: PATCH /api/v1/addresses/{id}/
- * - destroy:        DELETE /api/v1/addresses/{id}/
- * - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+ * - list:           GET    /customers/addresses/
+ * - retrieve:       GET    /customers/addresses/{id}/
+ * - create:         POST   /customers/addresses/
+ * - update:         PUT    /customers/addresses/{id}/
+ * - partial_update: PATCH  /customers/addresses/{id}/
+ * - destroy:        DELETE /customers/addresses/{id}/
+ * - set_default:    PATCH  /customers/addresses/{id}/set-default/
  */
 export const CustomersAddressesRetrieveParams = zod.object({
-  "id": zod.coerce.string()
+  "id": zod.uuid().describe('A UUID string identifying this Address.')
 })
 
 export const customersAddressesRetrieveResponseStreetMax = 255;
@@ -150,19 +150,19 @@ export const CustomersAddressesRetrieveResponse = zod.object({
 })
 
 /**
- * A viewset for viewing and editing address instances.
+ * Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
  *
  * Actions:
- * - list:           GET  /api/v1/addresses/
- * - retrieve:       GET  /api/v1/addresses/{id}/
- * - create:         POST /api/v1/addresses/
- * - update:         PUT  /api/v1/addresses/{id}/
- * - partial_update: PATCH /api/v1/addresses/{id}/
- * - destroy:        DELETE /api/v1/addresses/{id}/
- * - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+ * - list:           GET    /customers/addresses/
+ * - retrieve:       GET    /customers/addresses/{id}/
+ * - create:         POST   /customers/addresses/
+ * - update:         PUT    /customers/addresses/{id}/
+ * - partial_update: PATCH  /customers/addresses/{id}/
+ * - destroy:        DELETE /customers/addresses/{id}/
+ * - set_default:    PATCH  /customers/addresses/{id}/set-default/
  */
 export const CustomersAddressesUpdateParams = zod.object({
-  "id": zod.coerce.string()
+  "id": zod.uuid().describe('A UUID string identifying this Address.')
 })
 
 export const customersAddressesUpdateBodyStreetMax = 255;
@@ -211,19 +211,19 @@ export const CustomersAddressesUpdateResponse = zod.object({
 })
 
 /**
- * A viewset for viewing and editing address instances.
+ * Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
  *
  * Actions:
- * - list:           GET  /api/v1/addresses/
- * - retrieve:       GET  /api/v1/addresses/{id}/
- * - create:         POST /api/v1/addresses/
- * - update:         PUT  /api/v1/addresses/{id}/
- * - partial_update: PATCH /api/v1/addresses/{id}/
- * - destroy:        DELETE /api/v1/addresses/{id}/
- * - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+ * - list:           GET    /customers/addresses/
+ * - retrieve:       GET    /customers/addresses/{id}/
+ * - create:         POST   /customers/addresses/
+ * - update:         PUT    /customers/addresses/{id}/
+ * - partial_update: PATCH  /customers/addresses/{id}/
+ * - destroy:        DELETE /customers/addresses/{id}/
+ * - set_default:    PATCH  /customers/addresses/{id}/set-default/
  */
 export const CustomersAddressesPartialUpdateParams = zod.object({
-  "id": zod.coerce.string()
+  "id": zod.uuid().describe('A UUID string identifying this Address.')
 })
 
 export const customersAddressesPartialUpdateBodyStreetMax = 255;
@@ -272,19 +272,19 @@ export const CustomersAddressesPartialUpdateResponse = zod.object({
 })
 
 /**
- * A viewset for viewing and editing address instances.
+ * Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
  *
  * Actions:
- * - list:           GET  /api/v1/addresses/
- * - retrieve:       GET  /api/v1/addresses/{id}/
- * - create:         POST /api/v1/addresses/
- * - update:         PUT  /api/v1/addresses/{id}/
- * - partial_update: PATCH /api/v1/addresses/{id}/
- * - destroy:        DELETE /api/v1/addresses/{id}/
- * - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+ * - list:           GET    /customers/addresses/
+ * - retrieve:       GET    /customers/addresses/{id}/
+ * - create:         POST   /customers/addresses/
+ * - update:         PUT    /customers/addresses/{id}/
+ * - partial_update: PATCH  /customers/addresses/{id}/
+ * - destroy:        DELETE /customers/addresses/{id}/
+ * - set_default:    PATCH  /customers/addresses/{id}/set-default/
  */
 export const CustomersAddressesDestroyParams = zod.object({
-  "id": zod.coerce.string()
+  "id": zod.uuid().describe('A UUID string identifying this Address.')
 })
 
 export const CustomersAddressesDestroyResponse = zod.void()
@@ -294,7 +294,7 @@ export const CustomersAddressesDestroyResponse = zod.void()
  * @summary Set Default Address
  */
 export const CustomersAddressesSetDefaultPartialUpdateParams = zod.object({
-  "id": zod.coerce.string()
+  "id": zod.uuid().describe('A UUID string identifying this Address.')
 })
 
 export const customersAddressesSetDefaultPartialUpdateBodyStreetMax = 255;

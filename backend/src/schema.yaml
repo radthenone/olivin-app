@@ -582,16 +582,16 @@ paths:
     get:
       operationId: customers_addresses_list
       description: |-
-        A viewset for viewing and editing address instances.
+        Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
 
         Actions:
-        - list:           GET  /api/v1/addresses/
-        - retrieve:       GET  /api/v1/addresses/{id}/
-        - create:         POST /api/v1/addresses/
-        - update:         PUT  /api/v1/addresses/{id}/
-        - partial_update: PATCH /api/v1/addresses/{id}/
-        - destroy:        DELETE /api/v1/addresses/{id}/
-        - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+        - list:           GET    /customers/addresses/
+        - retrieve:       GET    /customers/addresses/{id}/
+        - create:         POST   /customers/addresses/
+        - update:         PUT    /customers/addresses/{id}/
+        - partial_update: PATCH  /customers/addresses/{id}/
+        - destroy:        DELETE /customers/addresses/{id}/
+        - set_default:    PATCH  /customers/addresses/{id}/set-default/
       parameters:
       - name: page
         required: false
@@ -620,16 +620,16 @@ paths:
     post:
       operationId: customers_addresses_create
       description: |-
-        A viewset for viewing and editing address instances.
+        Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
 
         Actions:
-        - list:           GET  /api/v1/addresses/
-        - retrieve:       GET  /api/v1/addresses/{id}/
-        - create:         POST /api/v1/addresses/
-        - update:         PUT  /api/v1/addresses/{id}/
-        - partial_update: PATCH /api/v1/addresses/{id}/
-        - destroy:        DELETE /api/v1/addresses/{id}/
-        - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+        - list:           GET    /customers/addresses/
+        - retrieve:       GET    /customers/addresses/{id}/
+        - create:         POST   /customers/addresses/
+        - update:         PUT    /customers/addresses/{id}/
+        - partial_update: PATCH  /customers/addresses/{id}/
+        - destroy:        DELETE /customers/addresses/{id}/
+        - set_default:    PATCH  /customers/addresses/{id}/set-default/
       tags:
       - Addresses
       requestBody:
@@ -657,21 +657,23 @@ paths:
     get:
       operationId: customers_addresses_retrieve
       description: |-
-        A viewset for viewing and editing address instances.
+        Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
 
         Actions:
-        - list:           GET  /api/v1/addresses/
-        - retrieve:       GET  /api/v1/addresses/{id}/
-        - create:         POST /api/v1/addresses/
-        - update:         PUT  /api/v1/addresses/{id}/
-        - partial_update: PATCH /api/v1/addresses/{id}/
-        - destroy:        DELETE /api/v1/addresses/{id}/
-        - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+        - list:           GET    /customers/addresses/
+        - retrieve:       GET    /customers/addresses/{id}/
+        - create:         POST   /customers/addresses/
+        - update:         PUT    /customers/addresses/{id}/
+        - partial_update: PATCH  /customers/addresses/{id}/
+        - destroy:        DELETE /customers/addresses/{id}/
+        - set_default:    PATCH  /customers/addresses/{id}/set-default/
       parameters:
       - in: path
         name: id
         schema:
           type: string
+          format: uuid
+        description: A UUID string identifying this Address.
         required: true
       tags:
       - Addresses
@@ -688,21 +690,23 @@ paths:
     put:
       operationId: customers_addresses_update
       description: |-
-        A viewset for viewing and editing address instances.
+        Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
 
         Actions:
-        - list:           GET  /api/v1/addresses/
-        - retrieve:       GET  /api/v1/addresses/{id}/
-        - create:         POST /api/v1/addresses/
-        - update:         PUT  /api/v1/addresses/{id}/
-        - partial_update: PATCH /api/v1/addresses/{id}/
-        - destroy:        DELETE /api/v1/addresses/{id}/
-        - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+        - list:           GET    /customers/addresses/
+        - retrieve:       GET    /customers/addresses/{id}/
+        - create:         POST   /customers/addresses/
+        - update:         PUT    /customers/addresses/{id}/
+        - partial_update: PATCH  /customers/addresses/{id}/
+        - destroy:        DELETE /customers/addresses/{id}/
+        - set_default:    PATCH  /customers/addresses/{id}/set-default/
       parameters:
       - in: path
         name: id
         schema:
           type: string
+          format: uuid
+        description: A UUID string identifying this Address.
         required: true
       tags:
       - Addresses
@@ -730,21 +734,23 @@ paths:
     patch:
       operationId: customers_addresses_partial_update
       description: |-
-        A viewset for viewing and editing address instances.
+        Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
 
         Actions:
-        - list:           GET  /api/v1/addresses/
-        - retrieve:       GET  /api/v1/addresses/{id}/
-        - create:         POST /api/v1/addresses/
-        - update:         PUT  /api/v1/addresses/{id}/
-        - partial_update: PATCH /api/v1/addresses/{id}/
-        - destroy:        DELETE /api/v1/addresses/{id}/
-        - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+        - list:           GET    /customers/addresses/
+        - retrieve:       GET    /customers/addresses/{id}/
+        - create:         POST   /customers/addresses/
+        - update:         PUT    /customers/addresses/{id}/
+        - partial_update: PATCH  /customers/addresses/{id}/
+        - destroy:        DELETE /customers/addresses/{id}/
+        - set_default:    PATCH  /customers/addresses/{id}/set-default/
       parameters:
       - in: path
         name: id
         schema:
           type: string
+          format: uuid
+        description: A UUID string identifying this Address.
         required: true
       tags:
       - Addresses
@@ -772,21 +778,23 @@ paths:
     delete:
       operationId: customers_addresses_destroy
       description: |-
-        A viewset for viewing and editing address instances.
+        Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
 
         Actions:
-        - list:           GET  /api/v1/addresses/
-        - retrieve:       GET  /api/v1/addresses/{id}/
-        - create:         POST /api/v1/addresses/
-        - update:         PUT  /api/v1/addresses/{id}/
-        - partial_update: PATCH /api/v1/addresses/{id}/
-        - destroy:        DELETE /api/v1/addresses/{id}/
-        - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+        - list:           GET    /customers/addresses/
+        - retrieve:       GET    /customers/addresses/{id}/
+        - create:         POST   /customers/addresses/
+        - update:         PUT    /customers/addresses/{id}/
+        - partial_update: PATCH  /customers/addresses/{id}/
+        - destroy:        DELETE /customers/addresses/{id}/
+        - set_default:    PATCH  /customers/addresses/{id}/set-default/
       parameters:
       - in: path
         name: id
         schema:
           type: string
+          format: uuid
+        description: A UUID string identifying this Address.
         required: true
       tags:
       - Addresses
@@ -806,6 +814,8 @@ paths:
         name: id
         schema:
           type: string
+          format: uuid
+        description: A UUID string identifying this Address.
         required: true
       tags:
       - Addresses
@@ -840,8 +850,6 @@ paths:
                     is_default: true
                   summary: Address set as default
           description: Address set as default successfully
-        '400':
-          description: Address is already set as default
         '403':
           description: Permission denied
         '404':
