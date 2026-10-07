@@ -34,7 +34,12 @@ export function useSocialLogin() {
 
   const loginWithProviderToken = useMutation({
     mutationFn: authService.loginWithProviderToken,
-    onSuccess: async () => {
+    onSuccess: async (state) => {
+      // Nowe konto z Google/Facebook: 401 z flow `provider_signup` — stan od
+      // razu w cache, żeby routing przeniósł na ekran zgód (#207).
+      if (state.status === "provider_signup_required") {
+        queryClient.setQueryData(authQueryKeys.session(), state);
+      }
       await queryClient.invalidateQueries({ queryKey: authQueryKeys.all });
     },
     onError: () => {

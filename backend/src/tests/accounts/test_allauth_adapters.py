@@ -60,7 +60,7 @@ def test_account_adapter_tworzy_profil_po_udanym_signupie(rf):
 
 
 @pytest.mark.django_db
-def test_headless_signup_tworzy_profil(api_client):
+def test_headless_signup_tworzy_profil(api_client, consent_documents):
     """Rejestracja headless allauth powinna tworzyć użytkownika i profil."""
     response = api_client.post(
         "/_allauth/app/v1/auth/signup",
@@ -71,6 +71,8 @@ def test_headless_signup_tworzy_profil(api_client):
             "lastName": "Nowak",
             "dateOfBirth": "1992-02-20",
             "phoneNumber": "+48500100201",
+            "consent_terms": True,
+            "consent_privacy": True,
         },
         format="json",
     )

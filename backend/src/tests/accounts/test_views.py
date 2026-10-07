@@ -139,3 +139,24 @@ class TestProfileViewSetChangeRole:
         assert response.status_code == status.HTTP_200_OK
         profile.refresh_from_db()
         assert profile.role == RoleChoices.CUSTOMER
+
+
+@pytest.mark.django_db
+class TestProfilePendingConsents:
+    """Profil zwraca zaległe zgody — okno akceptacji nowej wersji po zalogowaniu."""
+
+    def test_profile_lists_pending_consents(
+        self, authenticated_client: APIClient, user, consent_documents
+    ):
+        """Bez zgód → regulamin i polityka prywatności z wersją i id dokumentu."""
+        profile = ProfileFactory(user=user)
+        url = reverse("profile-detail", args=[profile.pk])
+
+        response = cast(Response, authenticated_client.get(url))
+
+        pending = cast(dict, response.data)["pending_consents"]
+        assert [(p["kind"], p["version"]) for p in pending] == [
+            ("terms", "terms-2026"),
+            ("privacy", "privacy-2026"),
+        ]
+        assert pending[0]["id"] == str(consent_documents["terms"].pk)

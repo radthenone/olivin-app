@@ -46,7 +46,8 @@ function RootNavigator() {
   const canAccessAuthRoutes =
     auth.isUnauthenticated ||
     auth.isMfaRequired ||
-    auth.isEmailVerificationRequired;
+    auth.isEmailVerificationRequired ||
+    auth.isProviderSignupRequired;
 
   const stack = (
     <Stack

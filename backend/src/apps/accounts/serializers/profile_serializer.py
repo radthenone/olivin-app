@@ -1,10 +1,13 @@
 from datetime import date
 
 from django.db import IntegrityError, transaction
+from drf_spectacular.utils import extend_schema_field
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import serializers
 
 from apps.accounts.models import CustomUser, Profile
+from apps.consents.models import ConsentDocument
+from apps.consents.serializers import ConsentDocumentSerializer
 from apps.accounts.usernames import (
     USERNAME_MAX_LENGTH,
     USERNAME_MIN_LENGTH,
@@ -28,6 +31,9 @@ class ProfileSerializer(serializers.ModelSerializer):
     phone_number = PhoneNumberField(required=False, allow_blank=True)
     full_name = serializers.SerializerMethodField(read_only=True)
     age = serializers.SerializerMethodField(read_only=True)
+    # Okno akceptacji nowej wersji dokumentu po zalogowaniu (#207); brak zgody
+    # blokuje tylko składanie zamówień, nie dostęp do konta.
+    pending_consents = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Profile
@@ -42,6 +48,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "age",
             "phone_number",
             "role",
+            "pending_consents",
         ]
         read_only_fields = ["id", "email", "role"]
 
@@ -50,6 +57,12 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     def get_age(self, obj: Profile) -> int | None:
         return obj.age
+
+    @extend_schema_field(ConsentDocumentSerializer(many=True))
+    def get_pending_consents(self, obj: Profile) -> list[dict]:
+        """Bieżące wersje regulaminu i polityki prywatności bez zgody klienta."""
+        documents = ConsentDocument.objects.pending_for(obj.user)
+        return list(ConsentDocumentSerializer(documents, many=True).data)
 
     def _owner(self) -> CustomUser | None:
         """Konto, którego nazwę zmieniamy: z profilu albo (przy POST) z requestu."""

@@ -5605,6 +5605,11 @@ components:
           allOf:
           - $ref: '#/components/schemas/RoleEnum'
           readOnly: true
+        pendingConsents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsentDocument'
+          readOnly: true
     PatchedReviewUpdate:
       type: object
       description: Wejście do edycji opinii — zawsze wraca do moderacji.
@@ -6123,11 +6128,17 @@ components:
           allOf:
           - $ref: '#/components/schemas/RoleEnum'
           readOnly: true
+        pendingConsents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsentDocument'
+          readOnly: true
       required:
       - age
       - email
       - fullName
       - id
+      - pendingConsents
       - role
     Promotion:
       type: object

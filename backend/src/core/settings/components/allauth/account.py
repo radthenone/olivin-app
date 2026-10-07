@@ -15,6 +15,9 @@ ACCOUNT_PREVENT_ENUMERATION = True
 ACCOUNT_SESSION_REMEMBER = True
 
 ACCOUNT_ADAPTER = "core.services.mail.AsyncAccountAdapter"
+# Wspólna baza formularza rejestracji e-mailem i dokończenia rejestracji po
+# logowaniu zewnętrznym — oba wymagają tych samych zgód (#207).
+ACCOUNT_SIGNUP_FORM_CLASS = "core.services.allauth.signup_consents.SignupConsentsForm"
 ACCOUNT_FORMS = {"signup": "core.services.allauth.forms.SignupWithProfileForm"}
 
 ACCOUNT_RATE_LIMITS = {

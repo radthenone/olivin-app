@@ -19,6 +19,10 @@ class ConsentKind(models.TextChoices):
     MARKETING = "marketing", "Komunikacja marketingowa"
 
 
+# Bez tych zgód nie powstaje konto (`CONTEXT.md`, Consent); marketing jest dobrowolny.
+REQUIRED_SIGNUP_KINDS: tuple[str, ...] = (ConsentKind.TERMS, ConsentKind.PRIVACY)
+
+
 class ConsentDocumentQuerySet(models.QuerySet["ConsentDocument"]):
     def effective(self) -> ConsentDocumentQuerySet:
         """Wersje, które już obowiązują — przyszła wersja jeszcze nie jest bieżąca."""
@@ -32,6 +36,19 @@ class ConsentDocumentQuerySet(models.QuerySet["ConsentDocument"]):
         """Po jednej bieżącej wersji na rodzaj, w kolejności rodzajów."""
         documents = [self.current(kind) for kind in ConsentKind.values]
         return [document for document in documents if document is not None]
+
+    def pending_for(self, user: Customer) -> list[ConsentDocument]:
+        """Bieżące wersje wymaganych dokumentów, których klient nie zaakceptował.
+
+        Liczone na bieżąco, więc obejmuje też konta sprzed wymogu zgód.
+        Marketing jest dobrowolny, więc nigdy nie jest zaległy.
+        """
+        return [
+            document
+            for document in self.current_for_all_kinds()
+            if document.kind in REQUIRED_SIGNUP_KINDS
+            and not Consent.objects.has_current_consent(document.kind, user=user)
+        ]
 
 
 class ConsentDocument(TimestampedModel):

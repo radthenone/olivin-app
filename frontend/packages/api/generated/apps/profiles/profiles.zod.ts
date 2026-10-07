@@ -73,7 +73,13 @@ export const CustomersProfileListResponse = zod.object({
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
   "age": zod.int().nullable(),
   "phoneNumber": zod.string().optional(),
-  "role": zod.enum(['customer', 'admin']).describe('* `customer` - Customer\n* `admin` - Admin')
+  "role": zod.enum(['customer', 'admin']).describe('* `customer` - Customer\n* `admin` - Admin'),
+  "pendingConsents": zod.array(zod.object({
+  "id": zod.uuid(),
+  "kind": zod.enum(['terms', 'privacy', 'marketing']).describe('* `terms` - Regulamin\n* `privacy` - Polityka prywatności\n* `marketing` - Komunikacja marketingowa').describe('Rodzaj dokumentu\n\n* `terms` - Regulamin\n* `privacy` - Polityka prywatności\n* `marketing` - Komunikacja marketingowa'),
+  "version": zod.string().describe('Oznaczenie wersji, np. 2026-09; unikalne w obrębie rodzaju'),
+  "effectiveFrom": zod.iso.date().describe('Dzień, od którego wersja obowiązuje. Najnowsza obowiązująca wersja jest bieżącą; wcześniejsze zgody przestają być aktualne.')
+}).describe('Bieżąca wersja dokumentu — tyle, ile klient potrzebuje, żeby ją\npokazać i odesłać w zgodzie.'))
 }))
 })
 
@@ -129,7 +135,13 @@ export const CustomersProfileCreateResponse = zod.object({
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
   "age": zod.int().nullable(),
   "phoneNumber": zod.string().optional(),
-  "role": zod.enum(['customer', 'admin']).describe('* `customer` - Customer\n* `admin` - Admin')
+  "role": zod.enum(['customer', 'admin']).describe('* `customer` - Customer\n* `admin` - Admin'),
+  "pendingConsents": zod.array(zod.object({
+  "id": zod.uuid(),
+  "kind": zod.enum(['terms', 'privacy', 'marketing']).describe('* `terms` - Regulamin\n* `privacy` - Polityka prywatności\n* `marketing` - Komunikacja marketingowa').describe('Rodzaj dokumentu\n\n* `terms` - Regulamin\n* `privacy` - Polityka prywatności\n* `marketing` - Komunikacja marketingowa'),
+  "version": zod.string().describe('Oznaczenie wersji, np. 2026-09; unikalne w obrębie rodzaju'),
+  "effectiveFrom": zod.iso.date().describe('Dzień, od którego wersja obowiązuje. Najnowsza obowiązująca wersja jest bieżącą; wcześniejsze zgody przestają być aktualne.')
+}).describe('Bieżąca wersja dokumentu — tyle, ile klient potrzebuje, żeby ją\npokazać i odesłać w zgodzie.'))
 })
 
 /**
@@ -169,7 +181,13 @@ export const CustomersProfileRetrieveResponse = zod.object({
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
   "age": zod.int().nullable(),
   "phoneNumber": zod.string().optional(),
-  "role": zod.enum(['customer', 'admin']).describe('* `customer` - Customer\n* `admin` - Admin')
+  "role": zod.enum(['customer', 'admin']).describe('* `customer` - Customer\n* `admin` - Admin'),
+  "pendingConsents": zod.array(zod.object({
+  "id": zod.uuid(),
+  "kind": zod.enum(['terms', 'privacy', 'marketing']).describe('* `terms` - Regulamin\n* `privacy` - Polityka prywatności\n* `marketing` - Komunikacja marketingowa').describe('Rodzaj dokumentu\n\n* `terms` - Regulamin\n* `privacy` - Polityka prywatności\n* `marketing` - Komunikacja marketingowa'),
+  "version": zod.string().describe('Oznaczenie wersji, np. 2026-09; unikalne w obrębie rodzaju'),
+  "effectiveFrom": zod.iso.date().describe('Dzień, od którego wersja obowiązuje. Najnowsza obowiązująca wersja jest bieżącą; wcześniejsze zgody przestają być aktualne.')
+}).describe('Bieżąca wersja dokumentu — tyle, ile klient potrzebuje, żeby ją\npokazać i odesłać w zgodzie.'))
 })
 
 /**
@@ -228,7 +246,13 @@ export const CustomersProfileUpdateResponse = zod.object({
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
   "age": zod.int().nullable(),
   "phoneNumber": zod.string().optional(),
-  "role": zod.enum(['customer', 'admin']).describe('* `customer` - Customer\n* `admin` - Admin')
+  "role": zod.enum(['customer', 'admin']).describe('* `customer` - Customer\n* `admin` - Admin'),
+  "pendingConsents": zod.array(zod.object({
+  "id": zod.uuid(),
+  "kind": zod.enum(['terms', 'privacy', 'marketing']).describe('* `terms` - Regulamin\n* `privacy` - Polityka prywatności\n* `marketing` - Komunikacja marketingowa').describe('Rodzaj dokumentu\n\n* `terms` - Regulamin\n* `privacy` - Polityka prywatności\n* `marketing` - Komunikacja marketingowa'),
+  "version": zod.string().describe('Oznaczenie wersji, np. 2026-09; unikalne w obrębie rodzaju'),
+  "effectiveFrom": zod.iso.date().describe('Dzień, od którego wersja obowiązuje. Najnowsza obowiązująca wersja jest bieżącą; wcześniejsze zgody przestają być aktualne.')
+}).describe('Bieżąca wersja dokumentu — tyle, ile klient potrzebuje, żeby ją\npokazać i odesłać w zgodzie.'))
 })
 
 /**
@@ -287,7 +311,13 @@ export const CustomersProfilePartialUpdateResponse = zod.object({
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
   "age": zod.int().nullable(),
   "phoneNumber": zod.string().optional(),
-  "role": zod.enum(['customer', 'admin']).describe('* `customer` - Customer\n* `admin` - Admin')
+  "role": zod.enum(['customer', 'admin']).describe('* `customer` - Customer\n* `admin` - Admin'),
+  "pendingConsents": zod.array(zod.object({
+  "id": zod.uuid(),
+  "kind": zod.enum(['terms', 'privacy', 'marketing']).describe('* `terms` - Regulamin\n* `privacy` - Polityka prywatności\n* `marketing` - Komunikacja marketingowa').describe('Rodzaj dokumentu\n\n* `terms` - Regulamin\n* `privacy` - Polityka prywatności\n* `marketing` - Komunikacja marketingowa'),
+  "version": zod.string().describe('Oznaczenie wersji, np. 2026-09; unikalne w obrębie rodzaju'),
+  "effectiveFrom": zod.iso.date().describe('Dzień, od którego wersja obowiązuje. Najnowsza obowiązująca wersja jest bieżącą; wcześniejsze zgody przestają być aktualne.')
+}).describe('Bieżąca wersja dokumentu — tyle, ile klient potrzebuje, żeby ją\npokazać i odesłać w zgodzie.'))
 })
 
 /**
@@ -356,6 +386,12 @@ export const CustomersProfileChangeRolePartialUpdateResponse = zod.object({
   "dateOfBirth": zod.iso.date().nullish().describe('User\'s date of birth'),
   "age": zod.int().nullable(),
   "phoneNumber": zod.string().optional(),
-  "role": zod.enum(['customer', 'admin']).describe('* `customer` - Customer\n* `admin` - Admin')
+  "role": zod.enum(['customer', 'admin']).describe('* `customer` - Customer\n* `admin` - Admin'),
+  "pendingConsents": zod.array(zod.object({
+  "id": zod.uuid(),
+  "kind": zod.enum(['terms', 'privacy', 'marketing']).describe('* `terms` - Regulamin\n* `privacy` - Polityka prywatności\n* `marketing` - Komunikacja marketingowa').describe('Rodzaj dokumentu\n\n* `terms` - Regulamin\n* `privacy` - Polityka prywatności\n* `marketing` - Komunikacja marketingowa'),
+  "version": zod.string().describe('Oznaczenie wersji, np. 2026-09; unikalne w obrębie rodzaju'),
+  "effectiveFrom": zod.iso.date().describe('Dzień, od którego wersja obowiązuje. Najnowsza obowiązująca wersja jest bieżącą; wcześniejsze zgody przestają być aktualne.')
+}).describe('Bieżąca wersja dokumentu — tyle, ile klient potrzebuje, żeby ją\npokazać i odesłać w zgodzie.'))
 })
 
