@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import os
-from unittest.mock import patch
 
-import fakeredis
 import pytest
 from django.core.cache import cache
 from moto import mock_aws
@@ -58,28 +56,6 @@ def mock_s3_storage(request):
                 os.environ.pop(key, None)
             else:
                 os.environ[key] = previous_value
-
-
-@pytest.fixture(autouse=True)
-def mock_redis_connection(request):
-    """Zastępuje wszystkie instancje Redis na FakeRedis w ramach testów.
-
-    Dla testów integracyjnych (marker `integration`) mock jest wyłączony,
-    bo testy mają korzystać z prawdziwego Redis.
-    """
-
-    if request.node.get_closest_marker("integration") is not None:
-        yield
-        return
-
-    server = fakeredis.FakeServer()
-    mock_redis_instance = fakeredis.FakeStrictRedis(server=server)
-
-    with (
-        patch("redis.Redis", return_value=mock_redis_instance),
-        patch("redis.StrictRedis", return_value=mock_redis_instance),
-    ):
-        yield mock_redis_instance
 
 
 @pytest.fixture(autouse=True)
