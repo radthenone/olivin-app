@@ -4,12 +4,16 @@ import json
 from typing import cast
 
 import pytest
+from allauth.account.models import EmailAddress
+from allauth.socialaccount.models import SocialAccount, SocialLogin
+from django.test import RequestFactory
 from rest_framework.response import Response
 from rest_framework.test import APIClient
 
 from apps.accounts.models import CustomUser, Profile
 from apps.consents.models import Consent, ConsentKind
 from apps.notifications.models import NotificationPreference
+from core.services.allauth.social_adapter import SocialAccountAdapter
 from tests.factories.consents import ConsentDocumentFactory
 
 SIGNUP_URL = "/_allauth/app/v1/auth/signup"
@@ -106,3 +110,85 @@ class TestEmailSignupConsents:
 
         assert response.status_code == 400
         assert not CustomUser.objects.filter(email="badmkt@test.com").exists()
+
+
+PROVIDER_SIGNUP_URL = "/_allauth/browser/v1/auth/provider/signup"
+
+
+def _pending_social_signup(client: APIClient, email: str) -> None:
+    """Stan po powrocie od Google bez konta: logowanie czeka na dokończenie."""
+    provider = SocialAccountAdapter().get_provider(RequestFactory().get("/"), "google")
+    sociallogin = SocialLogin(
+        provider=provider,
+        user=CustomUser(email=email),
+        account=SocialAccount(
+            provider="google", uid=f"uid-{email}", extra_data={"email": email}
+        ),
+        email_addresses=[EmailAddress(email=email, verified=True, primary=True)],
+    )
+    session = client.session
+    session["socialaccount_sociallogin"] = sociallogin.serialize()
+    session.save()
+
+
+class TestProviderSignupConsents:
+    """Dokończenie rejestracji po logowaniu zewnętrznym wymaga tych samych zgód."""
+
+    def test_auto_signup_disabled(self, rf):
+        """Konto z Google nie powstaje samo — klient przechodzi krok provider signup."""
+        sociallogin = SocialLogin(
+            user=CustomUser(email="auto@test.com"),
+            account=SocialAccount(provider="google", uid="auto"),
+        )
+        assert not SocialAccountAdapter().is_auto_signup_allowed(
+            rf.get("/"), sociallogin
+        )
+
+    def test_provider_signup_without_consents_is_rejected(
+        self, api_client: APIClient, consent_documents
+    ):
+        """Brak zgód w provider signup → 400, konto nie powstaje."""
+        _pending_social_signup(api_client, "g-none@test.com")
+
+        response = cast(
+            Response,
+            api_client.post(
+                PROVIDER_SIGNUP_URL, {"email": "g-none@test.com"}, format="json"
+            ),
+        )
+
+        assert response.status_code == 400
+        assert not CustomUser.objects.filter(email="g-none@test.com").exists()
+
+    def test_provider_signup_with_consents_creates_account(
+        self, api_client: APIClient, consent_documents
+    ):
+        """Komplet zgód → konto, konto społecznościowe i zgody w jednej operacji."""
+        _pending_social_signup(api_client, "g-ok@test.com")
+
+        api_client.post(
+            PROVIDER_SIGNUP_URL,
+            {"email": "g-ok@test.com", "consent_marketing": True, **REQUIRED_CONSENTS},
+            format="json",
+        )
+
+        user = CustomUser.objects.get(email="g-ok@test.com")
+        assert SocialAccount.objects.filter(user=user, provider="google").exists()
+        kinds = set(
+            Consent.objects.filter(user=user).values_list("document__kind", flat=True)
+        )
+        assert kinds == {"terms", "privacy", "marketing"}
+        assert NotificationPreference.for_user(user).marketing_email
+
+    def test_existing_social_account_logs_in_without_signup(self, user: CustomUser):
+        """Istniejące konto społecznościowe jest rozpoznane — bez kroku signup."""
+        SocialAccount.objects.create(user=user, provider="google", uid="known")
+        sociallogin = SocialLogin(
+            user=CustomUser(email=user.email),
+            account=SocialAccount(provider="google", uid="known"),
+        )
+
+        sociallogin.lookup()
+
+        assert sociallogin.is_existing
+        assert sociallogin.user == user
