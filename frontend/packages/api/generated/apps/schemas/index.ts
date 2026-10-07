@@ -6,6 +6,9 @@
  * OpenAPI spec version: 1.0.0
  */
 
+export * from './accountAnonymisation';
+export * from './accountAnonymisationDetail';
+export * from './accountAnonymisationError';
 export * from './address';
 export * from './addressCountry';
 export * from './blankEnum';
