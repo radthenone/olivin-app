@@ -21,7 +21,7 @@ def subtract_years(value: date, years: int) -> date:
 class TestProfileSerializer:
     """Testy serializera ProfileSerializer."""
 
-    def test_serializacja_podstawowych_pol(self):
+    def test_serializes_basic_fields(self):
         """Serializer powinien zwracać wymagane pola."""
         user = UserFactory(email="jan@test.com")
         profile = ProfileFactory(user=user, first_name="Jan", last_name="Kowalski")
@@ -42,14 +42,14 @@ class TestProfileSerializer:
         data: Dict[str, Any] = dict(serializer.data)
         assert data["full_name"] == "Anna Nowak"
 
-    def test_age_none_gdy_brak_daty_urodzenia(self):
+    def test_age_none_without_date_of_birth(self):
         """age powinien wynosić None gdy date_of_birth nie jest ustawione."""
         profile = ProfileFactory(date_of_birth=None)
         serializer = ProfileSerializer(profile)
         data: Dict[str, Any] = dict(serializer.data)
         assert data["age"] is None
 
-    def test_age_obliczany_gdy_data_urodzenia(self):
+    def test_age_computed_from_date_of_birth(self):
         """age powinien być obliczany gdy date_of_birth jest ustawione."""
         import datetime
 
@@ -60,7 +60,7 @@ class TestProfileSerializer:
         assert data["age"] is not None
         assert isinstance(data["age"], int)
 
-    def test_email_jest_read_only(self):
+    def test_email_is_read_only(self):
         """Pole email powinno być tylko do odczytu."""
         profile = ProfileFactory()
         serializer = ProfileSerializer(
@@ -73,7 +73,7 @@ class TestProfileSerializer:
         validated_data = cast(Dict[str, Any], serializer.validated_data)
         assert "email" not in validated_data
 
-    def test_role_jest_read_only(self):
+    def test_role_is_read_only(self):
         """Pole role powinno być tylko do odczytu."""
         profile = ProfileFactory()
         serializer = ProfileSerializer(
@@ -95,7 +95,7 @@ class TestProfileSerializer:
         validated_data = cast(Dict[str, Any], serializer.validated_data)
         assert validated_data["first_name"] == "Nowe"
 
-    def test_date_of_birth_nie_moze_byc_dla_niepelnoletniego(self):
+    def test_date_of_birth_rejects_minor(self):
         """Data urodzenia nie powinna pozwalać na profil osoby niepełnoletniej."""
         profile = ProfileFactory()
         underage_date = subtract_years(date.today(), 17)
@@ -108,7 +108,7 @@ class TestProfileSerializer:
         assert not serializer.is_valid()
         assert "date_of_birth" in serializer.errors
 
-    def test_date_of_birth_moze_byc_dla_pelnoletniego(self):
+    def test_date_of_birth_accepts_adult(self):
         """Data urodzenia osoby pełnoletniej powinna przejść walidację."""
         profile = ProfileFactory()
         adult_date = subtract_years(date.today(), 18)

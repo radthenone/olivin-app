@@ -24,27 +24,32 @@ PASSWORD = "testpass123!"
 
 
 def anonymise(client: APIClient, **payload: str) -> Response:
+    """Wysyła żądanie anonimizacji konta z podanymi danymi."""
     return cast(
         Response, client.post(reverse("account-anonymise"), payload, format="json")
     )
 
 
 def request_code(client: APIClient) -> Response:
+    """Prosi o kod potwierdzający anonimizację."""
     return cast(Response, client.post(reverse("account-anonymise-code")))
 
 
 def is_anonymised(user: CustomUser) -> bool:
+    """Sprawdza, czy konto zostało zanonimizowane."""
     user.refresh_from_db()
     return not user.is_active
 
 
 @pytest.fixture
 def password_user() -> CustomUser:
+    """Konto z hasłem."""
     return UserFactory(password=PASSWORD)
 
 
 @pytest.fixture
 def social_user() -> CustomUser:
+    """Konto bez hasła, założone przez logowanie społecznościowe."""
     user = UserFactory(email="social@test.com")
     user.set_unusable_password()
     user.save()
@@ -52,12 +57,14 @@ def social_user() -> CustomUser:
 
 
 def client_for(user: CustomUser) -> APIClient:
+    """Klient API zalogowany jako podany użytkownik."""
     client = APIClient()
     client.force_authenticate(user=user)
     return client
 
 
 def test_requires_authentication(api_client: APIClient) -> None:
+    """Anonimizacja wymaga zalogowania."""
     response = anonymise(api_client, password=PASSWORD)
 
     assert response.status_code in (
@@ -67,6 +74,7 @@ def test_requires_authentication(api_client: APIClient) -> None:
 
 
 def test_anonymises_with_correct_password(password_user) -> None:
+    """Poprawne hasło anonimizuje konto."""
     response = anonymise(client_for(password_user), password=PASSWORD)
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
@@ -75,6 +83,7 @@ def test_anonymises_with_correct_password(password_user) -> None:
 
 @pytest.mark.parametrize("payload", [{}, {"password": "wrong-pass"}, {"code": "1"}])
 def test_rejects_without_correct_password(password_user, payload) -> None:
+    """Bez poprawnego hasła konto zostaje nietknięte."""
     response = anonymise(client_for(password_user), **payload)
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -82,6 +91,7 @@ def test_rejects_without_correct_password(password_user, payload) -> None:
 
 
 def test_refuses_with_order_in_progress(password_user) -> None:
+    """Zamówienie w toku blokuje anonimizację."""
     OrderFactory(user=password_user, status=OrderStatus.SHIPPED)
 
     response = anonymise(client_for(password_user), password=PASSWORD)
@@ -91,6 +101,7 @@ def test_refuses_with_order_in_progress(password_user) -> None:
 
 
 def test_code_is_not_sent_to_account_with_password(password_user) -> None:
+    """Konto z hasłem nie dostaje kodu e-mailem."""
     with patch(MAIL) as mail:
         response = request_code(client_for(password_user))
 
@@ -114,6 +125,7 @@ def _sent_code(
 def test_social_account_anonymises_with_emailed_code(
     social_user, django_capture_on_commit_callbacks
 ) -> None:
+    """Konto społecznościowe anonimizuje się kodem z e-maila."""
     client = client_for(social_user)
     to, code = _sent_code(client, django_capture_on_commit_callbacks)
 
@@ -127,6 +139,7 @@ def test_social_account_anonymises_with_emailed_code(
 def test_social_account_rejects_wrong_or_missing_code(
     social_user, django_capture_on_commit_callbacks
 ) -> None:
+    """Zły albo brakujący kod jest odrzucany."""
     client = client_for(social_user)
     assert anonymise(client, code="123456").status_code == 400
     _, code = _sent_code(client, django_capture_on_commit_callbacks)
@@ -140,6 +153,7 @@ def test_social_account_rejects_wrong_or_missing_code(
 def test_code_is_invalidated_after_too_many_attempts(
     social_user, django_capture_on_commit_callbacks
 ) -> None:
+    """Po zbyt wielu próbach kod przestaje działać."""
     client = client_for(social_user)
     _, code = _sent_code(client, django_capture_on_commit_callbacks)
     wrong = "000000" if code != "000000" else "111111"
@@ -155,6 +169,7 @@ def test_code_is_invalidated_after_too_many_attempts(
 def test_code_is_not_resent_within_cooldown(
     social_user, django_capture_on_commit_callbacks
 ) -> None:
+    """Kod nie jest wysyłany ponownie w okresie karencji."""
     client = client_for(social_user)
     _sent_code(client, django_capture_on_commit_callbacks)
 
@@ -166,6 +181,7 @@ def test_code_is_not_resent_within_cooldown(
 
 
 def test_order_is_checked_before_password(password_user) -> None:
+    """Zamówienie w toku jest sprawdzane przed hasłem."""
     OrderFactory(user=password_user, status=OrderStatus.PAID)
 
     response = anonymise(client_for(password_user), password="wrong-pass")
@@ -176,6 +192,7 @@ def test_order_is_checked_before_password(password_user) -> None:
 def test_active_order_does_not_burn_code(
     social_user, django_capture_on_commit_callbacks
 ) -> None:
+    """Odmowa z powodu zamówienia nie zużywa kodu."""
     client = client_for(social_user)
     _, code = _sent_code(client, django_capture_on_commit_callbacks)
     order = OrderFactory(user=social_user, status=OrderStatus.SHIPPED)
@@ -189,6 +206,7 @@ def test_active_order_does_not_burn_code(
 
 
 def test_staff_account_is_refused(password_user) -> None:
+    """Konto obsługi dostaje odmowę."""
     password_user.is_staff = True
     password_user.save()
 
@@ -200,6 +218,7 @@ def test_staff_account_is_refused(password_user) -> None:
 
 
 def test_code_refusal_has_detail_message(password_user) -> None:
+    """Odmowa kodu ma czytelny komunikat."""
     response = request_code(client_for(password_user))
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST

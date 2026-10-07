@@ -44,6 +44,7 @@ EMAIL = "jan.kowalski@test.com"
 
 @pytest.fixture
 def customer() -> CustomUser:
+    """Klient z profilem, logowaniem, kontem społecznościowym i sesją."""
     user = UserFactory(email=EMAIL, first_name="Jan", last_name="Kowalski")
     profile = ProfileFactory(
         user=user,
@@ -67,6 +68,7 @@ def customer() -> CustomUser:
     ],
 )
 def test_refuses_while_order_is_not_finished(customer, order_status) -> None:
+    """Anonimizacja jest odrzucana, dopóki zamówienie nie jest zakończone."""
     OrderFactory(user=customer, status=order_status)
 
     with pytest.raises(ActiveOrderError):
@@ -82,6 +84,7 @@ def test_refuses_while_order_is_not_finished(customer, order_status) -> None:
     [OrderStatus.DELIVERED, OrderStatus.CANCELLED, OrderStatus.RETURNED],
 )
 def test_finished_orders_do_not_block(customer, order_status) -> None:
+    """Zakończone zamówienia nie blokują anonimizacji."""
     OrderFactory(user=customer, status=order_status)
 
     anonymise_account(customer)
@@ -91,6 +94,7 @@ def test_finished_orders_do_not_block(customer, order_status) -> None:
 
 
 def test_erases_personal_data_of_account_and_profile(customer) -> None:
+    """Dane osobowe konta i profilu są usuwane."""
     old_username = customer.username
 
     anonymise_account(customer)
@@ -111,6 +115,7 @@ def test_erases_personal_data_of_account_and_profile(customer) -> None:
 
 
 def test_technical_email_is_unique_per_account(customer) -> None:
+    """Techniczny e-mail po anonimizacji jest unikalny dla każdego konta."""
     other = UserFactory()
 
     anonymise_account(customer)
@@ -122,6 +127,7 @@ def test_technical_email_is_unique_per_account(customer) -> None:
 
 
 def test_erases_logins_social_accounts_mfa_and_sessions(customer) -> None:
+    """Logowania, konta społecznościowe, MFA i sesje są usuwane."""
     EmailAddress.objects.create(user=customer, email=EMAIL, verified=True, primary=True)
     SocialAccount.objects.create(user=customer, provider="google", uid="g-1")
     Authenticator.objects.create(
@@ -144,6 +150,7 @@ def test_erases_logins_social_accounts_mfa_and_sessions(customer) -> None:
 
 
 def test_deletes_lists_devices_and_preferences(customer) -> None:
+    """Listy, urządzenia i preferencje klienta są kasowane."""
     FavoriteFactory(user=customer)
     WatchFactory(user=customer)
     CartFactory(user=customer)
@@ -166,6 +173,7 @@ def test_deletes_lists_devices_and_preferences(customer) -> None:
 
 
 def test_unsubscribes_newsletter_of_account_address(customer) -> None:
+    """Newsletter na adres konta zostaje wypisany."""
     subscription = NewsletterSubscription.objects.create(
         email=EMAIL, status=NewsletterStatus.ACTIVE
     )
@@ -177,6 +185,7 @@ def test_unsubscribes_newsletter_of_account_address(customer) -> None:
 
 
 def test_keeps_orders_consents_and_reviews(customer) -> None:
+    """Zamówienia, zgody i opinie zostają w bazie."""
     order = OrderFactory(user=customer, email=EMAIL, status=OrderStatus.DELIVERED)
     consent = ConsentFactory(user=customer)
     review = ReviewFactory(user=customer)
@@ -192,6 +201,7 @@ def test_keeps_orders_consents_and_reviews(customer) -> None:
 
 
 def test_logs_without_personal_data(customer, caplog) -> None:
+    """Log anonimizacji nie zawiera danych osobowych."""
     with caplog.at_level(logging.INFO):
         anonymise_account(customer)
 
@@ -201,6 +211,7 @@ def test_logs_without_personal_data(customer, caplog) -> None:
 
 
 def test_unsubscribes_newsletter_of_every_account_address(customer) -> None:
+    """Newsletter jest wypisywany dla każdego adresu konta."""
     EmailAddress.objects.create(user=customer, email="Second@Test.com", verified=True)
     secondary = NewsletterSubscription.objects.create(
         email="second@test.com", status=NewsletterStatus.ACTIVE
@@ -219,6 +230,7 @@ def test_unsubscribes_newsletter_of_every_account_address(customer) -> None:
 
 @pytest.mark.parametrize("staff", [{"is_staff": True}, {"is_superuser": True}])
 def test_refuses_staff_accounts(staff) -> None:
+    """Konta obsługi nie są anonimizowane."""
     user = UserFactory(**staff)
 
     with pytest.raises(StaffAccountError):
@@ -229,5 +241,6 @@ def test_refuses_staff_accounts(staff) -> None:
 
 
 def test_refuses_admin_account() -> None:
+    """Konto administratora nie jest anonimizowane."""
     with pytest.raises(StaffAccountError):
         anonymise_account(AdminUserFactory())

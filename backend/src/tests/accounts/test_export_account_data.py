@@ -20,12 +20,14 @@ pytestmark = pytest.mark.django_db
 
 
 def export(email: str) -> dict:
+    """Eksportuje dane konta do słownika."""
     out = StringIO()
     call_command("export_account_data", email, stdout=out)
     return json.loads(out.getvalue())
 
 
 def test_exports_account_data_without_password() -> None:
+    """Eksport zawiera dane konta bez hasła."""
     user = UserFactory(email="jan@test.com", first_name="Jan")
     ProfileFactory(user=user, last_name="Kowalski")
     OrderFactory(user=user)
@@ -45,11 +47,13 @@ def test_exports_account_data_without_password() -> None:
 
 
 def test_unknown_account_fails() -> None:
+    """Eksport nieistniejącego konta kończy się błędem."""
     with pytest.raises(CommandError):
         export("nobody@test.com")
 
 
 def test_exports_non_editable_fields_and_related_records() -> None:
+    """Eksport obejmuje pola nieedytowalne i powiązane rekordy."""
     user = UserFactory(email="ola@test.com")
     order = OrderFactory(user=user)
     EmailAddress.objects.create(user=user, email="ola@test.com", verified=True)

@@ -11,32 +11,32 @@ from tests.factories.accounts import UserFactory
 class TestCustomUserManager:
     """Testy CustomUserManager — create_user i create_superuser."""
 
-    def test_create_user_wymaga_emaila(self):
+    def test_create_user_requires_email(self):
         """create_user bez emaila powinien rzucić ValueError."""
         with pytest.raises(ValueError, match="Email jest wymagany"):
             CustomUser.objects.create_user(email="", password="pass")
 
-    def test_create_user_normalizuje_email(self):
+    def test_create_user_normalizes_email(self):
         """Email powinien być znormalizowany (małe litery domeny)."""
         user = CustomUser.objects.create_user(
             email="Test@EXAMPLE.COM", password="pass123"
         )
         assert user.email == "Test@example.com"
 
-    def test_create_user_ustawia_haslo(self):
+    def test_create_user_hashes_password(self):
         """Hasło powinno być zhashowane, nie przechowywane w plaintext."""
         user = CustomUser.objects.create_user(email="a@test.com", password="secret")
         assert user.check_password("secret")
         assert user.password != "secret"
 
-    def test_create_user_domyslne_flagi(self):
+    def test_create_user_default_flags(self):
         """Zwykły użytkownik nie jest adminem ani superuserem."""
         user = CustomUser.objects.create_user(email="b@test.com", password="pass123")
         assert user.is_active is True
         assert user.is_staff is False
         assert user.is_superuser is False
 
-    def test_create_superuser_ustawia_flagi(self):
+    def test_create_superuser_sets_flags(self):
         """Superuser musi mieć is_staff=True i is_superuser=True."""
         su = CustomUser.objects.create_superuser(
             email="su@test.com", password="superpass"
@@ -44,14 +44,14 @@ class TestCustomUserManager:
         assert su.is_staff is True
         assert su.is_superuser is True
 
-    def test_create_superuser_wymaga_is_staff(self):
+    def test_create_superuser_requires_is_staff(self):
         """create_superuser z is_staff=False powinien rzucić ValueError."""
         with pytest.raises(ValueError, match="is_staff"):
             CustomUser.objects.create_superuser(
                 email="bad@test.com", password="pass", is_staff=False
             )
 
-    def test_create_superuser_wymaga_is_superuser(self):
+    def test_create_superuser_requires_is_superuser(self):
         """create_superuser z is_superuser=False powinien rzucić ValueError."""
         with pytest.raises(ValueError, match="is_superuser"):
             CustomUser.objects.create_superuser(
@@ -63,27 +63,27 @@ class TestCustomUserManager:
 class TestCustomUserModel:
     """Testy modelu CustomUser."""
 
-    def test_str_zwraca_email(self):
+    def test_str_returns_email(self):
         """__str__ powinien zwracać email użytkownika."""
         user = UserFactory(email="jan@test.com")
         assert str(user) == "jan@test.com"
 
-    def test_full_name_z_imieniem_i_nazwiskiem(self):
+    def test_full_name_with_first_and_last_name(self):
         """full_name powinien zwracać imię i nazwisko."""
         user = UserFactory.build(first_name="Jan", last_name="Kowalski")
         assert user.full_name == "Jan Kowalski"
 
-    def test_full_name_bez_nazwiska(self):
+    def test_full_name_without_last_name(self):
         """full_name bez last_name powinien zwrócić samo imię (bez spacji)."""
         user = UserFactory.build(first_name="Jan", last_name="")
         assert user.full_name == "Jan"
 
-    def test_full_name_pusty(self):
+    def test_full_name_empty(self):
         """full_name gdy oba pola puste powinien zwrócić pusty string."""
         user = UserFactory.build(first_name="", last_name="")
         assert user.full_name == ""
 
-    def test_email_jest_unikalny(self, db):
+    def test_email_is_unique(self, db):
         """Dwie próby stworzenia użytkownika z tym samym emailem powinny rzucić błąd."""
         UserFactory(email="dup@test.com")
         with pytest.raises(IntegrityError):
@@ -97,7 +97,7 @@ class TestCustomUserModel:
         assert u2.username
         assert u1.username != u2.username
 
-    def test_username_unikalny_gdy_podany(self, db):
+    def test_username_unique_when_given(self, db):
         """Dwóch użytkowników z tym samym username powinno rzucić IntegrityError."""
         UserFactory(username="jankowalski")
         with pytest.raises(IntegrityError):
@@ -114,6 +114,6 @@ class TestCustomUserModel:
         """USERNAME_FIELD powinien wskazywać na 'email'."""
         assert CustomUser.USERNAME_FIELD == "email"
 
-    def test_required_fields_puste(self):
+    def test_required_fields_empty(self):
         """REQUIRED_FIELDS poza emailem powinno być puste."""
         assert CustomUser.REQUIRED_FIELDS == []
