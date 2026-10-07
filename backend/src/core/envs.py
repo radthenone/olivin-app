@@ -2,28 +2,29 @@ import os
 
 from core.paths import PROJECT_DIR
 
+DEV_ENV_FILES = (
+    "django.env",
+    "db.env",
+    "cache_broker.env",
+    "broker.env",
+    "email.env",
+    "s3.env",
+    "authorization.env",
+)
+
 
 def load_valid_envs():
-    """Load environment variables from .env files based on the current environment (dev, prod, test)."""
+    """Load `.env` files for the environment named by `DJANGO_ENVIRONMENT`.
+
+    Testy (`testing`) nie czytają żadnych plików — wynik nie zależy od tego,
+    co leży na maszynie dewelopera. Pozostałe środowiska ładują `.env`
+    i `.envs/dev`; zmienne już ustawione (compose, CI) mają pierwszeństwo.
+    """
     from dotenv import load_dotenv
 
-    main_env = PROJECT_DIR / ".env"
-    if main_env.exists():
-        load_dotenv(main_env)
+    if os.environ.get("DJANGO_ENVIRONMENT", "").lower() == "testing":
+        return
 
-    ENV = os.environ.get("DJANGO_ENV", "dev")
-
-    if ENV == "dev":
-        load_dotenv(PROJECT_DIR / ".envs/dev/backend/django.env")
-        load_dotenv(PROJECT_DIR / ".envs/dev/backend/db.env")
-        load_dotenv(PROJECT_DIR / ".envs/dev/backend/cache_broker.env")
-        load_dotenv(PROJECT_DIR / ".envs/dev/backend/broker.env")
-        load_dotenv(PROJECT_DIR / ".envs/dev/backend/email.env")
-        load_dotenv(PROJECT_DIR / ".envs/dev/backend/s3.env")
-        load_dotenv(PROJECT_DIR / ".envs/dev/backend/authorization.env")
-    elif ENV == "prod":
-        "load prod envs"
-    elif ENV == "test":
-        "load test envs"
-    else:
-        raise ValueError(f"Invalid environment: {ENV}")
+    load_dotenv(PROJECT_DIR / ".env")
+    for name in DEV_ENV_FILES:
+        load_dotenv(PROJECT_DIR / ".envs/dev/backend" / name)
