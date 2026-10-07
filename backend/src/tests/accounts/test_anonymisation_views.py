@@ -195,7 +195,7 @@ def test_staff_account_is_refused(password_user) -> None:
     response = anonymise(client_for(password_user), password=PASSWORD)
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert isinstance(response.data["detail"], str)
+    assert isinstance(cast(dict, response.data)["detail"], str)
     assert not is_anonymised(password_user)
 
 
@@ -203,4 +203,4 @@ def test_code_refusal_has_detail_message(password_user) -> None:
     response = request_code(client_for(password_user))
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert isinstance(response.data["detail"], str)
+    assert isinstance(cast(dict, response.data)["detail"], str)
