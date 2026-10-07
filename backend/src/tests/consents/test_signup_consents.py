@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import json
 from typing import cast
+from unittest.mock import patch
 
 import pytest
 from allauth.account.models import EmailAddress
 from allauth.socialaccount.models import SocialAccount, SocialLogin
+from django.conf import settings
 from django.test import RequestFactory
 from rest_framework.response import Response
 from rest_framework.test import APIClient
@@ -192,3 +194,121 @@ class TestProviderSignupConsents:
 
         assert sociallogin.is_existing
         assert sociallogin.user == user
+
+
+TOKEN_URL = "/_allauth/app/v1/auth/provider/token"
+APP_PROVIDER_SIGNUP_URL = "/_allauth/app/v1/auth/provider/signup"
+
+
+def _google_login(email: str, uid: str) -> SocialLogin:
+    """SocialLogin, jaki zwraca zweryfikowany id_token Google (atrapa dostawcy)."""
+    provider = SocialAccountAdapter().get_provider(RequestFactory().get("/"), "google")
+    return SocialLogin(
+        provider=provider,
+        user=CustomUser(email=email),
+        account=SocialAccount(provider="google", uid=uid, extra_data={"email": email}),
+        email_addresses=[EmailAddress(email=email, verified=True, primary=True)],
+    )
+
+
+def _token_login(client: APIClient, sociallogin: SocialLogin) -> dict:
+    """POST provider/token klienta `app` z atrapą weryfikacji tokenu Google."""
+    with patch(
+        "allauth.socialaccount.providers.google.provider.GoogleProvider.verify_token",
+        return_value=sociallogin,
+    ):
+        response = cast(
+            Response,
+            client.post(
+                TOKEN_URL,
+                {
+                    "provider": "google",
+                    "process": "login",
+                    "token": {
+                        "client_id": settings.GOOGLE_OAUTH_CLIENT_ID,
+                        "id_token": "fake-id-token",
+                    },
+                },
+                format="json",
+            ),
+        )
+    return {"status": response.status_code, **json.loads(response.content)}
+
+
+def _pending_flows(body: dict) -> list[str]:
+    flows = body.get("data", {}).get("flows", [])
+    return [f["id"] for f in flows if f.get("is_pending")]
+
+
+class TestAppClientProviderSignup:
+    """Klient `app` (mobile): provider/token → provider_signup ze zgodami."""
+
+    def test_new_google_user_gets_pending_provider_signup(
+        self, api_client: APIClient, consent_documents
+    ):
+        """Nowy użytkownik: 401 z flow provider_signup, konto jeszcze nie powstaje."""
+        body = _token_login(api_client, _google_login("new-g@test.com", "new-g"))
+
+        assert body["status"] == 401
+        assert _pending_flows(body) == ["provider_signup"]
+        assert not CustomUser.objects.filter(email="new-g@test.com").exists()
+
+    def test_provider_signup_with_session_token_requires_consents(
+        self, api_client: APIClient, consent_documents
+    ):
+        """Dokończenie przez X-Session-Token: bez zgód 400, ze zgodami konto."""
+        body = _token_login(api_client, _google_login("tok-g@test.com", "tok-g"))
+        token = body["meta"]["session_token"]
+
+        rejected = cast(
+            Response,
+            api_client.post(
+                APP_PROVIDER_SIGNUP_URL,
+                {"email": "tok-g@test.com"},
+                format="json",
+                HTTP_X_SESSION_TOKEN=token,
+            ),
+        )
+        assert rejected.status_code == 400
+        assert not CustomUser.objects.filter(email="tok-g@test.com").exists()
+
+        api_client.post(
+            APP_PROVIDER_SIGNUP_URL,
+            {"email": "tok-g@test.com", **REQUIRED_CONSENTS},
+            format="json",
+            HTTP_X_SESSION_TOKEN=token,
+        )
+        user = CustomUser.objects.get(email="tok-g@test.com")
+        assert Consent.objects.filter(user=user).count() == 2
+
+    def test_existing_email_account_connects_without_signup(
+        self, api_client: APIClient, user: CustomUser
+    ):
+        """Konto e-mail logujące się przez Google wchodzi bez kroku signup."""
+        EmailAddress.objects.create(
+            user=user, email=user.email, verified=True, primary=True
+        )
+        users_before = CustomUser.objects.count()
+
+        body = _token_login(api_client, _google_login(user.email, "existing-g"))
+
+        assert "provider_signup" not in _pending_flows(body)
+        assert CustomUser.objects.count() == users_before
+        assert SocialAccount.objects.filter(user=user, uid="existing-g").exists()
+
+
+def test_passkey_signup_without_consents_is_rejected(
+    api_client: APIClient, consent_documents
+):
+    """Rejestracja passkey dziedziczy te same zgody — bez nich 400."""
+    response = cast(
+        Response,
+        api_client.post(
+            "/_allauth/app/v1/auth/webauthn/signup",
+            {"email": "passkey@test.com"},
+            format="json",
+        ),
+    )
+
+    assert response.status_code == 400
+    assert not CustomUser.objects.filter(email="passkey@test.com").exists()
