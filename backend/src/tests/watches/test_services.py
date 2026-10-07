@@ -37,7 +37,10 @@ def _stocked_variant(quantity: int):
 
 @pytest.mark.django_db
 class TestAddWatch:
+    """Dodanie obserwacji."""
+
     def test_price_drop_saves_current_price(self):
+        """Obserwacja spadku ceny zapamiętuje bieżącą cenę."""
         user = UserFactory()
         variant = ProductVariantFactory(price=129900)
 
@@ -46,6 +49,7 @@ class TestAddWatch:
         assert watch.price_at_watch == variant.effective_price.amount
 
     def test_repeating_add_returns_existing(self):
+        """Powtórne dodanie zwraca istniejącą obserwację."""
         user = UserFactory()
         variant = ProductVariantFactory(price=129900)
         first = add_watch(user=user, variant=variant, kind=WatchKind.PRICE_DROP)
@@ -55,6 +59,7 @@ class TestAddWatch:
         assert second.pk == first.pk
 
     def test_restock_rejected_for_made_to_order(self):
+        """Powrót na stan jest odrzucany dla produktu na zamówienie."""
         from django.core.exceptions import ValidationError
 
         from tests.factories.products import MadeToOrderProductFactory
@@ -68,9 +73,12 @@ class TestAddWatch:
 
 @pytest.mark.django_db
 class TestRestockTrigger:
+    """Powiadomienie o powrocie na stan."""
+
     def test_sends_when_availability_goes_above_zero(
         self, django_capture_on_commit_callbacks
     ):
+        """Powiadomienie idzie, gdy dostępność rośnie powyżej zera."""
         user = UserFactory()
         NotificationPreference.objects.create(user=user, marketing_email=True)
         variant = ProductVariantFactory()
@@ -89,6 +97,7 @@ class TestRestockTrigger:
         assert Notification.objects.filter(user=user).count() == 1
 
     def test_no_send_while_still_unavailable(self):
+        """Bez dostępności nie ma powiadomienia."""
         user = UserFactory()
         NotificationPreference.objects.create(user=user, marketing_email=True)
         variant = ProductVariantFactory()
@@ -101,6 +110,7 @@ class TestRestockTrigger:
         assert watch.status == WatchStatus.ACTIVE
 
     def test_no_consent_leaves_watch_active(self, django_capture_on_commit_callbacks):
+        """Bez zgody obserwacja zostaje aktywna."""
         user = UserFactory()
         NotificationPreference.objects.create(user=user, marketing_email=False)
         variant = ProductVariantFactory()
@@ -113,6 +123,7 @@ class TestRestockTrigger:
         assert Notification.objects.filter(user=user).count() == 0
 
     def test_one_shot_second_restock_sends_nothing(self):
+        """Drugi powrót na stan niczego nie wysyła."""
         user = UserFactory()
         NotificationPreference.objects.create(user=user, marketing_email=True)
         variant = _stocked_variant(2)
@@ -134,7 +145,10 @@ def _stocked_variant_on(*, item_variant, quantity: int):
 
 @pytest.mark.django_db
 class TestPriceDropTrigger:
+    """Powiadomienie o spadku ceny."""
+
     def test_sends_when_price_drops(self):
+        """Powiadomienie idzie, gdy cena spada."""
         user = UserFactory()
         NotificationPreference.objects.create(user=user, marketing_email=True)
         variant = ProductVariantFactory(price=129900)
@@ -152,6 +166,7 @@ class TestPriceDropTrigger:
         assert stored.kind == "watch_price_drop"
 
     def test_no_send_when_price_same_or_higher(self):
+        """Ta sama albo wyższa cena nie wysyła powiadomienia."""
         user = UserFactory()
         NotificationPreference.objects.create(user=user, marketing_email=True)
         variant = ProductVariantFactory(price=100000)
@@ -165,6 +180,7 @@ class TestPriceDropTrigger:
         assert watch.status == WatchStatus.ACTIVE
 
     def test_no_consent_leaves_watch_active(self):
+        """Bez zgody obserwacja zostaje aktywna."""
         user = UserFactory()
         NotificationPreference.objects.create(user=user, marketing_email=False)
         variant = ProductVariantFactory(price=129900)

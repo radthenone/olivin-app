@@ -23,7 +23,10 @@ def _detail_url(watch_id: str) -> str:
 
 @pytest.mark.django_db
 class TestWatchListApi:
+    """Lista obserwacji klienta."""
+
     def test_requires_authentication(self, api_client: APIClient):
+        """Lista wymaga zalogowania."""
         response: Any = api_client.get(WATCHES_URL)
         assert response.status_code in (
             status.HTTP_401_UNAUTHORIZED,
@@ -33,6 +36,7 @@ class TestWatchListApi:
     def test_lists_only_own_active(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Lista obejmuje tylko własne aktywne obserwacje."""
         WatchFactory(user=user)
         WatchFactory()  # cudzy wpis — poza listą
 
@@ -44,9 +48,12 @@ class TestWatchListApi:
 
 @pytest.mark.django_db
 class TestWatchCreateApi:
+    """Dodanie obserwacji przez API."""
+
     def test_creates_price_drop(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """POST zakłada obserwację spadku ceny."""
         variant = ProductVariantFactory(price=129900)
 
         response: Any = authenticated_client.post(
@@ -58,6 +65,7 @@ class TestWatchCreateApi:
         assert response.json()["priceAtWatch"] == variant.effective_price.amount
 
     def test_rejects_restock_for_made_to_order(self, authenticated_client: APIClient):
+        """Powrót na stan dla produktu na zamówienie jest odrzucany."""
         variant = ProductVariantFactory(product=MadeToOrderProductFactory())
 
         response: Any = authenticated_client.post(
@@ -67,6 +75,7 @@ class TestWatchCreateApi:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_rejects_unknown_kind(self, authenticated_client: APIClient):
+        """Nieznany rodzaj obserwacji jest odrzucany."""
         variant = ProductVariantFactory()
 
         response: Any = authenticated_client.post(
@@ -78,7 +87,10 @@ class TestWatchCreateApi:
 
 @pytest.mark.django_db
 class TestWatchDestroyApi:
+    """Usunięcie obserwacji przez API."""
+
     def test_removes_own_watch(self, authenticated_client: APIClient, user: CustomUser):
+        """DELETE usuwa własną obserwację."""
         watch = WatchFactory(user=user)
 
         response: Any = authenticated_client.delete(_detail_url(str(watch.pk)))
@@ -87,6 +99,7 @@ class TestWatchDestroyApi:
         assert not Watch.objects.filter(pk=watch.pk).exists()
 
     def test_removing_missing_watch_returns_204(self, authenticated_client: APIClient):
+        """Usunięcie nieistniejącej obserwacji daje 204."""
         response: Any = authenticated_client.delete(
             _detail_url("00000000-0000-0000-0000-000000000000")
         )
@@ -94,6 +107,7 @@ class TestWatchDestroyApi:
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
     def test_cannot_remove_other_customers_watch(self, authenticated_client: APIClient):
+        """Klient nie usunie cudzej obserwacji."""
         watch = WatchFactory()
 
         response: Any = authenticated_client.delete(_detail_url(str(watch.pk)))
