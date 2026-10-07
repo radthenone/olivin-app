@@ -53,6 +53,14 @@ _TEMPLATES: dict[str, tuple[str, str]] = {
         "Obserwowany wariant {variant_sku} ({product_name}) stanieje: "
         "było {old_price}, jest {new_price}.",
     ),
+    "cart_reminder": (
+        "W koszyku czekają na Ciebie wyroby",
+        "W Twoim koszyku zostały wyroby — ceny i dostępność na dziś:\n"
+        "{items}\n\n"
+        "Wróć do koszyka: {cart_url}\n\n"
+        "Nie chcesz takich wiadomości? Zmień zgody: {preferences_url}\n"
+        "Wypisz się: {unsubscribe_url}",
+    ),
 }
 
 
@@ -137,6 +145,8 @@ def notify(
     payload: dict[str, Any],
     *,
     email: str | None = None,
+    push_body: str | None = None,
+    push_data: dict[str, Any] | None = None,
 ) -> Notification | None:
     """Zapisuje powiadomienie (dla konta) i wysyła e-mail (`CONTEXT.md`, Notification).
 
@@ -157,6 +167,10 @@ def notify(
     kopią z chwili złożenia i może różnić się od dzisiejszego e-maila konta
     (`CONTEXT.md`, Account anonymisation). Rekord w aplikacji i tak idzie na
     konto z `user_or_email` — tylko adres wysyłki jest inny.
+
+    `push_body` i `push_data` zastępują w pushu treść e-maila i payload —
+    dla komunikatów, których pełna treść jest za długa na powiadomienie
+    (np. przypomnienie o koszyku z listą pozycji).
 
     Bez idempotencji: każde wywołanie tworzy nowy rekord i kolejkuje nowy
     e-mail. To wywołujący odpowiada za wywołanie raz na realne zdarzenie —
@@ -190,8 +204,8 @@ def notify(
             task.delay(
                 user_id=str(user.pk),
                 title=subject,
-                body=message,
-                data=payload,
+                body=push_body if push_body is not None else message,
+                data=push_data if push_data is not None else payload,
             )
         except Exception:
             # Push nie blokuje pozostałych kanałów — błąd kolejkowania

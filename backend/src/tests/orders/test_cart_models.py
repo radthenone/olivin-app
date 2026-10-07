@@ -195,3 +195,34 @@ class TestPozycjeSieNieScalaja:
         CartItemFactory(cart=cart, variant=variant, engraving_text="Jan")
 
         assert cart.items.count() == 2
+
+
+@pytest.mark.django_db
+class TestCartReminderMoment:
+    """Moment przypomnienia (`CONTEXT.md`, CartReminder, #208)."""
+
+    def test_content_change_clears_reminder_moment(self):
+        from django.utils import timezone
+
+        cart = CartFactory(reminded_at=timezone.now())
+
+        cart.touch()
+
+        cart.refresh_from_db()
+        assert cart.reminded_at is None
+
+    def test_reading_cart_keeps_reminder_moment(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        reminded = timezone.now()
+        cart = CartFactory(
+            reminded_at=reminded, last_activity_at=reminded - timedelta(days=2)
+        )
+
+        cart.touch_on_read()
+
+        cart.refresh_from_db()
+        assert cart.reminded_at == reminded
+        assert timezone.now() - cart.last_activity_at < timedelta(minutes=1)

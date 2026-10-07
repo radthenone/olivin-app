@@ -4350,6 +4350,7 @@ components:
             * `return_settled` - Rozliczenie zwrotu
             * `watch_restock` - Wariant wrócił na stan
             * `watch_price_drop` - Spadek ceny wariantu
+            * `cart_reminder` - Przypomnienie o koszyku
         message:
           type: string
           readOnly: true
@@ -4387,6 +4388,7 @@ components:
       - return_settled
       - watch_restock
       - watch_price_drop
+      - cart_reminder
       type: string
       description: |-
         * `order_status_changed` - Zmiana statusu zamówienia
@@ -4396,6 +4398,7 @@ components:
         * `return_settled` - Rozliczenie zwrotu
         * `watch_restock` - Wariant wrócił na stan
         * `watch_price_drop` - Spadek ceny wariantu
+        * `cart_reminder` - Przypomnienie o koszyku
     NotificationPreference:
       type: object
       description: Zgoda marketingowa klienta, osobno per kanał.

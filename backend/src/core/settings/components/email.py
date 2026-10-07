@@ -38,3 +38,11 @@ NEWSLETTER_UNSUBSCRIBE_URL = str(
         "http://localhost:3000/newsletter/unsubscribe/{token}",
     )
 )
+
+# Linki z przypomnienia o koszyku (#208): koszyk i zmiana zgód marketingowych.
+CART_URL = str(os.environ.get("CART_URL", "http://localhost:3000/cart"))
+NOTIFICATION_PREFERENCES_URL = str(
+    os.environ.get(
+        "NOTIFICATION_PREFERENCES_URL", "http://localhost:3000/account/notifications"
+    )
+)

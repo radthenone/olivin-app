@@ -144,3 +144,23 @@ class TestPushDelivery:
         send_email.assert_called_once()
         assert notification is not None
         assert Notification.objects.filter(user=user).exists()
+
+    def test_push_body_and_data_override_email_content(
+        self, django_capture_on_commit_callbacks, push_provider
+    ):
+        user = UserFactory()
+        _device(user)
+
+        with patch("apps.notifications.services.send_notification_email") as send_email:
+            with django_capture_on_commit_callbacks(execute=True):
+                notify(
+                    user,
+                    NotificationKind.ORDER_PAID,
+                    {"order_number": "X"},
+                    push_body="Krótko",
+                    push_data={"type": "order_paid"},
+                )
+
+        assert push_provider.sent[0]["body"] == "Krótko"
+        assert push_provider.sent[0]["data"] == {"type": "order_paid"}
+        assert "X" in send_email.call_args.kwargs["body"]

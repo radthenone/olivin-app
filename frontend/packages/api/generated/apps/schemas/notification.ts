@@ -22,6 +22,7 @@ export interface Notification {
      * * `return_settled` - Rozliczenie zwrotu
      * * `watch_restock` - Wariant wrócił na stan
      * * `watch_price_drop` - Spadek ceny wariantu
+     * * `cart_reminder` - Przypomnienie o koszyku
      */
   readonly kind: NotificationKindEnum;
   /** Treść powiadomienia do wyświetlenia */

@@ -83,4 +83,9 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.orders.tasks.cancel_stale_orders",
         "schedule": crontab(minute=15),
     },
+    # Co godzinę: przypomnienie o koszyku po dobie bez aktywności (#208).
+    "send-cart-reminders": {
+        "task": "apps.orders.tasks.send_cart_reminders",
+        "schedule": crontab(minute=20),
+    },
 }
