@@ -161,3 +161,40 @@ class TestSubjectIsUserXorEmail:
             Consent.objects.bulk_create(
                 [Consent(user=None, email="", document=document)]
             )
+
+
+@pytest.mark.django_db
+class TestPendingConsents:
+    """Zaległe zgody: bieżące wersje wymaganych dokumentów bez akceptacji klienta."""
+
+    def test_account_without_consents_has_terms_and_privacy_pending(self):
+        """Konto sprzed #207 bez zgód widzi regulamin i politykę jako zaległe."""
+        for kind in ConsentKind.values:
+            ConsentDocumentFactory(kind=kind)
+        user = UserFactory()
+
+        pending = ConsentDocument.objects.pending_for(user)
+
+        assert [d.kind for d in pending] == ["terms", "privacy"]
+
+    def test_new_version_makes_accepted_document_pending(self):
+        """Nowa obowiązująca wersja regulaminu → regulamin znów zaległy."""
+        old = ConsentDocumentFactory(effective_from=datetime.date(2026, 1, 1))
+        privacy = ConsentDocumentFactory(kind=ConsentKind.PRIVACY)
+        user = UserFactory()
+        ConsentFactory(user=user, document=old)
+        ConsentFactory(user=user, document=privacy)
+        new = ConsentDocumentFactory(effective_from=datetime.date(2026, 6, 1))
+
+        assert ConsentDocument.objects.pending_for(user) == [new]
+
+    def test_future_version_is_not_pending_yet(self):
+        """Wersja, która jeszcze nie obowiązuje, nie jest zaległa."""
+        terms = ConsentDocumentFactory()
+        user = UserFactory()
+        ConsentFactory(user=user, document=terms)
+        ConsentDocumentFactory(
+            effective_from=datetime.date.today() + datetime.timedelta(days=1)
+        )
+
+        assert ConsentDocument.objects.pending_for(user) == []

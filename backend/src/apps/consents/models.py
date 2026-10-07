@@ -37,6 +37,21 @@ class ConsentDocumentQuerySet(models.QuerySet["ConsentDocument"]):
         documents = [self.current(kind) for kind in ConsentKind.values]
         return [document for document in documents if document is not None]
 
+    def pending_for(self, user: Customer) -> list[ConsentDocument]:
+        """Bieżące wersje wymaganych dokumentów, których klient nie zaakceptował.
+
+        Liczone na bieżąco, więc obejmuje też konta sprzed wymogu zgód.
+        Marketing jest dobrowolny, więc nigdy nie jest zaległy.
+        """
+        accepted = set(
+            Consent.objects.for_subject(user=user).values_list("document_id", flat=True)
+        )
+        return [
+            document
+            for document in self.current_for_all_kinds()
+            if document.kind in REQUIRED_SIGNUP_KINDS and document.pk not in accepted
+        ]
+
 
 class ConsentDocument(TimestampedModel):
     """Wersja regulaminu, polityki prywatności albo zgody marketingowej.
