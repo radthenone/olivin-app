@@ -153,3 +153,15 @@ def admin_user(db) -> CustomUser:
 def authenticated_client(api_client: APIClient, user: CustomUser) -> APIClient:
     api_client.force_authenticate(user=user)
     return api_client
+
+
+@pytest.fixture
+def consent_documents(db) -> dict:
+    """Bieżące wersje wszystkich rodzajów dokumentów zgód — wymagane do rejestracji."""
+    from apps.consents.models import ConsentKind
+    from tests.factories.consents import ConsentDocumentFactory
+
+    return {
+        kind: ConsentDocumentFactory(kind=kind, version=f"{kind}-2026")
+        for kind in ConsentKind.values
+    }

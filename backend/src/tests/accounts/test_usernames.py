@@ -101,11 +101,18 @@ class TestAnonUsernameOnSignup:
         user.refresh_from_db()
         assert ANON_PATTERN.match(user.username)
 
-    def test_headless_signup_assigns_anon_username(self, api_client: APIClient):
+    def test_headless_signup_assigns_anon_username(
+        self, api_client: APIClient, consent_documents
+    ):
         """Rejestracja headless nadaje nazwę `anon<liczba>`."""
         api_client.post(
             "/_allauth/app/v1/auth/signup",
-            {"email": "headless-anon@test.com", "password": "testpass123!"},
+            {
+                "email": "headless-anon@test.com",
+                "password": "testpass123!",
+                "consent_terms": True,
+                "consent_privacy": True,
+            },
             format="json",
         )
         user = CustomUser.objects.get(email="headless-anon@test.com")

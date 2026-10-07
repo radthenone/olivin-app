@@ -9,6 +9,7 @@ from django.db import transaction
 from django.db.transaction import on_commit
 
 from apps.accounts.services import update_profile_from_signup_data
+from core.services.allauth.signup_consents import record_signup_consents
 from core.services.mail.service import MailService
 from core.services.mail.tasks import send_email_payloads_task
 
@@ -43,7 +44,11 @@ def get_request_payload(request) -> dict:
 
 class AsyncAccountAdapter(DefaultAccountAdapter):
     def save_user(self, request, user, form, commit=True):
-        """Zapisuje użytkownika allauth i zakłada powiązany profil."""
+        """Zapisuje użytkownika allauth, profil i zgody z rejestracji.
+
+        Provider signup przechodzi tędy z `SocialAccountAdapter.save_user`,
+        więc zgody trafiają do tej samej transakcji co konto i profil.
+        """
         with transaction.atomic():
             saved_user = super().save_user(request, user, form, commit)
             if commit:
@@ -51,6 +56,7 @@ class AsyncAccountAdapter(DefaultAccountAdapter):
                     saved_user,
                     get_request_payload(request),
                 )
+                record_signup_consents(saved_user, form.cleaned_data)
             return saved_user
 
     def send_mail(self, template_prefix: str, email: str, context: dict) -> None:

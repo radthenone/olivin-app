@@ -19,6 +19,10 @@ class ConsentKind(models.TextChoices):
     MARKETING = "marketing", "Komunikacja marketingowa"
 
 
+# Bez tych zgód nie powstaje konto (`CONTEXT.md`, Consent); marketing jest dobrowolny.
+REQUIRED_SIGNUP_KINDS: tuple[str, ...] = (ConsentKind.TERMS, ConsentKind.PRIVACY)
+
+
 class ConsentDocumentQuerySet(models.QuerySet["ConsentDocument"]):
     def effective(self) -> ConsentDocumentQuerySet:
         """Wersje, które już obowiązują — przyszła wersja jeszcze nie jest bieżąca."""
