@@ -22,6 +22,7 @@ class TestNotifyTransactional:
     def test_creates_record_and_queues_email_for_user(
         self, django_capture_on_commit_callbacks
     ):
+        """Powiadomienie tworzy rekord i kolejkuje e-mail dla klienta."""
         user = UserFactory()
 
         with patch("apps.notifications.services.send_notification_email") as send:
@@ -74,6 +75,7 @@ class TestNotifyMarketing:
     """Rodzaje spoza `TRANSACTIONAL_KINDS` respektują zgodę marketingową."""
 
     def test_skipped_without_consent(self, django_capture_on_commit_callbacks):
+        """Bez zgody marketingowej powiadomienie jest pomijane."""
         user = UserFactory()
         NotificationPreference.objects.create(user=user, marketing_email=False)
 
@@ -99,6 +101,7 @@ class TestNotifyMarketing:
         send.assert_not_called()
 
     def test_sent_with_consent(self, django_capture_on_commit_callbacks):
+        """Ze zgodą marketingową powiadomienie idzie."""
         user = UserFactory()
         NotificationPreference.objects.create(user=user, marketing_email=True)
 
@@ -110,6 +113,7 @@ class TestNotifyMarketing:
         send.assert_called_once()
 
     def test_guest_never_gets_marketing(self, django_capture_on_commit_callbacks):
+        """Gość nigdy nie dostaje marketingu."""
         with patch("apps.notifications.services.send_notification_email") as send:
             with django_capture_on_commit_callbacks(execute=True):
                 result = notify("guest@test.com", "promotion", {})

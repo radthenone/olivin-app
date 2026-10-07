@@ -20,6 +20,7 @@ MAIL = "apps.notifications.newsletter.send_notification_email"
 
 @pytest.fixture
 def marketing_document():
+    """Bieżący dokument zgody marketingowej."""
     return ConsentDocumentFactory(
         kind=ConsentKind.MARKETING,
         version="2026-01",
@@ -34,9 +35,12 @@ def _post(client: APIClient, name: str, data: dict) -> Any:
 
 @pytest.mark.django_db
 class TestSubscribeEndpoint:
+    """Endpoint zapisu na newsletter."""
+
     def test_new_and_existing_address_get_identical_response(
         self, api_client: APIClient, marketing_document
     ):
+        """Nowy i istniejący adres dostają tę samą odpowiedź."""
         NewsletterSubscription.objects.create(
             email="known@test.com", status=NewsletterStatus.ACTIVE
         )
@@ -55,11 +59,13 @@ class TestSubscribeEndpoint:
         )
 
     def test_invalid_email_is_rejected(self, api_client: APIClient, marketing_document):
+        """Niepoprawny e-mail jest odrzucany."""
         response = _post(api_client, "newsletter-subscribe", {"email": "nope"})
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_without_marketing_document_returns_400(self, api_client: APIClient):
+        """Bez dokumentu marketingowego endpoint daje 400."""
         response = _post(api_client, "newsletter-subscribe", {"email": "a@test.com"})
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -68,7 +74,10 @@ class TestSubscribeEndpoint:
 
 @pytest.mark.django_db
 class TestConfirmAndUnsubscribeEndpoints:
+    """Endpointy potwierdzenia i wypisania."""
+
     def test_confirm_activates(self, api_client: APIClient):
+        """Potwierdzenie aktywuje zapis."""
         subscription = NewsletterSubscription.objects.create(email="a@test.com")
 
         response = _post(
@@ -82,11 +91,13 @@ class TestConfirmAndUnsubscribeEndpoints:
         assert subscription.status == NewsletterStatus.ACTIVE
 
     def test_confirm_unknown_token_returns_404(self, api_client: APIClient):
+        """Nieznany token potwierdzenia daje 404."""
         response = _post(api_client, "newsletter-confirm", {"token": "bogus"})
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_unsubscribe_works_without_login(self, api_client: APIClient):
+        """Wypisanie działa bez logowania."""
         subscription = NewsletterSubscription.objects.create(
             email="a@test.com", status=NewsletterStatus.ACTIVE
         )
@@ -102,6 +113,7 @@ class TestConfirmAndUnsubscribeEndpoints:
         assert subscription.status == NewsletterStatus.UNSUBSCRIBED
 
     def test_unsubscribe_unknown_token_returns_404(self, api_client: APIClient):
+        """Nieznany token wypisania daje 404."""
         response = _post(api_client, "newsletter-unsubscribe", {"token": "bogus"})
 
         assert response.status_code == status.HTTP_404_NOT_FOUND

@@ -44,9 +44,12 @@ ADDRESS = ShippingAddress(
 
 @pytest.mark.django_db
 class TestOrderStatusChangeNotifies:
+    """Zmiana statusu zamówienia wysyła powiadomienie."""
+
     def test_transition_creates_notification_and_email_for_user(
         self, django_capture_on_commit_callbacks
     ):
+        """Przejście statusu tworzy powiadomienie i e-mail dla klienta."""
         order = OrderFactory(status=OrderStatus.PENDING)
 
         with patch("apps.notifications.services.send_notification_email") as send:
@@ -80,6 +83,7 @@ class TestOrderStatusChangeNotifies:
     def test_non_paid_transition_uses_status_changed_kind(
         self, django_capture_on_commit_callbacks
     ):
+        """Przejście inne niż zapłata używa rodzaju `status_changed`."""
         order = OrderFactory(status=OrderStatus.PAID)
 
         with patch("apps.notifications.services.send_notification_email"):
@@ -90,6 +94,7 @@ class TestOrderStatusChangeNotifies:
         assert notification.kind == NotificationKind.ORDER_STATUS_CHANGED
 
     def test_guest_order_gets_only_email(self, django_capture_on_commit_callbacks):
+        """Zamówienie gościa dostaje tylko e-mail."""
         order = GuestOrderFactory(status=OrderStatus.PENDING)
 
         with patch("apps.notifications.services.send_notification_email") as send:
@@ -101,6 +106,7 @@ class TestOrderStatusChangeNotifies:
         assert send.call_args.kwargs["to"] == order.email
 
     def test_creating_order_does_not_notify(self, django_capture_on_commit_callbacks):
+        """Złożenie zamówienia nie wysyła powiadomienia o zmianie statusu."""
         with patch("apps.notifications.services.send_notification_email") as send:
             with django_capture_on_commit_callbacks(execute=True):
                 OrderFactory(status=OrderStatus.PENDING)
@@ -111,7 +117,10 @@ class TestOrderStatusChangeNotifies:
 
 @pytest.mark.django_db
 class TestDocumentReadyNotifies:
+    """Wystawienie dokumentu sprzedaży wysyła powiadomienie."""
+
     def test_issuing_document_notifies_once(self, django_capture_on_commit_callbacks):
+        """Wystawienie dokumentu powiadamia raz."""
         order = OrderFactory(status=OrderStatus.PAID)
         OrderItemFactory(order=order)
 
@@ -130,6 +139,7 @@ class TestDocumentReadyNotifies:
     def test_reissuing_existing_document_does_not_notify_again(
         self, django_capture_on_commit_callbacks
     ):
+        """Ponowne wystawienie istniejącego dokumentu nie powiadamia drugi raz."""
         order = OrderFactory(status=OrderStatus.PAID)
         OrderItemFactory(order=order)
 
@@ -150,6 +160,8 @@ class TestDocumentReadyNotifies:
 
 @pytest.mark.django_db
 class TestCouponPaidOrderNotifiesOnce:
+    """Zamówienie opłacone kuponem powiadamia raz."""
+
     def test_full_coupon_coverage_notifies_exactly_once(
         self, django_capture_on_commit_callbacks
     ):
@@ -188,6 +200,8 @@ class TestCouponPaidOrderNotifiesOnce:
 
 @pytest.mark.django_db
 class TestWebhookDoesNotDuplicateNotification:
+    """Webhook płatności nie dubluje powiadomienia."""
+
     def test_repeated_payment_event_notifies_once(
         self, django_capture_on_commit_callbacks
     ):

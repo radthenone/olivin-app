@@ -32,9 +32,12 @@ def _device(user, token="ExponentPushToken[abc]"):
 
 @pytest.mark.django_db
 class TestNotifyPushTransactional:
+    """Transakcyjny push do urządzeń klienta."""
+
     def test_queues_push_for_user_devices(
         self, django_capture_on_commit_callbacks, push_provider
     ):
+        """Push jest kolejkowany na urządzenia klienta."""
         user = UserFactory()
         _device(user)
 
@@ -54,6 +57,7 @@ class TestNotifyPushTransactional:
     def test_no_devices_no_push(
         self, django_capture_on_commit_callbacks, push_provider
     ):
+        """Bez urządzeń nie ma pusha."""
         user = UserFactory()
 
         with patch("apps.notifications.services.send_notification_email"):
@@ -65,6 +69,7 @@ class TestNotifyPushTransactional:
     def test_guest_gets_no_push(
         self, django_capture_on_commit_callbacks, push_provider
     ):
+        """Gość nie dostaje pusha."""
         with patch("apps.notifications.services.send_notification_email"):
             with django_capture_on_commit_callbacks(execute=True):
                 notify(
@@ -78,9 +83,12 @@ class TestNotifyPushTransactional:
 
 @pytest.mark.django_db
 class TestNotifyPushMarketing:
+    """Marketingowy push wymaga zgody."""
+
     def test_skipped_without_push_consent(
         self, django_capture_on_commit_callbacks, push_provider
     ):
+        """Bez zgody na push wysyłka jest pomijana."""
         user = UserFactory()
         _device(user)
         NotificationPreference.objects.create(
@@ -96,6 +104,7 @@ class TestNotifyPushMarketing:
     def test_sent_with_push_consent(
         self, django_capture_on_commit_callbacks, push_provider
     ):
+        """Ze zgodą na push wysyłka idzie."""
         user = UserFactory()
         _device(user)
         NotificationPreference.objects.create(
@@ -111,9 +120,12 @@ class TestNotifyPushMarketing:
 
 @pytest.mark.django_db
 class TestPushDelivery:
+    """Doręczenie pusha przez adapter."""
+
     def test_invalid_token_removed(
         self, django_capture_on_commit_callbacks, push_provider
     ):
+        """Nieważny token jest usuwany."""
         user = UserFactory()
         _device(user, "ExponentPushToken[dead]")
         _device(user, "ExponentPushToken[live]")
@@ -131,6 +143,7 @@ class TestPushDelivery:
     def test_push_error_does_not_block_email(
         self, django_capture_on_commit_callbacks, push_provider
     ):
+        """Błąd pusha nie blokuje e-maila."""
         user = UserFactory()
         _device(user)
         push_provider.fail_with = "Expo padło"
@@ -148,6 +161,7 @@ class TestPushDelivery:
     def test_push_body_and_data_override_email_content(
         self, django_capture_on_commit_callbacks, push_provider
     ):
+        """Treść i dane pusha zastępują treść e-maila."""
         user = UserFactory()
         _device(user)
 

@@ -32,7 +32,10 @@ def _recipients(mail) -> list[str]:
 
 @pytest.mark.django_db
 class TestAnnouncePromotion:
+    """Ogłoszenie promocji klientom ze zgodą."""
+
     def test_emails_consenting_accounts_and_active_subscriptions_only(self):
+        """E-mail trafia tylko do kont ze zgodą i aktywnych zapisów."""
         consenting = UserFactory(email="yes@test.com")
         NotificationPreference.objects.create(user=consenting, marketing_email=True)
         UserFactory(email="no@test.com")
@@ -50,6 +53,7 @@ class TestAnnouncePromotion:
         assert "Jesień" in mail.call_args.kwargs["subject"]
 
     def test_deduplicates_by_address_case_insensitively(self):
+        """Adresy są deduplikowane bez względu na wielkość liter."""
         user = UserFactory(email="Both@test.com")
         NotificationPreference.objects.create(user=user, marketing_email=True)
         NewsletterSubscription.objects.create(
@@ -61,6 +65,7 @@ class TestAnnouncePromotion:
         mail.assert_called_once()
 
     def test_every_email_has_unsubscribe_link(self, settings):
+        """Każdy e-mail ma link wypisania."""
         settings.NEWSLETTER_UNSUBSCRIBE_URL = "https://shop.test/unsub/{token}"
         user = UserFactory(email="yes@test.com")
         NotificationPreference.objects.create(user=user, marketing_email=True)
@@ -78,6 +83,7 @@ class TestAnnouncePromotion:
         assert "https://shop.test/unsub/" in bodies["yes@test.com"]
 
     def test_account_unsubscribe_link_turns_off_marketing_email(self, settings):
+        """Link wypisania konta wyłącza e-maile marketingowe."""
         from apps.notifications import newsletter
 
         settings.NEWSLETTER_UNSUBSCRIBE_URL = "https://shop.test/unsub/{token}"
@@ -91,6 +97,7 @@ class TestAnnouncePromotion:
         assert NotificationPreference.for_user(user).marketing_email is False
 
     def test_inactive_account_gets_nothing(self):
+        """Nieaktywne konto nic nie dostaje."""
         user = UserFactory(email="off@test.com", is_active=False)
         NotificationPreference.objects.create(
             user=user, marketing_email=True, marketing_push=True
@@ -102,6 +109,7 @@ class TestAnnouncePromotion:
         push.delay.assert_not_called()
 
     def test_push_goes_only_to_push_consents(self):
+        """Push trafia tylko do kont ze zgodą na push."""
         pushy = UserFactory()
         NotificationPreference.objects.create(user=pushy, marketing_push=True)
         mail_only = UserFactory()
