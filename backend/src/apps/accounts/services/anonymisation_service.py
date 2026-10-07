@@ -45,6 +45,10 @@ class ActiveOrderError(Exception):
     """Konto ma niedostarczone zamówienie — anonimizacja zablokowana."""
 
 
+class StaffAccountError(Exception):
+    """Konto obsługi sklepu — usuwa je administrator, nie samoobsługa."""
+
+
 def has_active_order(user: CustomUser) -> bool:
     """Czy klient ma zamówienie w toku (poza dostarczonym, anulowanym, zwróconym)."""
     return (
@@ -56,11 +60,27 @@ def has_active_order(user: CustomUser) -> bool:
 
 @transaction.atomic
 def anonymise_account(user: CustomUser) -> None:
-    """Nieodwracalnie anonimizuje konto; `ActiveOrderError` przy trwającym zamówieniu."""
+    """Nieodwracalnie anonimizuje konto; `ActiveOrderError` przy trwającym zamówieniu.
+
+    Zamówienia zostają w całości — numer, e-mail, odbiorca, adres dostawy,
+    pozycje, ceny — razem z dokumentami sprzedaży. Prawo podatkowe (art. 112
+    ustawy o VAT) wymaga przechowywania dokumentów i ewidencji do upływu
+    przedawnienia zobowiązania podatkowego, czyli 5 lat od końca roku.
+    Zamówienie zostaje przypięte do zanonimizowanego konta, a nie odpięte
+    (`user=NULL`): ścieżka gościa po e-mailu i numerze otworzyłaby je.
+    `StaffAccountError` dla konta obsługi sklepu.
+    """
     user = CustomUser.objects.select_for_update().get(pk=user.pk)
+    if user.is_staff or user.is_superuser:
+        raise StaffAccountError
     if has_active_order(user):
         raise ActiveOrderError
-    old_email = user.email
+    addresses = {user.email.lower()} | {
+        email.lower()
+        for email in EmailAddress.objects.filter(user=user).values_list(
+            "email", flat=True
+        )
+    }
 
     EmailAddress.objects.filter(user=user).delete()
     SocialAccount.objects.filter(user=user).delete()
@@ -78,7 +98,8 @@ def anonymise_account(user: CustomUser) -> None:
     Cart.objects.filter(user=user).delete()
     PushDevice.objects.filter(user=user).delete()
     NotificationPreference.objects.filter(user=user).delete()
-    NewsletterSubscription.objects.filter(email__iexact=old_email).update(
+    # Subskrypcje trzymają adres małymi literami (`newsletter._normalise`).
+    NewsletterSubscription.objects.filter(email__in=addresses).update(
         status=NewsletterStatus.UNSUBSCRIBED, updated_at=timezone.now()
     )
     _delete_sessions(user)

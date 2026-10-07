@@ -15,6 +15,7 @@ from django.contrib.sessions.models import Session
 from apps.accounts.models import Address, CustomUser, Profile
 from apps.accounts.services.anonymisation_service import (
     ActiveOrderError,
+    StaffAccountError,
     anonymise_account,
 )
 from apps.consents.models import Consent
@@ -29,7 +30,7 @@ from apps.notifications.models import (
 from apps.orders.models import Cart, Order, OrderStatus
 from apps.reviews.models import Review
 from apps.watches.models import Watch
-from tests.factories.accounts import ProfileFactory, UserFactory
+from tests.factories.accounts import AdminUserFactory, ProfileFactory, UserFactory
 from tests.factories.consents import ConsentFactory
 from tests.factories.favorites import FavoriteFactory
 from tests.factories.orders import CartFactory, OrderFactory
@@ -197,3 +198,36 @@ def test_logs_without_personal_data(customer, caplog) -> None:
     assert str(customer.pk) in caplog.text
     assert EMAIL not in caplog.text
     assert "Kowalski" not in caplog.text
+
+
+def test_unsubscribes_newsletter_of_every_account_address(customer) -> None:
+    EmailAddress.objects.create(user=customer, email="Second@Test.com", verified=True)
+    secondary = NewsletterSubscription.objects.create(
+        email="second@test.com", status=NewsletterStatus.ACTIVE
+    )
+    stranger = NewsletterSubscription.objects.create(
+        email="stranger@test.com", status=NewsletterStatus.ACTIVE
+    )
+
+    anonymise_account(customer)
+
+    secondary.refresh_from_db()
+    stranger.refresh_from_db()
+    assert secondary.status == NewsletterStatus.UNSUBSCRIBED
+    assert stranger.status == NewsletterStatus.ACTIVE
+
+
+@pytest.mark.parametrize("staff", [{"is_staff": True}, {"is_superuser": True}])
+def test_refuses_staff_accounts(staff) -> None:
+    user = UserFactory(**staff)
+
+    with pytest.raises(StaffAccountError):
+        anonymise_account(user)
+
+    user.refresh_from_db()
+    assert user.is_active
+
+
+def test_refuses_admin_account() -> None:
+    with pytest.raises(StaffAccountError):
+        anonymise_account(AdminUserFactory())
