@@ -52,6 +52,7 @@ ADDRESS = ShippingAddress(
 
 @pytest.fixture
 def push_provider(settings):
+    """Atrapa adaptera push zapisująca wysyłki."""
     settings.PUSH_PROVIDER = "core.integrations.push.fake.FakePushProvider"
     FakePushProvider.reset()
     yield FakePushProvider
@@ -66,6 +67,7 @@ def _device(cart):
 
 @pytest.fixture
 def mail():
+    """Skrzynka testowa e-maili."""
     with patch("apps.notifications.services.send_notification_email") as sent:
         yield sent
 
@@ -97,9 +99,12 @@ def _run(django_capture_on_commit_callbacks) -> int:
 
 @pytest.mark.django_db
 class TestCartReminderSelection:
+    """Wybór koszyków do przypomnienia."""
+
     def test_sent_after_24_hours_of_inactivity(
         self, mail, django_capture_on_commit_callbacks
     ):
+        """Przypomnienie idzie po 24 godzinach bez zmian."""
         with freeze_time(START):
             cart = _consenting_cart()
         with freeze_time("2026-10-02 10:01:00"):
@@ -115,6 +120,7 @@ class TestCartReminderSelection:
         ).exists()
 
     def test_not_sent_before_24_hours(self, mail, django_capture_on_commit_callbacks):
+        """Przed upływem 24 godzin przypomnienia nie ma."""
         with freeze_time(START):
             _consenting_cart()
         with freeze_time("2026-10-02 09:59:00"):
@@ -125,6 +131,7 @@ class TestCartReminderSelection:
     def test_not_sent_without_marketing_email_consent(
         self, mail, django_capture_on_commit_callbacks
     ):
+        """Bez zgody na e-mail marketingowy przypomnienia nie ma."""
         with freeze_time(START):
             cart = _consenting_cart(email=False)
         with freeze_time("2026-10-03 10:00:00"):
@@ -135,6 +142,7 @@ class TestCartReminderSelection:
         assert cart.reminded_at is None
 
     def test_guest_never_gets_reminder(self, mail, django_capture_on_commit_callbacks):
+        """Gość nigdy nie dostaje przypomnienia."""
         with freeze_time(START):
             CartItemFactory(cart=GuestCartFactory(), variant=_available_variant())
         with freeze_time("2026-10-03 10:00:00"):
@@ -145,6 +153,7 @@ class TestCartReminderSelection:
     def test_empty_cart_gets_no_reminder(
         self, mail, django_capture_on_commit_callbacks
     ):
+        """Pusty koszyk nie dostaje przypomnienia."""
         with freeze_time(START):
             _consenting_cart(variants=[])
         with freeze_time("2026-10-03 10:00:00"):
@@ -153,6 +162,7 @@ class TestCartReminderSelection:
     def test_inactive_account_gets_no_reminder(
         self, mail, django_capture_on_commit_callbacks
     ):
+        """Nieaktywne konto nie dostaje przypomnienia."""
         with freeze_time(START):
             _consenting_cart(active=False)
         with freeze_time("2026-10-03 10:00:00"):
@@ -161,6 +171,7 @@ class TestCartReminderSelection:
     def test_not_repeated_without_content_change(
         self, mail, django_capture_on_commit_callbacks
     ):
+        """Bez zmiany zawartości przypomnienie się nie powtarza."""
         with freeze_time(START):
             _consenting_cart()
         with freeze_time("2026-10-02 11:00:00"):
@@ -173,6 +184,7 @@ class TestCartReminderSelection:
     def test_repeated_after_content_change_and_next_24_hours(
         self, mail, django_capture_on_commit_callbacks
     ):
+        """Po zmianie zawartości i kolejnych 24 godzinach przypomnienie się powtarza."""
         with freeze_time(START):
             cart = _consenting_cart()
         with freeze_time("2026-10-02 11:00:00"):
@@ -189,6 +201,7 @@ class TestCartReminderSelection:
     def test_only_unavailable_items_send_nothing(
         self, mail, django_capture_on_commit_callbacks
     ):
+        """Same niedostępne pozycje nie wysyłają przypomnienia."""
         with freeze_time(START):
             cart = _consenting_cart(
                 variants=[_sold_out_variant(), ProductVariantFactory()]
@@ -240,6 +253,7 @@ class TestCartReminderSelection:
         assert cart.reminded_at is not None
 
     def test_sold_out_cart_is_not_selected(self):
+        """Wyprzedany koszyk nie jest wybierany."""
         with freeze_time(START):
             _consenting_cart(variants=[_sold_out_variant()])
         with freeze_time("2026-10-03 10:00:00"):
@@ -248,9 +262,12 @@ class TestCartReminderSelection:
 
 @pytest.mark.django_db
 class TestCartReminderContent:
+    """Treść przypomnienia o koszyku."""
+
     def test_lists_items_with_price_and_marks_unavailable(
         self, mail, settings, django_capture_on_commit_callbacks
     ):
+        """Przypomnienie wymienia pozycje z ceną i oznacza niedostępne."""
         settings.CART_URL = "https://shop.test/cart"
         settings.NOTIFICATION_PREFERENCES_URL = (
             "https://shop.test/account/notifications"
@@ -277,6 +294,7 @@ class TestCartReminderContent:
     def test_push_is_short_with_type_data(
         self, mail, push_provider, django_capture_on_commit_callbacks
     ):
+        """Push jest krótki i niesie typ w danych."""
         variant = _available_variant(sku="AV-PUSH")
         with freeze_time(START):
             cart = _consenting_cart(push=True, variants=[variant])
@@ -293,6 +311,7 @@ class TestCartReminderContent:
     def test_email_has_one_click_unsubscribe_link(
         self, mail, settings, django_capture_on_commit_callbacks
     ):
+        """E-mail ma link wypisania jednym kliknięciem."""
         settings.NEWSLETTER_UNSUBSCRIBE_URL = "https://shop.test/unsubscribe/{token}"
         with freeze_time(START):
             cart = _consenting_cart()
@@ -306,6 +325,7 @@ class TestCartReminderContent:
 
 @pytest.mark.django_db
 def test_periodic_task_runs_service(mail, django_capture_on_commit_callbacks):
+    """Zadanie okresowe uruchamia serwis przypomnień."""
     with freeze_time(START):
         _consenting_cart()
     with freeze_time("2026-10-03 10:00:00"):
