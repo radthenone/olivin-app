@@ -11,7 +11,7 @@ import logging
 
 from django import forms
 from django.contrib.auth.base_user import AbstractBaseUser
-from django.db import transaction
+from django.http import HttpRequest
 
 from apps.consents.models import Consent, ConsentDocument, ConsentKind
 from apps.notifications.models import NotificationPreference
@@ -69,7 +69,7 @@ class SignupConsentsForm(forms.Form):
         cleaned_data[SIGNUP_DOCUMENTS_KEY] = documents
         return cleaned_data
 
-    def signup(self, request, user: AbstractBaseUser) -> None:
+    def signup(self, request: HttpRequest, user: AbstractBaseUser) -> None:
         """Wymagane przez allauth; zgody zapisuje już `record_signup_consents`."""
 
 
@@ -80,10 +80,9 @@ def record_signup_consents(user: AbstractBaseUser, cleaned_data: dict) -> None:
     konto i profil, także przy provider signup.
     """
     documents: list[ConsentDocument] = cleaned_data.get(SIGNUP_DOCUMENTS_KEY, [])
-    with transaction.atomic():
-        for document in documents:
-            Consent.objects.create(user=user, document=document)
-        if any(d.kind == ConsentKind.MARKETING for d in documents):
-            NotificationPreference.objects.update_or_create(
-                user=user, defaults={"marketing_email": True}
-            )
+    for document in documents:
+        Consent.objects.create(user=user, document=document)
+    if any(d.kind == ConsentKind.MARKETING for d in documents):
+        NotificationPreference.objects.update_or_create(
+            user=user, defaults={"marketing_email": True}
+        )

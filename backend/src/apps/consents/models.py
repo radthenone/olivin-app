@@ -43,13 +43,11 @@ class ConsentDocumentQuerySet(models.QuerySet["ConsentDocument"]):
         Liczone na bieżąco, więc obejmuje też konta sprzed wymogu zgód.
         Marketing jest dobrowolny, więc nigdy nie jest zaległy.
         """
-        accepted = set(
-            Consent.objects.for_subject(user=user).values_list("document_id", flat=True)
-        )
         return [
             document
             for document in self.current_for_all_kinds()
-            if document.kind in REQUIRED_SIGNUP_KINDS and document.pk not in accepted
+            if document.kind in REQUIRED_SIGNUP_KINDS
+            and not Consent.objects.has_current_consent(document.kind, user=user)
         ]
 
 
