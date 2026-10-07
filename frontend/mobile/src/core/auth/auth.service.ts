@@ -73,6 +73,9 @@ export const authService = {
     lastName: string;
     dateOfBirth: string;
     phoneNumber: string;
+    consent_terms: boolean;
+    consent_privacy: boolean;
+    consent_marketing: boolean;
   }) {
     const response = await postAllauthClientV1AuthSignup(allauthClient, data);
     ensureExpectedStatus(response, [200, 401], "Nie udało się utworzyć konta.");

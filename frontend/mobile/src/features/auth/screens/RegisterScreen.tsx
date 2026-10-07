@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Text } from "react-native";
+import { Switch, Text, View } from "react-native";
 import { Link } from "expo-router";
 import { ErrorMessage } from "@ui/feedback/ErrorMessage";
 import { Button } from "@ui/primitives/Button";
@@ -24,6 +24,9 @@ export function RegisterScreen() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [consentTerms, setConsentTerms] = useState(false);
+  const [consentPrivacy, setConsentPrivacy] = useState(false);
+  const [consentMarketing, setConsentMarketing] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   function handleSubmit() {
@@ -35,6 +38,9 @@ export function RegisterScreen() {
       phoneNumber,
       password,
       passwordConfirm,
+      consentTerms,
+      consentPrivacy,
+      consentMarketing,
     });
 
     if (!parsed.success) {
@@ -50,6 +56,9 @@ export function RegisterScreen() {
       dateOfBirth: parsed.data.dateOfBirth,
       phoneNumber: parsed.data.phoneNumber,
       password: parsed.data.password,
+      consent_terms: parsed.data.consentTerms,
+      consent_privacy: parsed.data.consentPrivacy,
+      consent_marketing: parsed.data.consentMarketing,
     });
   }
 
@@ -154,6 +163,35 @@ export function RegisterScreen() {
         secureTextEntry
         value={passwordConfirm}
       />
+
+      {(
+        [
+          ["Akceptuję regulamin (wymagane)", consentTerms, setConsentTerms],
+          [
+            "Akceptuję politykę prywatności (wymagane)",
+            consentPrivacy,
+            setConsentPrivacy,
+          ],
+          [
+            "Chcę otrzymywać informacje marketingowe e-mailem",
+            consentMarketing,
+            setConsentMarketing,
+          ],
+        ] as const
+      ).map(([label, value, setValue]) => (
+        <View className="flex-row items-center gap-3" key={label}>
+          <Switch
+            accessibilityLabel={label}
+            disabled={register.isPending}
+            onValueChange={(next) => {
+              setValue(next);
+              setFormError(null);
+            }}
+            value={value}
+          />
+          <Text className="flex-1 text-base text-neutral-950">{label}</Text>
+        </View>
+      ))}
 
       <ErrorMessage
         message={

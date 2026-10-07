@@ -13,6 +13,9 @@ export const registerSchema = z
     phoneNumber: z.string().trim().min(6, "Podaj numer telefonu."),
     password: z.string().min(8, "Hasło musi mieć co najmniej 8 znaków."),
     passwordConfirm: z.string().min(1, "Powtórz hasło."),
+    consentTerms: z.literal(true, "Zaakceptuj regulamin."),
+    consentPrivacy: z.literal(true, "Zaakceptuj politykę prywatności."),
+    consentMarketing: z.boolean(),
   })
   .refine((value) => value.password === value.passwordConfirm, {
     message: "Hasła muszą być takie same.",
