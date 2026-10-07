@@ -38,14 +38,16 @@ def _detail(slug: str | None) -> str:
 class TestProductListAccess:
     """Katalog czyta każdy odwiedzający — bez logowania."""
 
-    def test_anonim_dostaje_liste(self, api_client: APIClient):
+    def test_anonymous_gets_list(self, api_client: APIClient):
+        """Anonim dostaje listę produktów."""
         PublishedProductFactory()
 
         code, _ = _get(api_client, reverse("product-list"))
 
         assert code == status.HTTP_200_OK
 
-    def test_lista_jest_stronicowana(self, api_client: APIClient):
+    def test_list_is_paginated(self, api_client: APIClient):
+        """Lista jest stronicowana."""
         category = CategoryFactory()
         for _ in range(30):
             PublishedProductFactory(category=category)
@@ -60,7 +62,8 @@ class TestProductListAccess:
 class TestDraftsAreInvisible:
     """Szkic nie istnieje dla sklepu pod żadnym adresem."""
 
-    def test_szkic_nie_wchodzi_na_liste(self, api_client: APIClient):
+    def test_draft_is_not_listed(self, api_client: APIClient):
+        """Szkic nie wchodzi na listę."""
         category = CategoryFactory()
         PublishedProductFactory(name="Widoczny", category=category)
         ProductFactory(name="Szkic", category=category)
@@ -69,21 +72,24 @@ class TestDraftsAreInvisible:
 
         assert [row["name"] for row in body["results"]] == ["Widoczny"]
 
-    def test_szkic_pod_wlasnym_adresem_to_404(self, api_client: APIClient):
+    def test_draft_detail_is_404(self, api_client: APIClient):
+        """Szkic pod własnym adresem daje 404."""
         draft = ProductFactory(name="Szkic")
 
         code, _ = _get(api_client, _detail(draft.slug))
 
         assert code == status.HTTP_404_NOT_FOUND
 
-    def test_zalogowany_tez_nie_zobaczy_szkicu(self, authenticated_client: APIClient):
+    def test_logged_in_cannot_see_draft_either(self, authenticated_client: APIClient):
+        """Zalogowany też nie zobaczy szkicu."""
         draft = ProductFactory(name="Szkic")
 
         code, _ = _get(authenticated_client, _detail(draft.slug))
 
         assert code == status.HTTP_404_NOT_FOUND
 
-    def test_opublikowany_produkt_ma_swoj_adres(self, api_client: APIClient):
+    def test_published_product_has_detail(self, api_client: APIClient):
+        """Opublikowany produkt ma swój adres."""
         product = PublishedProductFactory(name="Gold ring")
 
         code, body = _get(api_client, _detail(product.slug))
@@ -96,7 +102,8 @@ class TestDraftsAreInvisible:
 class TestCheapestVariantOnList:
     """Produkt na liście reprezentuje jego najtańszy wariant (`CONTEXT.md`)."""
 
-    def test_lista_pokazuje_najtanszy_wariant(self, api_client: APIClient):
+    def test_list_shows_cheapest_variant(self, api_client: APIClient):
+        """Lista pokazuje najtańszy wariant."""
         product = PublishedProductFactory()
         ProductVariantFactory(product=product, sku="DROGI", price=200000)
         ProductVariantFactory(product=product, sku="TANI", price=100000)
@@ -107,9 +114,7 @@ class TestCheapestVariantOnList:
         assert cheapest["sku"] == "TANI"
         assert cheapest["price"] == {"amount": 100000, "currency": "PLN"}
 
-    def test_cena_reczna_liczy_sie_przy_wyborze_najtanszego(
-        self, api_client: APIClient
-    ):
+    def test_manual_price_counts_for_cheapest(self, api_client: APIClient):
         """Wariant z niższą ceną ręczną jest tańszy, choć wyliczoną ma wyższą."""
         product = PublishedProductFactory()
         ProductVariantFactory(product=product, sku="WYLICZONY", price=150000)
@@ -123,7 +128,8 @@ class TestCheapestVariantOnList:
         assert cheapest["sku"] == "PRZECENIONY"
         assert cheapest["price"] == {"amount": 100000, "currency": "PLN"}
 
-    def test_produkt_bez_wariantow_nie_wywraca_listy(self, api_client: APIClient):
+    def test_product_without_variants_does_not_break_list(self, api_client: APIClient):
+        """Produkt bez wariantów nie wywraca listy."""
         PublishedProductFactory(name="Bez wariantów")
 
         code, body = _get(api_client, reverse("product-list"))
@@ -131,7 +137,8 @@ class TestCheapestVariantOnList:
         assert code == status.HTTP_200_OK
         assert body["results"][0]["cheapestVariant"] is None
 
-    def test_lista_nie_pokazuje_pelnej_listy_wariantow(self, api_client: APIClient):
+    def test_list_does_not_show_all_variants(self, api_client: APIClient):
+        """Lista nie pokazuje pełnej listy wariantów."""
         product = PublishedProductFactory()
         ProductVariantFactory(product=product)
 
@@ -144,7 +151,8 @@ class TestCheapestVariantOnList:
 class TestProductDetail:
     """Strona produktu pokazuje wszystkie warianty wraz z traktowaniem podatkowym."""
 
-    def test_szczegol_zwraca_wszystkie_warianty(self, api_client: APIClient):
+    def test_detail_returns_all_variants(self, api_client: APIClient):
+        """Szczegół zwraca wszystkie warianty."""
         product = PublishedProductFactory()
         ProductVariantFactory(product=product, sku="A-1", price=100000)
         ProductVariantFactory(product=product, sku="B-2", price=200000)
@@ -153,7 +161,8 @@ class TestProductDetail:
 
         assert [variant["sku"] for variant in body["variants"]] == ["A-1", "B-2"]
 
-    def test_wariant_niesie_wlasna_stawke_podatku(self, api_client: APIClient):
+    def test_variant_has_own_tax_rate(self, api_client: APIClient):
+        """Wariant niesie własną stawkę podatku."""
         product = PublishedProductFactory()
         ProductVariantFactory(product=product, sku="JEW-1")
 
@@ -164,9 +173,7 @@ class TestProductDetail:
         assert variant["isVatExempt"] is False
         assert variant["vatExemptionBasis"] == ""
 
-    def test_zwolnienie_niesie_podstawe_prawna_zamiast_stawki(
-        self, api_client: APIClient
-    ):
+    def test_exemption_has_legal_basis_instead_of_rate(self, api_client: APIClient):
         """Zwolnienie nie jest stawką zerową, tylko osobnym bytem (ADR 0013)."""
         product = PublishedProductFactory()
         ProductVariantFactory(vat_exempt=True, product=product, sku="BUL-1")
@@ -178,9 +185,8 @@ class TestProductDetail:
         assert variant["isVatExempt"] is True
         assert variant["vatExemptionBasis"]
 
-    def test_dwa_warianty_jednego_produktu_moga_miec_rozne_traktowanie(
-        self, api_client: APIClient
-    ):
+    def test_two_variants_of_one_product_can_differ(self, api_client: APIClient):
+        """Dwa warianty jednego produktu mogą mieć różne traktowanie."""
         product = PublishedProductFactory()
         ProductVariantFactory(product=product, sku="A-JEW")
         ProductVariantFactory(vat_exempt=True, product=product, sku="B-BUL")
@@ -192,7 +198,8 @@ class TestProductDetail:
             True,
         ]
 
-    def test_produkt_na_zamowienie_niesie_czas_realizacji(self, api_client: APIClient):
+    def test_made_to_order_product_has_lead_time(self, api_client: APIClient):
+        """Produkt na zamówienie niesie czas realizacji."""
         product = MadeToOrderProductFactory(name="Obrączki")
 
         _, body = _get(api_client, _detail(product.slug))
@@ -200,7 +207,8 @@ class TestProductDetail:
         assert body["isMadeToOrder"] is True
         assert body["productionTimeDays"] == 21
 
-    def test_produkt_magazynowy_nie_ma_czasu_realizacji(self, api_client: APIClient):
+    def test_stocked_product_has_no_lead_time(self, api_client: APIClient):
+        """Produkt magazynowy nie ma czasu realizacji."""
         product = PublishedProductFactory()
 
         _, body = _get(api_client, _detail(product.slug))
@@ -208,7 +216,7 @@ class TestProductDetail:
         assert body["isMadeToOrder"] is False
         assert body["productionTimeDays"] is None
 
-    def test_produkt_grawerowalny_niesie_cene_grawerunku(self, api_client: APIClient):
+    def test_engravable_product_has_engraving_price(self, api_client: APIClient):
         """Koszyk bierze stąd zgodę na grawer i jego cenę (ADR 0018)."""
         product = EngravableProductFactory(name="Sygnet")
 
@@ -217,7 +225,8 @@ class TestProductDetail:
         assert body["isEngravable"] is True
         assert body["engravingPrice"] == {"amount": 4900, "currency": "PLN"}
 
-    def test_produkt_bez_grawerunku_nie_ma_ceny_grawerunku(self, api_client: APIClient):
+    def test_non_engravable_product_has_no_engraving_price(self, api_client: APIClient):
+        """Produkt bez grawerunku nie ma ceny grawerunku."""
         product = PublishedProductFactory()
 
         _, body = _get(api_client, _detail(product.slug))
@@ -225,7 +234,7 @@ class TestProductDetail:
         assert body["isEngravable"] is False
         assert body["engravingPrice"] is None
 
-    def test_lista_tez_niesie_grawer(self, api_client: APIClient):
+    def test_list_also_has_engraving(self, api_client: APIClient):
         """Karta produktu na liście ma pokazać „z grawerem” bez wchodzenia
         w szczegół."""
         EngravableProductFactory()
@@ -238,9 +247,8 @@ class TestProductDetail:
             "currency": "PLN",
         }
 
-    def test_odpowiedz_nie_zdradza_statusu_ani_ceny_wyliczonej(
-        self, api_client: APIClient
-    ):
+    def test_response_hides_status_and_computed_price(self, api_client: APIClient):
+        """Odpowiedź nie zdradza statusu ani ceny wyliczonej."""
         product = PublishedProductFactory()
         ProductVariantFactory(product=product, price=129900, manual_price=99900)
 
@@ -256,9 +264,8 @@ class TestProductIsReadOnly:
     """Katalog prowadzi panel, nie API (ADR 0021)."""
 
     @pytest.mark.parametrize("method", ["post", "put", "patch", "delete"])
-    def test_zapis_jest_niedozwolony(
-        self, authenticated_client: APIClient, method: str
-    ):
+    def test_write_is_not_allowed(self, authenticated_client: APIClient, method: str):
+        """Zapis przez API jest niedozwolony."""
         product = PublishedProductFactory()
         url = reverse("product-list") if method == "post" else _detail(product.slug)
 
@@ -271,9 +278,10 @@ class TestProductIsReadOnly:
 class TestQueryBudget:
     """Lista nie może mnożyć zapytań przez liczbę produktów."""
 
-    def test_lista_nie_rosnie_wraz_z_liczba_produktow(
+    def test_list_queries_do_not_grow_with_products(
         self, api_client: APIClient, django_assert_max_num_queries
     ):
+        """Liczba zapytań listy nie rośnie wraz z liczbą produktów."""
         category = CategoryFactory()
         for index in range(10):
             product = PublishedProductFactory(category=category)
@@ -291,7 +299,8 @@ class TestQueryBudget:
 class TestIsFavoriteOnCatalog:
     """Serduszko na liście i karcie produktu (#200) — bez zapytania na produkt."""
 
-    def test_gosc_widzi_false(self, api_client: APIClient):
+    def test_guest_sees_false(self, api_client: APIClient):
+        """Gość widzi `false`."""
         PublishedProductFactory()
 
         status_code, body = _get(api_client, reverse("product-list"))
@@ -299,9 +308,8 @@ class TestIsFavoriteOnCatalog:
         assert status_code == status.HTTP_200_OK
         assert body["results"][0]["isFavorite"] is False
 
-    def test_zalogowany_widzi_wlasny_ulubiony(
-        self, authenticated_client: APIClient, user
-    ):
+    def test_logged_in_sees_own_favorite(self, authenticated_client: APIClient, user):
+        """Zalogowany widzi własny ulubiony produkt."""
         product = PublishedProductFactory()
         FavoriteFactory(user=user, product=product)
         other_product = PublishedProductFactory()
@@ -313,9 +321,8 @@ class TestIsFavoriteOnCatalog:
         assert by_slug[product.slug] is True
         assert by_slug[other_product.slug] is False
 
-    def test_karta_produktu_tez_niesie_flage(
-        self, authenticated_client: APIClient, user
-    ):
+    def test_product_detail_has_flag_too(self, authenticated_client: APIClient, user):
+        """Karta produktu też niesie flagę."""
         product = PublishedProductFactory()
         FavoriteFactory(user=user, product=product)
 
@@ -324,9 +331,10 @@ class TestIsFavoriteOnCatalog:
         assert status_code == status.HTTP_200_OK
         assert body["isFavorite"] is True
 
-    def test_budzet_zapytan_nie_rosnie_z_liczba_produktow(
+    def test_query_budget_does_not_grow_with_products(
         self, authenticated_client: APIClient, django_assert_max_num_queries, user
     ):
+        """Budżet zapytań nie rośnie z liczbą produktów."""
         category = CategoryFactory()
         for index in range(10):
             product = PublishedProductFactory(category=category)

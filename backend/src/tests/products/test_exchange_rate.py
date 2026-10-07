@@ -30,6 +30,7 @@ from tests.factories.products import (
 
 
 def euro_rate(rate: str = "4.000000", **kwargs: Any) -> ExchangeRate:
+    """Kurs euro obowiązujący w teście."""
     kwargs.setdefault("effective_on", date(2026, 9, 1))
     return ExchangeRate.objects.create(
         currency="EUR", rate=Decimal(rate), source="test", **kwargs
@@ -44,17 +45,22 @@ class TestRoundUpToHalf:
         [(2500, 2500), (2501, 2550), (2550, 2550), (2551, 2600), (0, 0)],
     )
     def test_rounding(self, cents: int, expected: int):
+        """Zaokrąglenie w górę do pełnych albo połówek."""
         assert round_up_to_half(Money(cents, "EUR")) == Money(expected, "EUR")
 
 
 @pytest.mark.django_db
 class TestPriceIn:
+    """Cena wariantu w obcej walucie."""
+
     def test_price_is_converted_and_rounded_up(self):
+        """Cena jest przeliczana i zaokrąglana w górę."""
         variant = ProductVariantFactory(price=10001)
 
         assert price_in(variant, euro_rate("4.000000")) == Money(2550, "EUR")
 
     def test_manual_price_takes_precedence(self):
+        """Cena ręczna ma pierwszeństwo."""
         variant = ProductVariantFactory(price=40000, manual_price=20000)
 
         assert price_in(variant, euro_rate("4.000000")) == Money(5000, "EUR")
@@ -75,18 +81,25 @@ class TestPriceIn:
 
 @pytest.mark.django_db
 class TestCurrentRate:
+    """Bieżący kurs waluty."""
+
     def test_newest_rate_is_current_without_activation(self):
+        """Najnowszy kurs jest bieżący bez aktywacji."""
         euro_rate("4.300000", effective_on=date(2026, 8, 1))
         newer = euro_rate("4.250000", effective_on=date(2026, 9, 1))
 
         assert ExchangeRate.objects.current("EUR") == newer
 
     def test_no_rate_means_none(self):
+        """Brak kursu daje `None`."""
         assert ExchangeRate.objects.current("EUR") is None
 
 
 class TestAdapters:
+    """Adaptery dostawców kursu."""
+
     def test_registry_returns_configured_fake(self, settings):
+        """Rejestr zwraca skonfigurowaną atrapę."""
         settings.EXCHANGE_RATE_PROVIDER = (
             "core.integrations.exchange_rate.fake.FakeExchangeRateProvider"
         )
@@ -99,6 +112,7 @@ class TestAdapters:
         assert quote.source == "fake"
 
     def test_nbp_reads_mid_rate(self):
+        """Adapter NBP czyta kurs średni."""
         response = MagicMock()
         response.json.return_value = {
             "table": "A",
@@ -120,7 +134,10 @@ class TestAdapters:
 
 @pytest.mark.django_db
 class TestRefreshTask:
+    """Zadanie odświeżania kursu."""
+
     def test_first_run_fetches_rate(self):
+        """Pierwsze uruchomienie pobiera kurs."""
         assert refresh_exchange_rate() is True  # type: ignore[missing-argument]
 
         rate = ExchangeRate.objects.get()
@@ -128,6 +145,7 @@ class TestRefreshTask:
         assert rate.source == "fake"
 
     def test_rate_younger_than_30_days_is_kept(self):
+        """Kurs młodszy niż 30 dni zostaje."""
         euro_rate(effective_on=timezone.localdate() - timedelta(days=29))
 
         assert refresh_exchange_rate() is False  # type: ignore[missing-argument]
@@ -135,6 +153,7 @@ class TestRefreshTask:
         assert ExchangeRate.objects.count() == 1
 
     def test_rate_quoted_30_days_ago_is_replaced(self, caplog):
+        """Kurs sprzed 30 dni jest zastępowany."""
         euro_rate("4.500000", effective_on=timezone.localdate() - timedelta(days=30))
 
         assert refresh_exchange_rate() is True  # type: ignore[missing-argument]
@@ -144,6 +163,7 @@ class TestRefreshTask:
         assert not [r for r in caplog.records if r.levelname == "ERROR"]
 
     def test_stale_rate_is_logged(self, caplog):
+        """Nieaktualny kurs trafia do logu."""
         euro_rate(effective_on=timezone.localdate() - timedelta(days=40))
 
         refresh_exchange_rate()  # type: ignore[missing-argument]
@@ -151,10 +171,12 @@ class TestRefreshTask:
         assert any(r.levelname == "ERROR" for r in caplog.records)
 
     def test_network_errors_are_retried(self):
+        """Błędy sieci są ponawiane."""
         assert requests.RequestException in refresh_exchange_rate.autoretry_for
         assert refresh_exchange_rate.max_retries
 
     def test_worker_start_queues_refresh(self):
+        """Start workera kolejkuje odświeżenie."""
         from core.celery import app, refresh_exchange_rate_on_start
 
         with patch.object(app, "send_task") as send:
@@ -170,7 +192,10 @@ def _get(client: APIClient, url: str, **params: Any) -> Any:
 
 @pytest.mark.django_db
 class TestCatalogInEuro:
+    """Katalog w euro."""
+
     def test_default_currency_is_pln(self, api_client: APIClient):
+        """Domyślna waluta katalogu to PLN."""
         euro_rate()
         product = PublishedProductFactory()
         ProductVariantFactory(product=product, price=10001)
@@ -181,6 +206,7 @@ class TestCatalogInEuro:
         assert price == {"amount": 10001, "currency": "PLN"}
 
     def test_eur_prices_are_converted(self, api_client: APIClient):
+        """Ceny w euro są przeliczane."""
         euro_rate("4.000000")
         product = EngravableProductFactory(engraving_price=10001)
         ProductVariantFactory(product=product, price=10001)
@@ -195,6 +221,7 @@ class TestCatalogInEuro:
         assert body["engravingPrice"] == {"amount": 2550, "currency": "EUR"}
 
     def test_list_in_eur(self, api_client: APIClient):
+        """Lista produktów w euro."""
         euro_rate("4.000000")
         ProductVariantFactory(product=PublishedProductFactory(), price=10000)
 
@@ -204,11 +231,13 @@ class TestCatalogInEuro:
         assert price == {"amount": 2500, "currency": "EUR"}
 
     def test_eur_without_rate_is_rejected(self, api_client: APIClient):
+        """Euro bez kursu jest odrzucane."""
         response = _get(api_client, reverse("product-list"), currency="EUR")
 
         assert response.status_code == 400
 
     def test_unknown_currency_is_rejected(self, api_client: APIClient):
+        """Nieznana waluta jest odrzucana."""
         response = _get(api_client, reverse("product-list"), currency="USD")
 
         assert response.status_code == 400
@@ -233,6 +262,7 @@ class TestCheckoutPreviewInEuro:
     """Koszyk i dostawa w euro liczone tą samą funkcją co zamówienie (ADR 0019)."""
 
     def test_cart_in_euro(self, api_client: APIClient, user):
+        """Koszyk w euro."""
         from apps.orders.services.cart import add_item
         from tests.factories.orders import CartFactory
         from tests.factories.products import stock
@@ -252,6 +282,7 @@ class TestCheckoutPreviewInEuro:
         assert body["total"] == {"amount": 5100, "currency": "EUR"}
 
     def test_shipping_cost_in_euro(self, api_client: APIClient):
+        """Koszt dostawy w euro."""
         from apps.shipping.models import ShippingZone
         from tests.factories.shipping import ShippingMethodFactory
 
@@ -267,6 +298,7 @@ class TestCheckoutPreviewInEuro:
 
 @pytest.mark.django_db
 def test_sales_document_prints_rate_and_quote_date():
+    """Dokument sprzedaży podaje kurs i datę notowania."""
     from django.template.loader import render_to_string
 
     from tests.factories.orders import OrderFactory
