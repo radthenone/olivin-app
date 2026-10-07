@@ -141,7 +141,10 @@ class TestTranslateObject:
         assert translated_value(product, "name", "en") == "Ring"
 
     def test_does_not_overwrite_manual_fix(self):
-        """Właściciel poprawia tłumaczenie, bo automat się pomylił."""
+        """Tłumaczenie poprawione ręcznie nie jest nadpisywane.
+
+        Właściciel poprawia tłumaczenie, bo automat się pomylił.
+        """
         product = ProductFactory(name="Pierścionek", description="Złoty")
         add_translation(product, "name", "Gold ring", TranslationSource.MANUAL)
 
@@ -556,7 +559,10 @@ class TestStaleManualWarning:
         assert stale_manual_fields(product, ["name"]) == ["name"]
 
     def test_unchanged_name_is_not_reported(self):
-        """Ostrzeżenie przy każdym zapisie przestałoby cokolwiek znaczyć."""
+        """Niezmieniona nazwa nie jest zgłaszana.
+
+        Ostrzeżenie przy każdym zapisie przestałoby cokolwiek znaczyć.
+        """
         product = PublishedProductFactory(name="Pierścionek", description="Złoty")
         add_translation(product, "name", "Gold ring", TranslationSource.MANUAL)
 

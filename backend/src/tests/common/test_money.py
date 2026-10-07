@@ -88,14 +88,14 @@ class TestMoneyArithmetic:
         assert Money(1999) * 3 == Money(5997)
         assert 3 * Money(1999) == Money(5997)
 
-    def test_star_rejects_fractions(self):
+    def test_multiply_operator_rejects_fractions(self):
         """Operator `*` odrzuca ułamki."""
         with pytest.raises(TypeError):
             Money(100) * Decimal("0.5")  # type: ignore[operator]
 
     def test_multiply_rounds_once_half_up(self):
-        # 1.235 zł * 0.5 = 61.75 gr -> 62 gr; przy podwójnym zaokrągleniu byłoby 61 lub 62 zależnie od ścieżki
         """Mnożenie zaokrągla raz, połówki w górę."""
+        # 12,35 zł * 0,5 = 617,5 gr -> 618 gr; podwójne zaokrąglenie dałoby wynik zależny od ścieżki
         assert Money(1235).multiply(Decimal("0.5")) == Money(618)
         assert Money(1).multiply(Decimal("0.5")) == Money(1)
 
@@ -134,8 +134,8 @@ class TestAllocate:
         assert allocate(Money(1000), [1, 1, 1]) == [Money(333), Money(333), Money(334)]
 
     def test_proportional_to_ratios(self):
-        # rabat 10 zł na koszyk 30 zł + 70 zł
         """Podział jest proporcjonalny do wag."""
+        # rabat 10 zł na koszyk 30 zł + 70 zł
         assert allocate(Money(1000), [3000, 7000]) == [Money(300), Money(700)]
 
     def test_zero_ratio_gets_nothing(self):
@@ -180,8 +180,8 @@ class TestSplitGross:
             assert breakdown.net + breakdown.tax == breakdown.gross
 
     def test_rounds_net_half_up(self):
-        # 100 gr / 1.23 = 81.30... -> 81 ; podatek 19
         """Netto jest zaokrąglane połówką w górę."""
+        # 100 gr / 1.23 = 81.30... -> 81 ; podatek 19
         breakdown = split_gross(Money(100), Decimal("0.23"))
         assert (breakdown.net, breakdown.tax) == (Money(81), Money(19))
 

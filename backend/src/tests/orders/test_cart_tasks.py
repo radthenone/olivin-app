@@ -62,7 +62,10 @@ class TestGuestCartCleanup:
         assert Cart.objects.get(pk=cart.pk).last_activity_at == before
 
     def test_account_cart_is_not_cleaned_up(self):
-        """Klient ma prawo wrócić po roku i zastać to, co zostawił."""
+        """Koszyk konta nie jest sprzątany.
+
+        Klient ma prawo wrócić po roku i zastać to, co zostawił.
+        """
         owned = _inactive_for(CartFactory(), GUEST_CART_TTL_DAYS * 12)
 
         purge_stale_guest_carts()  # type: ignore[missing-argument]

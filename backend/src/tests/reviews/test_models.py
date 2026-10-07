@@ -30,7 +30,7 @@ class TestReviewModel:
             ReviewFactory(rating=6)
 
     def test_restart_moderation_sets_pending_status(self):
-        """Edycja treści zawsze cofa opinię do moderacji."""
+        """`restart_moderation()` cofa opinię do statusu oczekującego."""
         review = ReviewFactory(status=ReviewStatus.APPROVED)
         review.restart_moderation()
         assert review.status == ReviewStatus.PENDING

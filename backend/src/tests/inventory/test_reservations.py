@@ -230,7 +230,10 @@ class TestRelease:
             release(reservation)
 
     def test_release_of_expired_reservation_passes(self):
-        """To samo, co robi hurtem zadanie okresowe — tylko dla jednej sztuki."""
+        """Zwolnienie przeterminowanej rezerwacji przechodzi.
+
+        To samo, co robi hurtem zadanie okresowe — tylko dla jednej sztuki.
+        """
         variant = ProductVariantFactory()
         stock(variant, 5)
         with freeze_time(NOW):
