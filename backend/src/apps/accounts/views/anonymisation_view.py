@@ -14,8 +14,15 @@ from apps.accounts.serializers import AccountAnonymisationSerializer
 from apps.accounts.services import anonymisation_code
 from apps.accounts.services.anonymisation_service import (
     ActiveOrderError,
+    StaffAccountError,
     anonymise_account,
+    has_active_order,
 )
+
+_ACTIVE_ORDER = {
+    "detail": "Nie można usunąć konta, dopóki trwa niedostarczone zamówienie."
+}
+_STAFF = {"detail": "Konto obsługi sklepu — skontaktuj się z administratorem."}
 
 
 class _AnonymisationView(APIView):
@@ -33,6 +40,11 @@ class AccountAnonymiseView(_AnonymisationView):
         payload = AccountAnonymisationSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
         user = request.user
+        if user.is_staff or user.is_superuser:
+            return Response(_STAFF, status=status.HTTP_400_BAD_REQUEST)
+        # Najpierw tania odmowa: kod potwierdzenia nie przepada przy 409.
+        if has_active_order(user):
+            return Response(_ACTIVE_ORDER, status=status.HTTP_409_CONFLICT)
         if user.has_usable_password():
             password = payload.validated_data.get("password", "")
             if not user.check_password(password):
@@ -44,13 +56,9 @@ class AccountAnonymiseView(_AnonymisationView):
         try:
             anonymise_account(user)
         except ActiveOrderError:
-            return Response(
-                {
-                    "detail": "Nie można usunąć konta, dopóki trwa "
-                    "niedostarczone zamówienie."
-                },
-                status=status.HTTP_409_CONFLICT,
-            )
+            return Response(_ACTIVE_ORDER, status=status.HTTP_409_CONFLICT)
+        except StaffAccountError:
+            return Response(_STAFF, status=status.HTTP_400_BAD_REQUEST)
         logout(request._request)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -61,8 +69,9 @@ class AccountAnonymiseCodeView(_AnonymisationView):
     @account_anonymise_code_schema
     def post(self, request: Request) -> Response:
         if request.user.has_usable_password():
-            raise ValidationError(
-                {"detail": "Konto ma hasło — potwierdź usunięcie hasłem."}
+            return Response(
+                {"detail": "Konto ma hasło — potwierdź usunięcie hasłem."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
         anonymisation_code.send_code(request.user)
         return Response(

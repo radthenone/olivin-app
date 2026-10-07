@@ -163,3 +163,44 @@ def test_code_is_not_resent_within_cooldown(
 
     assert response.status_code == status.HTTP_202_ACCEPTED
     mail.assert_not_called()
+
+
+def test_order_is_checked_before_password(password_user) -> None:
+    OrderFactory(user=password_user, status=OrderStatus.PAID)
+
+    response = anonymise(client_for(password_user), password="wrong-pass")
+
+    assert response.status_code == status.HTTP_409_CONFLICT
+
+
+def test_active_order_does_not_burn_code(
+    social_user, django_capture_on_commit_callbacks
+) -> None:
+    client = client_for(social_user)
+    _, code = _sent_code(client, django_capture_on_commit_callbacks)
+    order = OrderFactory(user=social_user, status=OrderStatus.SHIPPED)
+    assert anonymise(client, code=code).status_code == status.HTTP_409_CONFLICT
+    order.status = OrderStatus.DELIVERED
+    order.save()
+
+    response = anonymise(client, code=code)
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+
+def test_staff_account_is_refused(password_user) -> None:
+    password_user.is_staff = True
+    password_user.save()
+
+    response = anonymise(client_for(password_user), password=PASSWORD)
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert isinstance(response.data["detail"], str)
+    assert not is_anonymised(password_user)
+
+
+def test_code_refusal_has_detail_message(password_user) -> None:
+    response = request_code(client_for(password_user))
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert isinstance(response.data["detail"], str)
