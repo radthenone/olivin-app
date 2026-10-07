@@ -67,6 +67,15 @@ class Cart(TimestampedModel):
             f"{GUEST_CART_TTL_DAYS} dni jest kasowany zadaniem okresowym."
         ),
     )
+    reminded_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=(
+            "Moment wysłania przypomnienia o koszyku (`CONTEXT.md`, "
+            "CartReminder). Zmiana zawartości koszyka je zeruje — dopiero "
+            "wtedy wolno wysłać kolejne."
+        ),
+    )
     promotion = models.ForeignKey(
         "promotions.Promotion",
         on_delete=models.SET_NULL,
@@ -120,9 +129,14 @@ class Cart(TimestampedModel):
         return self.items.count()  # type: ignore[missing-attribute]
 
     def touch(self) -> None:
-        """Odsuwa termin sprzątania koszyka gościa o kolejne dni bezczynności."""
+        """Zmiana zawartości: odsuwa termin sprzątania i otwiera kolejne przypomnienie.
+
+        Wołają to wyłącznie serwisy zmieniające pozycje koszyka; sam odczyt
+        idzie przez `touch_on_read()` i przypomnienia nie zeruje (#208).
+        """
         self.last_activity_at = timezone.now()
-        self.save(update_fields=["last_activity_at", "updated_at"])
+        self.reminded_at = None
+        self.save(update_fields=["last_activity_at", "reminded_at", "updated_at"])
 
     def touch_on_read(self) -> None:
         """Oglądanie koszyka też jest aktywnością — ale nie kosztuje zapisu za każdym razem.
@@ -134,7 +148,8 @@ class Cart(TimestampedModel):
         """
         if timezone.now() - self.last_activity_at < READ_TOUCH_INTERVAL:
             return
-        self.touch()
+        self.last_activity_at = timezone.now()
+        self.save(update_fields=["last_activity_at", "updated_at"])
 
     def clean(self) -> None:
         super().clean()
