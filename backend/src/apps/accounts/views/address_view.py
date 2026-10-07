@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -8,28 +9,28 @@ from apps.accounts.models import Address
 from apps.accounts.schema import address_schema
 from apps.accounts.serializers import AddressSerializer
 
-# Create your views here.
-
 
 @address_schema
 class AddressViewSet(viewsets.ModelViewSet):
     """
-    A viewset for viewing and editing address instances.
+    Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
 
     Actions:
-    - list:           GET  /api/v1/addresses/
-    - retrieve:       GET  /api/v1/addresses/{id}/
-    - create:         POST /api/v1/addresses/
-    - update:         PUT  /api/v1/addresses/{id}/
-    - partial_update: PATCH /api/v1/addresses/{id}/
-    - destroy:        DELETE /api/v1/addresses/{id}/
-    - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+    - list:           GET    /customers/addresses/
+    - retrieve:       GET    /customers/addresses/{id}/
+    - create:         POST   /customers/addresses/
+    - update:         PUT    /customers/addresses/{id}/
+    - partial_update: PATCH  /customers/addresses/{id}/
+    - destroy:        DELETE /customers/addresses/{id}/
+    - set_default:    PATCH  /customers/addresses/{id}/set-default/
     """
 
     permission_classes = [IsAuthenticated]
     serializer_class = AddressSerializer
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Address.objects.none()
         return Address.objects.filter(profile__user=self.request.user)
 
     def perform_create(self, serializer):
@@ -50,9 +51,12 @@ class AddressViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK,
             )
 
-        Address.objects.filter(profile__user=request.user).exclude(
-            pk=address.pk,
-        ).update(is_default=False)
-        address.is_default = True
-        address.save()
+        # Zdjęcie flagi z pozostałych i ustawienie jej tu to jedna zmiana —
+        # bez transakcji błąd zapisu zostawiłby profil bez adresu domyślnego.
+        with transaction.atomic():
+            Address.objects.filter(profile__user=request.user).exclude(
+                pk=address.pk,
+            ).update(is_default=False)
+            address.is_default = True
+            address.save()
         return Response(self.get_serializer(address).data, status=status.HTTP_200_OK)
