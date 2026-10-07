@@ -40,6 +40,14 @@ def cancel_stale_orders() -> int:
     return expire_unpaid_orders(older_than=timezone.now() - UNPAID_ORDER_TTL)
 
 
+@shared_task
+def send_cart_reminders() -> int:
+    """Przypomina o koszykach bez aktywności przez dobę (`CONTEXT.md`, CartReminder)."""
+    from apps.orders.services.cart_reminder import send_cart_reminders as send
+
+    return send()
+
+
 @shared_task(autoretry_for=(Exception,), retry_backoff=True, max_retries=5)
 def issue_sales_documents(order_id: str) -> list[str]:
     """Wystawia dokumenty sprzedaży po opłaceniu zamówienia (ADR 0026).

@@ -25,6 +25,7 @@ class NotificationKind(models.TextChoices):
     RETURN_SETTLED = "return_settled", "Rozliczenie zwrotu"
     WATCH_RESTOCK = "watch_restock", "Wariant wrócił na stan"
     WATCH_PRICE_DROP = "watch_price_drop", "Spadek ceny wariantu"
+    CART_REMINDER = "cart_reminder", "Przypomnienie o koszyku"
 
 
 # Transakcyjne docierają zawsze; rodzaje spoza tego zbioru są marketingowe

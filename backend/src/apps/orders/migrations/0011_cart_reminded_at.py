@@ -4,15 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('orders', '0010_returnrequestitem_exchange_order'),
+        ("orders", "0010_returnrequestitem_exchange_order"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='cart',
-            name='reminded_at',
-            field=models.DateTimeField(blank=True, help_text='Moment wysłania przypomnienia o koszyku (`CONTEXT.md`, CartReminder). Zmiana zawartości koszyka je zeruje — dopiero wtedy wolno wysłać kolejne.', null=True),
+            model_name="cart",
+            name="reminded_at",
+            field=models.DateTimeField(
+                blank=True,
+                help_text="Moment wysłania przypomnienia o koszyku (`CONTEXT.md`, CartReminder). Zmiana zawartości koszyka je zeruje — dopiero wtedy wolno wysłać kolejne.",
+                null=True,
+            ),
         ),
     ]

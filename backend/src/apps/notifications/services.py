@@ -53,6 +53,13 @@ _TEMPLATES: dict[str, tuple[str, str]] = {
         "Obserwowany wariant {variant_sku} ({product_name}) stanieje: "
         "było {old_price}, jest {new_price}.",
     ),
+    "cart_reminder": (
+        "W koszyku czekają na Ciebie wyroby",
+        "W Twoim koszyku zostały wyroby — ceny i dostępność na dziś:\n"
+        "{items}\n\n"
+        "Wróć do koszyka: {cart_url}\n\n"
+        "Nie chcesz takich wiadomości? Zmień zgody: {preferences_url}",
+    ),
 }
 
 
