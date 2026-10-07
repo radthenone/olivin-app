@@ -5,7 +5,16 @@ from __future__ import annotations
 from unittest.mock import patch
 
 import pytest
+from django.utils import timezone
 from freezegun import freeze_time
+
+from apps.consents.models import ConsentKind
+from apps.notifications.newsletter import account_unsubscribe_url
+from apps.orders.models import OrderStatus
+from apps.orders.services import ShippingAddress, create_order
+from apps.orders.services.cart_reminder import due_carts
+from tests.factories.consents import ConsentDocumentFactory, ConsentFactory
+from tests.factories.shipping import ShippingMethodFactory
 
 from apps.notifications.models import (
     Notification,
@@ -24,7 +33,6 @@ from tests.factories.orders import (
     CartFactory,
     CartItemFactory,
     GuestCartFactory,
-    OrderFactory,
 )
 from tests.factories.products import (
     MadeToOrderProductFactory,
@@ -33,6 +41,27 @@ from tests.factories.products import (
 )
 
 START = "2026-10-01 10:00:00"
+ADDRESS = ShippingAddress(
+    recipient_name="Jan Kowalski",
+    street="Złota 44",
+    city="Warszawa",
+    postal_code="00-120",
+    country="PL",
+)
+
+
+@pytest.fixture
+def push_provider(settings):
+    settings.PUSH_PROVIDER = "core.integrations.push.fake.FakePushProvider"
+    FakePushProvider.reset()
+    yield FakePushProvider
+    FakePushProvider.reset()
+
+
+def _device(cart):
+    PushDevice.objects.create(
+        user=cart.user, token=f"ExponentPushToken[{cart.pk}]", platform="ios"
+    )
 
 
 @pytest.fixture
@@ -172,16 +201,49 @@ class TestCartReminderSelection:
         assert cart.reminded_at is None
 
     def test_pending_order_does_not_trigger_reminder(
-        self, mail, django_capture_on_commit_callbacks
+        self, mail, settings, django_capture_on_commit_callbacks
     ):
-        """Złożone zamówienie opróżnia koszyk — nieopłacone nie jest porzuconym koszykiem."""
+        """Złożone, nieopłacone zamówienie nie jest porzuconym koszykiem."""
+        settings.FREE_SHIPPING_THRESHOLD = None
         with freeze_time(START):
-            cart = _consenting_cart(variants=[])
-            OrderFactory(user=cart.user)
+            cart = _consenting_cart()
+            assert cart.user is not None
+            ConsentFactory(
+                user=cart.user,
+                document=ConsentDocumentFactory(kind=ConsentKind.TERMS),
+            )
+            order = create_order(
+                cart=cart,
+                address=ADDRESS,
+                shipping_method=ShippingMethodFactory(rate=1990),
+                user=cart.user,
+            )
+        assert order.status == OrderStatus.PENDING
         with freeze_time("2026-10-03 10:00:00"):
             assert _run(django_capture_on_commit_callbacks) == 0
 
         mail.assert_not_called()
+
+    def test_push_only_consent_gets_push_reminder(
+        self, mail, push_provider, django_capture_on_commit_callbacks
+    ):
+        """Zgoda „na danym kanale” (`CONTEXT.md`, CartReminder) — sam push też wystarcza."""
+        with freeze_time(START):
+            cart = _consenting_cart(email=False, push=True)
+            _device(cart)
+        with freeze_time("2026-10-03 10:00:00"):
+            assert _run(django_capture_on_commit_callbacks) == 1
+
+        mail.assert_not_called()
+        assert len(push_provider.sent) == 1
+        cart.refresh_from_db()
+        assert cart.reminded_at is not None
+
+    def test_sold_out_cart_is_not_selected(self):
+        with freeze_time(START):
+            _consenting_cart(variants=[_sold_out_variant()])
+        with freeze_time("2026-10-03 10:00:00"):
+            assert not due_carts(timezone.now()).exists()
 
 
 @pytest.mark.django_db
@@ -212,21 +274,34 @@ class TestCartReminderContent:
         assert "https://shop.test/cart" in body
         assert "https://shop.test/account/notifications" in body
 
-    def test_push_sent_with_marketing_push_and_device(
-        self, mail, settings, django_capture_on_commit_callbacks
+    def test_push_is_short_with_type_data(
+        self, mail, push_provider, django_capture_on_commit_callbacks
     ):
-        settings.PUSH_PROVIDER = "core.integrations.push.fake.FakePushProvider"
-        FakePushProvider.reset()
+        variant = _available_variant(sku="AV-PUSH")
         with freeze_time(START):
-            cart = _consenting_cart(push=True)
-            PushDevice.objects.create(
-                user=cart.user, token="ExponentPushToken[x]", platform="ios"
-            )
+            cart = _consenting_cart(push=True, variants=[variant])
+            _device(cart)
         with freeze_time("2026-10-03 10:00:00"):
             _run(django_capture_on_commit_callbacks)
 
-        assert len(FakePushProvider.sent) == 1
-        FakePushProvider.reset()
+        assert len(push_provider.sent) == 1
+        sent = push_provider.sent[0]
+        assert "AV-PUSH" not in sent["body"]
+        assert "1" in sent["body"]
+        assert sent["data"] == {"type": "cart_reminder"}
+
+    def test_email_has_one_click_unsubscribe_link(
+        self, mail, settings, django_capture_on_commit_callbacks
+    ):
+        settings.NEWSLETTER_UNSUBSCRIBE_URL = "https://shop.test/unsubscribe/{token}"
+        with freeze_time(START):
+            cart = _consenting_cart()
+        assert cart.user is not None
+        with freeze_time("2026-10-03 10:00:00"):
+            _run(django_capture_on_commit_callbacks)
+            expected = account_unsubscribe_url(cart.user.pk)
+
+        assert f"Wypisz się: {expected}" in mail.call_args.kwargs["body"]
 
 
 @pytest.mark.django_db

@@ -58,7 +58,8 @@ _TEMPLATES: dict[str, tuple[str, str]] = {
         "W Twoim koszyku zostały wyroby — ceny i dostępność na dziś:\n"
         "{items}\n\n"
         "Wróć do koszyka: {cart_url}\n\n"
-        "Nie chcesz takich wiadomości? Zmień zgody: {preferences_url}",
+        "Nie chcesz takich wiadomości? Zmień zgody: {preferences_url}\n"
+        "Wypisz się: {unsubscribe_url}",
     ),
 }
 
