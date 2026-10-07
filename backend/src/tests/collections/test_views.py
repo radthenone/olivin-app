@@ -33,14 +33,16 @@ def _product_names(client: APIClient, **params: Any) -> list[str]:
 class TestCollectionListAccess:
     """Kolekcje czyta każdy odwiedzający — bez logowania."""
 
-    def test_anonim_dostaje_liste(self, api_client: APIClient):
+    def test_anonymous_gets_list(self, api_client: APIClient):
+        """Anonim dostaje listę kolekcji."""
         CollectionFactory(name="Winter", products=[PublishedProductFactory()])
 
         code, _ = _get(api_client, reverse("collection-list"))
 
         assert code == status.HTTP_200_OK
 
-    def test_pojedyncza_kolekcja_po_slugu(self, api_client: APIClient):
+    def test_single_collection_by_slug(self, api_client: APIClient):
+        """Pojedyncza kolekcja jest dostępna po slugu."""
         CollectionFactory(
             name="Winter", slug="winter", products=[PublishedProductFactory()]
         )
@@ -52,7 +54,8 @@ class TestCollectionListAccess:
         assert code == status.HTTP_200_OK
         assert body["slug"] == "winter"
 
-    def test_nieznany_slug_to_404(self, api_client: APIClient):
+    def test_unknown_slug_is_404(self, api_client: APIClient):
+        """Nieznany slug daje 404."""
         code, _ = _get(
             api_client, reverse("collection-detail", kwargs={"slug": "brak"})
         )
@@ -60,9 +63,8 @@ class TestCollectionListAccess:
         assert code == status.HTTP_404_NOT_FOUND
 
     @pytest.mark.parametrize("method", ["post", "put", "patch", "delete"])
-    def test_zapis_jest_niedozwolony(
-        self, authenticated_client: APIClient, method: str
-    ):
+    def test_write_is_not_allowed(self, authenticated_client: APIClient, method: str):
+        """Zapis przez API jest niedozwolony."""
         CollectionFactory(
             name="Winter", slug="winter", products=[PublishedProductFactory()]
         )
@@ -81,28 +83,26 @@ class TestCollectionListAccess:
 class TestOnlyCollectionsWithPublishedProducts:
     """Pusta kampania to dla odwiedzającego ślepy zaułek — nie pokazujemy jej."""
 
-    def test_kolekcja_z_opublikowanym_produktem_jest_widoczna(
-        self, api_client: APIClient
-    ):
+    def test_collection_with_published_product_is_visible(self, api_client: APIClient):
+        """Kolekcja z opublikowanym produktem jest widoczna."""
         CollectionFactory(name="Winter", products=[PublishedProductFactory()])
 
         assert _collection_names(api_client) == ["Winter"]
 
-    def test_kolekcja_bez_produktow_nie_wchodzi_na_liste(self, api_client: APIClient):
+    def test_collection_without_products_is_not_listed(self, api_client: APIClient):
+        """Kolekcja bez produktów nie wchodzi na listę."""
         CollectionFactory(name="Pusta")
 
         assert _collection_names(api_client) == []
 
-    def test_kolekcja_z_samymi_szkicami_nie_wchodzi_na_liste(
-        self, api_client: APIClient
-    ):
+    def test_collection_with_only_drafts_is_not_listed(self, api_client: APIClient):
+        """Kolekcja z samymi szkicami nie wchodzi na listę."""
         CollectionFactory(name="Szkicowa", products=[ProductFactory()])
 
         assert _collection_names(api_client) == []
 
-    def test_kolekcja_z_samymi_szkicami_nie_ma_wlasnego_adresu(
-        self, api_client: APIClient
-    ):
+    def test_collection_with_only_drafts_has_no_detail(self, api_client: APIClient):
+        """Kolekcja z samymi szkicami nie ma własnego adresu."""
         CollectionFactory(name="Szkicowa", slug="drafts", products=[ProductFactory()])
 
         code, _ = _get(
@@ -111,7 +111,8 @@ class TestOnlyCollectionsWithPublishedProducts:
 
         assert code == status.HTTP_404_NOT_FOUND
 
-    def test_licznik_pomija_szkice(self, api_client: APIClient):
+    def test_counter_skips_drafts(self, api_client: APIClient):
+        """Licznik produktów pomija szkice."""
         CollectionFactory(
             name="Mieszana",
             products=[
@@ -125,7 +126,9 @@ class TestOnlyCollectionsWithPublishedProducts:
 
         assert body["results"][0]["productCount"] == 2
 
-    def test_produkt_w_dwoch_kolekcjach_nie_mnozy_wierszy(self, api_client: APIClient):
+    def test_product_in_two_collections_does_not_duplicate_rows(
+        self, api_client: APIClient
+    ):
         """Złączenie wiele-do-wielu bez `distinct` zwróciłoby kolekcję tyle
         razy, ile ma pasujących produktów."""
         product = PublishedProductFactory()
@@ -139,7 +142,8 @@ class TestOnlyCollectionsWithPublishedProducts:
 class TestProductCollectionFilter:
     """`?collection=<slug>` zawęża listę produktów do jednej kampanii."""
 
-    def test_filtr_zwraca_produkty_kolekcji(self, api_client: APIClient):
+    def test_filter_returns_collection_products(self, api_client: APIClient):
+        """Filtr zwraca produkty kolekcji."""
         rings = CategoryFactory(name="Pierścionki")
         chains = CategoryFactory(name="Łańcuszki")
         ring = PublishedProductFactory(name="Pierścionek", category=rings)
@@ -152,26 +156,32 @@ class TestProductCollectionFilter:
             "Łańcuszek",
         ]
 
-    def test_filtr_nie_mnozy_produktu_z_wielu_kolekcji(self, api_client: APIClient):
+    def test_filter_does_not_duplicate_product_in_many_collections(
+        self, api_client: APIClient
+    ):
+        """Filtr nie mnoży produktu należącego do wielu kolekcji."""
         product = PublishedProductFactory(name="Pierścionek")
         CollectionFactory(name="Winter", slug="winter", products=[product])
         CollectionFactory(name="Gifts", slug="gifts", products=[product])
 
         assert _product_names(api_client, collection="winter") == ["Pierścionek"]
 
-    def test_nieznana_kolekcja_daje_pusta_liste(self, api_client: APIClient):
+    def test_unknown_collection_gives_empty_list(self, api_client: APIClient):
+        """Nieznana kolekcja daje pustą listę."""
         PublishedProductFactory(name="Pierścionek")
 
         assert _product_names(api_client, collection="nie-ma") == []
 
-    def test_szkic_w_kolekcji_nie_wchodzi_na_liste(self, api_client: APIClient):
+    def test_draft_in_collection_is_not_listed(self, api_client: APIClient):
+        """Szkic w kolekcji nie wchodzi na listę."""
         draft = ProductFactory(name="Szkic")
         published = PublishedProductFactory(name="Widoczny")
         CollectionFactory(name="Winter", slug="winter", products=[draft, published])
 
         assert _product_names(api_client, collection="winter") == ["Widoczny"]
 
-    def test_filtr_laczy_sie_z_pozostalymi(self, api_client: APIClient):
+    def test_filter_combines_with_others(self, api_client: APIClient):
+        """Filtr kolekcji łączy się z pozostałymi filtrami."""
         from apps.products.models import Material
 
         gold = PublishedProductFactory(name="Złoty", material=Material.GOLD)
