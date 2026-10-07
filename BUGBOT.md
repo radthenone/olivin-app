@@ -8,6 +8,11 @@ Dostosuj ścieżki i taski do `.ai/project.md`. Bugbot ładuje ten plik przy rev
 - Nie commituj `.env`, kluczy API, haseł, tokenów CI.
 - Preferuj minimalny diff — flaguj drive-by refactory poza zakresem PR.
 
+If the diff adds or renames a class, function, method, variable or test (`test_*`, `class Test*`) whose name is not in English (e.g. `test_pusty_koszyk_jest_odrzucony`, `TestSkladanieZamowienia`):
+
+- Add a blocking bug titled "Non-English identifier"
+- Body: "Nazwy w kodzie po angielsku, także testy; opis zachowania po polsku w docstringu (`.ai/project.md`, Nazewnictwo w kodzie)."
+
 ## Backend (`backend/`)
 
 If the PR modifies files under `backend/` and there are no changes in `backend/**/test*.py`, `backend/**/tests/**`, or `backend/**/*_test.py`:

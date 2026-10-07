@@ -17,6 +17,7 @@ pytestmark = pytest.mark.django_db
 
 
 def make_address(profile, **fields) -> Address:
+    """Adres w Krakowie przypisany do podanego profilu."""
     return Address.objects.create(
         profile=profile,
         street=fields.pop("street", "ul. Polna 1"),
@@ -29,11 +30,13 @@ def make_address(profile, **fields) -> Address:
 
 @pytest.fixture
 def owner_profile():
+    """Profil właściciela adresów."""
     return ProfileFactory()
 
 
 @pytest.fixture
 def owner_client(api_client: APIClient, owner_profile) -> APIClient:
+    """Klient API zalogowany jako właściciel adresów."""
     api_client.force_authenticate(user=owner_profile.user)
     return api_client
 
@@ -45,10 +48,12 @@ def stranger_address():
 
 
 def detail_url(address: Address) -> str:
+    """Adres szczegółu adresu klienta."""
     return reverse("address-detail", args=[address.pk])
 
 
 def set_default_url(address: Address) -> str:
+    """Adres akcji `set-default` dla adresu klienta."""
     return reverse("address-set-default", args=[address.pk])
 
 

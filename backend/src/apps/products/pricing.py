@@ -25,7 +25,7 @@ from common.money import DEFAULT_CURRENCY, Money
 
 # Cena kończy się na pełnych złotówkach — grosze w cenie katalogowej
 # biżuterii nie niosą informacji, a psują odbiór.
-GROSZE_IN_ZLOTY = 100
+MINOR_UNITS_IN_ZLOTY = 100
 # Cena w euro kończy się na ,00 albo ,50 (ADR 0019, uzupełnienie 2026-09-22).
 HALF_UNIT = 50
 
@@ -120,10 +120,10 @@ def cost_floor(
 
 
 def round_up_to_zloty(amount: Money) -> Money:
-    grosze = (Decimal(amount.amount) / Decimal(GROSZE_IN_ZLOTY)).to_integral_value(
-        rounding=ROUND_CEILING
-    ) * GROSZE_IN_ZLOTY
-    return Money(int(grosze), amount.currency)
+    rounded = (
+        Decimal(amount.amount) / Decimal(MINOR_UNITS_IN_ZLOTY)
+    ).to_integral_value(rounding=ROUND_CEILING) * MINOR_UNITS_IN_ZLOTY
+    return Money(int(rounded), amount.currency)
 
 
 def calculate_price(variant: ProductVariant) -> Money | None:

@@ -33,6 +33,7 @@ class TestFavoriteListApi:
     """Lista ulubionych klienta."""
 
     def test_requires_authentication(self, api_client: APIClient):
+        """Lista ulubionych wymaga zalogowania."""
         response: Any = api_client.get(FAVORITES_URL)
         assert response.status_code in [
             status.HTTP_401_UNAUTHORIZED,
@@ -42,6 +43,7 @@ class TestFavoriteListApi:
     def test_lists_only_published_products(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Lista pokazuje tylko produkty opublikowane."""
         published = PublishedProductFactory()
         FavoriteFactory(user=user, product=published)
         FavoriteFactory(user=user, product=ProductFactory())  # szkic — poza listą
@@ -58,6 +60,7 @@ class TestFavoriteCreateApi:
     """Dodanie do ulubionych jest idempotentne."""
 
     def test_creates_favorite(self, authenticated_client: APIClient, user: CustomUser):
+        """POST zakłada wpis ulubionych."""
         product = PublishedProductFactory()
 
         response: Any = authenticated_client.post(
@@ -70,6 +73,7 @@ class TestFavoriteCreateApi:
     def test_repeating_create_does_not_duplicate(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Powtórny POST nie dubluje wpisu."""
         product = PublishedProductFactory()
         authenticated_client.post(
             FAVORITES_URL, {"product": product.slug}, format="json"
@@ -83,6 +87,7 @@ class TestFavoriteCreateApi:
         assert Favorite.objects.filter(user=user, product=product).count() == 1
 
     def test_rejects_unpublished_product(self, authenticated_client: APIClient):
+        """Produkt nieopublikowany jest odrzucany."""
         draft = ProductFactory()
 
         response: Any = authenticated_client.post(
@@ -99,6 +104,7 @@ class TestFavoriteDestroyApi:
     def test_removes_own_favorite(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """DELETE usuwa własny wpis."""
         favorite = FavoriteFactory(user=user)
 
         response: Any = authenticated_client.delete(
@@ -111,6 +117,7 @@ class TestFavoriteDestroyApi:
     def test_removing_missing_favorite_returns_204(
         self, authenticated_client: APIClient
     ):
+        """Usunięcie nieistniejącego wpisu daje 204."""
         product = PublishedProductFactory()
 
         response: Any = authenticated_client.delete(_favorite_detail_url(product.slug))
@@ -120,6 +127,7 @@ class TestFavoriteDestroyApi:
     def test_cannot_remove_other_customers_favorite(
         self, authenticated_client: APIClient
     ):
+        """Klient nie usunie cudzego wpisu."""
         favorite = FavoriteFactory()
 
         response: Any = authenticated_client.delete(
@@ -137,6 +145,7 @@ class TestFavoriteMergeApi:
     def test_merges_guest_products_into_account_list(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Produkty gościa trafiają na listę konta."""
         existing = PublishedProductFactory()
         FavoriteFactory(user=user, product=existing)
         guest_product = PublishedProductFactory()
@@ -156,6 +165,7 @@ class TestFavoriteMergeApi:
     ):
         # Produkt cofnięty do szkicu — slug zamrożony z czasu publikacji,
         # ale sam już nie jest widoczny w sklepie.
+        """Nieistniejące i nieopublikowane slugi są pomijane."""
         unpublished = PublishedProductFactory()
         unpublished.status = ProductStatus.DRAFT
         unpublished.save()
@@ -170,6 +180,7 @@ class TestFavoriteMergeApi:
         assert response.json() == []
 
     def test_rejects_oversized_merge_list(self, authenticated_client: APIClient):
+        """Zbyt długa lista do scalenia jest odrzucana."""
         oversized = [f"produkt-{index}" for index in range(501)]
 
         response: Any = authenticated_client.post(

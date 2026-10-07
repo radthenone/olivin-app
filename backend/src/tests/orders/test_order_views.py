@@ -75,10 +75,13 @@ def _terms_for(user=None, email: str = ""):
 
 
 @pytest.mark.django_db
-class TestSkladanieZamowienia:
-    def test_zalogowany_sklada_zamowienie_z_koszyka(
+class TestPlacingOrder:
+    """Składanie zamówienia przez API."""
+
+    def test_logged_in_places_order_from_cart(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Zalogowany składa zamówienie z koszyka."""
         _terms_for(user=user)
         cart = CartFactory(user=user)
         variant = _variant(price=100000)
@@ -101,7 +104,8 @@ class TestSkladanieZamowienia:
         }
         assert body["total"]["amount"] == 100000
 
-    def test_gosc_sklada_zamowienie_tokenem_koszyka(self, api_client: APIClient):
+    def test_guest_places_order_with_cart_token(self, api_client: APIClient):
+        """Gość składa zamówienie tokenem koszyka."""
         email = "gosc@test.com"
         _terms_for(email=email)
         cart = GuestCartFactory()
@@ -119,7 +123,8 @@ class TestSkladanieZamowienia:
         assert response.status_code == status.HTTP_201_CREATED
         assert response.json()["email"] == email
 
-    def test_bez_koszyka_zamowienie_nie_powstaje(self, api_client: APIClient):
+    def test_no_order_without_cart(self, api_client: APIClient):
+        """Bez koszyka zamówienie nie powstaje."""
         method = ShippingMethodFactory()
 
         response: Any = api_client.post(
@@ -130,9 +135,10 @@ class TestSkladanieZamowienia:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "cart" in response.json()
 
-    def test_bez_zgody_na_regulamin_zamowienie_nie_powstaje(
+    def test_no_order_without_terms_consent(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Bez zgody na regulamin zamówienie nie powstaje."""
         ConsentDocumentFactory(kind=ConsentKind.TERMS)
         cart = CartFactory(user=user)
         variant = _variant()
@@ -148,9 +154,10 @@ class TestSkladanieZamowienia:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "terms" in response.json()
 
-    def test_kraj_spoza_unii_jest_odrzucony(
+    def test_non_eu_country_is_rejected(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Kraj spoza Unii jest odrzucany."""
         _terms_for(user=user)
         cart = CartFactory(user=user)
         variant = _variant()
@@ -167,7 +174,9 @@ class TestSkladanieZamowienia:
 
 
 @pytest.mark.django_db
-class TestOdczytZamowien:
+class TestReadingOrders:
+    """Odczyt zamówień."""
+
     def _order_for(self, client: APIClient, user: CustomUser) -> Order:
         _terms_for(user=user)
         cart = CartFactory(user=user)
@@ -180,9 +189,10 @@ class TestOdczytZamowien:
         )
         return Order.objects.get(number=response.json()["number"])
 
-    def test_zalogowany_widzi_swoje_zamowienia(
+    def test_logged_in_sees_own_orders(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Zalogowany widzi swoje zamówienia."""
         order = self._order_for(authenticated_client, user)
 
         response: Any = authenticated_client.get(_orders_url())
@@ -210,7 +220,8 @@ class TestOdczytZamowien:
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["deliveredAt"] is not None
 
-    def test_anonim_nie_dostaje_listy(self, api_client: APIClient):
+    def test_anonymous_gets_no_list(self, api_client: APIClient):
+        """Anonim nie dostaje listy zamówień."""
         response: Any = api_client.get(_orders_url())
 
         assert response.status_code in (
@@ -218,9 +229,10 @@ class TestOdczytZamowien:
             status.HTTP_403_FORBIDDEN,
         )
 
-    def test_klient_nie_widzi_cudzego_zamowienia(
+    def test_customer_cannot_see_other_order(
         self, api_client: APIClient, user: CustomUser
     ):
+        """Klient nie widzi cudzego zamówienia."""
         api_client.force_authenticate(user=user)
         order = self._order_for(api_client, user)
         other = CustomUser.objects.create_user(
@@ -232,7 +244,8 @@ class TestOdczytZamowien:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_gosc_otwiera_zamowienie_numerem_i_adresem(self, api_client: APIClient):
+    def test_guest_opens_order_by_number_and_email(self, api_client: APIClient):
+        """Gość otwiera zamówienie numerem i adresem e-mail."""
         email = "gosc@test.com"
         _terms_for(email=email)
         cart = GuestCartFactory()
@@ -252,7 +265,8 @@ class TestOdczytZamowien:
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["number"] == number
 
-    def test_sam_numer_nie_otwiera_zamowienia_goscia(self, api_client: APIClient):
+    def test_number_alone_does_not_open_guest_order(self, api_client: APIClient):
+        """Sam numer nie otwiera zamówienia gościa."""
         email = "gosc@test.com"
         _terms_for(email=email)
         cart = GuestCartFactory()
@@ -270,7 +284,7 @@ class TestOdczytZamowien:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_gosc_nie_otwiera_zamowienia_zalogowanego_klienta(
+    def test_guest_cannot_open_customer_order(
         self, api_client: APIClient, user: CustomUser
     ):
         """Adres i numer to klucz do zamówień bez konta, nie do cudzego konta."""
@@ -282,7 +296,8 @@ class TestOdczytZamowien:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_cudzy_adres_nie_otwiera_zamowienia_goscia(self, api_client: APIClient):
+    def test_other_email_does_not_open_guest_order(self, api_client: APIClient):
+        """Cudzy adres nie otwiera zamówienia gościa."""
         email = "gosc@test.com"
         _terms_for(email=email)
         cart = GuestCartFactory()
@@ -304,7 +319,9 @@ class TestOdczytZamowien:
 
 
 @pytest.mark.django_db
-class TestAnulowanie:
+class TestCancellation:
+    """Anulowanie zamówienia przez klienta."""
+
     def _order(self, client: APIClient, user: CustomUser) -> Order:
         _terms_for(user=user)
         cart = CartFactory(user=user)
@@ -317,9 +334,10 @@ class TestAnulowanie:
         )
         return Order.objects.get(number=created.json()["number"])
 
-    def test_klient_anuluje_zamowienie_pending(
+    def test_customer_cancels_pending_order(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Klient anuluje zamówienie `pending`."""
         order = self._order(authenticated_client, user)
 
         response: Any = authenticated_client.post(_cancel_url(order.number))
@@ -327,11 +345,12 @@ class TestAnulowanie:
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["status"] == "cancelled"
 
-    def test_anulowanie_wyslanego_jest_odrzucone(
+    def test_cancelling_shipped_order_is_rejected(
         self, authenticated_client: APIClient, user: CustomUser
     ):
         # Opłacone anuluje się zwrotem (`tests/payments/`); wysłanego klient
         # sam nie anuluje — dalej wyłącznie przez zwrot towaru.
+        """Anulowanie wysłanego zamówienia jest odrzucane."""
         order = self._order(authenticated_client, user)
         for step in (OrderStatus.PAID, OrderStatus.PACKED, OrderStatus.SHIPPED):
             order.transition_to(step)
@@ -341,9 +360,10 @@ class TestAnulowanie:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "status" in response.json()
 
-    def test_gosc_nie_anuluje_zamowienia_zalogowanego_klienta(
+    def test_guest_cannot_cancel_customer_order(
         self, api_client: APIClient, user: CustomUser
     ):
+        """Gość nie anuluje zamówienia zalogowanego klienta."""
         api_client.force_authenticate(user=user)
         order = self._order(api_client, user)
         api_client.force_authenticate(user=None)
@@ -356,9 +376,10 @@ class TestAnulowanie:
         order.refresh_from_db()
         assert order.status == OrderStatus.PENDING
 
-    def test_klient_nie_anuluje_cudzego_zamowienia(
+    def test_customer_cannot_cancel_other_order(
         self, api_client: APIClient, user: CustomUser
     ):
+        """Klient nie anuluje cudzego zamówienia."""
         api_client.force_authenticate(user=user)
         order = self._order(api_client, user)
         other = CustomUser.objects.create_user(
@@ -378,6 +399,7 @@ class TestOrderShipments:
     def test_detail_lists_shipments_without_declared_value(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Szczegół zamówienia wymienia przesyłki bez wartości deklarowanej."""
         order = OrderFactory(user=user, shipping_method=ParcelLockerMethodFactory())
         ShipmentFactory(
             order=order,
@@ -402,6 +424,7 @@ class TestOrderShipments:
     def test_order_without_shipments_has_empty_list(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Zamówienie bez przesyłek ma pustą listę."""
         order = OrderFactory(user=user)
 
         response: Any = authenticated_client.get(_order_url(order.number))
@@ -409,6 +432,7 @@ class TestOrderShipments:
         assert response.json()["shipments"] == []
 
     def test_guest_sees_shipments_with_number_and_email(self, api_client: APIClient):
+        """Gość widzi przesyłki po numerze i adresie e-mail."""
         order = GuestOrderFactory(email="gosc@test.com")
         ShipmentFactory(order=order, tracking_number="PL999")
 
@@ -420,6 +444,7 @@ class TestOrderShipments:
         assert response.json()["shipments"][0]["trackingNumber"] == "PL999"
 
     def test_guest_without_email_does_not_see_shipments(self, api_client: APIClient):
+        """Gość bez e-maila nie widzi przesyłek."""
         order = GuestOrderFactory(email="gosc@test.com")
         ShipmentFactory(order=order, tracking_number="PL999")
 
@@ -429,6 +454,7 @@ class TestOrderShipments:
         assert "PL999" not in response.content.decode()
 
     def test_guest_with_wrong_email_does_not_see_shipments(self, api_client: APIClient):
+        """Gość z innym e-mailem nie widzi przesyłek."""
         order = GuestOrderFactory(email="gosc@test.com")
         ShipmentFactory(order=order, tracking_number="PL999")
 
@@ -442,6 +468,7 @@ class TestOrderShipments:
     def test_order_list_query_count_does_not_grow_with_shipments(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Liczba zapytań listy nie rośnie z liczbą przesyłek."""
         ShipmentFactory.create_batch(2, order=OrderFactory(user=user))
         with CaptureQueriesContext(connection) as single:
             authenticated_client.get(_orders_url())

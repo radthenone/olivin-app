@@ -68,6 +68,7 @@ def _active_rate():
 
 @pytest.fixture(autouse=True)
 def terms():
+    """Bieżący regulamin sklepu."""
     return ConsentDocumentFactory(kind=ConsentKind.TERMS)
 
 
@@ -102,6 +103,8 @@ def _cart_totals(cart):
 
 @pytest.mark.django_db
 class TestCouponModel:
+    """Model kuponu."""
+
     @pytest.mark.parametrize("nominal", [9500, 0, -1000])
     def test_nominal_not_multiple_of_ten_zloty_is_rejected(self, nominal):
         """95 zł, zero i kwota ujemna nie przechodzą ani walidacji, ani zapisu."""
@@ -141,7 +144,10 @@ class TestCouponModel:
 
 @pytest.mark.django_db
 class TestApplyCoupon:
+    """Wpisanie kuponu do koszyka."""
+
     def test_unknown_code_is_rejected(self):
+        """Nieznany kod jest odrzucany."""
         with pytest.raises(CartError):
             apply_coupon_code(CartFactory(), "NIEMA")
 
@@ -153,6 +159,7 @@ class TestApplyCoupon:
             apply_coupon_code(CartFactory(), coupon.code)
 
     def test_redeemed_coupon_is_rejected(self):
+        """Wykorzystany kupon jest odrzucany."""
         coupon = CouponFactory(status=CouponStatus.REDEEMED)
 
         with pytest.raises(CartError):
@@ -208,6 +215,8 @@ class TestApplyCoupon:
 
 @pytest.mark.django_db
 class TestOrderWithCoupon:
+    """Zamówienie opłacane kuponem."""
+
     def test_coupon_never_covers_shipping(self):
         """Kupon 500 zł na towar za 300 zł: do zapłaty zostaje sama dostawa."""
         user = _user_with_terms()
@@ -318,6 +327,8 @@ class TestOrderWithCoupon:
 
 @pytest.mark.django_db
 class TestCartCouponView:
+    """Kupon w API koszyka."""
+
     def _guest_cart_token(self, client: APIClient) -> str:
         variant = ProductVariantFactory(product=PublishedProductFactory(), price=100000)
         stock(variant, 5)
@@ -327,6 +338,7 @@ class TestCartCouponView:
         return response.json()["cartToken"]
 
     def test_coupon_lowers_cart_total(self, api_client: APIClient):
+        """Kupon obniża sumę koszyka."""
         token = self._guest_cart_token(api_client)
         coupon = CouponFactory()
 
@@ -341,6 +353,7 @@ class TestCartCouponView:
         assert body["total"] == {"amount": 90000, "currency": "PLN"}
 
     def test_unknown_code_is_400(self, api_client: APIClient):
+        """Nieznany kod daje 400."""
         token = self._guest_cart_token(api_client)
 
         response: Any = api_client.post(
@@ -366,6 +379,7 @@ class TestCartCouponView:
         ],
     )
     def test_used_or_expired_code_is_400(self, api_client: APIClient, coupon_kwargs):
+        """Wykorzystany albo przeterminowany kod daje 400."""
         token = self._guest_cart_token(api_client)
         coupon = CouponFactory(**coupon_kwargs)
 
@@ -377,6 +391,7 @@ class TestCartCouponView:
         assert "code" in response.json()
 
     def test_delete_removes_coupon(self, api_client: APIClient):
+        """DELETE usuwa kupon z koszyka."""
         token = self._guest_cart_token(api_client)
         coupon = CouponFactory()
         api_client.post(

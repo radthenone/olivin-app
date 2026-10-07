@@ -49,6 +49,8 @@ class ProductFactory(DjangoModelFactory):
 
 
 class PublishedProductFactory(ProductFactory):
+    """Produkt opublikowany — widoczny w sklepie."""
+
     status = ProductStatus.PUBLISHED
 
 

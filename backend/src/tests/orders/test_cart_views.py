@@ -49,8 +49,11 @@ def _merge_url() -> str:
 
 
 @pytest.mark.django_db
-class TestKoszykGoscia:
-    def test_pierwsze_dodanie_zwraca_token(self, api_client: APIClient):
+class TestGuestCart:
+    """Koszyk gościa w API."""
+
+    def test_first_add_returns_token(self, api_client: APIClient):
+        """Pierwsze dodanie zwraca token."""
         variant = _variant()
         stock(variant, 10)
 
@@ -61,9 +64,8 @@ class TestKoszykGoscia:
         assert response.status_code == status.HTTP_201_CREATED
         assert response.json()["cartToken"]
 
-    def test_kolejne_zadanie_z_naglowkiem_trafia_w_ten_sam_koszyk(
-        self, api_client: APIClient
-    ):
+    def test_next_request_with_header_hits_same_cart(self, api_client: APIClient):
+        """Kolejne żądanie z nagłówkiem trafia w ten sam koszyk."""
         variant = _variant()
         stock(variant, 10)
         created: Any = api_client.post(
@@ -76,9 +78,8 @@ class TestKoszykGoscia:
         assert response.json()["itemCount"] == 1
         assert Cart.objects.count() == 1
 
-    def test_bez_tokenu_koszyk_jest_pusty_a_nie_nieznaleziony(
-        self, api_client: APIClient
-    ):
+    def test_without_token_cart_is_empty_not_missing(self, api_client: APIClient):
+        """Bez tokenu koszyk jest pusty, a nie nieznaleziony."""
         response: Any = api_client.get(_cart_url())
 
         assert response.status_code == status.HTTP_200_OK
@@ -87,15 +88,19 @@ class TestKoszykGoscia:
         assert body["itemCount"] == 0
         assert body["cartToken"] is None
 
-    def test_odczyt_pustym_koszykiem_nie_zaklada_wiersza(self, api_client: APIClient):
+    def test_reading_empty_cart_creates_no_row(self, api_client: APIClient):
+        """Odczyt pustego koszyka nie zakłada wiersza."""
         api_client.get(_cart_url())
 
         assert Cart.objects.count() == 0
 
 
 @pytest.mark.django_db
-class TestWidokKoszyka:
-    def test_pozycja_ma_cene_aktualna_i_grawer_osobno(self, api_client: APIClient):
+class TestCartView:
+    """Widok koszyka."""
+
+    def test_item_has_current_price_and_separate_engraving(self, api_client: APIClient):
+        """Pozycja ma cenę aktualną i grawer osobno."""
         product = EngravableProductFactory(engraving_price=4900)
         variant = ProductVariantFactory(product=product, price=100000)
         stock(variant, 10)
@@ -114,7 +119,8 @@ class TestWidokKoszyka:
         assert row["lineTotal"] == {"amount": 209800, "currency": "PLN"}
         assert row["variant"]["sku"] == variant.sku
 
-    def test_podsumowanie_ma_pola_rabatu_i_kuponu(self, api_client: APIClient):
+    def test_summary_has_discount_and_coupon_fields(self, api_client: APIClient):
+        """Podsumowanie ma pola rabatu i kuponu."""
         variant = _variant(price=100000)
         stock(variant, 10)
         cart = GuestCartFactory()
@@ -129,9 +135,8 @@ class TestWidokKoszyka:
         assert body["couponAmount"] == {"amount": 0, "currency": "PLN"}
         assert body["total"] == {"amount": 100000, "currency": "PLN"}
 
-    def test_cena_idzie_za_cennikiem_a_nie_za_chwila_dodania(
-        self, api_client: APIClient
-    ):
+    def test_price_follows_price_list_not_add_time(self, api_client: APIClient):
+        """Cena idzie za cennikiem, a nie za chwilą dodania."""
         variant = _variant(price=100000)
         stock(variant, 10)
         cart = GuestCartFactory()
@@ -143,7 +148,8 @@ class TestWidokKoszyka:
 
         assert response.json()["total"] == {"amount": 150000, "currency": "PLN"}
 
-    def test_klient_nie_widzi_cudzego_koszyka(self, authenticated_client: APIClient):
+    def test_customer_cannot_see_other_cart(self, authenticated_client: APIClient):
+        """Klient nie widzi cudzego koszyka."""
         other = GuestCartFactory()
         variant = _variant()
         stock(variant, 10)
@@ -157,8 +163,11 @@ class TestWidokKoszyka:
 
 
 @pytest.mark.django_db
-class TestZmianaPozycji:
-    def test_zmiana_ilosci(self, api_client: APIClient):
+class TestItemChange:
+    """Zmiana pozycji koszyka."""
+
+    def test_quantity_change(self, api_client: APIClient):
+        """Zmiana ilości pozycji."""
         variant = _variant()
         stock(variant, 10)
         cart = GuestCartFactory()
@@ -173,7 +182,8 @@ class TestZmianaPozycji:
         item.refresh_from_db()
         assert item.quantity == 3
 
-    def test_usuniecie_pozycji(self, api_client: APIClient):
+    def test_item_removal(self, api_client: APIClient):
+        """Usunięcie pozycji."""
         variant = _variant()
         stock(variant, 10)
         cart = GuestCartFactory()
@@ -186,7 +196,8 @@ class TestZmianaPozycji:
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["itemCount"] == 0
 
-    def test_pozycja_z_cudzego_koszyka_jest_nieznaleziona(self, api_client: APIClient):
+    def test_item_from_other_cart_is_not_found(self, api_client: APIClient):
+        """Pozycja z cudzego koszyka jest nieznaleziona."""
         variant = _variant()
         stock(variant, 10)
         mine = GuestCartFactory()
@@ -201,8 +212,11 @@ class TestZmianaPozycji:
 
 
 @pytest.mark.django_db
-class TestWalidacjaDodawania:
-    def test_ilosc_ponad_stan_konczy_sie_bledem(self, api_client: APIClient):
+class TestAddValidation:
+    """Walidacja dodawania do koszyka."""
+
+    def test_quantity_above_stock_fails(self, api_client: APIClient):
+        """Ilość ponad stan kończy się błędem."""
         variant = _variant()
         stock(variant, 2)
 
@@ -213,7 +227,8 @@ class TestWalidacjaDodawania:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "quantity" in response.json()
 
-    def test_ponad_piec_sztuk_konczy_sie_bledem(self, api_client: APIClient):
+    def test_more_than_five_fails(self, api_client: APIClient):
+        """Ponad pięć sztuk kończy się błędem."""
         variant = _variant()
         stock(variant, 100)
 
@@ -223,9 +238,8 @@ class TestWalidacjaDodawania:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_grawer_na_produkcie_bez_grawerunku_konczy_sie_bledem(
-        self, api_client: APIClient
-    ):
+    def test_engraving_on_non_engravable_product_fails(self, api_client: APIClient):
+        """Grawer na produkcie bez grawerunku kończy się błędem."""
         variant = _variant()
         stock(variant, 10)
 
@@ -237,7 +251,7 @@ class TestWalidacjaDodawania:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "engravingText" in response.json()
 
-    def test_wariant_szkicu_nie_da_sie_dodac(self, api_client: APIClient):
+    def test_draft_variant_cannot_be_added(self, api_client: APIClient):
         """Szkic nie istnieje dla sklepu — także jako identyfikator w żądaniu."""
         variant = ProductVariantFactory()
         stock(variant, 10)
@@ -248,7 +262,8 @@ class TestWalidacjaDodawania:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_para_z_wyrobu_na_zamowienie_przechodzi(self, api_client: APIClient):
+    def test_pair_of_made_to_order_product_passes(self, api_client: APIClient):
+        """Para z wyrobu na zamówienie przechodzi."""
         variant = ProductVariantFactory(
             product=MadeToOrderProductFactory(), size=RingSize.S16
         )
@@ -263,8 +278,11 @@ class TestWalidacjaDodawania:
 
 
 @pytest.mark.django_db
-class TestScalanie:
-    def test_scalenie_po_zalogowaniu(self, api_client: APIClient, user: CustomUser):
+class TestMerge:
+    """Scalanie koszyka przez API."""
+
+    def test_merge_after_login(self, api_client: APIClient, user: CustomUser):
+        """Scalenie po zalogowaniu."""
         variant = _variant()
         stock(variant, 10)
         guest = GuestCartFactory()
@@ -280,9 +298,10 @@ class TestScalanie:
         assert Cart.objects.filter(user=user).exists() is True
         assert Cart.objects.guest().exists() is False
 
-    def test_token_po_scaleniu_przestaje_dzialac(
+    def test_token_stops_working_after_merge(
         self, api_client: APIClient, user: CustomUser
     ):
+        """Token po scaleniu przestaje działać."""
         variant = _variant()
         stock(variant, 10)
         guest = GuestCartFactory()
@@ -296,7 +315,8 @@ class TestScalanie:
 
         assert response.json()["itemCount"] == 0
 
-    def test_scalanie_wymaga_zalogowania(self, api_client: APIClient):
+    def test_merge_requires_login(self, api_client: APIClient):
+        """Scalanie wymaga zalogowania."""
         guest = GuestCartFactory()
 
         response: Any = api_client.post(
@@ -308,17 +328,19 @@ class TestScalanie:
             status.HTTP_403_FORBIDDEN,
         )
 
-    def test_scalanie_bez_tokenu_konczy_sie_bledem(
-        self, authenticated_client: APIClient
-    ):
+    def test_merge_without_token_fails(self, authenticated_client: APIClient):
+        """Scalanie bez tokenu kończy się błędem."""
         response: Any = authenticated_client.post(_merge_url(), {})
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
 @pytest.mark.django_db
-class TestKoszykKonta:
-    def test_zalogowany_dostaje_koszyk_konta(self, authenticated_client, user):
+class TestAccountCart:
+    """Koszyk konta."""
+
+    def test_logged_in_gets_account_cart(self, authenticated_client, user):
+        """Zalogowany dostaje koszyk konta."""
         variant = _variant()
         stock(variant, 10)
         cart = CartFactory(user=user)

@@ -43,7 +43,10 @@ def _stripe_event(event_type: str, obj: dict) -> bytes:
 
 
 class TestStripe:
-    def test_sukces_intencji_jest_zapisany_po_naszemu(self):
+    """Adapter operatora płatności Stripe."""
+
+    def test_intent_success_is_mapped_to_our_event(self):
+        """Sukces intencji jest zapisany w naszym formacie zdarzenia."""
         payload = _stripe_event(
             "payment_intent.succeeded", {"id": "pi_1", "object": "payment_intent"}
         )
@@ -66,9 +69,10 @@ class TestStripe:
             ("refund.updated", "canceled", EventKind.REFUND_FAILED),
         ],
     )
-    def test_zwrot_konczy_dopiero_status_succeeded(
+    def test_refund_completes_only_on_succeeded_status(
         self, event_type, refund_status, kind
     ):
+        """Zwrot kończy dopiero status `succeeded`."""
         payload = _stripe_event(
             event_type,
             {
@@ -89,7 +93,8 @@ class TestStripe:
         assert event.refund_id == "re_1"
         assert event.metadata == {"return_request_id": "rr_1"}
 
-    def test_charge_refunded_nie_konczy_zwrotu(self):
+    def test_charge_refunded_does_not_complete_refund(self):
+        """Zdarzenie `charge.refunded` nie kończy zwrotu."""
         payload = _stripe_event(
             "charge.refunded",
             {"id": "ch_1", "object": "charge", "payment_intent": "pi_1"},
@@ -101,7 +106,8 @@ class TestStripe:
 
         assert event.kind == EventKind.OTHER
 
-    def test_nieznane_zdarzenie_to_other(self):
+    def test_unknown_event_is_other(self):
+        """Nieznane zdarzenie to `other`."""
         payload = _stripe_event("customer.created", {"id": "cus_1"})
 
         event = StripeProvider("sk_test", SECRET).verify_signature(
@@ -111,7 +117,8 @@ class TestStripe:
         assert event.kind == EventKind.OTHER
         assert event.intent_id == ""
 
-    def test_podpis_innym_sekretem_jest_odrzucony(self):
+    def test_signature_with_other_secret_is_rejected(self):
+        """Podpis innym sekretem jest odrzucany."""
         payload = _stripe_event("payment_intent.succeeded", {"id": "pi_1"})
 
         with pytest.raises(InvalidSignature):
@@ -119,7 +126,8 @@ class TestStripe:
                 payload, _stripe_signature(payload, secret="whsec_obcy")
             )
 
-    def test_zmieniona_tresc_jest_odrzucona(self):
+    def test_tampered_payload_is_rejected(self):
+        """Zmieniona treść zdarzenia jest odrzucana."""
         payload = _stripe_event("payment_intent.succeeded", {"id": "pi_1"})
         signature = _stripe_signature(payload)
 
@@ -128,7 +136,8 @@ class TestStripe:
                 payload.replace(b"pi_1", b"pi_2"), signature
             )
 
-    def test_intencja_idzie_z_kluczem_idempotencji(self):
+    def test_intent_is_sent_with_idempotency_key(self):
+        """Intencja idzie z kluczem idempotencji."""
         client = MagicMock()
         client.v1.payment_intents.create.return_value = MagicMock(
             id="pi_1", client_secret="pi_1_secret"
@@ -148,7 +157,8 @@ class TestStripe:
         assert kwargs["params"]["currency"] == "pln"
         assert kwargs["options"] == {"idempotency_key": "order-ABC-payment-1"}
 
-    def test_blad_stripe_to_blad_operatora(self):
+    def test_stripe_error_is_provider_error(self):
+        """Błąd Stripe to błąd operatora."""
         import stripe
 
         client = MagicMock()
@@ -210,11 +220,15 @@ class TestStripe:
         }
 
 
-class TestAtrapa:
-    def test_rejestr_zwraca_atrape_w_testach(self):
+class TestFakeProvider:
+    """Atrapa operatora płatności."""
+
+    def test_registry_returns_fake_in_tests(self):
+        """Rejestr zwraca atrapę w testach."""
         assert isinstance(get_provider(), FakePaymentProvider)
 
-    def test_podpis_atrapy_przechodzi(self):
+    def test_fake_signature_passes(self):
+        """Podpis atrapy przechodzi weryfikację."""
         payload = event_payload(EventKind.PAYMENT_FAILED, "pi_1", "evt_1")
 
         event = FakePaymentProvider().verify_signature(payload, sign(payload))
@@ -222,7 +236,8 @@ class TestAtrapa:
         assert event.kind == EventKind.PAYMENT_FAILED
         assert event.intent_id == "pi_1"
 
-    def test_ten_sam_klucz_idempotencji_to_ta_sama_intencja(self):
+    def test_same_idempotency_key_gives_same_intent(self):
+        """Ten sam klucz idempotencji to ta sama intencja."""
         provider = FakePaymentProvider()
 
         first = provider.create_intent(

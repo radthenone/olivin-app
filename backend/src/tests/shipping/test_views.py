@@ -22,8 +22,11 @@ def _url() -> str:
 
 
 @pytest.mark.django_db
-class TestListaMetod:
-    def test_anonim_dostaje_metody_z_kosztem(self, api_client: APIClient):
+class TestMethodList:
+    """Lista metod dostawy."""
+
+    def test_anonymous_gets_methods_with_cost(self, api_client: APIClient):
+        """Anonim dostaje metody z kosztem."""
         ShippingMethodFactory(name="Kurier", rate=1990)
 
         response: Any = api_client.get(_url(), {"order_value": 10000})
@@ -41,7 +44,8 @@ class TestListaMetod:
             }
         ]
 
-    def test_limit_wartosci_odsiewa_paczkomat(self, api_client: APIClient):
+    def test_value_limit_filters_out_parcel_locker(self, api_client: APIClient):
+        """Limit wartości odsiewa paczkomat."""
         ParcelLockerMethodFactory(name="Paczkomat", max_order_value=500000)
         ShippingMethodFactory(name="Kurier")
 
@@ -49,7 +53,8 @@ class TestListaMetod:
 
         assert [row["name"] for row in response.json()] == ["Kurier"]
 
-    def test_darmowa_dostawa_powyzej_progu(self, api_client: APIClient, settings):
+    def test_free_shipping_above_threshold(self, api_client: APIClient, settings):
+        """Darmowa dostawa powyżej progu."""
         settings.FREE_SHIPPING_THRESHOLD = 50000
         ShippingMethodFactory(name="Kurier", rate=1990)
 
@@ -59,14 +64,16 @@ class TestListaMetod:
         assert row["cost"] == {"amount": 0, "currency": "PLN"}
         assert row["isFree"] is True
 
-    def test_odbior_osobisty_wychodzi_przy_kazdej_wartosci(self, api_client: APIClient):
+    def test_pickup_is_listed_for_any_value(self, api_client: APIClient):
+        """Odbiór osobisty wychodzi przy każdej wartości."""
         PickupMethodFactory(name="Odbiór w pracowni")
 
         response: Any = api_client.get(_url(), {"order_value": 99_000_000})
 
         assert [row["name"] for row in response.json()] == ["Odbiór w pracowni"]
 
-    def test_strefa_z_parametru(self, api_client: APIClient):
+    def test_zone_from_parameter(self, api_client: APIClient):
+        """Strefa pochodzi z parametru."""
         ShippingMethodFactory(name="Kurier PL", zone=ShippingZone.PL)
         ShippingMethodFactory(name="Kurier UE", zone=ShippingZone.EU)
 
@@ -74,7 +81,8 @@ class TestListaMetod:
 
         assert [row["name"] for row in response.json()] == ["Kurier UE"]
 
-    def test_bez_parametrow_strefa_jest_krajowa(self, api_client: APIClient):
+    def test_without_params_zone_is_domestic(self, api_client: APIClient):
+        """Bez parametrów strefa jest krajowa."""
         ShippingMethodFactory(name="Kurier PL", zone=ShippingZone.PL)
         ShippingMethodFactory(name="Kurier UE", zone=ShippingZone.EU)
 
@@ -82,9 +90,8 @@ class TestListaMetod:
 
         assert [row["name"] for row in response.json()] == ["Kurier PL"]
 
-    def test_odbior_osobisty_jest_darmowy_ponizej_progu(
-        self, api_client: APIClient, settings
-    ):
+    def test_pickup_is_free_below_threshold(self, api_client: APIClient, settings):
+        """Odbiór osobisty jest darmowy poniżej progu."""
         settings.FREE_SHIPPING_THRESHOLD = 50000
         PickupMethodFactory(name="Odbiór w pracowni")
 
@@ -92,7 +99,7 @@ class TestListaMetod:
 
         assert response.json()[0]["isFree"] is True
 
-    def test_metoda_w_obcej_walucie_nie_wywraca_odczytu(self, api_client: APIClient):
+    def test_foreign_currency_method_does_not_break_read(self, api_client: APIClient):
         """Publiczny odczyt nie może paść przez jeden wiersz wpisany w panelu."""
         ShippingMethodFactory(name="Kurier EUR", currency="EUR")
 
@@ -101,7 +108,8 @@ class TestListaMetod:
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == []
 
-    def test_lista_nie_jest_stronicowana(self, api_client: APIClient):
+    def test_list_is_not_paginated(self, api_client: APIClient):
+        """Lista nie jest stronicowana."""
         ShippingMethodFactory()
 
         response: Any = api_client.get(_url())
@@ -110,14 +118,15 @@ class TestListaMetod:
 
 
 @pytest.mark.django_db
-class TestNazwyParametrowZKlienta:
+class TestParameterNamesFromClient:
     """Schemat ogłasza `orderValue` — wygenerowany klient wysyła to samo.
 
     Zamianę robi `CamelCaseMiddleWare`; bez niej klient z Orvala pytałby o
     parametr, którego serializer nie czyta, i cicho dostawał pełen cennik.
     """
 
-    def test_camel_case_z_wygenerowanego_klienta_dziala(self, api_client: APIClient):
+    def test_camel_case_from_generated_client_works(self, api_client: APIClient):
+        """camelCase z wygenerowanego klienta działa."""
         ParcelLockerMethodFactory(name="Paczkomat", max_order_value=500000)
         ShippingMethodFactory(name="Kurier")
 
@@ -127,14 +136,18 @@ class TestNazwyParametrowZKlienta:
 
 
 @pytest.mark.django_db
-class TestWalidacjaParametrow:
-    def test_ujemna_wartosc_zamowienia_jest_odrzucona(self, api_client: APIClient):
+class TestParameterValidation:
+    """Walidacja parametrów listy metod."""
+
+    def test_negative_order_value_is_rejected(self, api_client: APIClient):
+        """Ujemna wartość zamówienia jest odrzucana."""
         response: Any = api_client.get(_url(), {"order_value": -1})
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "orderValue" in response.json()
 
-    def test_nieznana_strefa_jest_odrzucona(self, api_client: APIClient):
+    def test_unknown_zone_is_rejected(self, api_client: APIClient):
+        """Nieznana strefa jest odrzucana."""
         response: Any = api_client.get(_url(), {"zone": "US"})
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -142,10 +155,11 @@ class TestWalidacjaParametrow:
 
 
 @pytest.mark.django_db
-class TestBrakMutacji:
+class TestNoMutations:
     """Metody dostawy prowadzi panel, nie API (ADR 0021)."""
 
-    def test_post_nie_jest_obslugiwany(self, authenticated_client: APIClient):
+    def test_post_is_not_supported(self, authenticated_client: APIClient):
+        """POST nie jest obsługiwany."""
         response: Any = authenticated_client.post(_url(), {"name": "Kurier"})
 
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED

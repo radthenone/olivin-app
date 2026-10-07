@@ -38,10 +38,13 @@ def _webhook(client: APIClient, payload: bytes, signature: str) -> Any:
 
 
 @pytest.mark.django_db
-class TestRozpoczecieZaplaty:
-    def test_zwraca_sekret_i_kwote(
+class TestStartPayment:
+    """Rozpoczęcie zapłaty przez API."""
+
+    def test_returns_secret_and_amount(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Odpowiedź zawiera sekret i kwotę."""
         order = placed_order(user=user)
 
         response: Any = authenticated_client.post(_payment_url(order.number))
@@ -53,16 +56,18 @@ class TestRozpoczecieZaplaty:
         assert body["status"] == PaymentStatus.PENDING
         assert Payment.objects.filter(pk=body["id"], order=order).exists()
 
-    def test_cudze_zamowienie_to_404(self, authenticated_client: APIClient):
+    def test_other_customer_order_is_404(self, authenticated_client: APIClient):
+        """Cudze zamówienie daje 404."""
         order = placed_order(user=UserFactory())
 
         response: Any = authenticated_client.post(_payment_url(order.number))
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_zamowienie_anulowane_to_400(
+    def test_cancelled_order_is_400(
         self, authenticated_client: APIClient, user: CustomUser
     ):
+        """Anulowane zamówienie daje 400."""
         order = placed_order(user=user)
         authenticated_client.post(_cancel_url(order.number))
 
@@ -74,9 +79,12 @@ class TestRozpoczecieZaplaty:
 
 @pytest.mark.django_db
 class TestWebhook:
-    def test_podpisane_zdarzenie_oplaca_zamowienie(
+    """Webhook operatora płatności."""
+
+    def test_signed_event_pays_order(
         self, api_client: APIClient, authenticated_client: APIClient, user
     ):
+        """Podpisane zdarzenie opłaca zamówienie."""
         order = placed_order(user=user)
         started: Any = authenticated_client.post(_payment_url(order.number))
         intent_id = Payment.objects.get(pk=started.data["id"]).intent_id
@@ -89,7 +97,8 @@ class TestWebhook:
         assert response.data == {"processed": True}
         assert order.status == OrderStatus.PAID
 
-    def test_powtorka_zdarzenia_niczego_nie_zmienia(self, api_client: APIClient):
+    def test_repeated_event_changes_nothing(self, api_client: APIClient):
+        """Powtórka zdarzenia niczego nie zmienia."""
         order = placed_order()
         intent_id = start_payment(order).payment.intent_id
         payload, signature = signed_event(
@@ -104,7 +113,8 @@ class TestWebhook:
         assert second.data == {"processed": False}
         assert WebhookEvent.objects.count() == 1
 
-    def test_zly_podpis_to_400_bez_zapisu(self, api_client: APIClient):
+    def test_bad_signature_is_400_without_record(self, api_client: APIClient):
+        """Zły podpis daje 400 i nic nie zapisuje."""
         order = placed_order()
         intent_id = start_payment(order).payment.intent_id
         payload, _ = signed_event(EventKind.PAYMENT_SUCCEEDED, intent_id)
@@ -116,7 +126,8 @@ class TestWebhook:
         assert order.status == OrderStatus.PENDING
         assert not WebhookEvent.objects.exists()
 
-    def test_brak_podpisu_to_400(self, api_client: APIClient):
+    def test_missing_signature_is_400(self, api_client: APIClient):
+        """Brak podpisu daje 400."""
         payload, _ = signed_event(EventKind.PAYMENT_SUCCEEDED, "pi_x")
 
         response: Any = api_client.post(
@@ -127,10 +138,13 @@ class TestWebhook:
 
 
 @pytest.mark.django_db
-class TestAnulowanieOplaconego:
-    def test_anulowanie_paid_odpowiada_202_i_czeka_na_zwrot(
+class TestCancelPaidOrder:
+    """Anulowanie opłaconego zamówienia przez API."""
+
+    def test_cancelling_paid_returns_202_and_waits_for_refund(
         self, api_client: APIClient, authenticated_client: APIClient, user
     ):
+        """Anulowanie opłaconego odpowiada 202 i czeka na zwrot."""
         order = placed_order(user=user)
         started: Any = authenticated_client.post(_payment_url(order.number))
         intent_id = Payment.objects.get(pk=started.data["id"]).intent_id
@@ -146,9 +160,10 @@ class TestAnulowanieOplaconego:
         order.refresh_from_db()
         assert order.status == OrderStatus.CANCELLED
 
-    def test_anulowanie_pending_dalej_od_razu(
+    def test_cancelling_pending_is_still_immediate(
         self, authenticated_client: APIClient, user
     ):
+        """Anulowanie `pending` dalej działa od razu."""
         order = placed_order(user=user)
 
         response: Any = authenticated_client.post(_cancel_url(order.number))

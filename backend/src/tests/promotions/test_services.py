@@ -39,6 +39,7 @@ FLOOR = 35000
 
 @pytest.fixture
 def active_rate():
+    """Aktywny kurs złota."""
     return activate_rate(MetalRateFactory(price_per_gram=10000)).rate
 
 

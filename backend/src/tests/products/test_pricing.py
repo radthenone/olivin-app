@@ -56,7 +56,7 @@ class TestRounding:
     """Cena kończy się na pełnych złotówkach, zawsze w górę."""
 
     @pytest.mark.parametrize(
-        ("grosze", "expected"),
+        ("minor_units", "expected"),
         [
             (10000, 10000),
             (10001, 10100),
@@ -65,49 +65,57 @@ class TestRounding:
             (0, 0),
         ],
     )
-    def test_zaokraglenie_w_gore(self, grosze: int, expected: int):
-        assert round_up_to_zloty(Money(grosze, "PLN")) == Money(expected, "PLN")
+    def test_round_up(self, minor_units: int, expected: int):
+        """Zaokrąglenie w górę."""
+        assert round_up_to_zloty(Money(minor_units, "PLN")) == Money(expected, "PLN")
 
 
 @pytest.mark.django_db
 class TestFormula:
     """cena = (masa × kurs + składniki) × marża, zaokrąglone w górę."""
 
-    def test_sam_skladnik_kruszcowy(self, active_gold_rate):
+    def test_metal_component_only(self, active_gold_rate):
+        """Sam składnik kruszcowy."""
         variant = _variant(metal_weight_grams=Decimal("2.000"))
 
         assert cost_floor(variant) == Money(60000, "PLN")
 
-    def test_masa_ulamkowa_zaokragla_sie_raz(self, active_gold_rate):
+    def test_fractional_weight_rounds_once(self, active_gold_rate):
+        """Masa ułamkowa zaokrągla się raz."""
         variant = _variant(metal_weight_grams=Decimal("3.333"))
 
         assert cost_floor(variant) == Money(99990, "PLN")
 
-    def test_skladniki_kosztu_wchodza_do_progu(self, active_gold_rate):
+    def test_cost_components_are_in_floor(self, active_gold_rate):
+        """Składniki kosztu wchodzą do progu."""
         variant = _variant(metal_weight_grams=Decimal("2.000"))
         CostComponentFactory(variant=variant, name="Robocizna", amount=8000)
         CostComponentFactory(variant=variant, name="Rodowanie", amount=2000)
 
         assert cost_floor(variant) == Money(70000, "PLN")
 
-    def test_marza_procentowa(self, active_gold_rate):
+    def test_percent_margin(self, active_gold_rate):
+        """Marża procentowa."""
         category = CategoryFactory(margin_percent=Decimal("50.00"))
         variant = _variant(category=category, metal_weight_grams=Decimal("2.000"))
 
         assert calculate_price(variant) == Money(90000, "PLN")
 
-    def test_marza_kwotowa(self, active_gold_rate):
+    def test_amount_margin(self, active_gold_rate):
+        """Marża kwotowa."""
         category = CategoryFactory(margin_amount=15000)
         variant = _variant(category=category, metal_weight_grams=Decimal("2.000"))
 
         assert calculate_price(variant) == Money(75000, "PLN")
 
-    def test_bez_marzy_cena_rowna_sie_progowi(self, active_gold_rate):
+    def test_without_margin_price_equals_floor(self, active_gold_rate):
+        """Bez marży cena równa się progowi."""
         variant = _variant(metal_weight_grams=Decimal("2.000"))
 
         assert calculate_price(variant) == cost_floor(variant)
 
-    def test_cena_jest_zaokraglana_w_gore_po_nalozeniu_marzy(self, active_gold_rate):
+    def test_price_is_rounded_up_after_margin(self, active_gold_rate):
+        """Cena jest zaokrąglana w górę po nałożeniu marży."""
         category = CategoryFactory(margin_percent=Decimal("33.33"))
         variant = _variant(category=category, metal_weight_grams=Decimal("1.000"))
 
@@ -117,13 +125,15 @@ class TestFormula:
         assert price.amount % 100 == 0
         assert price == Money(40000, "PLN")
 
-    def test_bez_aktywnego_kursu_nie_ma_ceny_ani_progu(self, db):
+    def test_without_active_rate_no_price_or_floor(self, db):
+        """Bez aktywnego kursu nie ma ceny ani progu."""
         variant = _variant(metal_weight_grams=Decimal("2.000"))
 
         assert cost_floor(variant) is None
         assert calculate_price(variant) is None
 
-    def test_kurs_zaproponowany_nie_liczy_sie_do_wzoru(self, db):
+    def test_proposed_rate_is_not_used(self, db):
+        """Kurs zaproponowany nie liczy się do wzoru."""
         MetalRateFactory(price_per_gram=30000, status=MetalRateStatus.PROPOSED)
         variant = _variant(metal_weight_grams=Decimal("2.000"))
 
@@ -134,21 +144,21 @@ class TestFormula:
 class TestMarginInheritance:
     """Marża wariantu nadpisuje marżę kategorii."""
 
-    def test_wariant_dziedziczy_marze_kategorii(self, active_gold_rate):
+    def test_variant_inherits_category_margin(self, active_gold_rate):
+        """Wariant dziedziczy marżę kategorii."""
         category = CategoryFactory(margin_percent=Decimal("50.00"))
         variant = _variant(category=category)
 
         assert margin_for(variant).percent == Decimal("50.00")
 
-    def test_marza_wariantu_ma_pierwszenstwo(self, active_gold_rate):
+    def test_variant_margin_takes_precedence(self, active_gold_rate):
+        """Marża wariantu ma pierwszeństwo."""
         category = CategoryFactory(margin_percent=Decimal("50.00"))
         variant = _variant(category=category, margin_percent=Decimal("10.00"))
 
         assert margin_for(variant).percent == Decimal("10.00")
 
-    def test_kwotowa_na_wariancie_wypiera_procentowa_z_kategorii(
-        self, active_gold_rate
-    ):
+    def test_variant_amount_overrides_category_percent(self, active_gold_rate):
         """Nadpisanie działa na całym narzucie, nie na pojedynczym polu —
         złożenie dwóch narzutów nie jest tym, o co prosi ADR 0022."""
         category = CategoryFactory(margin_percent=Decimal("50.00"))
@@ -159,12 +169,14 @@ class TestMarginInheritance:
         assert margin.percent is None
         assert margin.amount == Money(10000, "PLN")
 
-    def test_brak_marzy_wszedzie_daje_narzut_pusty(self, active_gold_rate):
+    def test_no_margin_anywhere_gives_empty_margin(self, active_gold_rate):
+        """Brak marży wszędzie daje pusty narzut."""
         variant = _variant(category=CategoryFactory())
 
         assert margin_for(variant).is_empty
 
-    def test_dwie_marze_na_wariancie_sa_odrzucone(self, db):
+    def test_two_margins_on_variant_are_rejected(self, db):
+        """Dwie marże na wariancie są odrzucane."""
         with pytest.raises(ValidationError):
             ProductVariantFactory(margin_percent=Decimal("10.00"), margin_amount=10000)
 
@@ -173,7 +185,8 @@ class TestMarginInheritance:
 class TestActivation:
     """Aktywacja archiwizuje poprzedni kurs i przelicza ceny."""
 
-    def test_aktywacja_ustawia_status_i_slad(self, db, user):
+    def test_activation_sets_status_and_trace(self, db, user):
+        """Aktywacja ustawia status i ślad."""
         rate = MetalRateFactory()
 
         activate_rate(rate, activated_by=user)
@@ -183,7 +196,8 @@ class TestActivation:
         assert rate.activated_at is not None
         assert rate.activated_by == user
 
-    def test_poprzedni_kurs_trafia_do_archiwum(self, active_gold_rate):
+    def test_previous_rate_is_archived(self, active_gold_rate):
+        """Poprzedni kurs trafia do archiwum."""
         newer = MetalRateFactory(price_per_gram=35000)
 
         activate_rate(newer)
@@ -191,12 +205,14 @@ class TestActivation:
         active_gold_rate.refresh_from_db()
         assert active_gold_rate.status == MetalRateStatus.ARCHIVED
 
-    def test_aktywny_kurs_jest_dokladnie_jeden(self, active_gold_rate):
+    def test_exactly_one_active_rate(self, active_gold_rate):
+        """Aktywny kurs jest dokładnie jeden."""
         activate_rate(MetalRateFactory(price_per_gram=35000))
 
         assert MetalRate.objects.active().count() == 1
 
-    def test_ceny_przeliczaja_sie_po_aktywacji(self, active_gold_rate, on_commit):
+    def test_prices_recompute_after_activation(self, active_gold_rate, on_commit):
+        """Ceny przeliczają się po aktywacji."""
         variant = _variant(metal_weight_grams=Decimal("2.000"), price=1)
 
         with on_commit(execute=True):
@@ -205,7 +221,8 @@ class TestActivation:
         variant.refresh_from_db()
         assert variant.price == 70000
 
-    def test_cena_reczna_zostaje_nietknieta(self, active_gold_rate, on_commit):
+    def test_manual_price_is_untouched(self, active_gold_rate, on_commit):
+        """Cena ręczna zostaje nietknięta."""
         variant = _variant(metal_weight_grams=Decimal("2.000"), manual_price=12345)
 
         with on_commit(execute=True):
@@ -215,7 +232,8 @@ class TestActivation:
         assert variant.manual_price == 12345
         assert variant.price == 70000
 
-    def test_wariant_z_innego_kruszcu_nie_rusza_sie(self, active_gold_rate, on_commit):
+    def test_variant_of_other_metal_is_untouched(self, active_gold_rate, on_commit):
+        """Wariant z innego kruszcu się nie zmienia."""
         from apps.products.models import Fineness, Material
 
         silver = PublishedProductFactory(
@@ -229,7 +247,7 @@ class TestActivation:
         variant.refresh_from_db()
         assert variant.price == 4242
 
-    def test_sam_zapis_kursu_niczego_nie_przelicza(self, active_gold_rate):
+    def test_saving_rate_alone_recomputes_nothing(self, active_gold_rate):
         """Propozycja nie zmienia cen — robi to dopiero aktywacja."""
         variant = _variant(metal_weight_grams=Decimal("2.000"), price=1)
 
@@ -238,9 +256,8 @@ class TestActivation:
         variant.refresh_from_db()
         assert variant.price == 1
 
-    def test_wiadomosc_do_wlasciciela_po_aktywacji(
-        self, active_gold_rate, user, on_commit
-    ):
+    def test_owner_message_after_activation(self, active_gold_rate, user, on_commit):
+        """Właściciel dostaje wiadomość po aktywacji."""
         mail.outbox.clear()
 
         with on_commit(execute=True):
@@ -252,7 +269,8 @@ class TestActivation:
         assert "350.00 PLN" in body
         assert user.email in body
 
-    def test_pierwszy_kurs_nie_klamie_o_poprzednim(self, db, user, on_commit):
+    def test_first_rate_does_not_invent_previous(self, db, user, on_commit):
+        """Pierwszy kurs nie podaje fałszywego poprzedniego."""
         mail.outbox.clear()
 
         with on_commit(execute=True):
@@ -265,7 +283,8 @@ class TestActivation:
 class TestManualPriceFloor:
     """Cena ręczna nie schodzi poniżej kosztu bez marży (ADR 0022)."""
 
-    def test_ponizej_progu_jest_odrzucona(self, active_gold_rate):
+    def test_below_floor_is_rejected(self, active_gold_rate):
+        """Cena poniżej progu jest odrzucana."""
         variant = _variant(metal_weight_grams=Decimal("2.000"))
         variant.manual_price = 100
 
@@ -274,19 +293,21 @@ class TestManualPriceFloor:
 
         assert "manual_price" in error.value.message_dict
 
-    def test_rowno_na_progu_przechodzi(self, active_gold_rate):
+    def test_exactly_at_floor_passes(self, active_gold_rate):
+        """Cena równa progowi przechodzi."""
         variant = _variant(metal_weight_grams=Decimal("2.000"))
         variant.manual_price = 60000
 
         variant.full_clean()
 
-    def test_powyzej_progu_przechodzi(self, active_gold_rate):
+    def test_above_floor_passes(self, active_gold_rate):
+        """Cena powyżej progu przechodzi."""
         variant = _variant(metal_weight_grams=Decimal("2.000"))
         variant.manual_price = 80000
 
         variant.full_clean()
 
-    def test_bez_kursu_prog_nie_blokuje_zapisu(self, db):
+    def test_without_rate_floor_does_not_block_save(self, db):
         """Wariant zakładany przed ustaleniem kursu nie może się o to rozbić."""
         variant = _variant(metal_weight_grams=Decimal("2.000"))
         variant.manual_price = 1
@@ -298,17 +319,19 @@ class TestManualPriceFloor:
 class TestProposeTask:
     """Zadanie okresowe wstawia propozycje, nie zmienia cen."""
 
-    def test_adapter_zastepczy_powtarza_ostatni_aktywny_kurs(self, active_gold_rate):
+    def test_fallback_adapter_repeats_last_active_rate(self, active_gold_rate):
         """Dostawca nie jest wybrany (ADR 0027), więc propozycja identyczna
         z obowiązującą jest pomijana, a nie zapisywana bez treści."""
         created = propose_metal_rates()  # type: ignore[missing-argument]
 
         assert created == 0
 
-    def test_bez_aktywnego_kursu_nie_ma_czego_proponowac(self, db):
+    def test_without_active_rate_nothing_to_propose(self, db):
+        """Bez aktywnego kursu nie ma czego proponować."""
         assert propose_metal_rates() == 0  # type: ignore[missing-argument]
 
-    def test_propozycja_nie_zmienia_cen(self, active_gold_rate):
+    def test_proposal_does_not_change_prices(self, active_gold_rate):
+        """Propozycja nie zmienia cen."""
         variant = _variant(metal_weight_grams=Decimal("2.000"), price=1)
 
         propose_metal_rates()  # type: ignore[missing-argument]

@@ -21,8 +21,11 @@ def _placed_ago(order: Order, delta: timedelta) -> Order:
 
 
 @pytest.mark.django_db
-class TestAnulowaniaNieoplaconych:
-    def test_nieoplacone_po_dobie_jest_anulowane_i_zwalnia_rezerwacje(self):
+class TestUnpaidOrderCancellation:
+    """Anulowanie nieopłaconych zamówień."""
+
+    def test_unpaid_after_one_day_is_cancelled_and_releases_reservations(self):
+        """Nieopłacone po dobie jest anulowane i zwalnia rezerwacje."""
         order = OrderFactory()
         variant = ProductVariantFactory()
         stock(variant, 5)
@@ -36,7 +39,8 @@ class TestAnulowaniaNieoplaconych:
         assert order.status == OrderStatus.CANCELLED
         assert reservation.status == ReservationStatus.RELEASED
 
-    def test_swieze_zamowienie_zostaje(self):
+    def test_fresh_order_stays(self):
+        """Świeże zamówienie zostaje."""
         order = OrderFactory()
 
         assert cancel_stale_orders() == 0  # type: ignore[missing-argument]
@@ -44,7 +48,7 @@ class TestAnulowaniaNieoplaconych:
         order.refresh_from_db()
         assert order.status == OrderStatus.PENDING
 
-    def test_oplacone_nie_jest_ruszane(self):
+    def test_paid_order_is_untouched(self):
         """Zadanie pilnuje wyłącznie nieopłaconych — opłacone czeka na realizację."""
         order = OrderFactory()
         order.transition_to(OrderStatus.PAID)

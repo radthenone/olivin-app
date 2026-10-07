@@ -104,11 +104,13 @@ def clear_throttle_history():
 
 @pytest.fixture
 def api_client() -> APIClient:
+    """Niezalogowany klient API."""
     return APIClient()
 
 
 @pytest.fixture
 def user(db) -> CustomUser:
+    """Zwykły użytkownik z hasłem."""
     return CustomUser.objects.create_user(
         email="user@test.com",
         password="testpass123!",
@@ -119,6 +121,7 @@ def user(db) -> CustomUser:
 
 @pytest.fixture
 def admin_user(db) -> CustomUser:
+    """Superużytkownik."""
     return CustomUser.objects.create_superuser(
         email="admin@test.com",
         password="adminpass123!",
@@ -127,6 +130,7 @@ def admin_user(db) -> CustomUser:
 
 @pytest.fixture
 def authenticated_client(api_client: APIClient, user: CustomUser) -> APIClient:
+    """Klient API zalogowany jako `user`."""
     api_client.force_authenticate(user=user)
     return api_client
 

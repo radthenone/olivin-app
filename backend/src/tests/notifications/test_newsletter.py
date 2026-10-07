@@ -26,6 +26,7 @@ MAIL = "apps.notifications.newsletter.send_notification_email"
 
 @pytest.fixture
 def marketing_document():
+    """Bieżący dokument zgody marketingowej."""
     return ConsentDocumentFactory(
         kind=ConsentKind.MARKETING,
         version="2026-01",
@@ -48,7 +49,10 @@ def subscribe(django_capture_on_commit_callbacks):
 
 @pytest.mark.django_db
 class TestNewsletterSubscriptionModel:
+    """Model zapisu na newsletter."""
+
     def test_new_subscription_is_pending_with_distinct_tokens(self):
+        """Nowy zapis czeka na potwierdzenie i ma różne tokeny."""
         subscription = NewsletterSubscription.objects.create(email="a@test.com")
 
         assert subscription.status == NewsletterStatus.PENDING
@@ -58,9 +62,12 @@ class TestNewsletterSubscriptionModel:
 
 @pytest.mark.django_db
 class TestSubscribe:
+    """Zapis na newsletter z podwójnym potwierdzeniem."""
+
     def test_creates_pending_subscription_and_sends_confirmation_link(
         self, marketing_document, subscribe
     ):
+        """Zapis zakłada oczekujący wpis i wysyła link potwierdzający."""
         send = subscribe("  New@Test.com ")
 
         subscription = NewsletterSubscription.objects.get()
@@ -73,6 +80,7 @@ class TestSubscribe:
     def test_records_guest_consent_on_current_marketing_document(
         self, marketing_document, subscribe
     ):
+        """Zapis zapamiętuje zgodę gościa na bieżący dokument marketingowy."""
         subscribe("new@test.com")
 
         consent = Consent.objects.get()
@@ -83,6 +91,7 @@ class TestSubscribe:
     def test_without_current_marketing_document_raises_and_saves_nothing(
         self, subscribe
     ):
+        """Bez bieżącego dokumentu marketingowego zapis kończy się błędem i nic nie zapisuje."""
         with pytest.raises(newsletter.NoMarketingDocumentError):
             subscribe("new@test.com")
 
@@ -92,6 +101,7 @@ class TestSubscribe:
     def test_pending_resubscribe_after_cooldown_resends_without_duplicate(
         self, marketing_document, subscribe
     ):
+        """Ponowny zapis po karencji wysyła link jeszcze raz, bez duplikatu."""
         subscribe("new@test.com")
         cache.clear()  # minął cooldown ponownej wysyłki
 
@@ -104,6 +114,7 @@ class TestSubscribe:
     def test_pending_resubscribe_records_consent_on_new_document_version(
         self, marketing_document, subscribe
     ):
+        """Ponowny zapis zapamiętuje zgodę na nową wersję dokumentu."""
         subscribe("new@test.com")
         newer = ConsentDocumentFactory(
             kind=ConsentKind.MARKETING,
@@ -129,6 +140,7 @@ class TestSubscribe:
         send.assert_not_called()
 
     def test_active_resubscribe_sends_nothing(self, marketing_document, subscribe):
+        """Ponowny zapis aktywnego adresu niczego nie wysyła."""
         NewsletterSubscription.objects.create(
             email="new@test.com", status=NewsletterStatus.ACTIVE
         )
@@ -141,6 +153,7 @@ class TestSubscribe:
     def test_resubscribe_after_unsubscribe_starts_double_opt_in_again(
         self, marketing_document, subscribe
     ):
+        """Zapis po wypisaniu zaczyna podwójne potwierdzenie od nowa."""
         old = NewsletterSubscription.objects.create(
             email="new@test.com", status=NewsletterStatus.UNSUBSCRIBED
         )
@@ -156,7 +169,10 @@ class TestSubscribe:
 
 @pytest.mark.django_db
 class TestConfirm:
+    """Potwierdzenie zapisu linkiem z e-maila."""
+
     def test_activates_pending_subscription(self):
+        """Potwierdzenie aktywuje oczekujący zapis."""
         subscription = NewsletterSubscription.objects.create(email="a@test.com")
 
         assert newsletter.confirm(str(subscription.confirmation_token)) is True
@@ -166,10 +182,12 @@ class TestConfirm:
         assert subscription.confirmed_at is not None
 
     def test_unknown_or_malformed_token_returns_false(self):
+        """Nieznany albo uszkodzony token daje `False`."""
         assert newsletter.confirm("00000000-0000-0000-0000-000000000000") is False
         assert newsletter.confirm("not-a-token") is False
 
     def test_unsubscribed_subscription_cannot_be_confirmed_with_old_link(self):
+        """Wypisanego zapisu nie da się potwierdzić starym linkiem."""
         subscription = NewsletterSubscription.objects.create(
             email="a@test.com", status=NewsletterStatus.UNSUBSCRIBED
         )
@@ -179,7 +197,10 @@ class TestConfirm:
 
 @pytest.mark.django_db
 class TestUnsubscribe:
+    """Wypisanie z newslettera."""
+
     def test_subscription_token_unsubscribes(self):
+        """Token zapisu wypisuje z newslettera."""
         subscription = NewsletterSubscription.objects.create(
             email="a@test.com", status=NewsletterStatus.ACTIVE
         )
@@ -190,6 +211,7 @@ class TestUnsubscribe:
         assert subscription.status == NewsletterStatus.UNSUBSCRIBED
 
     def test_account_token_turns_off_marketing_email(self):
+        """Token konta wyłącza e-maile marketingowe."""
         user = UserFactory(email="client@test.com")
         NotificationPreference.objects.create(user=user, marketing_email=True)
 
@@ -199,6 +221,7 @@ class TestUnsubscribe:
         assert NotificationPreference.for_user(user).marketing_email is False
 
     def test_account_token_also_unsubscribes_subscription_on_account_address(self):
+        """Token konta wypisuje też zapis na adres konta."""
         user = UserFactory(email="client@test.com")
         NewsletterSubscription.objects.create(
             email="client@test.com", status=NewsletterStatus.ACTIVE
@@ -220,6 +243,7 @@ class TestUnsubscribe:
         assert b"client" not in payload
 
     def test_unknown_token_returns_false(self):
+        """Nieznany token daje `False`."""
         assert newsletter.unsubscribe("00000000-0000-0000-0000-000000000000") is False
         assert newsletter.unsubscribe("garbage") is False
 
@@ -240,6 +264,7 @@ class TestTransferToAccount:
     """
 
     def test_confirmed_account_email_moves_active_subscription_to_preference(self):
+        """Potwierdzony adres konta przenosi aktywny zapis do preferencji."""
         NewsletterSubscription.objects.create(
             email="client@test.com", status=NewsletterStatus.ACTIVE
         )
@@ -251,6 +276,7 @@ class TestTransferToAccount:
         assert not NewsletterSubscription.objects.exists()
 
     def test_unconfirmed_account_does_not_take_subscription(self):
+        """Niepotwierdzone konto nie przejmuje zapisu."""
         NewsletterSubscription.objects.create(
             email="client@test.com", status=NewsletterStatus.ACTIVE
         )
@@ -263,6 +289,7 @@ class TestTransferToAccount:
         ).exists()
 
     def test_pending_subscription_is_not_moved_on_email_confirmation(self):
+        """Oczekujący zapis nie przechodzi na konto przy potwierdzeniu adresu."""
         NewsletterSubscription.objects.create(email="client@test.com")
         user = UserFactory(email="client@test.com")
 
@@ -274,6 +301,7 @@ class TestTransferToAccount:
         ).exists()
 
     def test_confirming_subscription_of_verified_account_moves_to_preference(self):
+        """Potwierdzenie zapisu zweryfikowanego konta przenosi go do preferencji."""
         subscription = NewsletterSubscription.objects.create(email="client@test.com")
         user = UserFactory(email="client@test.com")
         _confirm_account_email(user)
@@ -284,6 +312,7 @@ class TestTransferToAccount:
         assert not NewsletterSubscription.objects.exists()
 
     def test_confirming_subscription_of_unverified_account_keeps_subscription(self):
+        """Potwierdzenie zapisu niezweryfikowanego konta zostawia zapis."""
         subscription = NewsletterSubscription.objects.create(email="client@test.com")
         user = UserFactory(email="client@test.com")
 

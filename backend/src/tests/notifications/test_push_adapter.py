@@ -20,7 +20,10 @@ def _response(payload: dict) -> Mock:
 
 
 class TestExpoPushProvider:
+    """Adapter push Expo."""
+
     def test_returns_invalid_tokens(self):
+        """Adapter zwraca nieważne tokeny."""
         provider = ExpoPushProvider()
         payload = {
             "data": [
@@ -49,6 +52,7 @@ class TestExpoPushProvider:
         ]
 
     def test_other_errors_not_treated_as_invalid(self):
+        """Inne błędy nie unieważniają tokenu."""
         provider = ExpoPushProvider()
         payload = {
             "data": [
@@ -72,6 +76,7 @@ class TestExpoPushProvider:
             )
 
     def test_network_error_raises_provider_error(self):
+        """Błąd sieci kończy się błędem operatora."""
         provider = ExpoPushProvider()
 
         with patch("requests.post", side_effect=requests.ConnectionError("padło")):
@@ -84,6 +89,7 @@ class TestExpoPushProvider:
                 )
 
     def test_empty_tokens_no_request(self):
+        """Bez tokenów nie ma żądania."""
         provider = ExpoPushProvider()
 
         with patch("requests.post") as post:
@@ -93,7 +99,10 @@ class TestExpoPushProvider:
 
 
 class TestNoopPushProvider:
+    """Adapter push, który niczego nie wysyła."""
+
     def test_sends_nothing(self):
+        """Adapter niczego nie wysyła."""
         assert (
             NoopPushProvider().send_push(
                 tokens=["ExponentPushToken[a]"], title="T", body="B", data={}

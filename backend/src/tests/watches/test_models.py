@@ -14,7 +14,10 @@ from tests.factories.watches import WatchFactory
 
 @pytest.mark.django_db
 class TestWatchDefaults:
+    """Wartości domyślne obserwacji."""
+
     def test_active_price_drop_watch(self):
+        """Nowa obserwacja jest aktywna i dotyczy spadku ceny."""
         watch = WatchFactory()
 
         assert watch.status == WatchStatus.ACTIVE
@@ -35,7 +38,10 @@ class TestWatchDefaults:
 
 @pytest.mark.django_db
 class TestMadeToOrder:
+    """Obserwacja produktu na zamówienie."""
+
     def test_restock_rejected_for_made_to_order(self):
+        """Powrót na stan jest odrzucany dla produktu na zamówienie."""
         from apps.watches.models import Watch
 
         user = UserFactory()
@@ -49,6 +55,7 @@ class TestMadeToOrder:
             watch.full_clean()
 
     def test_price_drop_allowed_for_made_to_order(self):
+        """Spadek ceny jest dozwolony dla produktu na zamówienie."""
         from apps.watches.services import add_watch
 
         user = UserFactory()
@@ -62,13 +69,17 @@ class TestMadeToOrder:
 
 @pytest.mark.django_db
 class TestUniqueness:
+    """Unikalność aktywnej obserwacji."""
+
     def test_rejects_second_active_watch(self):
+        """Druga aktywna obserwacja jest odrzucana."""
         watch = WatchFactory()
 
         with pytest.raises(IntegrityError), transaction.atomic():
             WatchFactory(user=watch.user, variant=watch.variant, kind=watch.kind)
 
     def test_sent_watch_frees_slot_for_new_one(self):
+        """Wysłana obserwacja zwalnia miejsce na nową."""
         from apps.watches.services import add_watch
 
         watch = WatchFactory()

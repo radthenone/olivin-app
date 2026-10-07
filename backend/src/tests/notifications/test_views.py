@@ -20,11 +20,15 @@ def _notification(user, kind=NotificationKind.ORDER_STATUS_CHANGED) -> Notificat
 
 @pytest.mark.django_db
 class TestNotificationList:
+    """Lista powiadomień klienta."""
+
     def test_requires_authentication(self, api_client: APIClient):
+        """Lista wymaga zalogowania."""
         response = cast(Response, api_client.get(reverse("notification-list")))
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_lists_only_own_notifications(self, authenticated_client: APIClient, user):
+        """Lista obejmuje tylko własne powiadomienia."""
         other = UserFactory()
         mine = _notification(user)
         _notification(other)
@@ -38,7 +42,10 @@ class TestNotificationList:
 
 @pytest.mark.django_db
 class TestNotificationRead:
+    """Oznaczanie powiadomienia jako przeczytanego."""
+
     def test_marks_notification_as_read(self, authenticated_client: APIClient, user):
+        """Powiadomienie zostaje oznaczone jako przeczytane."""
         notification = _notification(user)
 
         url = reverse("notification-read", args=[notification.id])
@@ -52,6 +59,7 @@ class TestNotificationRead:
     def test_cannot_read_someone_elses_notification(
         self, authenticated_client: APIClient
     ):
+        """Klient nie oznaczy cudzego powiadomienia."""
         other = UserFactory()
         notification = _notification(other)
 
@@ -63,9 +71,12 @@ class TestNotificationRead:
 
 @pytest.mark.django_db
 class TestNotificationPreferences:
+    """Preferencje powiadomień klienta."""
+
     def test_default_preferences_have_no_marketing_consent(
         self, authenticated_client: APIClient
     ):
+        """Domyślne preferencje nie mają zgody marketingowej."""
         response: Any = authenticated_client.get(reverse("notification-preferences"))
 
         assert response.status_code == status.HTTP_200_OK
@@ -74,6 +85,7 @@ class TestNotificationPreferences:
         assert body["marketingPush"] is False
 
     def test_updates_preferences(self, authenticated_client: APIClient):
+        """Preferencje dają się zmienić."""
         response: Any = authenticated_client.put(
             reverse("notification-preferences"),
             {"marketingEmail": True, "marketingPush": False},
