@@ -206,6 +206,28 @@ class TestCreateOrder:
 
         assert "country" in error.value.message_dict
 
+    def test_inactive_account_is_rejected(self):
+        """Konto zablokowane (np. zanonimizowane w trakcie checkoutu) nie składa zamówienia."""
+        user = UserFactory()
+        _terms_for(user=user)
+        cart = CartFactory(user=user)
+        variant = _variant()
+        stock(variant, 5)
+        add_item(cart, variant=variant, quantity=1)
+        user.is_active = False
+        user.save()
+
+        with pytest.raises(OrderError) as error:
+            create_order(
+                cart=cart,
+                address=ADDRESS,
+                shipping_method=ShippingMethodFactory(),
+                user=user,
+            )
+
+        assert "user" in error.value.message_dict
+        assert not Order.objects.filter(user=user).exists()
+
 
 @pytest.mark.django_db
 class TestSnapshot:
