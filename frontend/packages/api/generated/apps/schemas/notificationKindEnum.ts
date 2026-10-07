@@ -14,6 +14,7 @@
  * * `return_settled` - Rozliczenie zwrotu
  * * `watch_restock` - Wariant wrócił na stan
  * * `watch_price_drop` - Spadek ceny wariantu
+ * * `cart_reminder` - Przypomnienie o koszyku
  */
 export type NotificationKindEnum = typeof NotificationKindEnum[keyof typeof NotificationKindEnum];
 
@@ -26,4 +27,5 @@ export const NotificationKindEnum = {
   return_settled: 'return_settled',
   watch_restock: 'watch_restock',
   watch_price_drop: 'watch_price_drop',
+  cart_reminder: 'cart_reminder',
 } as const;
