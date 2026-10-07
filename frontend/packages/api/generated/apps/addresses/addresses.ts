@@ -109,16 +109,16 @@ export const getCustomersAddressesListUrl = (params?: CustomersAddressesListPara
 }
 
 /**
- * A viewset for viewing and editing address instances.
+ * Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
  *
  * Actions:
- * - list:           GET  /api/v1/addresses/
- * - retrieve:       GET  /api/v1/addresses/{id}/
- * - create:         POST /api/v1/addresses/
- * - update:         PUT  /api/v1/addresses/{id}/
- * - partial_update: PATCH /api/v1/addresses/{id}/
- * - destroy:        DELETE /api/v1/addresses/{id}/
- * - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+ * - list:           GET    /customers/addresses/
+ * - retrieve:       GET    /customers/addresses/{id}/
+ * - create:         POST   /customers/addresses/
+ * - update:         PUT    /customers/addresses/{id}/
+ * - partial_update: PATCH  /customers/addresses/{id}/
+ * - destroy:        DELETE /customers/addresses/{id}/
+ * - set_default:    PATCH  /customers/addresses/{id}/set-default/
  */
 export const customersAddressesList = async (params?: CustomersAddressesListParams, options?: Parameters<typeof appInstance>[1]): Promise<customersAddressesListResponse> => {
 
@@ -227,16 +227,16 @@ export const getCustomersAddressesCreateUrl = () => {
 }
 
 /**
- * A viewset for viewing and editing address instances.
+ * Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
  *
  * Actions:
- * - list:           GET  /api/v1/addresses/
- * - retrieve:       GET  /api/v1/addresses/{id}/
- * - create:         POST /api/v1/addresses/
- * - update:         PUT  /api/v1/addresses/{id}/
- * - partial_update: PATCH /api/v1/addresses/{id}/
- * - destroy:        DELETE /api/v1/addresses/{id}/
- * - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+ * - list:           GET    /customers/addresses/
+ * - retrieve:       GET    /customers/addresses/{id}/
+ * - create:         POST   /customers/addresses/
+ * - update:         PUT    /customers/addresses/{id}/
+ * - partial_update: PATCH  /customers/addresses/{id}/
+ * - destroy:        DELETE /customers/addresses/{id}/
+ * - set_default:    PATCH  /customers/addresses/{id}/set-default/
  */
 export const customersAddressesCreate = async (address?: NonReadonly<Address>, options?: Parameters<typeof appInstance>[1]): Promise<customersAddressesCreateResponse> => {
 
@@ -332,16 +332,16 @@ export const getCustomersAddressesRetrieveUrl = (id: string,) => {
 }
 
 /**
- * A viewset for viewing and editing address instances.
+ * Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
  *
  * Actions:
- * - list:           GET  /api/v1/addresses/
- * - retrieve:       GET  /api/v1/addresses/{id}/
- * - create:         POST /api/v1/addresses/
- * - update:         PUT  /api/v1/addresses/{id}/
- * - partial_update: PATCH /api/v1/addresses/{id}/
- * - destroy:        DELETE /api/v1/addresses/{id}/
- * - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+ * - list:           GET    /customers/addresses/
+ * - retrieve:       GET    /customers/addresses/{id}/
+ * - create:         POST   /customers/addresses/
+ * - update:         PUT    /customers/addresses/{id}/
+ * - partial_update: PATCH  /customers/addresses/{id}/
+ * - destroy:        DELETE /customers/addresses/{id}/
+ * - set_default:    PATCH  /customers/addresses/{id}/set-default/
  */
 export const customersAddressesRetrieve = async (id: string, options?: Parameters<typeof appInstance>[1]): Promise<customersAddressesRetrieveResponse> => {
 
@@ -450,16 +450,16 @@ export const getCustomersAddressesUpdateUrl = (id: string,) => {
 }
 
 /**
- * A viewset for viewing and editing address instances.
+ * Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
  *
  * Actions:
- * - list:           GET  /api/v1/addresses/
- * - retrieve:       GET  /api/v1/addresses/{id}/
- * - create:         POST /api/v1/addresses/
- * - update:         PUT  /api/v1/addresses/{id}/
- * - partial_update: PATCH /api/v1/addresses/{id}/
- * - destroy:        DELETE /api/v1/addresses/{id}/
- * - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+ * - list:           GET    /customers/addresses/
+ * - retrieve:       GET    /customers/addresses/{id}/
+ * - create:         POST   /customers/addresses/
+ * - update:         PUT    /customers/addresses/{id}/
+ * - partial_update: PATCH  /customers/addresses/{id}/
+ * - destroy:        DELETE /customers/addresses/{id}/
+ * - set_default:    PATCH  /customers/addresses/{id}/set-default/
  */
 export const customersAddressesUpdate = async (id: string,
     address?: NonReadonly<Address>, options?: Parameters<typeof appInstance>[1]): Promise<customersAddressesUpdateResponse> => {
@@ -556,16 +556,16 @@ export const getCustomersAddressesPartialUpdateUrl = (id: string,) => {
 }
 
 /**
- * A viewset for viewing and editing address instances.
+ * Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
  *
  * Actions:
- * - list:           GET  /api/v1/addresses/
- * - retrieve:       GET  /api/v1/addresses/{id}/
- * - create:         POST /api/v1/addresses/
- * - update:         PUT  /api/v1/addresses/{id}/
- * - partial_update: PATCH /api/v1/addresses/{id}/
- * - destroy:        DELETE /api/v1/addresses/{id}/
- * - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+ * - list:           GET    /customers/addresses/
+ * - retrieve:       GET    /customers/addresses/{id}/
+ * - create:         POST   /customers/addresses/
+ * - update:         PUT    /customers/addresses/{id}/
+ * - partial_update: PATCH  /customers/addresses/{id}/
+ * - destroy:        DELETE /customers/addresses/{id}/
+ * - set_default:    PATCH  /customers/addresses/{id}/set-default/
  */
 export const customersAddressesPartialUpdate = async (id: string,
     patchedAddress?: NonReadonly<PatchedAddress>, options?: Parameters<typeof appInstance>[1]): Promise<customersAddressesPartialUpdateResponse> => {
@@ -662,16 +662,16 @@ export const getCustomersAddressesDestroyUrl = (id: string,) => {
 }
 
 /**
- * A viewset for viewing and editing address instances.
+ * Adresy zalogowanego klienta; cudze adresy są niewidoczne (404).
  *
  * Actions:
- * - list:           GET  /api/v1/addresses/
- * - retrieve:       GET  /api/v1/addresses/{id}/
- * - create:         POST /api/v1/addresses/
- * - update:         PUT  /api/v1/addresses/{id}/
- * - partial_update: PATCH /api/v1/addresses/{id}/
- * - destroy:        DELETE /api/v1/addresses/{id}/
- * - set_default:    PATCH /api/v1/addresses/{id}/set-default/
+ * - list:           GET    /customers/addresses/
+ * - retrieve:       GET    /customers/addresses/{id}/
+ * - create:         POST   /customers/addresses/
+ * - update:         PUT    /customers/addresses/{id}/
+ * - partial_update: PATCH  /customers/addresses/{id}/
+ * - destroy:        DELETE /customers/addresses/{id}/
+ * - set_default:    PATCH  /customers/addresses/{id}/set-default/
  */
 export const customersAddressesDestroy = async (id: string, options?: Parameters<typeof appInstance>[1]): Promise<customersAddressesDestroyResponse> => {
 
@@ -737,11 +737,6 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   status: 200
 }
 
-export type customersAddressesSetDefaultPartialUpdateResponse400 = {
-  data: void
-  status: 400
-}
-
 export type customersAddressesSetDefaultPartialUpdateResponse403 = {
   data: void
   status: 403
@@ -755,7 +750,7 @@ export type customersAddressesSetDefaultPartialUpdateResponse404 = {
 export type customersAddressesSetDefaultPartialUpdateResponseSuccess = (customersAddressesSetDefaultPartialUpdateResponse200) & {
   headers: Headers;
 };
-export type customersAddressesSetDefaultPartialUpdateResponseError = (customersAddressesSetDefaultPartialUpdateResponse400 | customersAddressesSetDefaultPartialUpdateResponse403 | customersAddressesSetDefaultPartialUpdateResponse404) & {
+export type customersAddressesSetDefaultPartialUpdateResponseError = (customersAddressesSetDefaultPartialUpdateResponse403 | customersAddressesSetDefaultPartialUpdateResponse404) & {
   headers: Headers;
 };
 
