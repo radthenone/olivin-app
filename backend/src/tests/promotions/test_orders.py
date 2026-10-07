@@ -70,6 +70,7 @@ def _order(cart, *, user=None, email: str = ""):
 
 @pytest.fixture(autouse=True)
 def terms():
+    """Bieżący regulamin sklepu."""
     return ConsentDocumentFactory(kind=ConsentKind.TERMS)
 
 

@@ -24,7 +24,10 @@ def _announce_via_admin(admin_client, *promotions) -> None:
 
 @pytest.mark.django_db(transaction=True)
 class TestAnnounceAction:
+    """Akcja panelu ogłaszająca promocję."""
+
     def test_queues_announcement_and_marks_promotion(self, admin_client):
+        """Akcja kolejkuje ogłoszenie i oznacza promocję."""
         promotion = PromotionFactory()
 
         with patch(TASK) as task:
@@ -35,6 +38,7 @@ class TestAnnounceAction:
         assert promotion.announced_at is not None
 
     def test_second_announcement_of_same_promotion_is_skipped(self, admin_client):
+        """Drugie ogłoszenie tej samej promocji jest pomijane."""
         promotion = PromotionFactory()
 
         with patch(TASK) as task:
@@ -44,6 +48,7 @@ class TestAnnounceAction:
         task.delay.assert_called_once()
 
     def test_mixed_selection_announces_only_new_ones(self, admin_client):
+        """Z mieszanego zaznaczenia ogłaszane są tylko nowe promocje."""
         announced = PromotionFactory()
         fresh = PromotionFactory()
         with patch(TASK):
@@ -66,6 +71,7 @@ class TestAnnounceAction:
         assert promotion.announced_at is None
 
     def test_reset_action_allows_announcing_again(self, admin_client):
+        """Akcja resetu pozwala ogłosić promocję ponownie."""
         promotion = PromotionFactory()
         with patch(TASK):
             _announce_via_admin(admin_client, promotion)
