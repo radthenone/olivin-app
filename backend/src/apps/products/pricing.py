@@ -120,9 +120,9 @@ def cost_floor(
 
 
 def round_up_to_zloty(amount: Money) -> Money:
-    rounded = (Decimal(amount.amount) / Decimal(MINOR_UNITS_IN_ZLOTY)).to_integral_value(
-        rounding=ROUND_CEILING
-    ) * MINOR_UNITS_IN_ZLOTY
+    rounded = (
+        Decimal(amount.amount) / Decimal(MINOR_UNITS_IN_ZLOTY)
+    ).to_integral_value(rounding=ROUND_CEILING) * MINOR_UNITS_IN_ZLOTY
     return Money(int(rounded), amount.currency)
 
 
