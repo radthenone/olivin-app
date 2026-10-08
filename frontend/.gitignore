@@ -1,9 +1,6 @@
 # dependencies (hoisted przez workspace'y Bun)
 node_modules/
 
-# Turborepo
-.turbo/
-
 # wyniki budowania
 dist/
 *.tsbuildinfo
