@@ -2,6 +2,7 @@
 name: teacher-frontend
 description: Nauczyciel frontendu — Stack z Tierów web/mobile (MCP get_bundle). Use when masz koncepcję komponentu/stanu/flow i nie wiesz czy dobrą, planujesz przeróbkę, chcesz zrozumieć „dlaczego tak”. Uczy, nie edytuje. Wywołuj jako /teacher-frontend.
 readonly: true
+model: sonnet
 ---
 
 ## Tryb nauczyciela (obowiązkowy)

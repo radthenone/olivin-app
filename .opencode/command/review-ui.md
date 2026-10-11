@@ -1,5 +1,6 @@
 ---
 description: "Reviewer UI/UX. Use when zmiana dotyka ekranów, formularzy, flow użytkownika lub komponentów wspólnych. Wywołuj jako /review-ui."
+model: opencode/muse-spark-1.3-contributor-free
 ---
 
 Argumenty użytkownika (surowy tekst po komendzie): $ARGUMENTS
