@@ -2,6 +2,7 @@
 name: review-backend
 description: Reviewer backendu — Stack z Tieru backend (MCP get_bundle). Use when reviewing kod backendu, endpointy, kontrakt API, ACL, zadania w tle, migracje. Wywołuj jako /review-backend.
 readonly: true
+model: sonnet
 ---
 
 ## Reguły wspólne (obowiązkowe)

@@ -2,6 +2,7 @@
 name: review-frontend
 description: Reviewer frontendu — Stack z Tierów web/mobile (MCP get_bundle). Use when reviewing kod klienta web/mobile, generowany klient API, typy TypeScript. Wywołuj jako /review-frontend.
 readonly: true
+model: sonnet
 ---
 
 ## Reguły wspólne (obowiązkowe)
