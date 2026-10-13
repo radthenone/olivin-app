@@ -11,6 +11,9 @@
     "lint": "expo lint",
     "lint:fix": "expo lint --fix",
     "typecheck": "tsc --noEmit",
+    "smoke": "expo export --platform all --output-dir dist",
+    "doctor": "bunx expo-doctor",
+    "devices": "expo-device-hub",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "android": "expo run:android",
@@ -72,6 +75,7 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~57.0.2",
     "eslint-import-resolver-babel-module": "^5.3.2",
+    "expo-device-hub": "^0.15.3",
     "prettier": "^3.9.9",
     "typescript": "~6.0.3",
     "ws": "^8.22.0"
@@ -79,6 +83,7 @@
   "private": true,
   "trustedDependencies": [
     "esbuild",
+    "node-datachannel",
     "unrs-resolver"
   ]
 }
