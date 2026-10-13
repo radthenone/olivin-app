@@ -163,8 +163,13 @@ jobs:
         run: task mobile:smoke
 
       # Po bundlu i niezależnie od jego wyniku — błąd doctora nie zasłania błędu bundla.
+      # Kontrola wersji porównuje z najnowszym patchem SDK na npm, więc ten sam commit
+      # potrafi zzielenieć i sczerwienieć bez zmian w repo. Podbijanie patchy zostaje
+      # lokalnemu `task mobile:doctor` / `expo install --check`.
       - name: Expo doctor
         if: ${{ !cancelled() }}
+        env:
+          EXPO_DOCTOR_SKIP_DEPENDENCY_VERSION_CHECK: "1"
         run: task mobile:doctor
 
   # Hooki lokalne i CI sprawdzają ten sam kod, ale innymi ścieżkami — i właśnie na tej

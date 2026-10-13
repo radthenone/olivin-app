@@ -140,7 +140,10 @@ Job **Mobile smoke** w `.github/workflows/ci.yml` na każdym PR i pushu na `dev`
    android i ios oraz statyczny eksport web (renderuje trasy w Node). Wynik w `dist/`
    (gitignored).
 3. `task mobile:doctor` — `expo-doctor` (wersja przypięta w `package.json`): zgodność wersji paczek
-   z SDK, konfiguracja. Odpala się także po nieudanym bundlu, żeby jeden błąd nie zasłaniał drugiego.
+   z SDK, konfiguracja. W CI bez kontroli wersji
+   patchy (`EXPO_DOCTOR_SKIP_DEPENDENCY_VERSION_CHECK=1`) — porównuje z najnowszym wydaniem na npm, więc
+   wynik zmieniałby się bez zmian w repo; patche podbijasz lokalnie (`bunx expo install --check`).
+   Odpala się także po nieudanym bundlu, żeby jeden błąd nie zasłaniał drugiego.
    Wyjątki dla znanych, zaakceptowanych ostrzeżeń: klucz `expo.doctor` w `package.json`.
 
 Job ma limit 20 minut.
