@@ -24,7 +24,8 @@ chmod 600 /etc/seaweedfs/s3.json
 echo "🔑 Zapisano /etc/seaweedfs/s3.json (uprawnienia 600)."
 
 # UI: w dev nasłuch na wszystkich interfejsach (port publikowany przez
-# compose), na prod tylko loopback (tunel SSH) — steruje S3_ADMIN_IP.
+# compose). Na prod ogranicza go publikacja portu na 127.0.0.1 hosta
+# (docker-compose.prod.yml), nie bind w kontenerze.
 ADMIN_IP=${S3_ADMIN_IP:-0.0.0.0}
 ADMIN_ARGS="-master=localhost:9333 -port=23646 -ip=$ADMIN_IP -dataDir=/data/admin"
 case "$ADMIN_IP" in

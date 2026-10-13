@@ -14,14 +14,15 @@ x-backend-env: &backend-env
 
 services:
   # S3 na prod: trwały wolumen z dev-definicji, ŻADNYCH portów na zewnątrz
-  # (ani S3, ani wewnętrzne master/volume/filer) i UI tylko na loopbacku
-  # (tunel SSH). Credentiale z sekretów przez ./.envs/prod/s3.env.
+  # (ani S3, ani wewnętrzne master/volume/filer). UI publikowane wyłącznie
+  # na loopbacku hosta — dostęp tunelem SSH. Bind wewnątrz kontenera musi
+  # zostać 0.0.0.0: loopback kontenera nie jest osiągalny z hosta.
+  # Credentiale z sekretów przez ./.envs/prod/s3.env.
   olivin-s3:
     env_file: !override
       - ./.envs/prod/s3.env
-    ports: !reset []
-    environment: !override
-      S3_ADMIN_IP: 127.0.0.1
+    ports: !override
+      - "127.0.0.1:${S3_CONSOLE_PORT}:23646"
 
   olivin-django:
     build: *backend-build-prod
