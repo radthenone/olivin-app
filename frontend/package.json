@@ -17,5 +17,10 @@
   },
   "devDependencies": {
     "turbo": "^2.10.13"
-  }
+  },
+  "trustedDependencies": [
+    "esbuild",
+    "node-datachannel",
+    "unrs-resolver"
+  ]
 }
