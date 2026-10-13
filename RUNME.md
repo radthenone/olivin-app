@@ -21,20 +21,20 @@ task backend:logs
 ## Frontend
 
 ```bash
-task frontend:run
+task mobile:run
 ```
 
 Wyczyść cache Metro:
 
 ```bash
-task frontend:run:clear
+task mobile:run:clear
 ```
 
 ## Android
 
 ```bash
 task emulator:run -- S23
-task frontend:run -- emulator-5554
+task mobile:run -- emulator-5554
 ```
 
 ## Kontrole

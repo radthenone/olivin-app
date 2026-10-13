@@ -45,13 +45,13 @@ task db:migrate
 Uruchom frontend Expo Dev Client:
 
 ```bash
-task frontend:run
+task mobile:run
 ```
 
 Jeśli Metro albo routing trzyma stary stan, użyj:
 
 ```bash
-task frontend:run:clear
+task mobile:run:clear
 ```
 
 ## Android
@@ -60,13 +60,24 @@ Podstawowy emulator w Taskfile ma nazwę `S23`.
 
 ```bash
 task emulator:run -- S23
-task frontend:run -- emulator-5554
+task mobile:run -- emulator-5554
 ```
 
 Budowanie i instalacja Expo Development Client:
 
 ```bash
-task frontend:build:android -- emulator-5554
+task mobile:build:android -- emulator-5554
+```
+
+## Mobile: web, Android, iOS
+
+Aplikacja Expo działa na web, Androidzie i iOS. Pełny opis — wymagania (Android SDK, macOS + Xcode,
+EAS dla iOS bez maca), uruchomienie per platforma, Expo Device Hub, EAS Simulator i smoke w CI —
+jest w [`frontend/mobile/README.md`](frontend/mobile/README.md).
+
+```bash
+task mobile:smoke     # bundel web/android/ios — to samo robi job "Mobile smoke" w CI
+task mobile:devices   # Expo Device Hub: emulatory/symulatory w przeglądarce
 ```
 
 ## Najważniejsze Taski
