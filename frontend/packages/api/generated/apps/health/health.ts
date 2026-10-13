@@ -68,7 +68,7 @@ export const getHealthRetrieveUrl = () => {
 }
 
 /**
- * Sprawdza stan wszystkich serwisów (DB, Redis, MinIO).
+ * Sprawdza stan wszystkich serwisów (DB, Redis, S3).
  * @summary Health check
  */
 export const healthRetrieve = async ( options?: Parameters<typeof appInstance>[1]): Promise<healthRetrieveResponse> => {

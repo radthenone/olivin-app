@@ -9,7 +9,7 @@ import * as zod from 'zod';
 
 
 /**
- * Sprawdza stan wszystkich serwisów (DB, Redis, MinIO).
+ * Sprawdza stan wszystkich serwisów (DB, Redis, S3).
  * @summary Health check
  */
 export const HealthRetrieveResponse = zod.object({

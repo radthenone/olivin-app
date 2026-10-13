@@ -1,4 +1,4 @@
-"""Polityki bucketów na żywym MinIO.
+"""Polityki bucketów na żywym S3.
 
 Testy jednostkowe sprawdzają kształt polityki; tutaj sprawdzamy, czy dostawca
 faktycznie się nią kieruje. Bez tego „bucket publiczny" jest deklaracją, a nie
@@ -30,7 +30,7 @@ def _fetch(url: str) -> int:
 
 @pytest.fixture(scope="module")
 def manager() -> S3BucketManager:
-    """Menedżer bucketów połączony z prawdziwym MinIO."""
+    """Menedżer bucketów połączony z prawdziwym S3."""
     result = sync_buckets()
     assert result.success, result.errors
     return S3BucketManager()
@@ -47,7 +47,7 @@ def _put(manager: S3BucketManager, bucket, key: str) -> None:
 
 
 class TestBucketsExist:
-    """Bootstrap zakłada buckety w MinIO."""
+    """Bootstrap zakłada buckety w S3."""
 
     def test_bootstrap_creates_all_three(self, manager: S3BucketManager):
         """Bootstrap zakłada wszystkie trzy buckety."""
@@ -111,7 +111,7 @@ class TestSignedUrl:
 
         url = manager.presigned_url(DOCUMENTS, key, expires_in=1)
 
-        # Czekanie zastępujemy podpisem, który wygasł, zanim powstał: MinIO
+        # Czekanie zastępujemy podpisem, który wygasł, zanim powstał: S3
         # sprawdza znacznik czasu, więc efekt jest ten sam, a test nie śpi.
         expired = url.replace("X-Amz-Expires=1&", "X-Amz-Expires=0&")
         assert _fetch(expired) == 403

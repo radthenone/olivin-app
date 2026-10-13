@@ -5,6 +5,6 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def mock_s3_storage():
-    """Wyłącza globalny mock S3 — testy integracyjne mają używać prawdziwego MinIO/S3."""
+    """Wyłącza globalny mock S3 — testy integracyjne mają używać prawdziwego S3."""
 
     yield
