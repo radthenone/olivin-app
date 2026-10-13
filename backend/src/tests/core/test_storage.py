@@ -239,3 +239,89 @@ class TestSyncBuckets:
         sync_buckets()
 
         assert manager.bucket_exists("obcy-bucket")
+
+
+class TestPublicUrlBuilding:
+    """Publiczny adres dla path/virtual i S3_PUBLIC_BASE_URL z prefiksem."""
+
+    def test_path_style_includes_bucket(self, settings):
+        """Styl path dokleja bucket do domeny."""
+        from core.storage.storages import ProductStorage
+
+        settings.AWS_S3_ADDRESSING_STYLE = "path"
+        settings.AWS_S3_CUSTOM_DOMAIN = "cdn.example.com"
+        settings.AWS_S3_URL_PROTOCOL = "https:"
+        settings.S3_PUBLIC_BASE_URL = ""
+
+        url = ProductStorage().url("galeria/zdjecie.webp")
+
+        assert url == "https://cdn.example.com/products/galeria/zdjecie.webp"
+
+    def test_virtual_style_uses_subdomain(self, settings):
+        """Styl virtual wstawia bucket jako subdomenę."""
+        from core.storage.storages import ProductStorage
+
+        settings.AWS_S3_ADDRESSING_STYLE = "virtual"
+        settings.AWS_S3_CUSTOM_DOMAIN = "cdn.example.com"
+        settings.AWS_S3_URL_PROTOCOL = "https:"
+        settings.S3_PUBLIC_BASE_URL = ""
+
+        url = ProductStorage().url("galeria/zdjecie.webp")
+
+        assert url == "https://products.cdn.example.com/galeria/zdjecie.webp"
+
+    def test_public_base_url_with_prefix_wins(self, settings):
+        """S3_PUBLIC_BASE_URL z prefiksem jest bazą adresu."""
+        from core.storage.storages import ProductStorage
+
+        settings.AWS_S3_ADDRESSING_STYLE = "path"
+        settings.AWS_S3_CUSTOM_DOMAIN = "cdn.example.com"
+        settings.AWS_S3_URL_PROTOCOL = "https:"
+        settings.S3_PUBLIC_BASE_URL = "https://sklep.example.com/storage/"
+
+        url = ProductStorage().url("galeria/zdjecie.webp")
+
+        assert url == "https://sklep.example.com/storage/products/galeria/zdjecie.webp"
+
+    def test_signed_url_has_no_path_prefix(self, settings):
+        """Podpisany adres nie zawiera prefiksu ścieżki z S3_PUBLIC_BASE_URL."""
+        from core.storage.urls import object_url
+
+        settings.S3_PUBLIC_BASE_URL = "https://sklep.example.com/storage"
+
+        url = object_url(DOCUMENTS, "certificates/abc.pdf")
+
+        assert "X-Amz-Signature" in url
+        assert "/storage" not in url
+
+
+class TestS3ProviderNeutralSettings:
+    """Flaga USE_S3 i czytelny błąd startu bez credentiali."""
+
+    def test_use_aws_is_gone_from_settings_source(self):
+        """W module ustawień nie ma już USE_AWS."""
+        source = (CORE_DIR / "settings" / "components" / "storage.py").read_text(
+            encoding="utf-8"
+        )
+
+        assert "USE_AWS" not in source
+
+    def test_use_s3_flag_in_settings_source(self):
+        """Moduł ustawień zna już tylko flagę USE_S3."""
+        source = (CORE_DIR / "settings" / "components" / "storage.py").read_text(
+            encoding="utf-8"
+        )
+
+        assert "USE_S3" in source
+
+    def test_missing_credentials_fail_fast(self, monkeypatch):
+        """Przy USE_S3=true brak credentiali zatrzymuje start."""
+        import runpy
+
+        monkeypatch.setenv("USE_S3", "true")
+        monkeypatch.delenv("AWS_ACCESS_KEY_ID", raising=False)
+        monkeypatch.delenv("AWS_SECRET_ACCESS_KEY", raising=False)
+        storage_path = CORE_DIR / "settings" / "components" / "storage.py"
+
+        with pytest.raises(Exception, match="AWS_ACCESS_KEY_ID"):
+            runpy.run_path(str(storage_path), run_name="__test_s3_settings__")

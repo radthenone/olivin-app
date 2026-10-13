@@ -51,7 +51,7 @@ class HealthCheckView(APIView):
             health_status["status"] = "unhealthy"
             log.error("Redis health check failed", error=str(e))
 
-        # MinIO/S3
+        # S3
         try:
             bucket_manager = S3BucketManager()
             bucket_manager.client.head_bucket(Bucket=PRODUCTS.name)

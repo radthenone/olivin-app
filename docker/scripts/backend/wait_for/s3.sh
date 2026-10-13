@@ -3,25 +3,16 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-# Default values
-S3_PROVIDER=${S3_PROVIDER:-""}
-S3_HOST=${S3_HOST:-"olivin-minio"}
-S3_PORT=${S3_PORT:-"9000"}
+# Gotowość dowolnego magazynu S3 (w dev i teście SeaweedFS z olivin-s3).
+# Bez zgadywania dostawcy: adres i ścieżka zdrowia wyłącznie z envu.
+S3_HOST=${S3_HOST:-"olivin-s3"}
+S3_PORT=${S3_PORT:-"8333"}
 S3_URL=${S3_URL:-"http://${S3_HOST}:${S3_PORT}"}
 S3_TIMEOUT=${S3_TIMEOUT:-60}
-
-if [ -z "${S3_PROVIDER}" ] && [ "${S3_HOST}" = "olivin-minio" ]; then
-    S3_PROVIDER=minio
-fi
+S3_HEALTH_PATH=${S3_HEALTH_PATH:-"/healthz"}
 
 if ! [[ "${S3_TIMEOUT}" =~ ^[0-9]+$ ]]; then
     S3_TIMEOUT=60
-fi
-
-if [ "${S3_PROVIDER}" = "minio" ]; then
-    S3_HEALTH_PATH=${S3_HEALTH_PATH:-"/minio/health/live"}
-else
-    S3_HEALTH_PATH=${S3_HEALTH_PATH:-"/"}
 fi
 
 echo "⏳ Waiting for S3..."

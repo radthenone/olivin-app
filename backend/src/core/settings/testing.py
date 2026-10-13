@@ -59,14 +59,24 @@ CELERY_BROKER_URL = "memory://"
 CELERY_RESULT_BACKEND = "cache+memory://"
 
 # --- Storage ---
-# Testy integracyjne korzystają z realnego MinIO z compose; testy jednostkowe
+# Testy integracyjne korzystają z realnego S3 z compose; testy jednostkowe
 # z mocka w `tests/conftest.py`. Nazwy bucketów biorą się z ADR 0025
 # (`core/storage/buckets.py`), więc nie ma ich tutaj.
+#
+# Endpoint celowo NIE pochodzi z `AWS_S3_ENDPOINT_URL`: ta zmienna na maszynie
+# dewelopera wskazuje hosta z compose (Taskfile dotenv), a pola plików
+# (`FileField(storage=...)`) wiążą magazyn przy imporcie — wyciekły adres
+# kończyłby w mocku prawdziwym połączeniem. Jednostki zawsze widzą `None`
+# (moto), integracja w dockerze dostaje adres przez `TEST_S3_ENDPOINT_URL`
+# z `docker-compose.test.yml`.
 AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", "testing")
 AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", "testing")
-AWS_S3_ENDPOINT_URL = os.environ.get("AWS_S3_ENDPOINT_URL")
+AWS_S3_ENDPOINT_URL = os.environ.get("TEST_S3_ENDPOINT_URL")
 AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME", "us-east-1")
-AWS_S3_USE_SSL = os.environ.get("AWS_S3_USE_SSL", "False").lower() == "true"
+AWS_S3_ADDRESSING_STYLE = os.environ.get("AWS_S3_ADDRESSING_STYLE", "path")
+AWS_S3_URL_PROTOCOL = os.environ.get("AWS_S3_URL_PROTOCOL", "http:")
+AWS_S3_CUSTOM_DOMAIN = os.environ.get("AWS_S3_CUSTOM_DOMAIN", "localhost")
+S3_PUBLIC_BASE_URL = os.environ.get("S3_PUBLIC_BASE_URL", "")
 
 # --- DRF ---
 REST_FRAMEWORK = {

@@ -67,7 +67,7 @@ COPY docker/scripts/backend/entrypoint.sh /scripts/entrypoint.sh
 COPY docker/scripts/backend/runserver.sh /scripts/runserver.sh
 COPY docker/scripts/backend/backup.sh /scripts/backup.sh
 COPY docker/scripts/backend/check_superuser.sh /scripts/check_superuser.sh
-COPY docker/scripts/backend/init-minio.sh /scripts/init-minio.sh
+COPY docker/scripts/backend/init-s3.sh /scripts/init-s3.sh
 
 COPY docker/scripts/backend/celery/* /celery/
 COPY docker/scripts/backend/wait_for/ /wait-for/

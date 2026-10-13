@@ -2,11 +2,13 @@
 
 Model trzyma wyłącznie klucz obiektu: bez hosta i bez nazwy bucketa. Adres
 składa warstwa serializacji, bo host zmienia się razem ze środowiskiem
-(MinIO w dev, S3 w produkcji), a klucz zapisany razem z hostem trzeba by
-migrować przy każdej takiej zmianie.
-"""
+(lokalny S3 w dev, inny adres w produkcji), a klucz zapisany razem z hostem
+trzeba by migrować przy każdej takiej zmianie.
 
-import os
+Kształt adresu zależy wyłącznie od generycznych ustawień S3
+(`AWS_S3_ADDRESSING_STYLE`, `AWS_S3_URL_PROTOCOL`, `AWS_S3_CUSTOM_DOMAIN`,
+`S3_PUBLIC_BASE_URL`) — kod nie zgaduje dostawcy po nazwie hosta.
+"""
 
 from django.conf import settings
 from storages.backends.s3boto3 import S3Boto3Storage
@@ -26,42 +28,75 @@ class BucketStorage(S3Boto3Storage):
 
     @classmethod
     def _get_endpoint_url(cls) -> str | None:
-        """Adres dostawcy. `None` oznacza właściwy AWS, nie brak konfiguracji."""
-        configured = getattr(settings, "AWS_S3_ENDPOINT_URL", None)
-        if configured:
-            return configured
-        return os.environ.get("AWS_S3_ENDPOINT_URL") or None
+        """Adres dostawcy. `None` oznacza właściwy AWS, nie brak konfiguracji.
+
+        Tylko z ustawień Django — bez czytania `os.environ`. Ustawienia
+        testowe są hermetyczne, a pola plików wiążą magazyn przy imporcie
+        modeli, czyli zanim jakikolwiek fixture zdążyłby env posprzątać.
+        """
+        return getattr(settings, "AWS_S3_ENDPOINT_URL", None) or None
+
+    @classmethod
+    def _get_url_protocol(cls) -> str:
+        """`http:` albo `https:` — schemat dokładany przed adres publiczny."""
+        return getattr(settings, "AWS_S3_URL_PROTOCOL", None) or "http:"
+
+    @classmethod
+    def _get_addressing_style(cls) -> str:
+        """`path` dokleja bucket do ścieżki, `virtual` wstawia go w host."""
+        return getattr(settings, "AWS_S3_ADDRESSING_STYLE", None) or "path"
 
     @classmethod
     def _get_custom_domain(cls) -> str:
-        return getattr(
-            settings,
-            "AWS_S3_CUSTOM_DOMAIN",
-            os.environ.get("AWS_S3_CUSTOM_DOMAIN", "localhost:9000"),
-        ).rstrip("/")
+        """Własna domena bez schematu i bez końcowego ukośnika."""
+        return (getattr(settings, "AWS_S3_CUSTOM_DOMAIN", None) or "").rstrip("/")
+
+    @classmethod
+    def _get_public_base(cls) -> tuple[str, str]:
+        """Baza publicznych adresów jako para (protokół, host-z-prefiksem).
+
+        `S3_PUBLIC_BASE_URL` wygrywa i może nieść prefiks ścieżki (np. adres
+        spod reverse proxy). django-storages dokleja protokół samo, więc
+        schemat jest zwracany osobno, a prefiks zostaje w hoście.
+        """
+        base = (getattr(settings, "S3_PUBLIC_BASE_URL", None) or "").strip().rstrip("/")
+        if base:
+            if base.startswith("https://"):
+                return "https:", base[len("https://") :]
+            if base.startswith("http://"):
+                return "http:", base[len("http://") :]
+            return cls._get_url_protocol(), base
+        domain = cls._get_custom_domain()
+        if domain:
+            return cls._get_url_protocol(), domain
+        endpoint = (cls._get_endpoint_url() or "").rstrip("/")
+        for scheme in ("https://", "http://"):
+            if endpoint.startswith(scheme):
+                return cls._get_url_protocol(), endpoint[len(scheme) :]
+        if endpoint:
+            return cls._get_url_protocol(), endpoint
+        return cls._get_url_protocol(), "localhost"
 
     def __init__(self, **kwargs):
         self.bucket_name = self.bucket_spec.name
         self.endpoint_url = self._get_endpoint_url()
-        use_aws = getattr(
-            settings,
-            "USE_AWS",
-            os.environ.get("USE_AWS", "False").lower() == "true",
-        )
         if self.bucket_spec.is_public:
-            domain = self._get_custom_domain()
-            # Na S3 host zawiera już bucket; MinIO adresuje ścieżką, więc
-            # nazwa bucketa musi wejść do adresu. Bez ukośnika na końcu —
-            # django-storages dokłada go sam i inaczej wychodzi `//`.
-            self.custom_domain = (
-                domain if use_aws else f"{domain}/{self.bucket_spec.name.strip('/')}"
-            )
-            self.url_protocol = "https:" if use_aws else "http:"
+            bucket = self.bucket_spec.name.strip("/")
+            protocol, host = self._get_public_base()
+            self.url_protocol = protocol
+            # Prefiks ścieżki nie składa się z subdomeną — wtedy wygrywa
+            # zwykły adres ze ścieżką, tak samo jak przy reverse proxy.
+            if self._get_addressing_style() == "virtual" and "/" not in host:
+                self.custom_domain = f"{bucket}.{host}"
+            else:
+                self.custom_domain = f"{host}/{bucket}"
         else:
             # Prywatny bucket nie może mieć własnej domeny: django-storages
             # zwraca wtedy gotowy adres i **pomija podpisywanie**, czyli
             # `documents` przestałoby być prywatne w jedyny sposób, w jaki
             # o tym wiemy — przez adres, który nie działa bez podpisu.
+            # Podpis idzie przez host endpointu bez prefiksu ścieżki, bo
+            # prefiks unieważnia podpis SigV4.
             self.custom_domain = None
         super().__init__(**kwargs)
 

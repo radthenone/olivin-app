@@ -45,7 +45,7 @@ x-django: &django
       condition: service_healthy
     olivin-redis:
       condition: service_healthy
-    olivin-minio:
+    olivin-s3:
       condition: service_healthy
     olivin-libretranslate:
       condition: service_healthy
@@ -102,22 +102,29 @@ services:
       start_period: 10s
     profiles: ["dev", "backend", "full", "local", "test", "web"]
 
-  olivin-minio:
-    container_name: olivin-minio
-    image: minio/minio:latest
+  # Magazyn S3 (SeaweedFS, issue #303): master + volume + filer + bramka S3
+  # w jednym procesie (`weed server`) plus UI (`weed admin`) w tle. S3 na
+  # 8333, UI na 23646. Credentiale z ./.envs/dev/s3.env — bez nich entrypoint
+  # odmawia startu, zamiast serwować otwarty magazyn.
+  olivin-s3:
+    container_name: olivin-s3
+    image: chrislusf/seaweedfs:4.48
     ports:
-      - "${MINIO_SERVER_PORT}:9000"
-      - "${MINIO_CONSOLE_PORT}:9001"
+      - "${S3_SERVER_PORT}:8333"
+      - "${S3_CONSOLE_PORT}:23646"
     volumes:
       - olivin-media:/data
+      - ./docker/s3/entrypoint.sh:/entrypoint-s3.sh:ro
     env_file:
-      - ./.envs/dev/minio.env
+      - ./.envs/dev/s3.env
+    environment:
+      S3_ADMIN_IP: 0.0.0.0
     networks:
       - olivin-network
     restart: unless-stopped
-    command: server /data --console-address ":9001"
+    entrypoint: ["/bin/sh", "/entrypoint-s3.sh"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "${MINIO_HEALTHCHECK_URL}"]
+      test: ["CMD", "curl", "-f", "http://localhost:8333/healthz"]
       interval: 10s
       timeout: 5s
       retries: 5

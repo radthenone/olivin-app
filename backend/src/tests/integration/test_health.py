@@ -40,14 +40,14 @@ def test_health_check_database_unhealthy(mock_cursor, client):
         "unhealthy: Database connection rejected"
         in response.data["services"]["database"]
     )
-    # Zobacz, że mimo awarii bazy m.in. redis i minio potrafią działać niezależnie
+    # Zobacz, że mimo awarii bazy m.in. redis i storage potrafią działać niezależnie
     assert response.data["services"]["redis"] == "healthy"
 
 
 @patch("core.utils.health.views.S3BucketManager")
 def test_health_check_s3_unhealthy(mock_bucket_manager, client):
     """
-    Tutaj mockujemy awarię środowiska MinIO/AWS S3 wywalając import klasy klienta SDK.
+    Tutaj mockujemy awarię magazynu S3 wywalając import klasy klienta SDK.
     """
     mock_bucket_manager.side_effect = Exception("Storage is down!")
 
