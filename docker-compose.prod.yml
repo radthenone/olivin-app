@@ -13,6 +13,16 @@ x-backend-env: &backend-env
   - ./.envs/dev/backend/authorization.env
 
 services:
+  # S3 na prod: trwały wolumen z dev-definicji, ŻADNYCH portów na zewnątrz
+  # (ani S3, ani wewnętrzne master/volume/filer) i UI tylko na loopbacku
+  # (tunel SSH). Credentiale z sekretów przez ./.envs/prod/s3.env.
+  olivin-s3:
+    env_file: !override
+      - ./.envs/prod/s3.env
+    ports: !reset []
+    environment: !override
+      S3_ADMIN_IP: 127.0.0.1
+
   olivin-django:
     build: *backend-build-prod
     env_file: *backend-env
@@ -26,7 +36,7 @@ services:
         condition: service_healthy
       olivin-redis:
         condition: service_healthy
-      olivin-minio:
+      olivin-s3:
         condition: service_healthy
     networks:
       - olivin-network

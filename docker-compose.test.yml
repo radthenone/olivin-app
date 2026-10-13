@@ -13,6 +13,16 @@ x-backend-test-env: &backend-test-env
   - ./.envs/dev/backend/authorization.env
 
 services:
+  # Ten sam obraz co w dev, ale magazyn w tmpfs: każdy przebieg startuje
+  # z pustym S3, a porty nie wychodzą na hosta (testy idą po sieci compose).
+  olivin-s3:
+    ports: !reset []
+    volumes: !override
+      - type: tmpfs
+        target: /data
+      - ./docker/s3/entrypoint.sh:/entrypoint-s3.sh:ro
+    restart: "no"
+
   olivin-postgres-test:
     container_name: olivin-postgres-test
     image: postgres:16
@@ -41,7 +51,7 @@ services:
         condition: service_healthy
       olivin-redis:
         condition: service_healthy
-      olivin-minio:
+      olivin-s3:
         condition: service_healthy
     env_file: *backend-test-env
     environment:
@@ -50,6 +60,10 @@ services:
       DJANGO_ENVIRONMENT: test
       DJANGO_DEBUG: "0"
       PYTHONDONTWRITEBYTECODE: "1"
+      # Prawdziwy S3 dla testów integracyjnych (testing.py czyta endpoint
+      # wyłącznie z tej zmiennej — `AWS_S3_ENDPOINT_URL` z maszyny
+      # dewelopera nie może wyciekać do jednostek).
+      TEST_S3_ENDPOINT_URL: http://olivin-s3:8333
     working_dir: /app/src
     volumes:
       - ./backend/src:/app/src

@@ -18,7 +18,7 @@ fi
 /wait-for/redis.sh
 /wait-for/s3.sh
 
-/scripts/init-minio.sh
+/scripts/init-s3.sh
 
 if [ "${DJANGO_ENVIRONMENT:-development}" = "development" ]; then
     mkdir -p static staticfiles mediafiles

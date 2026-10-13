@@ -21,7 +21,7 @@ dotenv:
     - "{{.ENV}}/dev/backend/email.env"
     - "{{.ENV}}/dev/backend/authorization.env"
     - "{{.ENV}}/dev/postgres.env"
-    - "{{.ENV}}/dev/minio.env"
+    - "{{.ENV}}/dev/s3.env"
     - "{{.ENV}}/dev/expo.env"
 
 includes:

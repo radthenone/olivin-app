@@ -82,7 +82,7 @@ Komendy w **bash** (Git Bash na Windowsie). Nie PowerShell.
 | ----------------------- | -------------------------------------- |
 | `olivin-postgres`       | PostgreSQL 16, port hosta **5434**     |
 | `olivin-redis`          | cache + broker                         |
-| `olivin-minio`          | S3-compatible                          |
+| `olivin-s3`             | SeaweedFS (S3)                         |
 | `olivin-mailhog`        | SMTP dev                               |
 | `olivin-libretranslate` | silnik tłumaczeń, `LT_LOAD_ONLY=pl,en` |
 | `olivin-django`         | Backend                                |
@@ -239,8 +239,8 @@ OAuth wymaga **Dev Client**, nie działa w Expo Go.
 
 ## Storage
 
-- **Brak `apps/files`.** Storage w `backend/src/core/storage/` — MinIO w dev, S3 w prod przez `USE_AWS`. Model trzyma **sam klucz obiektu**, bez hosta i bucketa; adres składa `core.storage.object_url` w warstwie serializacji.
-- Buckety (ADR 0025, `core/storage/buckets.py`): `products` (odczyt publiczny), `originals` (prywatny), `documents` (prywatny, adres podpisany na czas). Nazwy przez `S3_BUCKET_PRODUCTS` / `S3_BUCKET_ORIGINALS` / `S3_BUCKET_DOCUMENTS`, czas ważności podpisu przez `S3_SIGNED_URL_TTL`. Zdjęć profilowych nie ma; pliki statyczne Django nie mają bucketa. Bootstrap: `sync_buckets()` z `docker/scripts/backend/init-minio.sh` — zakłada i nakłada polityki, **niczego nie kasuje**.
+- **Brak `apps/files`.** Storage w `backend/src/core/storage/` — S3 w każdym środowisku (SeaweedFS w dev, dowolny S3 w prod) przez `USE_S3`. Model trzyma **sam klucz obiektu**, bez hosta i bucketa; adres składa `core.storage.object_url` w warstwie serializacji.
+- Buckety (ADR 0025, `core/storage/buckets.py`): `products` (odczyt publiczny), `originals` (prywatny), `documents` (prywatny, adres podpisany na czas). Nazwy przez `S3_BUCKET_PRODUCTS` / `S3_BUCKET_ORIGINALS` / `S3_BUCKET_DOCUMENTS`, czas ważności podpisu przez `S3_SIGNED_URL_TTL`. Zdjęć profilowych nie ma; pliki statyczne Django nie mają bucketa. Bootstrap: `sync_buckets()` z `docker/scripts/backend/init-s3.sh` — zakłada i nakłada polityki, **niczego nie kasuje**.
 - Pipeline zdjęć (ADR 0025): klient wysyła oryginał (≤ ~2000 px, ≤ 10 MB) + kadr `{x,y,w,h}`; Celery + Pillow: crop → 400/800/1600 WebP q80–85; rekord ze statusem processing/ready; klucz bez hosta/bucketa, URL składa serializer.
 - PDF (ADR 0026): WeasyPrint z szablonu `apps/orders/templates/orders/sales_document.html`, bezpośrednio z taska (`apps/orders/services/document.py`); Pango/Cairo/HarfBuzz i DejaVu w obrazie `runtime-base` i w CI. `django-weasyprint` — nie.
 
