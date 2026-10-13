@@ -133,6 +133,7 @@ jobs:
   mobile:
     name: Mobile smoke
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -158,11 +159,13 @@ jobs:
         working-directory: frontend
         run: bun install --frozen-lockfile
 
-      - name: Expo doctor
-        run: task mobile:doctor
-
       - name: Bundle web, android and ios
         run: task mobile:smoke
+
+      # Po bundlu i niezależnie od jego wyniku — błąd doctora nie zasłania błędu bundla.
+      - name: Expo doctor
+        if: ${{ !cancelled() }}
+        run: task mobile:doctor
 
   # Hooki lokalne i CI sprawdzają ten sam kod, ale innymi ścieżkami — i właśnie na tej
   # różnicy CI potrafi paść na czymś, co lokalnie przeszło. Ten job odpala dokładnie te

@@ -12,7 +12,7 @@
     "lint:fix": "expo lint --fix",
     "typecheck": "tsc --noEmit",
     "smoke": "expo export --platform all --output-dir dist",
-    "doctor": "bunx expo-doctor",
+    "doctor": "bunx expo-doctor@1.20.4",
     "devices": "expo-device-hub",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
@@ -80,10 +80,5 @@
     "typescript": "~6.0.3",
     "ws": "^8.22.0"
   },
-  "private": true,
-  "trustedDependencies": [
-    "esbuild",
-    "node-datachannel",
-    "unrs-resolver"
-  ]
+  "private": true
 }

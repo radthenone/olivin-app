@@ -75,8 +75,8 @@ na build aplikacji. Daje w przeglądarce: listę emulatorów/symulatorów, boot 
 Wymagania jak przy lokalnym uruchomieniu: Android SDK (`emulator`, `adb`) dla Androida,
 macOS + Xcode dla iOS. Web nie jest celem device-hubu — web oglądasz w zwykłej przeglądarce.
 
-Strumień wideo idzie przez `node-datachannel` (natywny addon WebRTC). Jest w `trustedDependencies`,
-żeby `bun install` pobrał jego prebuilt binarkę — bez tego hub wstaje, ale nie pokazuje podglądu.
+Strumień wideo idzie przez `node-datachannel` (natywny addon WebRTC). Jest w `trustedDependencies`
+w `frontend/package.json` (bun czyta je z korzenia workspace), żeby `bun install` pobrał jego prebuilt binarkę — bez tego hub wstaje, ale nie pokazuje podglądu.
 
 ### Pętla diagnostyczna
 
@@ -110,6 +110,15 @@ task mobile:eas:simulator:stop
 Przed pierwszym buildem trzeba podpiąć projekt EAS (`bunx eas-cli init`). `app.config.js` jest
 dynamiczny, więc `eas init` nie dopisze `extra.eas.projectId` sam — wypisze wartość do wklejenia.
 
+**Pierwszy build Androida** odpal interaktywnie, bez `--non-interactive` — EAS musi zapytać o
+wygenerowanie keystore:
+
+```bash
+cd frontend/mobile && bunx eas-cli build --platform android --profile remote-device
+```
+
+Kolejne buildy (już z keystore na EAS) mogą iść przez `task mobile:eas:build:simulator -- android`.
+
 Dev build przez tunel (hot reload w przeglądarce) — wg dokumentacji Expo:
 
 ```bash
@@ -127,10 +136,14 @@ Dokumentacja: <https://docs.expo.dev/preview/eas-simulator/introduction>.
 Job **Mobile smoke** w `.github/workflows/ci.yml` na każdym PR i pushu na `dev`/`master`:
 
 1. `bun install --frozen-lockfile`
-2. `task mobile:doctor` — `expo-doctor`: zgodność wersji paczek z SDK, konfiguracja.
-3. `task mobile:smoke` — `expo export --platform all`: bundel Metro (Babel, NativeWind, Hermes) dla
+2. `task mobile:smoke` — `expo export --platform all`: bundel Metro (Babel, NativeWind, Hermes) dla
    android i ios oraz statyczny eksport web (renderuje trasy w Node). Wynik w `dist/`
    (gitignored).
+3. `task mobile:doctor` — `expo-doctor` (wersja przypięta w `package.json`): zgodność wersji paczek
+   z SDK, konfiguracja. Odpala się także po nieudanym bundlu, żeby jeden błąd nie zasłaniał drugiego.
+   Wyjątki dla znanych, zaakceptowanych ostrzeżeń: klucz `expo.doctor` w `package.json`.
+
+Job ma limit 20 minut.
 
 Nie potrzebuje sekretów ani emulatora. **Nie sprawdza**, czy aplikacja wstaje na urządzeniu
 (natywny build, moduły natywne, runtime) — to zostaje device-hubowi lokalnie albo EAS Simulatorowi.
