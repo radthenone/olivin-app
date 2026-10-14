@@ -54,8 +54,177 @@ własne zdarzenia analityczne z aplikacji mobilnej, adapter kursu kruszcu
 (do czasu wyboru dostawcy kurs wpisuje się ręcznie). Raty i polecenia mają
 sens po pierwszym roku sprzedaży.
 
-Kolejność platform: web i Android równolegle, iOS po domknięciu narzędzi
-EAS (#94).
+Kolejność platform: na produkcję idą web i Android. iOS jest zgodny w kodzie
+i uruchamiany na symulatorze, a wydanie następuje dopiero po tym, jak web i
+Android się przyjmą (lista „Przed wydaniem iOS” niżej).
+
+### Web i aplikacja mobilna gotowe do produkcji
+
+Cel: web (Next) i aplikacja na Androida gotowe do produkcji na istniejącym
+backendzie. iOS jest zgodny w kodzie i uruchamiany na symulatorze (EAS Build z
+Windowsa, Appetize albo EAS Simulator), bez wydania. Rzeczy iOS, które nie
+wymagają konta Apple, powstają od razu, na przykład `associatedDomains` i
+trasa AASA w Next. Za „gotowe” w tym rejestrze uznajemy stan, w którym
+decyzje są zapisane w ADR-ach i `CONTEXT.md`, a każdy plasterek ma issue gotowe
+pod `/git-start`. Wdrażanie odbywa się osobnym torem.
+
+Zasady obowiązujące we wszystkich plasterkach:
+
+- Liczy się funkcjonalność, wygląd dopracowujemy później. Na webie shadcn/ui, na mobile RNR, style
+  wyłącznie z `packages/tokens`.
+- Logika (hooki Orvala, query keys, zod, kwoty) mieszka w `packages`. Web i
+  mobile to cienkie warstwy interfejsu
+  ([ADR 0001](adr/0001-osobne-aplikacje-web-i-mobile.md),
+  [ADR 0005](adr/0005-pakiety-wspoldzielone-jako-zrodlo.md)).
+- Ekrany składamy z komponentów biblioteki, a nie z jednorazowych stylów, żeby
+  tor designu mógł je później podmienić bez ruszania logiki.
+
+Tryb pracy: jedna pozycja na sesję. Gdy trzeba, najpierw research, potem
+`/grill-with-docs`. Rozstrzygnięta pozycja przechodzi do ADR-u i znika z tej
+listy. Na koniec plasterka zakładamy issue.
+
+**Decyzje przekrojowe** (w nawiasie, czy wymagają researchu):
+
+1. ~~Gdzie żyją wspólne hooki i query keys.~~ Rozstrzygnięte w
+   [ADR 0033](adr/0033-hooki-orvala-wprost-logika-domeny-w-pakiecie-features.md).
+2. ~~Strategia renderowania katalogu po stronie serwera.~~ Rozstrzygnięte w
+   [ADR 0034](adr/0034-katalog-keszowany-z-rewalidacja-na-zdarzenie-cena-jako-dziura-dynamiczna.md).
+3. ~~Biblioteka i18n i waluta.~~ Rozstrzygnięte w
+   [ADR 0035](adr/0035-next-intl-z-prefiksem-jezyka-waluta-z-kraju-dostawy.md).
+4. ~~Widget wyboru paczkomatu.~~ Rozstrzygnięte w
+   [ADR 0036](adr/0036-wysylka-wylacznie-kurierem.md): wyłącznie kurier.
+5. ~~Push.~~ Rozstrzygnięte w
+   [ADR 0037](adr/0037-push-przez-expo-z-minimum-tresci.md).
+6. ~~Deep linki z maili.~~ Rozstrzygnięte w
+   [ADR 0038](adr/0038-linki-z-maili-na-jedna-domene-webu-auth-kodem.md).
+7. ~~Obserwowalność.~~ Rozstrzygnięte w
+   [ADR 0039](adr/0039-glitchtip-na-wlasnym-serwerze-z-sdk-sentry.md). Plasterek
+   zaczyna się od testu source map.
+8. ~~Testowanie iOS z Windowsa.~~ Rozstrzygnięte zakresem celu: symulator,
+   bez wydania (`docs/research/ios-bez-maca.md`).
+9. ~~Tor designu.~~ Rozstrzygnięte bez ADR-u, bo decyzję łatwo odwrócić. Opis
+   jest w sekcji „Tor designu” niżej.
+
+**Plasterki** w kolejności wynikającej z zależności:
+
+| # | Plasterek | Czeka na |
+| --- | --- | --- |
+| 0 | Fundament: logowanie na webie, shadcn i tokeny, Playwright, #96 | decyzję 1, bez grillingu |
+| 1 | Katalog | 1, 2, 3 |
+| 1b | Produkty na zamówienie ([ADR 0024](adr/0024-produkt-na-zamowienie-i-para-jako-jedna-pozycja.md)) | 1 |
+| — | SEO | 2 |
+| 2 | Koszyk i kasa, #158 ([ADR 0030](adr/0030-koszyk-po-stronie-backendu-i-kasa-w-czterech-krokach.md)) | zadania przed plasterkiem 2 |
+| 6 | Zgody i strony prawne | 1 |
+| — | Treści sklepu | 2 |
+| 3 | Zamówienia po zakupie ([ADR 0026](adr/0026-dokument-sprzedazy-generowany-raz-na-backendzie.md)) | 1, 6 |
+| 4 | Konto i preferencje | 1 |
+| — | Linki z maili | 6 |
+| 5 | Powiadomienia | 5, 6 |
+| 7 | Zwroty ([ADR 0031](adr/0031-zwrot-najpierw-kuponem-reszta-pieniedzmi.md)) | 1 |
+| 8 | Opinie | 1 |
+| — | Back office: przejście codziennych operacji w Django admin | — |
+| — | Obserwowalność | 7 |
+
+Plasterki, które mają już ADR, grillujemy głównie pod kątem kontraktu interfejsu.
+
+**Tor designu** (research w `docs/research/claude-design.md`):
+
+- Do Claude Design trafia wyłącznie biblioteka webowa (shadcn, `web/components/ui/`)
+  i to ona jest systemem referencyjnym. Mobile (RNR) nie jest synchronizowane
+  osobno. Trzyma te same nazwy komponentów, warianty i tokeny z `packages/tokens`
+  ([ADR 0003](adr/0003-shadcn-na-web-rnr-na-mobile.md)).
+- Źródłem prawdy jest kod. W Claude Design powstają makiety z naszych komponentów.
+  Zmiana wyglądu wraca do kodu jako zmiana tokenu albo komponentu, na webie i w
+  odpowiedniku na mobile, a potem idzie kolejny `/design-sync`.
+- Układ plików jest płaski, taki jak generuje CLI shadcn. Zmieniamy go, jeśli
+  pierwszy sync wymusi foldery. Komponenty złożone z domeny
+  (`web/components/<obszar>/`) nie są synchronizowane.
+- Komponenty `ui/` są czyste: bez danych, nawigacji i i18n, a style biorą
+  wyłącznie z tokenów. Reguła jest zapisana w `.ai/project.md` i
+  `frontend/web/AGENTS.md`. Egzekwowanie dochodzi w plasterku 0: ESLint
+  `no-restricted-imports` dla `web/components/ui/**` (zakaz `@olivin/api`,
+  `@olivin/features`, `next-intl`, `next/navigation`) oraz grep w CI na hexy i
+  dowolne wartości Tailwinda. Wzorzec obejmuje tylko wartości (np. `-\[[0-9#]`),
+  żeby nie łapać `data-[state=open]:` ani `aria-[...]`. Reguła jest też w
+  `BUGBOT.md`. `kit-ai reload --dry-run` (kit `@62297eb`) nie nadpisuje tego
+  pliku.
+- Tor rusza po plasterku 0: wtedy `/design-login` i pierwszy `/design-sync`.
+  Ewentualny krok budowania tylko na potrzeby synca dodajemy dopiero wtedy, gdy
+  sync go wymusi, bez zmiany
+  [ADR 0005](adr/0005-pakiety-wspoldzielone-jako-zrodlo.md). Tor nie blokuje
+  plasterków.
+
+**Zależności od kita** (`radthenone/ai-instruction-kit-mcp`, wdrażane do tego
+repo):
+
+- **#187 (zamknięte, czeka na wdrożenie): etykiety stanu.** Issue plasterków
+  zakładamy przez `/create-task` z blokiem „Gotowość”. „Gotowe pod `/git-start`”
+  oznacza więc `ready-for-agent` albo `ready-for-human`.
+- **#188 (zamknięte, czeka na wdrożenie): reguły frontendu w bundlu.** Te reguły to:
+  - tylko tokeny,
+  - plik route'a bez API i logiki, sekcje w `features/` aplikacji,
+  - domyślny układ w jednej kolumnie,
+  - spec layoutu `docs/design/<N>.md`,
+  - nowe klucze `design-tokens`, `routes-web` i `routes-mobile` w `.ai/project.md`,
+  - kontrola w `/review-frontend`.
+
+  Po wdrożeniu:
+  - reguła `ui/` w `frontend/web/AGENTS.md` i w overlayu ma odsyłać do modułu
+    bundla zamiast go powtarzać,
+  - ESLint i grep w CI zostają, bo kit pilnuje tylko w review,
+  - klucze ścieżek dopisze `/kit-project-edit`.
+
+  Sekcje w `features/` aplikacji wołają hooki z `@olivin/features`
+  ([ADR 0033](adr/0033-hooki-orvala-wprost-logika-domeny-w-pakiecie-features.md)),
+  a nie odwrotnie.
+- **#189 (otwarte): etykiety `design: layout` i `design: tokens`, dokument
+  `docs/agents/design-handoff.md` oraz follow-upy „design layout” w `/night-run`.**
+  Do czasu wdrożenia tor designu działa ręcznie, jak opisano wyżej. Po wdrożeniu
+  sesja designu kończy się specem `docs/design/<N>.md` według formatu z bundla, a
+  ekrany czekające na projekt dostają `design: layout`.
+- **Uwaga przy reloadzie kita:** `kit-ai reload` nadpisuje `.mcp.json`. Ręcznie
+  wpisana ścieżka w `--workspace` (zamiast `${workspaceFolder}`, którego Claude
+  Code nie rozwija) wróci wtedy do wartości z kita. Do zgłoszenia w kicie.
+
+**Pytania na grilling plasterka 3** (dostęp gościa do zamówienia,
+[ADR 0038](adr/0038-linki-z-maili-na-jedna-domene-webu-auth-kodem.md)):
+
+1. Anulowanie (`pending`/`paid`) i zgłoszenie zwrotu przez gościa. Propozycja
+   właściciela: potwierdzenie jednorazowym kodem z maila, bo mechanizm kodów już
+   istnieje (logowanie kodem, weryfikacja e-maila).
+2. Formularz „Sprawdź zamówienie” (numer zamówienia + e-mail), który nie
+   pokazuje zamówienia od razu, tylko wysyła link z tokenem na ten e-mail.
+3. Ważność tokenu i jego los po założeniu konta na ten sam e-mail, gdy
+   zamówienie przechodzi na konto.
+4. Research przed grillingiem: strona statusu zamówienia w Shopify, śledzenie
+   zamówień w WooCommerce, „Orders and Returns” w Magento.
+
+**Zadania przed plasterkiem 5** (po stronie właściciela): projekt Firebase z
+`google-services.json` i `eas init`.
+
+**Przed wydaniem iOS:**
+
+- Apple Developer Program: konto firmowe z numerem D-U-N-S.
+- Klucz APNs i push na iOS.
+- Universal links przetestowane na urządzeniu.
+- Sign in with Apple, bo wymaga go wytyczna App Store 4.8 przy logowaniu przez
+  Google i Facebook.
+- TestFlight i publikacja w App Store.
+
+**Zadania przed plasterkiem 2** (po stronie właściciela):
+
+- Wybrać kanał wysyłki bez umowy z przewoźnikiem: pośrednika (Furgonetka,
+  [ADR 0027](adr/0027-integracje-zewnetrzne-przez-adapter.md)) albo konto
+  firmowe u przewoźnika z cennikiem standardowym.
+- Sprawdzić w cenniku wybranego kanału maksymalną kwotę ubezpieczenia
+  przesyłki kurierskiej. Jeśli nie pokrywa najdroższych zamówień, ustawić
+  górny limit wartości zamówienia na metodzie kurierskiej.
+- Sprawdzić, czy kanał ma odbiór za podpisem, i włączyć go dla droższych
+  zamówień.
+
+Przy grillingu plasterka 2 trzeba rozstrzygnąć, czy krok „dostawa” z
+[ADR 0030](adr/0030-koszyk-po-stronie-backendu-i-kasa-w-czterech-krokach.md)
+zostaje, skoro dla każdej strefy jest dokładnie jedna metoda.
 
 ### Terraform jako warstwa infrastruktury jako kodu
 
@@ -111,6 +280,10 @@ wraz z wyłączeniem odstąpienia dla grawerunku i produktów na zamówienie
 ([0024](adr/0024-produkt-na-zamowienie-i-para-jako-jedna-pozycja.md)) oraz
 zapisem o przejściu ryzyka i procedurze zaginięcia przesyłki
 ([0028](adr/0028-ubezpieczenie-przesylki-wliczone-nie-do-wyboru.md)).
+
+Do przeglądu prawnika dodatkowo: czy zgoda marketingowa na push jako flaga
+spełnia wymogi przepisów o marketingu elektronicznym (Prawo komunikacji
+elektronicznej) ([0037](adr/0037-push-przez-expo-z-minimum-tresci.md)).
 
 Do potwierdzenia u księgowości dodatkowo: zwolnienie z kasy fiskalnej dla
 sprzedaży wysyłkowej przy płatności przez operatora na rachunek i ewidencji
