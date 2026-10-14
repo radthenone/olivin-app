@@ -4,13 +4,13 @@ x-backend-build-prod: &backend-build-prod
   target: prod
 
 x-backend-env: &backend-env
-  - ./.envs/dev/backend/django.env
-  - ./.envs/dev/backend/db.env
-  - ./.envs/dev/backend/cache_broker.env
-  - ./.envs/dev/backend/broker.env
-  - ./.envs/dev/backend/s3.env
-  - ./.envs/dev/backend/email.env
-  - ./.envs/dev/backend/authorization.env
+  - ./.envs/prod/backend/django.env
+  - ./.envs/prod/backend/db.env
+  - ./.envs/prod/backend/cache_broker.env
+  - ./.envs/prod/backend/broker.env
+  - ./.envs/prod/backend/s3.env
+  - ./.envs/prod/backend/email.env
+  - ./.envs/prod/backend/authorization.env
 
 services:
   # S3 na prod: trwały wolumen z dev-definicji, ŻADNYCH portów na zewnątrz
