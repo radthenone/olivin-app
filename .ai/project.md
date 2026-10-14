@@ -237,6 +237,10 @@ Dopisuje `/kit-project-edit` (tryb odstępstwa), jedna linia na wyjątek:
 
 OAuth wymaga **Dev Client**, nie działa w Expo Go.
 
+## Biblioteka komponentów UI (web)
+
+Komponenty w `web/components/ui/` są czyste: nie pobierają danych, nie nawigują i nie wołają i18n. Teksty dostają przez propsy, a style biorą wyłącznie z tokenów `@olivin/tokens`, bez hexów i dowolnych wartości Tailwinda (`-[...]` z liczbą albo kolorem). Warianty `data-[state=open]:` i `aria-[...]` z shadcn są dozwolone. Układ plików jest płaski, taki jak generuje CLI shadcn. Zmieniamy go, jeśli pierwszy `/design-sync` wymusi foldery. Komponenty złożone z domeny mieszkają w `web/components/<obszar>/` i nie trafiają do synchronizacji z Claude Design. Mobile (RNR) trzyma te same nazwy komponentów, warianty i tokeny (ADR 0003). Tor designu jest opisany w `docs/open-decisions.md`.
+
 ## Storage
 
 - **Brak `apps/files`.** Storage w `backend/src/core/storage/` — S3 w każdym środowisku (SeaweedFS w dev, dowolny S3 w prod) przez `USE_S3`. Model trzyma **sam klucz obiektu**, bez hosta i bucketa; adres składa `core.storage.object_url` w warstwie serializacji.
