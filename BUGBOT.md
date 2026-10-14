@@ -41,6 +41,11 @@ If the PR modifies `frontend/` without `task lints:frontend:typecheck` passing (
 - Flag imports from `react-native` in `.web.tsx` files.
 - Flag `any` on new public interfaces without `@ts-expect-error` justification.
 
+If the diff changes files under `frontend/web/components/ui/` and they import `@olivin/api`, `@olivin/features`, `next-intl` or `next/navigation`, or contain hex colors (`#[0-9a-fA-F]{3,6}`) or Tailwind arbitrary values with a number or color (e.g. `p-[13px]`, `bg-[#fff]`; `data-[...]` and `aria-[...]` variants are allowed):
+
+- Add a blocking bug titled "Impure UI library component"
+- Body: "Komponenty `ui/` są czyste: bez danych, nawigacji i i18n, style wyłącznie z tokenów `@olivin/tokens` (`.ai/project.md`, Biblioteka komponentów UI)."
+
 If Expo native modules or `app.json` plugins change without EAS note in PR description:
 
 - Add a non-blocking finding: "Zmiana native — wymaga EAS build, nie tylko OTA."
