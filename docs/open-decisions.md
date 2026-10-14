@@ -154,13 +154,13 @@ Plasterki, które mają już ADR, grillujemy głównie pod kątem kontraktu inte
   [ADR 0005](adr/0005-pakiety-wspoldzielone-jako-zrodlo.md). Tor nie blokuje
   plasterków.
 
-**Zależności od kita** (`radthenone/ai-instruction-kit-mcp`, wdrażane do tego
-repo):
+**Zależności od kita** (`radthenone/ai-instruction-kit-mcp`, wdrożone w #309
+jako kit `@49ce17d`):
 
-- **#187 (zamknięte, czeka na wdrożenie): etykiety stanu.** Issue plasterków
+- **#187 (wdrożone): etykiety stanu.** Issue plasterków
   zakładamy przez `/create-task` z blokiem „Gotowość”. „Gotowe pod `/git-start`”
   oznacza więc `ready-for-agent` albo `ready-for-human`.
-- **#188 (zamknięte, czeka na wdrożenie): reguły frontendu w bundlu.** Te reguły to:
+- **#188 (wdrożone): reguły frontendu w bundlu.** Te reguły to:
   - tylko tokeny,
   - plik route'a bez API i logiki, sekcje w `features/` aplikacji,
   - domyślny układ w jednej kolumnie,
@@ -168,23 +168,19 @@ repo):
   - nowe klucze `design-tokens`, `routes-web` i `routes-mobile` w `.ai/project.md`,
   - kontrola w `/review-frontend`.
 
-  Po wdrożeniu:
-  - reguła `ui/` w `frontend/web/AGENTS.md` i w overlayu ma odsyłać do modułu
-    bundla zamiast go powtarzać,
-  - ESLint i grep w CI zostają, bo kit pilnuje tylko w review,
-  - klucze ścieżek dopisze `/kit-project-edit`.
+  W tym repo: reguła `ui/` w `frontend/web/AGENTS.md` i w overlayu odsyła do
+  modułu `stack:frontend:ui-structure`, klucze `design-tokens`, `routes-web` i
+  `routes-mobile` są w `.ai/project.md`. ESLint i grep w CI zostają, bo kit pilnuje
+  tylko w review.
 
   Sekcje w `features/` aplikacji wołają hooki z `@olivin/features`
   ([ADR 0033](adr/0033-hooki-orvala-wprost-logika-domeny-w-pakiecie-features.md)),
   a nie odwrotnie.
-- **#189 (otwarte): etykiety `design: layout` i `design: tokens`, dokument
+- **#189 (wdrożone): etykiety `design: layout` i `design: tokens`, dokument
   `docs/agents/design-handoff.md` oraz follow-upy „design layout” w `/night-run`.**
-  Do czasu wdrożenia tor designu działa ręcznie, jak opisano wyżej. Po wdrożeniu
-  sesja designu kończy się specem `docs/design/<N>.md` według formatu z bundla, a
-  ekrany czekające na projekt dostają `design: layout`.
-- **Uwaga przy reloadzie kita:** `kit-ai reload` nadpisuje `.mcp.json`. Ręcznie
-  wpisana ścieżka w `--workspace` (zamiast `${workspaceFolder}`, którego Claude
-  Code nie rozwija) wróci wtedy do wartości z kita. Do zgłoszenia w kicie.
+  Sesja designu kończy się specem `docs/design/<N>.md` według formatu z bundla
+  (`docs/agents/design-handoff.md`), a ekrany czekające na projekt dostają
+  `design: layout`.
 
 **Pytania na grilling plasterka 3** (dostęp gościa do zamówienia,
 [ADR 0038](adr/0038-linki-z-maili-na-jedna-domene-webu-auth-kodem.md)):
