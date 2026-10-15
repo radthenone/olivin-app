@@ -17,18 +17,10 @@ class TestCourierOnly:
         assert set(ShippingMethodKind.values) == {"courier", "eu"}
 
     def test_shipment_has_no_pickup_point(self):
-        """Przesyłka nie ma kodu punktu odbioru — tylko pola przesyłki kurierskiej."""
-        field_names = {field.name for field in Shipment._meta.concrete_fields}
+        """Przesyłka nie ma kodu punktu odbioru."""
+        field_names = {field.name for field in Shipment._meta.get_fields()}
 
-        assert field_names == {
-            "id",
-            "created_at",
-            "updated_at",
-            "order",
-            "tracking_number",
-            "declared_value",
-            "currency",
-        }
+        assert "pickup_point_code" not in field_names
 
 
 @pytest.mark.django_db

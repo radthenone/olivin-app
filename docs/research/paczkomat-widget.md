@@ -1,5 +1,7 @@
 # Wybór paczkomatu InPost w kasie — web i mobile
 
+> Zastąpione przez [ADR 0036](../adr/0036-wysylka-wylacznie-kurierem.md): sklep wysyła wyłącznie kurierem.
+
 Research do pozycji 4 w `docs/open-decisions.md` („Widget wyboru paczkomatu na
 webie i w React Native”). Stan na 2026-10-14. Stack: Next.js 16.4, Expo SDK 57
 / React Native 0.86.3, backend Django.
