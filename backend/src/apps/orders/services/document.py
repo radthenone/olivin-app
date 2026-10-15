@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from zoneinfo import ZoneInfo
 
+from common.languages import email_language
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.db import transaction
@@ -114,6 +115,7 @@ def _notify_document_ready(order: Order, document: SalesDocument) -> None:
             NotificationKind.DOCUMENT_READY,
             payload,
             email=order.email,
+            language=email_language(order),
         ),
         robust=True,
     )

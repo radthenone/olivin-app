@@ -28,7 +28,8 @@ SHOP_OWNER_EMAIL = str(
 # Jedyna baza linków w mailach (ADR 0038): domena webu (Next). Na dev
 # `http://localhost:3000`, w produkcji kanoniczna domena bez przekierowań.
 FRONTEND_URL = str(os.environ.get("FRONTEND_URL", "http://localhost:3000")).rstrip("/")
-# ponytail: stały prefiks `/pl`; język z `PreferredLanguage` to osobne issue.
+# Prefiks `/pl` domyślny; `common.languages.localized_link` podmienia go na
+# język odbiorcy maila (`PreferredLanguage`, ADR 0035, #316).
 FRONTEND_LINK_BASE = f"{FRONTEND_URL}/pl"
 
 # Linki z maili newslettera (#203) prowadzą na ekrany web, które wołają API

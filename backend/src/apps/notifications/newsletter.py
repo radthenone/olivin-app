@@ -28,6 +28,7 @@ from apps.notifications.models import (
     NewsletterSubscription,
     NotificationPreference,
 )
+from common.languages import email_language, localized_link
 from core.integrations.notifications.mail import send_notification_email
 from core.integrations.push.base import MARKETING_CHANNEL
 
@@ -58,12 +59,18 @@ def _parse_uuid(token: str) -> uuid.UUID | None:
 
 
 def confirm_url(subscription: NewsletterSubscription) -> str:
-    return settings.NEWSLETTER_CONFIRM_URL.format(token=subscription.confirmation_token)
+    return localized_link(
+        settings.NEWSLETTER_CONFIRM_URL.format(token=subscription.confirmation_token),
+        email_language(subscription),
+    )
 
 
 def subscription_unsubscribe_url(subscription: NewsletterSubscription) -> str:
-    return settings.NEWSLETTER_UNSUBSCRIBE_URL.format(
-        token=subscription.unsubscribe_token
+    return localized_link(
+        settings.NEWSLETTER_UNSUBSCRIBE_URL.format(
+            token=subscription.unsubscribe_token
+        ),
+        email_language(subscription),
     )
 
 
@@ -95,6 +102,25 @@ def one_click_unsubscribe_headers(token: str) -> dict[str, str]:
     }
 
 
+# Temat i treść maila z linkiem potwierdzenia; klucz to język (ADR 0035).
+_CONFIRMATION_MESSAGES: dict[str, tuple[str, str]] = {
+    "pl": (
+        "Potwierdź zapis na newsletter",
+        "Dziękujemy za zapis na newsletter. Potwierdź adres, "
+        "klikając w link: {link}\n\n"
+        "Jeśli to nie Ty, zignoruj tę wiadomość — bez potwierdzenia "
+        "nic do Ciebie nie wyślemy.",
+    ),
+    "en": (
+        "Confirm your newsletter subscription",
+        "Thank you for subscribing to our newsletter. Confirm your address "
+        "by clicking the link: {link}\n\n"
+        "If this wasn't you, ignore this message — without confirmation "
+        "we won't send you anything.",
+    ),
+}
+
+
 def _send_confirmation(subscription: NewsletterSubscription) -> None:
     """Wysyła link potwierdzenia — najwyżej raz na `_CONFIRMATION_COOLDOWN` na adres.
 
@@ -108,24 +134,21 @@ def _send_confirmation(subscription: NewsletterSubscription) -> None:
     ):
         return
     link = confirm_url(subscription)
+    subject, body = _CONFIRMATION_MESSAGES[email_language(subscription)]
     transaction.on_commit(
         lambda: send_notification_email(
-            to=subscription.email,
-            subject="Potwierdź zapis na newsletter",
-            body=(
-                "Dziękujemy za zapis na newsletter. Potwierdź adres, "
-                f"klikając w link: {link}\n\n"
-                "Jeśli to nie Ty, zignoruj tę wiadomość — bez potwierdzenia "
-                "nic do Ciebie nie wyślemy."
-            ),
+            to=subscription.email, subject=subject, body=body.format(link=link)
         ),
         robust=True,
     )
 
 
 @transaction.atomic
-def subscribe(email: str) -> None:
+def subscribe(email: str, *, language: str | None = None) -> None:
     """Zapis na newsletter; aktywny dopiero po kliknięciu linku z maila.
+
+    `language` (z `Accept-Language`) trafia na nową albo ponownie zapisaną
+    subskrypcję — w nim idą maile do niej (ADR 0035).
 
     Nie zwraca niczego, co różniłoby nowy adres od istniejącego — wywołujący
     (API) odpowiada zawsze tak samo. Aktywna subskrypcja nie dostaje maila;
@@ -138,7 +161,9 @@ def subscribe(email: str) -> None:
         raise NoMarketingDocumentError
     address = _normalise(email)
     subscription, created = (
-        NewsletterSubscription.objects.select_for_update().get_or_create(email=address)
+        NewsletterSubscription.objects.select_for_update().get_or_create(
+            email=address, defaults={"preferred_language": language}
+        )
     )
     if subscription.status == NewsletterStatus.ACTIVE:
         return
@@ -147,8 +172,15 @@ def subscribe(email: str) -> None:
         subscription.status = NewsletterStatus.PENDING
         subscription.confirmation_token = uuid.uuid4()
         subscription.confirmed_at = None
+        subscription.preferred_language = language
         subscription.save(
-            update_fields=["status", "confirmation_token", "confirmed_at", "updated_at"]
+            update_fields=[
+                "status",
+                "confirmation_token",
+                "confirmed_at",
+                "preferred_language",
+                "updated_at",
+            ]
         )
     # Po wypisie zgoda jest udzielana od nowa; przy niepotwierdzonej — tylko
     # gdy od poprzedniego zapisu weszła nowa wersja zgody marketingowej.

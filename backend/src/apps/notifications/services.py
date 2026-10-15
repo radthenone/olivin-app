@@ -17,6 +17,7 @@ from apps.notifications.models import (
     NotificationPreference,
     PushDevice,
 )
+from common.languages import PreferredLanguage, email_language
 from apps.notifications.newsletter import (
     account_unsubscribe_token,
     one_click_unsubscribe_headers,
@@ -72,6 +73,49 @@ _TEMPLATES: dict[str, tuple[str, str]] = {
 }
 
 
+# Angielskie wersje `_TEMPLATES` dla `PreferredLanguage.EN` (ADR 0035).
+_TEMPLATES_EN: dict[str, tuple[str, str]] = {
+    "order_status_changed": (
+        "Order {order_number} status changed",
+        "Order {order_number} now has status: {status_label}.",
+    ),
+    "order_paid": (
+        "Order {order_number} paid",
+        "Thank you — order {order_number} has been paid.",
+    ),
+    "document_ready": (
+        "Document for order {order_number} is ready",
+        "Document {document_kind} for order {order_number} is ready.",
+    ),
+    "return_request_status_changed": (
+        "Return request for order {order_number}",
+        "Return request for order {order_number} is now: {status_label}.",
+    ),
+    "return_settled": (
+        "Return for order {order_number} settled",
+        "Return for order {order_number} settled for {compensation_amount}: "
+        "{compensation_form}.",
+    ),
+    "watch_restock": (
+        "Variant {variant_sku} is back in stock",
+        "Watched variant {variant_sku} ({product_name}) is available again.",
+    ),
+    "watch_price_drop": (
+        "Price of variant {variant_sku} dropped",
+        "Watched variant {variant_sku} ({product_name}) got cheaper: "
+        "was {old_price}, now {new_price}.",
+    ),
+    "cart_reminder": (
+        "Items are waiting in your cart",
+        "Items are still in your cart — today's prices and availability:\n"
+        "{items}\n\n"
+        "Back to your cart: {cart_url}\n\n"
+        "Don't want these messages? Change your consents: {preferences_url}\n"
+        "Unsubscribe: {unsubscribe_url}",
+    ),
+}
+
+
 # Ekran aplikacji do otwarcia po tapnięciu w push (`data.url`, ścieżka
 # expo-router); rodzaj spoza mapy otwiera skrzynkę powiadomień.
 _PUSH_URLS: dict[str, str] = {
@@ -114,8 +158,11 @@ def _push_message(
     }
 
 
-def _render(kind: str, payload: dict[str, Any]) -> tuple[str, str]:
-    subject_tpl, body_tpl = _TEMPLATES.get(kind, (kind, kind))
+def _render(
+    kind: str, payload: dict[str, Any], language: str = PreferredLanguage.PL
+) -> tuple[str, str]:
+    templates = _TEMPLATES_EN if language == PreferredLanguage.EN else _TEMPLATES
+    subject_tpl, body_tpl = templates.get(kind, (kind, kind))
     try:
         return subject_tpl.format(**payload), body_tpl.format(**payload)
     except KeyError as exc:
@@ -197,6 +244,7 @@ def notify(
     email: str | None = None,
     push_body: str | None = None,
     push_data: dict[str, Any] | None = None,
+    language: str | None = None,
 ) -> Notification | None:
     """Zapisuje powiadomienie (dla konta) i wysyła e-mail (`CONTEXT.md`, Notification).
 
@@ -222,6 +270,9 @@ def notify(
     `_push_message`). `push_body` zastępuje domyślną ogólną treść, a
     `push_data` dokłada pola do `data` (np. typ przypomnienia o koszyku).
 
+    Język e-maila (ADR 0035): `language` od wywołującego (zamówienie gościa,
+    `email_language(order)`), a bez niego — z profilu konta; brak → polski.
+
     Bez idempotencji: każde wywołanie tworzy nowy rekord i kolejkuje nowy
     e-mail. To wywołujący odpowiada za wywołanie raz na realne zdarzenie —
     `issue_document()` woła tylko dla nowo wystawionego dokumentu, sygnał
@@ -234,7 +285,7 @@ def notify(
         user.email if user is not None else str(user_or_email)  # type: ignore[missing-attribute]
     )
 
-    subject, message = _render(kind, payload)
+    subject, message = _render(kind, payload, language or email_language(user))
 
     # Push jest niezależnym kanałem z własną zgodą (`marketing_push`):
     # kolejkowanie przed bramką e-mailową, żeby marketing z samym `push`

@@ -30,6 +30,7 @@ from apps.notifications.serializers import (
     PushDeviceWriteSerializer,
 )
 from apps.notifications.services import register_push_device, unregister_push_device
+from common.languages import language_from_request
 
 
 @notification_schema
@@ -134,7 +135,10 @@ class NewsletterSubscribeView(_PublicNewsletterView):
         payload = NewsletterSubscribeSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
         try:
-            newsletter.subscribe(payload.validated_data["email"])
+            newsletter.subscribe(
+                payload.validated_data["email"],
+                language=language_from_request(request),
+            )
         except newsletter.NoMarketingDocumentError as exc:
             raise ValidationError(
                 {"email": "Zapis chwilowo niedostępny — brak zgody marketingowej."}

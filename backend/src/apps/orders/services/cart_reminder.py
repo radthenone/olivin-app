@@ -12,6 +12,7 @@ from django.utils import timezone
 from apps.inventory.models import available_variants
 from apps.notifications.models import NotificationKind
 from apps.notifications.newsletter import account_unsubscribe_url
+from common.languages import email_language, localized_link
 from apps.notifications.services import notify
 from apps.orders.models import Cart, CartItem
 from apps.products.models import ProductStatus
@@ -85,14 +86,19 @@ def send_cart_reminder(cart_pk: object, *, now: datetime) -> bool:
         .prefetch_related("variant__cost_components")
         .order_by("created_at", "id")
     )
+    language = email_language(locked.user)
     notify(
         locked.user,
         NotificationKind.CART_REMINDER,
         {
             "items": "\n".join(_item_line(item) for item in items),
-            "cart_url": settings.CART_URL,
-            "preferences_url": settings.NOTIFICATION_PREFERENCES_URL,
-            "unsubscribe_url": account_unsubscribe_url(locked.user.pk),
+            "cart_url": localized_link(settings.CART_URL, language),
+            "preferences_url": localized_link(
+                settings.NOTIFICATION_PREFERENCES_URL, language
+            ),
+            "unsubscribe_url": localized_link(
+                account_unsubscribe_url(locked.user.pk), language
+            ),
         },
         push_body=f"Pozycje w koszyku: {len(items)}. Wróć, zanim znikną.",
         push_data={"type": NotificationKind.CART_REMINDER.value},

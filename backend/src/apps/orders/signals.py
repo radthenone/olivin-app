@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from allauth.account.signals import email_confirmed
+from common.languages import email_language
 from django.db import transaction
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
@@ -125,6 +126,12 @@ def _notify_on_status_change(
     # anonymisation). Gość nie ma konta — dostaje sam e-mail, bez rekordu.
     recipient = instance.user if instance.user_id is not None else instance.email  # type: ignore[missing-attribute]
     transaction.on_commit(
-        lambda: notify(recipient, kind, payload, email=instance.email),  # type: ignore[bad-argument-type]
+        lambda: notify(
+            recipient,  # type: ignore[bad-argument-type]
+            kind,
+            payload,
+            email=instance.email,
+            language=email_language(instance),
+        ),
         robust=True,
     )
