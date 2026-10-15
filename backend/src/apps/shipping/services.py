@@ -5,40 +5,8 @@ from dataclasses import dataclass
 from django.conf import settings
 
 from apps.shipping.models import ShippingMethod, ShippingZone
+from common.countries import EU_COUNTRIES
 from common.money import DEFAULT_CURRENCY, Money
-
-# Kraje Unii poza Polską. Lista jest tu, a nie w bazie, bo zmienia się raz na
-# dekadę i jest faktem prawnym, a nie danymi sklepu (ADR 0019).
-EU_COUNTRIES = frozenset(
-    {
-        "AT",
-        "BE",
-        "BG",
-        "CY",
-        "CZ",
-        "DE",
-        "DK",
-        "EE",
-        "ES",
-        "FI",
-        "FR",
-        "GR",
-        "HR",
-        "HU",
-        "IE",
-        "IT",
-        "LT",
-        "LU",
-        "LV",
-        "MT",
-        "NL",
-        "PT",
-        "RO",
-        "SE",
-        "SI",
-        "SK",
-    }
-)
 
 
 @dataclass(frozen=True, slots=True)

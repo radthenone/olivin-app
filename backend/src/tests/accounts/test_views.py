@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import cast
+from typing import Any, cast
 
 import pytest
 from django.urls import reverse
@@ -160,3 +160,78 @@ class TestProfilePendingConsents:
             ("privacy", "privacy-2026"),
         ]
         assert pending[0]["id"] == str(consent_documents["terms"].pk)
+
+
+@pytest.mark.django_db
+class TestProfileDeliveryCountry:
+    """Kraj dostawy w profilu — tylko państwa Unii, brak oznacza Polskę (#317)."""
+
+    def _patch(self, client: APIClient, profile: Profile, country: str | None) -> Any:
+        """PATCH profilu z podanym krajem dostawy."""
+        url = reverse("profile-detail", args=[profile.pk])
+        return client.patch(url, {"delivery_country": country}, format="json")
+
+    def test_non_eu_country_is_rejected(self, authenticated_client: APIClient, user):
+        """Kraj spoza Unii (US) → 400, profil bez zmian."""
+        profile = ProfileFactory(user=user)
+
+        response = self._patch(authenticated_client, profile, "US")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "delivery_country" in cast(dict, response.data)
+        profile.refresh_from_db()
+        assert not profile.delivery_country
+
+    def test_blank_country_is_rejected(self, authenticated_client: APIClient, user):
+        """Pusty string → 400; brak kraju zapisujemy tylko jako null."""
+        profile = ProfileFactory(user=user, delivery_country="DE")
+
+        response = self._patch(authenticated_client, profile, "")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        profile.refresh_from_db()
+        assert profile.delivery_country == "DE"
+
+    def test_eu_country_is_persisted_and_returned(
+        self, authenticated_client: APIClient, user
+    ):
+        """Kraj Unii (DE) zapisuje się i wraca w odpowiedzi."""
+        profile = ProfileFactory(user=user)
+
+        response = self._patch(authenticated_client, profile, "DE")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert cast(dict, response.data)["delivery_country"] == "DE"
+        profile.refresh_from_db()
+        assert profile.delivery_country == "DE"
+
+    def test_poland_is_accepted(self, authenticated_client: APIClient, user):
+        """Polska też jest krajem Unii — można ją wybrać wprost."""
+        profile = ProfileFactory(user=user)
+
+        response = self._patch(authenticated_client, profile, "PL")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert cast(dict, response.data)["delivery_country"] == "PL"
+
+    def test_profile_without_country_returns_null(
+        self, authenticated_client: APIClient, user
+    ):
+        """Profil bez kraju zwraca null (klient traktuje to jako Polskę)."""
+        profile = ProfileFactory(user=user)
+        url = reverse("profile-detail", args=[profile.pk])
+
+        response = cast(Response, authenticated_client.get(url))
+
+        assert cast(dict, response.data)["delivery_country"] is None
+
+    def test_country_can_be_cleared(self, authenticated_client: APIClient, user):
+        """PATCH z null czyści kraj — powrót do domyślnej Polski."""
+        profile = ProfileFactory(user=user, delivery_country="DE")
+
+        response = self._patch(authenticated_client, profile, None)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert cast(dict, response.data)["delivery_country"] is None
+        profile.refresh_from_db()
+        assert not profile.delivery_country

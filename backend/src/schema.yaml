@@ -3978,6 +3978,64 @@ components:
         * `radiant` - Radiant
         * `heart` - Serce
         * `cabochon` - Kaboszon
+    DeliveryCountryEnum:
+      enum:
+      - PL
+      - DE
+      - FR
+      - IT
+      - ES
+      - AT
+      - BE
+      - BG
+      - HR
+      - CY
+      - CZ
+      - DK
+      - EE
+      - FI
+      - GR
+      - HU
+      - IE
+      - LV
+      - LT
+      - LU
+      - MT
+      - NL
+      - PT
+      - RO
+      - SK
+      - SI
+      - SE
+      type: string
+      description: |-
+        * `PL` - Poland
+        * `DE` - Germany
+        * `FR` - France
+        * `IT` - Italy
+        * `ES` - Spain
+        * `AT` - Austria
+        * `BE` - Belgium
+        * `BG` - Bulgaria
+        * `HR` - Croatia
+        * `CY` - Cyprus
+        * `CZ` - Czechia
+        * `DK` - Denmark
+        * `EE` - Estonia
+        * `FI` - Finland
+        * `GR` - Greece
+        * `HU` - Hungary
+        * `IE` - Ireland
+        * `LV` - Latvia
+        * `LT` - Lithuania
+        * `LU` - Luxembourg
+        * `MT` - Malta
+        * `NL` - Netherlands
+        * `PT` - Portugal
+        * `RO` - Romania
+        * `SK` - Slovakia
+        * `SI` - Slovenia
+        * `SE` - Sweden
     Favorite:
       type: object
       description: 'Wpis ulubionych: produkt i data dodania.'
@@ -4443,6 +4501,9 @@ components:
         marketingPush:
           type: boolean
           description: Zgoda na marketing push
+    NullEnum:
+      enum:
+      - null
     Order:
       type: object
       description: |-
@@ -5638,6 +5699,41 @@ components:
           readOnly: true
         phoneNumber:
           type: string
+        deliveryCountry:
+          nullable: true
+          description: |-
+            Kraj dostawy (tylko Unia); pusty oznacza Polskę. Waluty z niego nie liczymy — klient wysyła `currency` sam (ADR 0035)
+
+            * `PL` - Poland
+            * `DE` - Germany
+            * `FR` - France
+            * `IT` - Italy
+            * `ES` - Spain
+            * `AT` - Austria
+            * `BE` - Belgium
+            * `BG` - Bulgaria
+            * `HR` - Croatia
+            * `CY` - Cyprus
+            * `CZ` - Czechia
+            * `DK` - Denmark
+            * `EE` - Estonia
+            * `FI` - Finland
+            * `GR` - Greece
+            * `HU` - Hungary
+            * `IE` - Ireland
+            * `LV` - Latvia
+            * `LT` - Lithuania
+            * `LU` - Luxembourg
+            * `MT` - Malta
+            * `NL` - Netherlands
+            * `PT` - Portugal
+            * `RO` - Romania
+            * `SK` - Slovakia
+            * `SI` - Slovenia
+            * `SE` - Sweden
+          oneOf:
+          - $ref: '#/components/schemas/DeliveryCountryEnum'
+          - $ref: '#/components/schemas/NullEnum'
         role:
           allOf:
           - $ref: '#/components/schemas/RoleEnum'
@@ -6161,6 +6257,41 @@ components:
           readOnly: true
         phoneNumber:
           type: string
+        deliveryCountry:
+          nullable: true
+          description: |-
+            Kraj dostawy (tylko Unia); pusty oznacza Polskę. Waluty z niego nie liczymy — klient wysyła `currency` sam (ADR 0035)
+
+            * `PL` - Poland
+            * `DE` - Germany
+            * `FR` - France
+            * `IT` - Italy
+            * `ES` - Spain
+            * `AT` - Austria
+            * `BE` - Belgium
+            * `BG` - Bulgaria
+            * `HR` - Croatia
+            * `CY` - Cyprus
+            * `CZ` - Czechia
+            * `DK` - Denmark
+            * `EE` - Estonia
+            * `FI` - Finland
+            * `GR` - Greece
+            * `HU` - Hungary
+            * `IE` - Ireland
+            * `LV` - Latvia
+            * `LT` - Lithuania
+            * `LU` - Luxembourg
+            * `MT` - Malta
+            * `NL` - Netherlands
+            * `PT` - Portugal
+            * `RO` - Romania
+            * `SK` - Slovakia
+            * `SI` - Slovenia
+            * `SE` - Sweden
+          oneOf:
+          - $ref: '#/components/schemas/DeliveryCountryEnum'
+          - $ref: '#/components/schemas/NullEnum'
         role:
           allOf:
           - $ref: '#/components/schemas/RoleEnum'

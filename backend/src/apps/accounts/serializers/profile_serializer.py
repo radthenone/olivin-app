@@ -1,6 +1,7 @@
 from datetime import date
 
 from django.db import IntegrityError, transaction
+from django_countries.serializers import CountryFieldMixin
 from drf_spectacular.utils import extend_schema_field
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import serializers
@@ -18,7 +19,7 @@ from apps.accounts.usernames import (
 USERNAME_TAKEN = "Ta nazwa użytkownika jest już zajęta."
 
 
-class ProfileSerializer(serializers.ModelSerializer):
+class ProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
     email = serializers.EmailField(source="user.email", read_only=True)
     # Publiczna nazwa klienta (#195); zmiana przez PATCH profilu.
     username = serializers.CharField(
@@ -47,10 +48,13 @@ class ProfileSerializer(serializers.ModelSerializer):
             "date_of_birth",
             "age",
             "phone_number",
+            "delivery_country",
             "role",
             "pending_consents",
         ]
         read_only_fields = ["id", "email", "role"]
+        # Brak kraju zapisujemy tylko jako null, nie jako pusty string.
+        extra_kwargs = {"delivery_country": {"allow_blank": False}}
 
     def get_full_name(self, obj: Profile) -> str:
         return obj.full_name
