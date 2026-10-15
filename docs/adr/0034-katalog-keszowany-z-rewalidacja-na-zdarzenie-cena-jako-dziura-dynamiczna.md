@@ -18,3 +18,9 @@ Komponenty serwerowe pobierają dane katalogu przez osobny, publiczny transport 
 ## Consequences
 
 Backend dostaje jednego klienta rewalidacji wywoływanego po zatwierdzeniu transakcji. Jeśli web jest niedostępny, zmiana pojawi się po wygaśnięciu strony. Żaden komponent serwerowy katalogu nie może korzystać z sesji użytkownika, bo jego wynik trafia do wspólnego kesza.
+
+## Kontrakt rewalidacji (#318)
+
+- Żądanie: `POST {FRONTEND_URL}/api/revalidate`, nagłówek `X-Revalidate-Secret: <REVALIDATE_SECRET>`, treść `{"tags": [...]}`.
+- Tagi: `product:<slug>` przy każdym zapisie produktu z adresem; `catalog` przy publikacji, zdjęciu produktu ze sklepu i po przeliczeniu cen.
+- Web musi wyłączyć `/api` z matchera middleware next-intl. Inaczej przekierowanie 301 na prefiks języka zamieni POST na GET (`requests` tak robi) i rewalidacja przepadnie po cichu.

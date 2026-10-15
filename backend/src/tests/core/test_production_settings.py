@@ -1,4 +1,4 @@
-"""Produkcja wymaga jawnych adresów webu i API dla linków z maili (#313, #314, ADR 0038)."""
+"""Produkcja wymaga jawnych adresów webu i API oraz sekretu rewalidacji (#313, #314, #318)."""
 
 from __future__ import annotations
 
@@ -11,6 +11,12 @@ from django.core.exceptions import ImproperlyConfigured
 import core.settings
 
 PRODUCTION = Path(core.settings.__file__).with_name("production.py")
+
+
+@pytest.fixture(autouse=True)
+def revalidate_secret(monkeypatch: pytest.MonkeyPatch):
+    """Sekret rewalidacji ustawiony — testy adresów sprawdzają tylko adresy."""
+    monkeypatch.setenv("REVALIDATE_SECRET", "prod-secret")
 
 
 class TestProductionFrontendUrl:
@@ -50,3 +56,20 @@ class TestProductionBackendUrl:
 
         with pytest.raises(ImproperlyConfigured, match="BACKEND_URL"):
             runpy.run_path(str(PRODUCTION))
+
+
+class TestProductionRevalidateSecret:
+    """Brak `REVALIDATE_SECRET` w produkcji ostrzega, ale nie blokuje startu (#318).
+
+    Route `/api/revalidate` po stronie webu jeszcze nie istnieje; wymóg wróci
+    razem z nim.
+    """
+
+    def test_missing_revalidate_secret_warns(self, monkeypatch: pytest.MonkeyPatch):
+        """Bez sekretu ustawienia ładują się z ostrzeżeniem o wyłączonej rewalidacji."""
+        monkeypatch.setenv("FRONTEND_URL", "https://olivin.example")
+        monkeypatch.setenv("BACKEND_URL", "https://api.olivin.example")
+        monkeypatch.delenv("REVALIDATE_SECRET", raising=False)
+
+        with pytest.warns(RuntimeWarning, match="REVALIDATE_SECRET"):
+            assert runpy.run_path(str(PRODUCTION))["DEBUG"] is False

@@ -7,6 +7,7 @@ import requests
 from celery import shared_task
 from django.conf import settings
 from django.core.mail import send_mail
+from django.db import transaction
 from django.utils import timezone
 
 from apps.products.models.exchange_rate import EURO, ExchangeRate
@@ -14,6 +15,10 @@ from apps.products.models.metal_rate import MetalRate, MetalRateStatus
 from apps.products.services.pricing import recalculate_prices
 from core.integrations.exchange_rate import get_provider as get_exchange_rate_provider
 from core.integrations.metal_rate import get_provider
+from core.integrations.web_revalidation import (
+    WebRevalidationTransientError,
+    revalidate_tags,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +30,40 @@ EXCHANGE_RATE_STALE = timedelta(days=35)
 
 @shared_task
 def recalculate_variant_prices(metal: str, fineness: str) -> int:
-    """Przelicza ceny wariantów po zatwierdzeniu kursu (ADR 0022)."""
-    return recalculate_prices(metal, fineness)
+    """Przelicza ceny wariantów po zatwierdzeniu kursu (ADR 0022).
+
+    Zmiana cen odświeża kesz katalogu na webie (tag `catalog`, ADR 0034),
+    żeby strona produktu pokazywała tę samą cenę co kasa.
+    """
+    changed = recalculate_prices(metal, fineness)
+    if changed:
+        revalidate_web_on_commit("catalog")
+    return changed
+
+
+@shared_task(
+    autoretry_for=(WebRevalidationTransientError,),
+    retry_backoff=30,
+    retry_backoff_max=600,
+    retry_jitter=True,
+    max_retries=5,
+)
+def revalidate_web(tags: list[str]) -> bool:
+    """Rewaliduje tagi keszu na webie; błąd przejściowy ponawia Celery (ADR 0034)."""
+    return revalidate_tags(tags)
+
+
+def revalidate_web_on_commit(*tags: str) -> None:
+    """Kolejkuje rewalidację po zatwierdzeniu transakcji.
+
+    `robust=True`: niedostępny broker albo web nie przerywa zapisu w panelu —
+    strona i tak wygaśnie po czasie.
+    """
+    tag_list = list(tags)
+    transaction.on_commit(
+        lambda: revalidate_web.delay(tag_list),  # type: ignore[missing-attribute]
+        robust=True,
+    )
 
 
 @shared_task
