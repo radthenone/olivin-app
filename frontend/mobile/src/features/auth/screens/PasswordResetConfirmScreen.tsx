@@ -84,7 +84,7 @@ export function PasswordResetConfirmScreen() {
       <ErrorMessage
         message={
           formError ??
-          (resetPassword.isError ? "Nie udało się ustawić nowego hasła." : null)
+          (resetPassword.isError ? resetPassword.error.message : null)
         }
       />
 

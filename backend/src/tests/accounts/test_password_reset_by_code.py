@@ -7,6 +7,7 @@ import re
 
 import pytest
 from django.core import mail
+from django.http import HttpResponse
 from rest_framework.test import APIClient
 
 from tests.factories.accounts import UserFactory
@@ -17,7 +18,7 @@ RESET_URL = "/_allauth/app/v1/auth/password/reset"
 pytestmark = pytest.mark.django_db
 
 
-def _session_token(response) -> str:
+def _session_token(response: HttpResponse) -> str:
     return json.loads(response.content)["meta"]["session_token"]
 
 
@@ -63,6 +64,6 @@ class TestPasswordResetByCode:
             format="json",
         )
 
-        assert reset.status_code in (200, 401)
+        assert reset.status_code == 401
         user.refresh_from_db()
         assert user.check_password("N0we-haslo-313!")

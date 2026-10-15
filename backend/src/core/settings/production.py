@@ -4,7 +4,14 @@ Production settings for Olivin project.
 
 import os
 
+from django.core.exceptions import ImproperlyConfigured
+
 DEBUG = False
+
+# Linki z maili muszą wskazywać kanoniczną domenę webu (ADR 0038); domyślny
+# `localhost` z `components/email.py` wysłałby klientom martwe linki.
+if not os.environ.get("FRONTEND_URL"):
+    raise ImproperlyConfigured("FRONTEND_URL jest wymagane w produkcji.")
 
 # Security settings
 SECURE_BROWSER_XSS_FILTER = True
