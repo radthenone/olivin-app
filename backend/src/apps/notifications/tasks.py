@@ -6,7 +6,7 @@ from typing import Any, cast
 from celery import shared_task
 from django.utils import timezone
 
-from core.integrations.push.base import MARKETING_CHANNEL, PushProviderTransientError
+from core.integrations.push.base import ORDERS_CHANNEL, PushProviderTransientError
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,8 @@ RECEIPT_CHECK_DELAY_SECONDS = 15 * 60
 # sieci — błąd żądania (4xx) nie jest ponawiany (ADR 0037).
 _RETRY_OPTIONS: dict[str, Any] = {
     "autoretry_for": (PushProviderTransientError,),
-    "retry_backoff": True,
+    # 30, 60, 120, 240, 480 s — 429 od Expo potrzebuje oddechu, nie sekund.
+    "retry_backoff": 30,
     "retry_backoff_max": 600,
     "retry_jitter": True,
     "max_retries": 5,
@@ -32,7 +33,9 @@ def send_push_notification(
     title: str,
     body: str,
     data: dict[str, Any] | None = None,
-    channel: str = MARKETING_CHANNEL,
+    # Domyślnie `orders`: zadania z kolejki sprzed #315 to w większości
+    # transakcyjne — lepiej marketing z wysokim priorytetem niż zgubiony status.
+    channel: str = ORDERS_CHANNEL,
 ) -> int:
     """Wysyła push na urządzenia klienta przez adapter (issue #202, #315).
 

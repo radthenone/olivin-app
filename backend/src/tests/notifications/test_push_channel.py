@@ -171,6 +171,20 @@ class TestNotifyPushMarketing:
         assert sent["data"] == {"url": "/products/ring"}
         assert "400" not in sent["title"] + sent["body"]
 
+    def test_missing_url_field_falls_back_to_inbox(
+        self, django_capture_on_commit_callbacks, push_provider
+    ):
+        """Brak pola ścieżki w payloadzie prowadzi do skrzynki, nie do `/products/`."""
+        user = UserFactory()
+        _device(user)
+        NotificationPreference.objects.create(user=user, marketing_push=True)
+
+        with patch("apps.notifications.services.send_notification_email"):
+            with django_capture_on_commit_callbacks(execute=True):
+                notify(user, NotificationKind.WATCH_RESTOCK, {"variant_sku": "S"})
+
+        assert push_provider.sent[0]["data"] == {"url": "/notifications"}
+
 
 @pytest.mark.django_db
 class TestPushDelivery:

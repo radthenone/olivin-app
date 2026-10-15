@@ -307,7 +307,7 @@ def send_promotion_announcement(promotion: Promotion) -> int:
             body=PUSH_BODY,
             data={
                 "promotion_id": str(promotion.pk),
-                "url": f"/promotions/{promotion.pk}",
+                "url": "/promotions",
             },
             channel=MARKETING_CHANNEL,
         )

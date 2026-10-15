@@ -53,14 +53,24 @@ class ExpoPushProvider:
                 url, json=payload, headers=headers, timeout=TIMEOUT_SECONDS
             )
             response.raise_for_status()
-            return response.json()
+            payload = response.json()
         except requests.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else 0
             if status == 429 or status >= 500:
                 raise PushProviderTransientError(f"Expo HTTP {status}") from exc
             raise PushProviderError(f"Expo odrzuciło żądanie: {exc}") from exc
+        except requests.ReadTimeout as exc:
+            # Expo mogło już przyjąć paczkę — ponowienie dałoby duplikat pusha,
+            # a duplikat jest gorszy niż jeden zgubiony.
+            raise PushProviderError(f"Expo nie odpowiedziało w czasie: {exc}") from exc
         except requests.RequestException as exc:
             raise PushProviderTransientError(f"Expo nie odpowiedziało: {exc}") from exc
+        if not isinstance(payload, dict):
+            return {}
+        if payload.get("errors"):
+            # HTTP 200 z błędem całego żądania (np. `PUSH_TOO_MANY_NOTIFICATIONS`).
+            logger.error("Expo odrzuciło żądanie: %s", payload.get("errors"))
+        return payload
 
     def send_push(
         self,
@@ -98,6 +108,8 @@ class ExpoPushProvider:
             if result.get("status") == "ok" and result.get("id"):
                 tickets[result["id"]] = token
             elif result.get("status") == "error":
+                # ponytail: `MessageRateExceeded` w tickecie nie jest ponawiane
+                # (poza #315) — ponawianie per token, gdy pojawi się w logach.
                 details = result.get("details") or {}
                 if details.get("error") == DEVICE_NOT_REGISTERED:
                     invalid.append(token)
@@ -114,6 +126,8 @@ class ExpoPushProvider:
         # ponytail: jedno żądanie — Expo przyjmuje do 1000 ID, a wysyłka
         # jest per klient; paczkowanie, gdy pojawi się masowa wysyłka.
         receipts = self._post(self.receipts_url, {"ids": list(tickets)}).get("data", {})
+        if not isinstance(receipts, dict):
+            return []
         invalid: list[str] = []
         for ticket_id, receipt in receipts.items():
             if not isinstance(receipt, dict) or receipt.get("status") != "error":

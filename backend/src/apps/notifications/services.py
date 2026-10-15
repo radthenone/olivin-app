@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
+from string import Formatter
 from typing import TYPE_CHECKING, Any
 
 from django.db import transaction
@@ -97,7 +98,14 @@ def _push_message(
     Tytuł to nazwa rodzaju, nie temat e-maila — bez kwot, adresów i numerów.
     Surowy payload nie trafia do pusha; `data` to `push_data` plus `url`.
     """
-    url = _PUSH_URLS.get(kind, DEFAULT_PUSH_URL).format_map(defaultdict(str, payload))
+    template = _PUSH_URLS.get(kind, DEFAULT_PUSH_URL)
+    fields = [name for _, name, _, _ in Formatter().parse(template) if name]
+    # Brak pola w payloadzie dałby `/orders/` — wtedy skrzynka powiadomień.
+    url = (
+        template.format(**payload)
+        if all(payload.get(name) for name in fields)
+        else DEFAULT_PUSH_URL
+    )
     return {
         "title": dict(NotificationKind.choices).get(kind, "Nowe powiadomienie"),
         "body": push_body if push_body is not None else PUSH_BODY,

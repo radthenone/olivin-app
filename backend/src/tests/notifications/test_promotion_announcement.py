@@ -148,4 +148,4 @@ class TestAnnouncePromotion:
         assert kwargs["user_id"] == str(pushy.pk)
         assert kwargs["channel"] == "marketing"
         assert kwargs["title"] == "Nowa promocja"
-        assert kwargs["data"]["url"].startswith("/promotions/")
+        assert kwargs["data"]["url"] == "/promotions"

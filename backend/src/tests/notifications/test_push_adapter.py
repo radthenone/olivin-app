@@ -164,6 +164,28 @@ class TestExpoPushProvider:
 
         assert not isinstance(excinfo.value, PushProviderTransientError)
 
+    def test_read_timeout_is_not_transient(self):
+        """Timeout odczytu nie jest ponawiany — Expo mogło już przyjąć paczkę."""
+        with patch("requests.post", side_effect=requests.ReadTimeout("wolno")):
+            with pytest.raises(PushProviderError) as excinfo:
+                _send(ExpoPushProvider())
+
+        assert not isinstance(excinfo.value, PushProviderTransientError)
+
+    def test_top_level_errors_are_logged(self, caplog):
+        """HTTP 200 z błędem całego żądania trafia do logu ERROR."""
+        payload = {"errors": [{"code": "PUSH_TOO_MANY_NOTIFICATIONS"}]}
+
+        with patch("requests.post", return_value=_response(payload)):
+            result = _send(ExpoPushProvider())
+
+        assert result.tickets == {}
+        assert any(
+            record.levelname == "ERROR"
+            and "PUSH_TOO_MANY_NOTIFICATIONS" in record.getMessage()
+            for record in caplog.records
+        )
+
 
 class TestExpoPushReceipts:
     """Sprawdzanie receiptów Expo."""
@@ -213,6 +235,14 @@ class TestExpoPushReceipts:
             for record in caplog.records
         )
 
+    def test_receipts_without_data_dict_return_nothing(self):
+        """Odpowiedź bez słownika `data` nie wywraca sprawdzania receiptów."""
+        with patch("requests.post", return_value=_response({"errors": ["x"]})):
+            assert (
+                ExpoPushProvider().check_receipts({"ticket-a": "ExponentPushToken[a]"})
+                == []
+            )
+
     def test_rate_limit_is_transient(self):
         """429 przy receiptach też jest do ponowienia."""
         with patch("requests.post", return_value=_response({}, 429)):
@@ -256,6 +286,21 @@ class TestPushTasksWithExpoStub:
 
         sent = [call for call in post.call_args_list if call.args[0].endswith("/send")]
         assert len(sent) == 2
+
+    def test_client_error_send_is_not_retried(self):
+        """400 kończy się jednym żądaniem — bez ponawiania."""
+        user = UserFactory()
+        PushDevice.objects.create(
+            user=user, token="ExponentPushToken[a]", platform="android"
+        )
+
+        with patch("requests.post", return_value=_response({}, 400)) as post:
+            result = send_push_notification.apply(
+                kwargs={"user_id": str(user.pk), "title": "T", "body": "B"}
+            )
+
+        assert post.call_count == 1
+        assert result.get() == 0
 
     def test_receipt_device_not_registered_deletes_device(self):
         """Receipt `DeviceNotRegistered` usuwa urządzenie."""
