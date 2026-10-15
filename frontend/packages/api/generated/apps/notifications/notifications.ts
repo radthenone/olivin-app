@@ -902,12 +902,19 @@ export const useNotificationsNewsletterUnsubscribeCreate = <TError = ErrorType<u
   status: 200
 }
 
+export type notificationsNewsletterUnsubscribeOneClickCreateResponse404 = {
+  data: void
+  status: 404
+}
+
 export type notificationsNewsletterUnsubscribeOneClickCreateResponseSuccess = (notificationsNewsletterUnsubscribeOneClickCreateResponse200) & {
   headers: Headers;
 };
-;
+export type notificationsNewsletterUnsubscribeOneClickCreateResponseError = (notificationsNewsletterUnsubscribeOneClickCreateResponse404) & {
+  headers: Headers;
+};
 
-export type notificationsNewsletterUnsubscribeOneClickCreateResponse = (notificationsNewsletterUnsubscribeOneClickCreateResponseSuccess)
+export type notificationsNewsletterUnsubscribeOneClickCreateResponse = (notificationsNewsletterUnsubscribeOneClickCreateResponseSuccess | notificationsNewsletterUnsubscribeOneClickCreateResponseError)
 
 export const getNotificationsNewsletterUnsubscribeOneClickCreateUrl = (token: string,) => {
 
@@ -938,7 +945,7 @@ export const notificationsNewsletterUnsubscribeOneClickCreate = async (token: st
 
 export const getNotificationsNewsletterUnsubscribeOneClickCreateMutationKey = () => ['notificationsNewsletterUnsubscribeOneClickCreate'] as const;
 
-export const getNotificationsNewsletterUnsubscribeOneClickCreateMutationOptions = <TError = ErrorType<unknown>,
+export const getNotificationsNewsletterUnsubscribeOneClickCreateMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof notificationsNewsletterUnsubscribeOneClickCreate>>, TError,NotificationsNewsletterUnsubscribeOneClickCreateMutationVariables, TContext>, request?: SecondParameter<typeof appInstance>}
 ): UseMutationOptions<Awaited<ReturnType<typeof notificationsNewsletterUnsubscribeOneClickCreate>>, TError,NotificationsNewsletterUnsubscribeOneClickCreateMutationVariables, TContext> => {
 
@@ -967,13 +974,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type NotificationsNewsletterUnsubscribeOneClickCreateMutationResult = NonNullable<Awaited<ReturnType<typeof notificationsNewsletterUnsubscribeOneClickCreate>>>
 
-    export type NotificationsNewsletterUnsubscribeOneClickCreateMutationError = ErrorType<unknown>
+    export type NotificationsNewsletterUnsubscribeOneClickCreateMutationError = ErrorType<void>
     export type NotificationsNewsletterUnsubscribeOneClickCreateMutationVariables = {token: string}
 
     /**
  * @summary Wypis jednym kliknięciem (RFC 8058)
  */
-export const useNotificationsNewsletterUnsubscribeOneClickCreate = <TError = ErrorType<unknown>,
+export const useNotificationsNewsletterUnsubscribeOneClickCreate = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof notificationsNewsletterUnsubscribeOneClickCreate>>, TError,NotificationsNewsletterUnsubscribeOneClickCreateMutationVariables, TContext>, request?: SecondParameter<typeof appInstance>}
  , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof notificationsNewsletterUnsubscribeOneClickCreate>>,
