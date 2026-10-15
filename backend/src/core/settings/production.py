@@ -16,6 +16,10 @@ if not os.environ.get("FRONTEND_URL"):
 # `http` odpada: RFC 8058 wymaga HTTPS, a `SECURE_SSL_REDIRECT` dałby 301 na POST.
 if not os.environ.get("BACKEND_URL", "").startswith("https://"):
     raise ImproperlyConfigured("BACKEND_URL (https://) jest wymagane w produkcji.")
+# Bez sekretu web nie przyjmie rewalidacji, a strona produktu pokazywałaby
+# do wygaśnięcia keszu inną cenę niż kasa (ADR 0034, #318).
+if not os.environ.get("REVALIDATE_SECRET"):
+    raise ImproperlyConfigured("REVALIDATE_SECRET jest wymagane w produkcji.")
 
 # Security settings
 SECURE_BROWSER_XSS_FILTER = True

@@ -187,6 +187,12 @@ class Product(TimestampedModel):
         super().save(*args, **kwargs)
         if just_published:
             self._queue_translation()
+        if self.slug:
+            # Strona produktu na webie jest keszowana (ADR 0034) — po commicie
+            # odświeżamy ją, także przy zdjęciu produktu ze sklepu.
+            from apps.products.tasks import revalidate_web_on_commit
+
+            revalidate_web_on_commit(f"product:{self.slug}")
 
     def _is_becoming_published(self) -> bool:
         """Czy ten zapis właśnie publikuje produkt.

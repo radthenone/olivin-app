@@ -34,6 +34,12 @@ publicznego adresu API (na dev domyślnie `http://localhost:8020`, czyli
 wystartuje. Podpis DKIM u dostawcy maili ma obejmować (`h=`) nagłówki
 `List-Unsubscribe` i `List-Unsubscribe-Post`.
 
+Strony katalogu na webie są keszowane; po zapisie produktu i po przeliczeniu
+cen backend woła `POST {FRONTEND_URL}/api/revalidate` z nagłówkiem
+`X-Revalidate-Secret` (ADR 0034). Sekret podaj w `REVALIDATE_SECRET`
+(`.envs/{dev,prod}/backend/django.env`, ta sama wartość po stronie webu).
+Na dev pusta wartość wyłącza wywołanie, w produkcji zmienna jest wymagana.
+
 ## Frontend
 
 ```bash
