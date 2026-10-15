@@ -30,7 +30,7 @@ export default function AuthLayout() {
         <Stack.Screen name="login-code" />
         <Stack.Screen name="register" />
         <Stack.Screen name="forgot-password" />
-        <Stack.Screen name="reset-password/[key]" />
+        <Stack.Screen name="reset-password" />
       </Stack.Protected>
 
       <Stack.Protected guard={auth.isMfaRequired}>
