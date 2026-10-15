@@ -52,6 +52,9 @@ class TestLanguageFromRequest:
             ("en-GB,en;q=0.9", "en"),
             ("de", "en"),
             ("de;q=0.5,pl;q=0.9", "pl"),
+            ("plx", "en"),
+            ("pl;q=0,de", "en"),
+            ("pl;q=0", None),
             ("", None),
         ],
     )
@@ -255,4 +258,99 @@ class TestLanguageStoredAtCreation:
         assert (
             f"{settings.FRONTEND_URL}/en/newsletter/confirm/"
             in (send.call_args.kwargs["body"])
+        )
+
+
+def test_every_notification_kind_has_english_template():
+    """Każdy rodzaj z `_TEMPLATES` ma wersję angielską."""
+    from apps.notifications.services import _TEMPLATES, _TEMPLATES_EN
+
+    assert set(_TEMPLATES_EN) == set(_TEMPLATES)
+
+
+@pytest.mark.django_db
+class TestReviewFixes:
+    """Ogłoszenie promocji, kod anonimizacji i ponowny zapis w języku odbiorcy."""
+
+    def test_promotion_announcement_in_recipient_language(self):
+        """Konto `en` i subskrypcja `en` dostają angielski temat i link `/en/`."""
+        from typing import cast
+
+        from apps.notifications.models import NewsletterStatus, NotificationPreference
+        from apps.notifications.tasks import announce_promotion
+        from tests.factories.promotions import PromotionFactory
+
+        account = ProfileFactory(
+            preferred_language="en", user__email="acc@test.com"
+        ).user
+        NotificationPreference.objects.create(user=account, marketing_email=True)
+        NewsletterSubscription.objects.create(
+            email="en@test.com",
+            status=NewsletterStatus.ACTIVE,
+            preferred_language="en",
+        )
+        NewsletterSubscription.objects.create(
+            email="pl@test.com", status=NewsletterStatus.ACTIVE
+        )
+        promotion = PromotionFactory(name="Autumn")
+
+        with (
+            patch(NEWSLETTER_MAIL) as send,
+            patch("apps.notifications.tasks.send_push_notification"),
+        ):
+            cast(Any, announce_promotion)(promotion_id=str(promotion.pk))
+
+        mails = {call.kwargs["to"]: call.kwargs for call in send.call_args_list}
+        for address in ("acc@test.com", "en@test.com"):
+            assert mails[address]["subject"] == "New promotion: Autumn"
+            assert (
+                f"{settings.FRONTEND_URL}/en/newsletter/unsubscribe/"
+                in (mails[address]["body"])
+            )
+            assert "List-Unsubscribe" in mails[address]["headers"]
+        assert mails["pl@test.com"]["subject"] == "Nowa promocja: Autumn"
+        assert f"{settings.FRONTEND_URL}/pl/" in mails["pl@test.com"]["body"]
+
+    def test_anonymisation_code_in_account_language(
+        self, django_capture_on_commit_callbacks
+    ):
+        """Kod usunięcia konta idzie po angielsku do konta `en`."""
+        from apps.accounts.services.anonymisation_code import send_code
+
+        user = ProfileFactory(preferred_language="en").user
+
+        with patch(
+            "apps.accounts.services.anonymisation_code.send_notification_email"
+        ) as send:
+            with django_capture_on_commit_callbacks(execute=True):
+                send_code(user)
+
+        assert send.call_args.kwargs["subject"] == "Account deletion confirmation code"
+
+    def test_resubscribe_without_header_keeps_language(self):
+        """Ponowny zapis bez nagłówka nie kasuje języka; nowy język go odświeża."""
+        from apps.notifications import newsletter
+        from apps.notifications.models import NewsletterStatus
+
+        ConsentDocumentFactory(kind=ConsentKind.MARKETING)
+        NewsletterSubscription.objects.create(
+            email="keep@test.com",
+            status=NewsletterStatus.UNSUBSCRIBED,
+            preferred_language="en",
+        )
+        NewsletterSubscription.objects.create(email="pending@test.com")
+
+        with patch(NEWSLETTER_MAIL):
+            newsletter.subscribe("keep@test.com", language=None)
+            newsletter.subscribe("pending@test.com", language="en")
+
+        assert (
+            NewsletterSubscription.objects.get(email="keep@test.com").preferred_language
+            == "en"
+        )
+        assert (
+            NewsletterSubscription.objects.get(
+                email="pending@test.com"
+            ).preferred_language
+            == "en"
         )

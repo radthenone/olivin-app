@@ -19,11 +19,14 @@ class PreferredLanguage(models.TextChoices):
 def language_from_request(request: HttpRequest | Request) -> str | None:
     """Język z `Accept-Language`: `pl*` → `pl`, każdy inny → `en`, brak → `None`."""
     parsed = parse_accept_lang_header(request.META.get("HTTP_ACCEPT_LANGUAGE", ""))
-    if not parsed:
+    # Wynik jest posortowany po wadze `q` — pierwszy to język najbardziej chciany;
+    # `q=0` znaczy „nie chcę”, więc odpada.
+    tags = [tag for tag, q in parsed if q > 0]
+    if not tags:
         return None
-    # Wynik jest posortowany po wadze `q` — pierwszy to język najbardziej chciany.
-    tag = parsed[0][0]
-    return PreferredLanguage.PL if tag.startswith("pl") else PreferredLanguage.EN
+    tag = tags[0]
+    is_polish = tag == "pl" or tag.startswith("pl-")
+    return PreferredLanguage.PL if is_polish else PreferredLanguage.EN
 
 
 def email_language(source: object) -> str:

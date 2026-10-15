@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, cast
 
 from django.conf import settings
@@ -147,8 +148,9 @@ def _send_confirmation(subscription: NewsletterSubscription) -> None:
 def subscribe(email: str, *, language: str | None = None) -> None:
     """Zapis na newsletter; aktywny dopiero po kliknięciu linku z maila.
 
-    `language` (z `Accept-Language`) trafia na nową albo ponownie zapisaną
-    subskrypcję — w nim idą maile do niej (ADR 0035).
+    `language` (z `Accept-Language`) trafia na nową, ponownie zapisaną albo
+    niepotwierdzoną subskrypcję — w nim idą maile do niej (ADR 0035). Brak
+    nagłówka nie kasuje zapisanego wcześniej języka.
 
     Nie zwraca niczego, co różniłoby nowy adres od istniejącego — wywołujący
     (API) odpowiada zawsze tak samo. Aktywna subskrypcja nie dostaje maila;
@@ -172,7 +174,7 @@ def subscribe(email: str, *, language: str | None = None) -> None:
         subscription.status = NewsletterStatus.PENDING
         subscription.confirmation_token = uuid.uuid4()
         subscription.confirmed_at = None
-        subscription.preferred_language = language
+        subscription.preferred_language = language or subscription.preferred_language
         subscription.save(
             update_fields=[
                 "status",
@@ -182,6 +184,10 @@ def subscribe(email: str, *, language: str | None = None) -> None:
                 "updated_at",
             ]
         )
+    elif language and subscription.preferred_language != language:
+        # Ponowny zapis niepotwierdzonej subskrypcji odświeża język.
+        subscription.preferred_language = language
+        subscription.save(update_fields=["preferred_language", "updated_at"])
     # Po wypisie zgoda jest udzielana od nowa; przy niepotwierdzonej — tylko
     # gdy od poprzedniego zapisu weszła nowa wersja zgody marketingowej.
     if resubscribed or not Consent.objects.has_current_consent(
@@ -272,17 +278,41 @@ def transfer_to_account(user: CustomUser, *, email: str) -> None:
         preference.save(update_fields=["marketing_email", "updated_at"])
 
 
-def _announcement_message(promotion: Promotion) -> tuple[str, str]:
-    lines = [f"Nowa promocja w sklepie: {promotion.name}."]
+# Szablony ogłoszenia promocji; klucz to język (ADR 0035). Nazwa i kod
+# promocji pochodzą z panelu i zostają bez tłumaczenia.
+_ANNOUNCEMENT_MESSAGES: dict[str, dict[str, str]] = {
+    "pl": {
+        "subject": "Nowa promocja: {name}",
+        "intro": "Nowa promocja w sklepie: {name}.",
+        "code": "Kod promocji: {code}.",
+        "ends": "Trwa do {ends}.",
+        "footer": "Nie chcesz dostawać takich wiadomości? Wypisz się: {link}",
+    },
+    "en": {
+        "subject": "New promotion: {name}",
+        "intro": "New promotion in our shop: {name}.",
+        "code": "Promotion code: {code}.",
+        "ends": "Valid until {ends}.",
+        "footer": "Don't want to receive these messages? Unsubscribe: {link}",
+    },
+}
+
+
+def _announcement_message(promotion: Promotion, language: str) -> tuple[str, str]:
+    texts = _ANNOUNCEMENT_MESSAGES[language]
+    lines = [texts["intro"].format(name=promotion.name)]
     if promotion.code:
-        lines.append(f"Kod promocji: {promotion.code}.")
+        lines.append(texts["code"].format(code=promotion.code))
     if promotion.ends_at is not None:
-        lines.append(f"Trwa do {timezone.localtime(promotion.ends_at):%d.%m.%Y %H:%M}.")
-    return f"Nowa promocja: {promotion.name}", "\n".join(lines)
+        ends = f"{timezone.localtime(promotion.ends_at):%d.%m.%Y %H:%M}"
+        lines.append(texts["ends"].format(ends=ends))
+    return texts["subject"].format(name=promotion.name), "\n".join(lines)
 
 
-def announcement_recipients() -> dict[str, str]:
-    """Adres → token wypisu; konta ze zgodą e-mail i aktywne subskrypcje.
+def announcement_recipients() -> dict[str, tuple[str, str]]:
+    """Adres → (token wypisu, język); konta ze zgodą e-mail i aktywne subskrypcje.
+
+    Język jak w `email_language`: subskrypcja — z chwili zapisu, konto — z profilu.
 
     Deduplikacja po adresie bez względu na wielkość liter. Konto wygrywa:
     jego link wypisu wyłącza zgodę konta i subskrypcję na ten sam adres.
@@ -290,17 +320,23 @@ def announcement_recipients() -> dict[str, str]:
     # ponytail: cała lista w pamięci i jedno zadanie mailowe na adres —
     # sufit to dziesiątki tysięcy odbiorców; dalej batchowanie po kluczu
     # (`iterator()` + paczki zadań `send_email_payloads_task`).
-    recipients: dict[str, str] = {
-        _normalise(subscription.email): str(subscription.unsubscribe_token)
+    recipients: dict[str, tuple[str, str]] = {
+        _normalise(subscription.email): (
+            str(subscription.unsubscribe_token),
+            email_language(subscription),
+        )
         for subscription in NewsletterSubscription.objects.filter(
             status=NewsletterStatus.ACTIVE
         )
     }
     accounts = NotificationPreference.objects.filter(
         marketing_email=True, user__is_active=True
-    ).values_list("user_id", "user__email")
-    for user_pk, email in accounts:
-        recipients[_normalise(email)] = account_unsubscribe_token(user_pk)
+    ).values_list("user_id", "user__email", "user__profile__preferred_language")
+    for user_pk, email, language in accounts:
+        recipients[_normalise(email)] = (
+            account_unsubscribe_token(user_pk),
+            email_language(SimpleNamespace(preferred_language=language)),
+        )
     return recipients
 
 
@@ -313,17 +349,23 @@ def send_promotion_announcement(promotion: Promotion) -> int:
     """
     from apps.notifications import tasks
 
-    subject, message = _announcement_message(promotion)
+    messages = {
+        language: _announcement_message(promotion, language)
+        for language in _ANNOUNCEMENT_MESSAGES
+    }
     recipients = announcement_recipients()
-    for address, token in recipients.items():
-        unsubscribe_link = settings.NEWSLETTER_UNSUBSCRIBE_URL.format(token=token)
+    for address, (token, language) in recipients.items():
+        subject, message = messages[language]
+        unsubscribe_link = localized_link(
+            settings.NEWSLETTER_UNSUBSCRIBE_URL.format(token=token), language
+        )
+        footer = _ANNOUNCEMENT_MESSAGES[language]["footer"].format(
+            link=unsubscribe_link
+        )
         send_notification_email(
             to=address,
             subject=subject,
-            body=(
-                f"{message}\n\nNie chcesz dostawać takich wiadomości? "
-                f"Wypisz się: {unsubscribe_link}"
-            ),
+            body=f"{message}\n\n{footer}",
             headers=one_click_unsubscribe_headers(token),
         )
     push_user_ids = NotificationPreference.objects.filter(
