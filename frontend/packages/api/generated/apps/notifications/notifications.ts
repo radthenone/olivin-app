@@ -897,6 +897,92 @@ export const useNotificationsNewsletterUnsubscribeCreate = <TError = ErrorType<u
       > => {
       return useMutation(getNotificationsNewsletterUnsubscribeCreateMutationOptions(options), queryClient);
     }
+    export type notificationsNewsletterUnsubscribeOneClickCreateResponse200 = {
+  data: NewsletterDetail
+  status: 200
+}
+
+export type notificationsNewsletterUnsubscribeOneClickCreateResponseSuccess = (notificationsNewsletterUnsubscribeOneClickCreateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type notificationsNewsletterUnsubscribeOneClickCreateResponse = (notificationsNewsletterUnsubscribeOneClickCreateResponseSuccess)
+
+export const getNotificationsNewsletterUnsubscribeOneClickCreateUrl = (token: string,) => {
+
+
+
+
+  return `/notifications/newsletter/unsubscribe/one-click/${token}/`
+}
+
+/**
+ * Adres z nagłówka `List-Unsubscribe` maili marketingowych. Skrzynka wysyła POST z treścią `List-Unsubscribe=One-Click`; token w ścieżce — subskrypcji albo konta. Idempotentny, 404 dla nieznanego tokenu.
+ * @summary Wypis jednym kliknięciem (RFC 8058)
+ */
+export const notificationsNewsletterUnsubscribeOneClickCreate = async (token: string, options?: Parameters<typeof appInstance>[1]): Promise<notificationsNewsletterUnsubscribeOneClickCreateResponse> => {
+
+  return appInstance<notificationsNewsletterUnsubscribeOneClickCreateResponse>(getNotificationsNewsletterUnsubscribeOneClickCreateUrl(token),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getNotificationsNewsletterUnsubscribeOneClickCreateMutationKey = () => ['notificationsNewsletterUnsubscribeOneClickCreate'] as const;
+
+export const getNotificationsNewsletterUnsubscribeOneClickCreateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof notificationsNewsletterUnsubscribeOneClickCreate>>, TError,NotificationsNewsletterUnsubscribeOneClickCreateMutationVariables, TContext>, request?: SecondParameter<typeof appInstance>}
+): UseMutationOptions<Awaited<ReturnType<typeof notificationsNewsletterUnsubscribeOneClickCreate>>, TError,NotificationsNewsletterUnsubscribeOneClickCreateMutationVariables, TContext> => {
+
+const mutationKey = getNotificationsNewsletterUnsubscribeOneClickCreateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof notificationsNewsletterUnsubscribeOneClickCreate>>, NotificationsNewsletterUnsubscribeOneClickCreateMutationVariables> = (props) => {
+          const {token} = props ?? {};
+
+          return  notificationsNewsletterUnsubscribeOneClickCreate(token,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type NotificationsNewsletterUnsubscribeOneClickCreateMutationResult = NonNullable<Awaited<ReturnType<typeof notificationsNewsletterUnsubscribeOneClickCreate>>>
+
+    export type NotificationsNewsletterUnsubscribeOneClickCreateMutationError = ErrorType<unknown>
+    export type NotificationsNewsletterUnsubscribeOneClickCreateMutationVariables = {token: string}
+
+    /**
+ * @summary Wypis jednym kliknięciem (RFC 8058)
+ */
+export const useNotificationsNewsletterUnsubscribeOneClickCreate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof notificationsNewsletterUnsubscribeOneClickCreate>>, TError,NotificationsNewsletterUnsubscribeOneClickCreateMutationVariables, TContext>, request?: SecondParameter<typeof appInstance>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof notificationsNewsletterUnsubscribeOneClickCreate>>,
+        TError,
+        NotificationsNewsletterUnsubscribeOneClickCreateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getNotificationsNewsletterUnsubscribeOneClickCreateMutationOptions(options), queryClient);
+    }
     export type notificationsPreferencesRetrieveResponse200 = {
   data: NotificationPreference
   status: 200

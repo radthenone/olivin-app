@@ -176,6 +176,18 @@ export const NotificationsNewsletterUnsubscribeCreateResponse = zod.object({
 }).describe('Komunikat do wyświetlenia po zapisie, potwierdzeniu albo wypisie.')
 
 /**
+ * Adres z nagłówka `List-Unsubscribe` maili marketingowych. Skrzynka wysyła POST z treścią `List-Unsubscribe=One-Click`; token w ścieżce — subskrypcji albo konta. Idempotentny, 404 dla nieznanego tokenu.
+ * @summary Wypis jednym kliknięciem (RFC 8058)
+ */
+export const NotificationsNewsletterUnsubscribeOneClickCreateParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const NotificationsNewsletterUnsubscribeOneClickCreateResponse = zod.object({
+  "detail": zod.string()
+}).describe('Komunikat do wyświetlenia po zapisie, potwierdzeniu albo wypisie.')
+
+/**
  * Preferencje powiadomień marketingowych klienta (`GET`/`PUT`).
  *
  * Bez `PATCH`: dwa pola, oba zawsze przekazywane razem — jak przy edycji
