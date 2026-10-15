@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import json
 import re
+from typing import cast
 
 import pytest
 from django.core import mail
-from django.http import HttpResponse
+from rest_framework.response import Response
 from rest_framework.test import APIClient
 
 from tests.factories.accounts import UserFactory
@@ -18,7 +19,7 @@ RESET_URL = "/_allauth/app/v1/auth/password/reset"
 pytestmark = pytest.mark.django_db
 
 
-def _session_token(response: HttpResponse) -> str:
+def _session_token(response: Response) -> str:
     return json.loads(response.content)["meta"]["session_token"]
 
 
@@ -32,8 +33,11 @@ class TestPasswordResetByCode:
         UserFactory(email="reset@test.com")
 
         with django_capture_on_commit_callbacks(execute=True):
-            response = api_client.post(
-                REQUEST_URL, {"email": "reset@test.com"}, format="json"
+            response = cast(
+                Response,
+                api_client.post(
+                    REQUEST_URL, {"email": "reset@test.com"}, format="json"
+                ),
             )
 
         assert response.status_code == 401
@@ -51,17 +55,21 @@ class TestPasswordResetByCode:
         user = UserFactory(email="code@test.com")
 
         with django_capture_on_commit_callbacks(execute=True):
-            response = api_client.post(
-                REQUEST_URL, {"email": "code@test.com"}, format="json"
+            response = cast(
+                Response,
+                api_client.post(REQUEST_URL, {"email": "code@test.com"}, format="json"),
             )
-        code = re.search(r"^\s*([A-Z0-9-]{4,})\s*$", mail.outbox[0].body, re.M)
+        code = re.search(r"^\s*([A-Z0-9-]{4,})\s*$", str(mail.outbox[0].body), re.M)
         assert code is not None
 
         api_client.credentials(HTTP_X_SESSION_TOKEN=_session_token(response))
-        reset = api_client.post(
-            RESET_URL,
-            {"key": code.group(1), "password": "N0we-haslo-313!"},
-            format="json",
+        reset = cast(
+            Response,
+            api_client.post(
+                RESET_URL,
+                {"key": code.group(1), "password": "N0we-haslo-313!"},
+                format="json",
+            ),
         )
 
         assert reset.status_code == 401

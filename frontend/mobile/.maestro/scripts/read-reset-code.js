@@ -1,3 +1,4 @@
+/* global http, json, output, EMAIL, MAILHOG_URL -- globalne API skryptów Maestro */
 // Czyta ostatni kod resetu hasła wysłany na EMAIL z API MailHoga.
 const response = http.get(
   `${MAILHOG_URL}/api/v2/search?kind=to&limit=1&query=${encodeURIComponent(EMAIL)}`,
