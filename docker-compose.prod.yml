@@ -12,7 +12,7 @@ x-backend-env: &backend-env
   - ./.envs/prod/backend/email.env
   - ./.envs/prod/backend/authorization.env
 
-# Rotacja logów kontenerów: driver local, domyślnie 20 MB x 5 plików (ADR 0039).
+# Rotacja logów kontenerów: driver local, jawnie 20 MB x 5 plików (= domyślne local, ADR 0039).
 x-logging: &logging
   driver: local
   options:
@@ -30,6 +30,17 @@ services:
       - ./.envs/prod/s3.env
     ports: !override
       - "127.0.0.1:${S3_CONSOLE_PORT}:23646"
+    logging: *logging
+
+  olivin-postgres:
+    logging: *logging
+
+  olivin-redis:
+    logging: *logging
+
+  # Zależność django/celery w bazie, startuje też na prod.
+  olivin-libretranslate:
+    logging: *logging
 
   olivin-django:
     build: *backend-build-prod
