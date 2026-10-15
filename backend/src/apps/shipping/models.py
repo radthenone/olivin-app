@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 
@@ -16,15 +15,12 @@ class ShippingZone(models.TextChoices):
 
 
 class ShippingMethodKind(models.TextChoices):
-    """Sposób dostarczenia — rozstrzyga, czego klient potrzebuje w kasie.
+    """Sposób dostarczenia — sklep wysyła wyłącznie kurierem (ADR 0036).
 
-    Paczkomat wymaga kodu punktu odbioru, odbiór osobisty nie wymaga adresu
-    ani przewoźnika, przesyłka do Unii chodzi inną stawką niż krajowa.
+    Przesyłka do Unii chodzi inną stawką niż krajowa.
     """
 
-    PARCEL_LOCKER = "parcel_locker", "Paczkomat"
     COURIER = "courier", "Kurier"
-    PICKUP = "pickup", "Odbiór osobisty"
     EU = "eu", "Przesyłka do Unii"
 
 
@@ -48,8 +44,8 @@ class ShippingMethodQuerySet(models.QuerySet["ShippingMethod"]):
         """Metody, których górna wartość zamówienia nie została przekroczona.
 
         Metoda bez limitu (`max_order_value` puste) przechodzi zawsze —
-        odbiór osobisty i kurier z deklaracją wartości nie mają górnej
-        granicy odpowiedzialności, którą trzeba by respektować.
+        kurier z deklaracją wartości nie ma górnej granicy
+        odpowiedzialności, którą trzeba by respektować.
         """
         return self.filter(
             models.Q(max_order_value__isnull=True)
@@ -70,7 +66,7 @@ class ShippingMethod(TimestampedModel):
 
     name = models.CharField(
         max_length=120,
-        help_text="Nazwa widoczna dla klienta, np. „Paczkomat InPost”",
+        help_text="Nazwa widoczna dla klienta, np. „Kurier DPD”",
     )
     kind = models.CharField(
         max_length=16,
@@ -118,15 +114,6 @@ class ShippingMethod(TimestampedModel):
                 | models.Q(max_order_value__gte=0),
                 name="shipping_method_max_order_value_is_not_negative",
             ),
-            # Odbiór osobisty nie jedzie przewoźnikiem, więc nie ma limitu
-            # odpowiedzialności, który miałby go wyłączać. Reguła „odbiór
-            # osobisty bez limitu” jest tu ograniczeniem w bazie, a nie
-            # rozgałęzieniem w serwisie wyceny.
-            models.CheckConstraint(
-                condition=~models.Q(kind=ShippingMethodKind.PICKUP)
-                | models.Q(max_order_value__isnull=True),
-                name="shipping_method_pickup_has_no_value_limit",
-            ),
         ]
 
     def __str__(self) -> str:
@@ -141,25 +128,6 @@ class ShippingMethod(TimestampedModel):
         if self.max_order_value is None:
             return None
         return Money(self.max_order_value, self.currency)
-
-    def clean(self) -> None:
-        super().clean()
-        self._reject_pickup_with_value_limit()
-
-    def save(self, *args, **kwargs) -> None:
-        self._reject_pickup_with_value_limit()
-        super().save(*args, **kwargs)
-
-    def _reject_pickup_with_value_limit(self) -> None:
-        if self.kind == ShippingMethodKind.PICKUP and self.max_order_value is not None:
-            raise ValidationError(
-                {
-                    "max_order_value": (
-                        "Odbiór osobisty nie ma górnej wartości zamówienia — "
-                        "towar nie jedzie przewoźnikiem."
-                    )
-                }
-            )
 
 
 class Shipment(TimestampedModel):
@@ -194,11 +162,6 @@ class Shipment(TimestampedModel):
         ),
     )
     currency = CurrencyField()
-    pickup_point_code = models.CharField(
-        max_length=32,
-        blank=True,
-        help_text="Kod punktu odbioru; wypełniany wyłącznie dla paczkomatu",
-    )
 
     class Meta:
         verbose_name = "Przesyłka"

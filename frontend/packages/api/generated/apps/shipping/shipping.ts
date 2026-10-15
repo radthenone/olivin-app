@@ -76,7 +76,7 @@ export const getShippingMethodsListUrl = (params?: ShippingMethodsListParams,) =
 }
 
 /**
- * Zwraca metody właściwe dla strefy, których górna wartość zamówienia nie została przekroczona, wraz z kosztem policzonym dla podanej wartości koszyka. Powyżej progu darmowej dostawy koszt wynosi zero. Odbiór osobisty nie ma górnej wartości zamówienia, więc jest na liście zawsze.
+ * Zwraca metody właściwe dla strefy, których górna wartość zamówienia nie została przekroczona, wraz z kosztem policzonym dla podanej wartości koszyka. Powyżej progu darmowej dostawy koszt wynosi zero. Metoda bez górnej wartości zamówienia jest na liście zawsze.
  * @summary Metody dostawy dostępne dla koszyka
  */
 export const shippingMethodsList = async (params?: ShippingMethodsListParams, options?: Parameters<typeof appInstance>[1]): Promise<shippingMethodsListResponse> => {

@@ -70,7 +70,6 @@ class ShipmentSerializer(serializers.ModelSerializer):
             "id",
             "tracking_number",
             "shipping_method_kind",
-            "pickup_point_code",
             "created_at",
         ]
         read_only_fields = fields

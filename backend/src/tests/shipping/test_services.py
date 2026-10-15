@@ -11,33 +11,29 @@ from apps.shipping.services import (
     zone_for_country,
 )
 from common.money import Money
-from tests.factories.shipping import (
-    ParcelLockerMethodFactory,
-    PickupMethodFactory,
-    ShippingMethodFactory,
-)
+from tests.factories.shipping import ShippingMethodFactory
 
 
 @pytest.mark.django_db
 class TestValueLimit:
     """Metoda znika powyżej swojej górnej wartości zamówienia (ADR 0028)."""
 
-    def test_parcel_locker_disappears_above_its_limit(self):
-        """Paczkomat znika powyżej swojego limitu."""
-        ParcelLockerMethodFactory(name="Paczkomat", max_order_value=500000)
-        ShippingMethodFactory(name="Kurier", max_order_value=None)
+    def test_method_disappears_above_its_limit(self):
+        """Metoda z limitem znika powyżej swojego limitu."""
+        ShippingMethodFactory(name="Kurier standard", max_order_value=500000)
+        ShippingMethodFactory(name="Kurier z deklaracją", max_order_value=None)
 
         offers = available_methods(order_value=Money(500001), zone=ShippingZone.PL)
 
-        assert [offer.method.name for offer in offers] == ["Kurier"]
+        assert [offer.method.name for offer in offers] == ["Kurier z deklaracją"]
 
     def test_value_equal_to_limit_still_passes(self):
         """Wartość równa limitowi jeszcze przechodzi."""
-        ParcelLockerMethodFactory(name="Paczkomat", max_order_value=500000)
+        ShippingMethodFactory(name="Kurier standard", max_order_value=500000)
 
         offers = available_methods(order_value=Money(500000), zone=ShippingZone.PL)
 
-        assert [offer.method.name for offer in offers] == ["Paczkomat"]
+        assert [offer.method.name for offer in offers] == ["Kurier standard"]
 
     def test_two_courier_methods_with_different_limits(self):
         """Dwie metody kurierskie z różnymi progami."""
@@ -55,13 +51,13 @@ class TestValueLimit:
         }
         assert [offer.method.name for offer in expensive] == ["Kurier z deklaracją"]
 
-    def test_pickup_has_no_limit(self):
-        """Odbiór osobisty nie ma limitu."""
-        PickupMethodFactory(name="Odbiór w pracowni")
+    def test_method_without_limit_passes_any_value(self):
+        """Metoda bez limitu wychodzi przy każdej wartości."""
+        ShippingMethodFactory(name="Kurier z deklaracją", max_order_value=None)
 
         offers = available_methods(order_value=Money(10_000_000), zone=ShippingZone.PL)
 
-        assert [offer.method.name for offer in offers] == ["Odbiór w pracowni"]
+        assert [offer.method.name for offer in offers] == ["Kurier z deklaracją"]
 
 
 @pytest.mark.django_db

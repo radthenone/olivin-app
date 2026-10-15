@@ -81,8 +81,7 @@ export const OrdersListResponse = zod.object({
   "shipments": zod.array(zod.object({
   "id": zod.uuid(),
   "trackingNumber": zod.string().describe('Numer śledzenia u przewoźnika; pusty do chwili nadania'),
-  "shippingMethodKind": zod.enum(['parcel_locker', 'courier', 'pickup', 'eu']).describe('* `parcel_locker` - Paczkomat\n* `courier` - Kurier\n* `pickup` - Odbiór osobisty\n* `eu` - Przesyłka do Unii').describe('Rodzaj metody dostawy zamówienia — wybiera szablon linku śledzenia\n\n* `parcel_locker` - Paczkomat\n* `courier` - Kurier\n* `pickup` - Odbiór osobisty\n* `eu` - Przesyłka do Unii'),
-  "pickupPointCode": zod.string().describe('Kod punktu odbioru; wypełniany wyłącznie dla paczkomatu'),
+  "shippingMethodKind": zod.enum(['courier', 'eu']).describe('* `courier` - Kurier\n* `eu` - Przesyłka do Unii').describe('Rodzaj metody dostawy zamówienia — wybiera szablon linku śledzenia\n\n* `courier` - Kurier\n* `eu` - Przesyłka do Unii'),
   "createdAt": zod.iso.datetime({"offset":true}).describe('Timestamp when the record was created')
 }).describe('Przesyłka zamówienia w postaci dla klienta (`CONTEXT.md`, Shipment).\n\nWartości zadeklarowanej przewoźnikowi tu nie ma — to sprawa sklepu\ni przewoźnika (ADR 0028). Link śledzenia składa frontend z szablonu\nprzewoźnika na podstawie rodzaju metody dostawy (ADR 0027).')),
   "goodsTotal": zod.object({
@@ -205,8 +204,7 @@ export const OrdersCreateResponse = zod.object({
   "shipments": zod.array(zod.object({
   "id": zod.uuid(),
   "trackingNumber": zod.string().describe('Numer śledzenia u przewoźnika; pusty do chwili nadania'),
-  "shippingMethodKind": zod.enum(['parcel_locker', 'courier', 'pickup', 'eu']).describe('* `parcel_locker` - Paczkomat\n* `courier` - Kurier\n* `pickup` - Odbiór osobisty\n* `eu` - Przesyłka do Unii').describe('Rodzaj metody dostawy zamówienia — wybiera szablon linku śledzenia\n\n* `parcel_locker` - Paczkomat\n* `courier` - Kurier\n* `pickup` - Odbiór osobisty\n* `eu` - Przesyłka do Unii'),
-  "pickupPointCode": zod.string().describe('Kod punktu odbioru; wypełniany wyłącznie dla paczkomatu'),
+  "shippingMethodKind": zod.enum(['courier', 'eu']).describe('* `courier` - Kurier\n* `eu` - Przesyłka do Unii').describe('Rodzaj metody dostawy zamówienia — wybiera szablon linku śledzenia\n\n* `courier` - Kurier\n* `eu` - Przesyłka do Unii'),
   "createdAt": zod.iso.datetime({"offset":true}).describe('Timestamp when the record was created')
 }).describe('Przesyłka zamówienia w postaci dla klienta (`CONTEXT.md`, Shipment).\n\nWartości zadeklarowanej przewoźnikowi tu nie ma — to sprawa sklepu\ni przewoźnika (ADR 0028). Link śledzenia składa frontend z szablonu\nprzewoźnika na podstawie rodzaju metody dostawy (ADR 0027).')),
   "goodsTotal": zod.object({
@@ -310,8 +308,7 @@ export const OrdersRetrieveResponse = zod.object({
   "shipments": zod.array(zod.object({
   "id": zod.uuid(),
   "trackingNumber": zod.string().describe('Numer śledzenia u przewoźnika; pusty do chwili nadania'),
-  "shippingMethodKind": zod.enum(['parcel_locker', 'courier', 'pickup', 'eu']).describe('* `parcel_locker` - Paczkomat\n* `courier` - Kurier\n* `pickup` - Odbiór osobisty\n* `eu` - Przesyłka do Unii').describe('Rodzaj metody dostawy zamówienia — wybiera szablon linku śledzenia\n\n* `parcel_locker` - Paczkomat\n* `courier` - Kurier\n* `pickup` - Odbiór osobisty\n* `eu` - Przesyłka do Unii'),
-  "pickupPointCode": zod.string().describe('Kod punktu odbioru; wypełniany wyłącznie dla paczkomatu'),
+  "shippingMethodKind": zod.enum(['courier', 'eu']).describe('* `courier` - Kurier\n* `eu` - Przesyłka do Unii').describe('Rodzaj metody dostawy zamówienia — wybiera szablon linku śledzenia\n\n* `courier` - Kurier\n* `eu` - Przesyłka do Unii'),
   "createdAt": zod.iso.datetime({"offset":true}).describe('Timestamp when the record was created')
 }).describe('Przesyłka zamówienia w postaci dla klienta (`CONTEXT.md`, Shipment).\n\nWartości zadeklarowanej przewoźnikowi tu nie ma — to sprawa sklepu\ni przewoźnika (ADR 0028). Link śledzenia składa frontend z szablonu\nprzewoźnika na podstawie rodzaju metody dostawy (ADR 0027).')),
   "goodsTotal": zod.object({
@@ -415,8 +412,7 @@ export const OrdersCancelCreateResponse = zod.object({
   "shipments": zod.array(zod.object({
   "id": zod.uuid(),
   "trackingNumber": zod.string().describe('Numer śledzenia u przewoźnika; pusty do chwili nadania'),
-  "shippingMethodKind": zod.enum(['parcel_locker', 'courier', 'pickup', 'eu']).describe('* `parcel_locker` - Paczkomat\n* `courier` - Kurier\n* `pickup` - Odbiór osobisty\n* `eu` - Przesyłka do Unii').describe('Rodzaj metody dostawy zamówienia — wybiera szablon linku śledzenia\n\n* `parcel_locker` - Paczkomat\n* `courier` - Kurier\n* `pickup` - Odbiór osobisty\n* `eu` - Przesyłka do Unii'),
-  "pickupPointCode": zod.string().describe('Kod punktu odbioru; wypełniany wyłącznie dla paczkomatu'),
+  "shippingMethodKind": zod.enum(['courier', 'eu']).describe('* `courier` - Kurier\n* `eu` - Przesyłka do Unii').describe('Rodzaj metody dostawy zamówienia — wybiera szablon linku śledzenia\n\n* `courier` - Kurier\n* `eu` - Przesyłka do Unii'),
   "createdAt": zod.iso.datetime({"offset":true}).describe('Timestamp when the record was created')
 }).describe('Przesyłka zamówienia w postaci dla klienta (`CONTEXT.md`, Shipment).\n\nWartości zadeklarowanej przewoźnikowi tu nie ma — to sprawa sklepu\ni przewoźnika (ADR 0028). Link śledzenia składa frontend z szablonu\nprzewoźnika na podstawie rodzaju metody dostawy (ADR 0027).')),
   "goodsTotal": zod.object({
