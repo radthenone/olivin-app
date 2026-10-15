@@ -2441,8 +2441,8 @@ paths:
       operationId: shipping_methods_list
       description: Zwraca metody właściwe dla strefy, których górna wartość zamówienia
         nie została przekroczona, wraz z kosztem policzonym dla podanej wartości koszyka.
-        Powyżej progu darmowej dostawy koszt wynosi zero. Odbiór osobisty nie ma górnej
-        wartości zamówienia, więc jest na liście zawsze.
+        Powyżej progu darmowej dostawy koszt wynosi zero. Metoda bez górnej wartości
+        zamówienia jest na liście zawsze.
       summary: Metody dostawy dostępne dla koszyka
       parameters:
       - in: query
@@ -6746,14 +6746,8 @@ components:
           description: |-
             Rodzaj metody dostawy zamówienia — wybiera szablon linku śledzenia
 
-            * `parcel_locker` - Paczkomat
             * `courier` - Kurier
-            * `pickup` - Odbiór osobisty
             * `eu` - Przesyłka do Unii
-        pickupPointCode:
-          type: string
-          readOnly: true
-          description: Kod punktu odbioru; wypełniany wyłącznie dla paczkomatu
         createdAt:
           type: string
           format: date-time
@@ -6762,20 +6756,15 @@ components:
       required:
       - createdAt
       - id
-      - pickupPointCode
       - shippingMethodKind
       - trackingNumber
     ShippingMethodKindEnum:
       enum:
-      - parcel_locker
       - courier
-      - pickup
       - eu
       type: string
       description: |-
-        * `parcel_locker` - Paczkomat
         * `courier` - Kurier
-        * `pickup` - Odbiór osobisty
         * `eu` - Przesyłka do Unii
     ShippingOffer:
       type: object
@@ -6809,7 +6798,7 @@ components:
           type: boolean
           readOnly: true
           description: Czy klient nie zapłaci za tę dostawę — z progu darmowej dostawy
-            albo ze stawki zero, jak przy odbiorze osobistym
+            albo ze stawki zero
       required:
       - cost
       - id

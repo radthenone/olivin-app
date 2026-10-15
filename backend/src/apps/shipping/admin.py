@@ -26,7 +26,7 @@ class ShipmentAdmin(admin.ModelAdmin):
     ubezpieczenie jest wliczone w stawkę (ADR 0028).
     """
 
-    list_display = ("order", "tracking_number", "declared_value", "pickup_point_code")
+    list_display = ("order", "tracking_number", "declared_value")
     list_filter = ("order__status",)
     search_fields = ("tracking_number", "order__number")
     ordering = ("-created_at",)

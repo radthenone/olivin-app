@@ -55,12 +55,7 @@ class ShippingOffer:
 
     @property
     def is_free(self) -> bool:
-        """Czy klient nie zapłaci za tę dostawę — z progu albo ze stawki zero.
-
-        Odbiór osobisty jest darmowy przy każdej wartości koszyka, bo nic nie
-        jedzie przewoźnikiem; nie ma powodu, żeby klient widział go inaczej
-        niż kuriera puszczonego gratis powyżej progu.
-        """
+        """Czy klient nie zapłaci za tę dostawę — z progu albo ze stawki zero."""
         return not self.cost
 
 
@@ -107,8 +102,7 @@ def available_methods(*, order_value: Money, zone: str) -> list[ShippingOffer]:
     Odsiewane jest wszystko, czego klient nie może wybrać: metoda wygaszona,
     metoda z innej strefy, metoda wyceniona w innej walucie niż koszyk
     i metoda, której górna wartość zamówienia została przekroczona
-    (ADR 0028). Odbiór osobisty limitu nie ma, więc zostaje zawsze — bez
-    osobnego wyjątku, bo ograniczenie w bazie nie pozwala mu limitu nadać.
+    (ADR 0028). Metoda bez limitu zostaje zawsze.
 
     Niezgodność waluty jest filtrem, a nie wyjątkiem: to publiczny odczyt dla
     każdego, więc jeden wiersz wpisany w panelu nie może zamieniać go w 500.

@@ -31,11 +31,7 @@ from tests.factories.products import (
     PublishedProductFactory,
     stock,
 )
-from tests.factories.shipping import (
-    ParcelLockerMethodFactory,
-    ShipmentFactory,
-    ShippingMethodFactory,
-)
+from tests.factories.shipping import ShipmentFactory, ShippingMethodFactory
 
 TOKEN_HEADER = "HTTP_X_CART_TOKEN"
 
@@ -400,21 +396,16 @@ class TestOrderShipments:
         self, authenticated_client: APIClient, user: CustomUser
     ):
         """Szczegół zamówienia wymienia przesyłki bez wartości deklarowanej."""
-        order = OrderFactory(user=user, shipping_method=ParcelLockerMethodFactory())
-        ShipmentFactory(
-            order=order,
-            tracking_number="PL123",
-            pickup_point_code="WAW01M",
-            declared_value=50000,
-        )
+        order = OrderFactory(user=user, shipping_method=ShippingMethodFactory())
+        ShipmentFactory(order=order, tracking_number="PL123", declared_value=50000)
 
         response: Any = authenticated_client.get(_order_url(order.number))
 
         assert response.status_code == status.HTTP_200_OK
         [shipment] = response.json()["shipments"]
         assert shipment["trackingNumber"] == "PL123"
-        assert shipment["pickupPointCode"] == "WAW01M"
-        assert shipment["shippingMethodKind"] == "parcel_locker"
+        assert "pickupPointCode" not in shipment
+        assert shipment["shippingMethodKind"] == "courier"
         assert shipment["createdAt"]
         assert "declaredValue" not in shipment
         assert "50000" not in response.content.decode()
