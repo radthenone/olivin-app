@@ -9,8 +9,10 @@ from typing import TYPE_CHECKING, Any
 from django.db import transaction
 
 from apps.notifications.models import (
+    PUSH_BODY,
     TRANSACTIONAL_KINDS,
     Notification,
+    NotificationKind,
     NotificationPreference,
     PushDevice,
 )
@@ -19,6 +21,7 @@ from apps.notifications.newsletter import (
     one_click_unsubscribe_headers,
 )
 from core.integrations.notifications.mail import send_notification_email
+from core.integrations.push.base import MARKETING_CHANNEL, ORDERS_CHANNEL
 
 if TYPE_CHECKING:
     from apps.accounts.models import CustomUser
@@ -66,6 +69,41 @@ _TEMPLATES: dict[str, tuple[str, str]] = {
         "Wypisz się: {unsubscribe_url}",
     ),
 }
+
+
+# Ekran aplikacji do otwarcia po tapnięciu w push (`data.url`, ścieżka
+# expo-router); rodzaj spoza mapy otwiera skrzynkę powiadomień.
+_PUSH_URLS: dict[str, str] = {
+    "order_status_changed": "/orders/{order_number}",
+    "order_paid": "/orders/{order_number}",
+    "document_ready": "/orders/{order_number}",
+    "return_request_status_changed": "/orders/{order_number}",
+    "return_settled": "/orders/{order_number}",
+    "watch_restock": "/products/{product_slug}",
+    "watch_price_drop": "/products/{product_slug}",
+    "cart_reminder": "/cart",
+}
+DEFAULT_PUSH_URL = "/notifications"
+
+
+def _push_message(
+    kind: str,
+    payload: dict[str, Any],
+    push_body: str | None,
+    push_data: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Argumenty zadania push: ogólny tytuł, kanał i `data.url` (ADR 0037).
+
+    Tytuł to nazwa rodzaju, nie temat e-maila — bez kwot, adresów i numerów.
+    Surowy payload nie trafia do pusha; `data` to `push_data` plus `url`.
+    """
+    url = _PUSH_URLS.get(kind, DEFAULT_PUSH_URL).format_map(defaultdict(str, payload))
+    return {
+        "title": dict(NotificationKind.choices).get(kind, "Nowe powiadomienie"),
+        "body": push_body if push_body is not None else PUSH_BODY,
+        "data": {**(push_data or {}), "url": url},
+        "channel": ORDERS_CHANNEL if kind in TRANSACTIONAL_KINDS else MARKETING_CHANNEL,
+    }
 
 
 def _render(kind: str, payload: dict[str, Any]) -> tuple[str, str]:
@@ -172,9 +210,9 @@ def notify(
     (`CONTEXT.md`, Account anonymisation). Rekord w aplikacji i tak idzie na
     konto z `user_or_email` — tylko adres wysyłki jest inny.
 
-    `push_body` i `push_data` zastępują w pushu treść e-maila i payload —
-    dla komunikatów, których pełna treść jest za długa na powiadomienie
-    (np. przypomnienie o koszyku z listą pozycji).
+    Push niesie tylko ogólny tytuł, krótką treść i `data.url` (ADR 0037,
+    `_push_message`). `push_body` zastępuje domyślną ogólną treść, a
+    `push_data` dokłada pola do `data` (np. typ przypomnienia o koszyku).
 
     Bez idempotencji: każde wywołanie tworzy nowy rekord i kolejkuje nowy
     e-mail. To wywołujący odpowiada za wywołanie raz na realne zdarzenie —
@@ -207,9 +245,7 @@ def notify(
             task = cast(Any, send_push_notification)
             task.delay(
                 user_id=str(user.pk),
-                title=subject,
-                body=push_body if push_body is not None else message,
-                data=push_data if push_data is not None else payload,
+                **_push_message(kind, payload, push_body, push_data),
             )
         except Exception:
             # Push nie blokuje pozostałych kanałów — błąd kolejkowania

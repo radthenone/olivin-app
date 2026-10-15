@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
+from core.integrations.push.base import PushProviderError, PushResult
+
 
 class FakePushProvider:
     """Atrapa kanału push do testów (issue #202).
@@ -28,13 +30,21 @@ class FakePushProvider:
         title: str,
         body: str,
         data: dict[str, Any],
-    ) -> list[str]:
-        from core.integrations.push.base import PushProviderError
-
+        channel: str,
+    ) -> PushResult:
         if self.fail_with:
             raise PushProviderError(self.fail_with)
         self.sent.append(
-            {"tokens": list(tokens), "title": title, "body": body, "data": dict(data)}
+            {
+                "tokens": list(tokens),
+                "title": title,
+                "body": body,
+                "data": dict(data),
+                "channel": channel,
+            }
         )
         invalid = [token for token in tokens if token in self.invalid_tokens]
-        return invalid
+        return PushResult(invalid_tokens=invalid)
+
+    def check_receipts(self, tickets: dict[str, str]) -> list[str]:
+        return []

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from core.integrations.push.base import PushResult
+
 
 class NoopPushProvider:
     """Atrapa „donikąd” na dev/test — nic nie wysyła (issue #202).
@@ -17,5 +19,9 @@ class NoopPushProvider:
         title: str,
         body: str,
         data: dict[str, Any],
-    ) -> list[str]:
+        channel: str,
+    ) -> PushResult:
+        return PushResult()
+
+    def check_receipts(self, tickets: dict[str, str]) -> list[str]:
         return []

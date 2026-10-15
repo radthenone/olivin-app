@@ -144,4 +144,8 @@ class TestAnnouncePromotion:
         _, push = _announce(PromotionFactory())
 
         push.delay.assert_called_once()
-        assert push.delay.call_args.kwargs["user_id"] == str(pushy.pk)
+        kwargs = push.delay.call_args.kwargs
+        assert kwargs["user_id"] == str(pushy.pk)
+        assert kwargs["channel"] == "marketing"
+        assert kwargs["title"] == "Nowa promocja"
+        assert kwargs["data"]["url"].startswith("/promotions/")

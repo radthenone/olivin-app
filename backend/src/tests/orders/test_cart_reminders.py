@@ -306,7 +306,8 @@ class TestCartReminderContent:
         sent = push_provider.sent[0]
         assert "AV-PUSH" not in sent["body"]
         assert "1" in sent["body"]
-        assert sent["data"] == {"type": "cart_reminder"}
+        assert sent["data"] == {"type": "cart_reminder", "url": "/cart"}
+        assert sent["channel"] == "marketing"
 
     def test_email_has_one_click_unsubscribe_link(
         self, mail, settings, django_capture_on_commit_callbacks

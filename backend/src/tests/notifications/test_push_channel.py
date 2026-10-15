@@ -52,7 +52,34 @@ class TestNotifyPushTransactional:
         assert len(push_provider.sent) == 1
         sent = push_provider.sent[0]
         assert sent["tokens"] == ["ExponentPushToken[abc]"]
-        assert "ABC123" in sent["title"] or "ABC123" in sent["body"]
+        assert sent["channel"] == "orders"
+        assert sent["data"] == {"url": "/orders/ABC123"}
+
+    def test_push_content_is_generic(
+        self, django_capture_on_commit_callbacks, push_provider
+    ):
+        """Push ma ogólny tytuł — bez kwot i numerów, szczegóły tylko w aplikacji."""
+        user = UserFactory()
+        _device(user)
+
+        with patch("apps.notifications.services.send_notification_email"):
+            with django_capture_on_commit_callbacks(execute=True):
+                notify(
+                    user,
+                    NotificationKind.RETURN_SETTLED,
+                    {
+                        "order_number": "ABC123",
+                        "compensation_amount": "123,45 zł",
+                        "compensation_form": "przelew",
+                    },
+                )
+
+        sent = push_provider.sent[0]
+        assert sent["title"] == "Rozliczenie zwrotu"
+        for secret in ("ABC123", "123,45"):
+            assert secret not in sent["title"]
+            assert secret not in sent["body"]
+        assert sent["data"] == {"url": "/orders/ABC123"}
 
     def test_no_devices_no_push(
         self, django_capture_on_commit_callbacks, push_provider
@@ -116,6 +143,33 @@ class TestNotifyPushMarketing:
                 notify(user, "promotion", {})
 
         assert len(push_provider.sent) == 1
+        assert push_provider.sent[0]["channel"] == "marketing"
+
+    def test_watch_push_links_to_product(
+        self, django_capture_on_commit_callbacks, push_provider
+    ):
+        """Push obserwowanego wariantu prowadzi na stronę produktu, bez cen."""
+        user = UserFactory()
+        _device(user)
+        NotificationPreference.objects.create(user=user, marketing_push=True)
+
+        with patch("apps.notifications.services.send_notification_email"):
+            with django_capture_on_commit_callbacks(execute=True):
+                notify(
+                    user,
+                    NotificationKind.WATCH_PRICE_DROP,
+                    {
+                        "variant_sku": "SKU-1",
+                        "product_name": "Pierścionek",
+                        "product_slug": "ring",
+                        "old_price": "500",
+                        "new_price": "400",
+                    },
+                )
+
+        sent = push_provider.sent[0]
+        assert sent["data"] == {"url": "/products/ring"}
+        assert "400" not in sent["title"] + sent["body"]
 
 
 @pytest.mark.django_db
@@ -176,5 +230,8 @@ class TestPushDelivery:
                 )
 
         assert push_provider.sent[0]["body"] == "Krótko"
-        assert push_provider.sent[0]["data"] == {"type": "order_paid"}
+        assert push_provider.sent[0]["data"] == {
+            "type": "order_paid",
+            "url": "/orders/X",
+        }
         assert "X" in send_email.call_args.kwargs["body"]
