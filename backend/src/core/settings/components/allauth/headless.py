@@ -1,8 +1,7 @@
+# Linki z maili allauth składane z `FRONTEND_LINK_BASE` (components/email.py,
+# ADR 0038). Weryfikacja e-maila i reset hasła idą kodem, więc zostają tylko
+# klucze, które allauth wciąż wstawia do maili (mail do nieznanego konta).
 HEADLESS_FRONTEND_URLS = {
-    "account_confirm_email": "http://localhost:8081/account/verify-email/{key}",
-    "account_reset_password": "http://localhost:8081/account/reset-password",
-    "account_reset_password_from_key": "http://localhost:8081/account/reset-password/{key}",
-    "account_signup": "http://localhost:8081/signup",
-    "account_login": "http://localhost:8081/login",
-    "account_email_verification_sent": "http://localhost:8081/account/verification-sent",
+    "account_reset_password": f"{FRONTEND_LINK_BASE}/account/reset-password",  # noqa: F821
+    "account_signup": f"{FRONTEND_LINK_BASE}/signup",  # noqa: F821
 }
