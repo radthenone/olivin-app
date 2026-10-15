@@ -166,7 +166,7 @@ class TestOneClickUnsubscribeEndpoint:
             email="a@test.com", status=NewsletterStatus.ACTIVE
         )
 
-        response = api_client.get(
+        response: Any = api_client.get(
             reverse(
                 "newsletter-one-click-unsubscribe",
                 kwargs={"token": str(subscription.unsubscribe_token)},
