@@ -100,6 +100,26 @@ class TestNotifyMarketing:
         assert result is None
         send.assert_not_called()
 
+    def test_marketing_email_has_one_click_unsubscribe_headers(
+        self, django_capture_on_commit_callbacks, settings
+    ):
+        """Marketingowy e-mail konta niesie nagłówki RFC 8058 z tokenem konta (#314)."""
+        from apps.notifications import newsletter
+
+        settings.BACKEND_URL = "https://api.shop.test"
+        user = UserFactory()
+        NotificationPreference.objects.create(user=user, marketing_email=True)
+
+        with patch("apps.notifications.services.send_notification_email") as send:
+            with django_capture_on_commit_callbacks(execute=True):
+                notify(user, "promotion", {})
+
+        headers = send.call_args.kwargs["headers"]
+        assert headers == newsletter.one_click_unsubscribe_headers(
+            newsletter.account_unsubscribe_token(user.pk)
+        )
+        assert headers["List-Unsubscribe"].startswith("<https://api.shop.test/")
+
     def test_sent_with_consent(self, django_capture_on_commit_callbacks):
         """Ze zgodą marketingową powiadomienie idzie."""
         user = UserFactory()

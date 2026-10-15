@@ -42,3 +42,11 @@ class TestProductionBackendUrl:
 
         with pytest.raises(ImproperlyConfigured, match="BACKEND_URL"):
             runpy.run_path(str(PRODUCTION))
+
+    def test_plain_http_backend_url_raises(self, monkeypatch: pytest.MonkeyPatch):
+        """`BACKEND_URL` bez HTTPS rzuca — RFC 8058 wymaga HTTPS, a POST po 301 ginie."""
+        monkeypatch.setenv("FRONTEND_URL", "https://olivin.example")
+        monkeypatch.setenv("BACKEND_URL", "http://api.olivin.example")
+
+        with pytest.raises(ImproperlyConfigured, match="BACKEND_URL"):
+            runpy.run_path(str(PRODUCTION))

@@ -13,8 +13,9 @@ DEBUG = False
 if not os.environ.get("FRONTEND_URL"):
     raise ImproperlyConfigured("FRONTEND_URL jest wymagane w produkcji.")
 # Nagłówek one-click wypisu (RFC 8058) musi wskazywać publiczny adres HTTPS API.
-if not os.environ.get("BACKEND_URL"):
-    raise ImproperlyConfigured("BACKEND_URL jest wymagane w produkcji.")
+# `http` odpada: RFC 8058 wymaga HTTPS, a `SECURE_SSL_REDIRECT` dałby 301 na POST.
+if not os.environ.get("BACKEND_URL", "").startswith("https://"):
+    raise ImproperlyConfigured("BACKEND_URL (https://) jest wymagane w produkcji.")
 
 # Security settings
 SECURE_BROWSER_XSS_FILTER = True

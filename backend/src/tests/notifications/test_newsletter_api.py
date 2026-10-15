@@ -160,6 +160,38 @@ class TestOneClickUnsubscribeEndpoint:
         assert _one_click(api_client, token).status_code == status.HTTP_200_OK
         assert NotificationPreference.for_user(user).marketing_email is False
 
+    def test_get_does_not_unsubscribe(self, api_client: APIClient):
+        """GET (skaner poczty) daje 405 i nie wypisuje."""
+        subscription = NewsletterSubscription.objects.create(
+            email="a@test.com", status=NewsletterStatus.ACTIVE
+        )
+
+        response = api_client.get(
+            reverse(
+                "newsletter-one-click-unsubscribe",
+                kwargs={"token": str(subscription.unsubscribe_token)},
+            )
+        )
+
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+        subscription.refresh_from_db()
+        assert subscription.status == NewsletterStatus.ACTIVE
+
+    def test_not_limited_by_auth_scope(self, api_client: APIClient):
+        """Seria wypisów z jednego IP (serwer skrzynki) nie dostaje 429 jak `auth`."""
+        tokens = [
+            str(
+                NewsletterSubscription.objects.create(
+                    email=f"u{i}@test.com", status=NewsletterStatus.ACTIVE
+                ).unsubscribe_token
+            )
+            for i in range(11)
+        ]
+
+        codes = {_one_click(api_client, token).status_code for token in tokens}
+
+        assert codes == {status.HTTP_200_OK}
+
     def test_unknown_token_returns_404(self, api_client: APIClient):
         """Nieznany token daje 404."""
         response = _one_click(api_client, "bogus")

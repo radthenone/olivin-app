@@ -1,4 +1,4 @@
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 
 from apps.notifications.serializers import (
     NewsletterDetailSerializer,
@@ -98,5 +98,8 @@ newsletter_one_click_unsubscribe_schema = extend_schema(
         "subskrypcji albo konta. Idempotentny, 404 dla nieznanego tokenu."
     ),
     request=None,
-    responses={200: NewsletterDetailSerializer},
+    responses={
+        200: NewsletterDetailSerializer,
+        404: OpenApiResponse(description="Nieznany albo sfałszowany token."),
+    },
 )

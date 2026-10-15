@@ -6,6 +6,7 @@ from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from apps.notifications import newsletter
@@ -174,7 +175,14 @@ class NewsletterOneClickUnsubscribeView(_PublicNewsletterView):
     Adres z nagłówka `List-Unsubscribe`. Skrzynka wysyła POST z treścią
     `List-Unsubscribe=One-Click` i tokenem w ścieżce; treści nie czytamy —
     sam POST na adres z tokenem to zgoda na wypis. Powtórka też daje 200.
+
+    Własny zakres limitu zamiast `auth` i bez limitu `anon`: po kampanii
+    serwery skrzynek wysyłają serię POST-ów z kilku IP — 429 zgubiłby wypisy.
+    Token z 122 bitami losowości (albo podpisem) nie do zgadnięcia seriami.
     """
+
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "unsubscribe"
 
     @newsletter_one_click_unsubscribe_schema
     def post(self, request: Request, token: str) -> Response:
