@@ -3,6 +3,7 @@ Production settings for Olivin project.
 """
 
 import os
+import warnings
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -16,10 +17,17 @@ if not os.environ.get("FRONTEND_URL"):
 # `http` odpada: RFC 8058 wymaga HTTPS, a `SECURE_SSL_REDIRECT` dałby 301 na POST.
 if not os.environ.get("BACKEND_URL", "").startswith("https://"):
     raise ImproperlyConfigured("BACKEND_URL (https://) jest wymagane w produkcji.")
-# Bez sekretu web nie przyjmie rewalidacji, a strona produktu pokazywałaby
-# do wygaśnięcia keszu inną cenę niż kasa (ADR 0034, #318).
+# Bez sekretu backend nie woła rewalidacji katalogu na webie (ADR 0034, #318),
+# więc strona produktu pokazuje nową cenę dopiero po wygaśnięciu keszu.
+# Tylko ostrzeżenie: route `/api/revalidate` w Next jeszcze nie istnieje —
+# wymóg (`ImproperlyConfigured`) wróci razem z nim.
 if not os.environ.get("REVALIDATE_SECRET"):
-    raise ImproperlyConfigured("REVALIDATE_SECRET jest wymagane w produkcji.")
+    warnings.warn(
+        "REVALIDATE_SECRET nie jest ustawione — rewalidacja katalogu na webie "
+        "jest wyłączona.",
+        RuntimeWarning,
+        stacklevel=1,
+    )
 
 # Security settings
 SECURE_BROWSER_XSS_FILTER = True

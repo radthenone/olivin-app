@@ -94,6 +94,10 @@ PAYMENT_PROVIDER = str(
 STRIPE_SECRET_KEY = str(os.environ.get("STRIPE_SECRET_KEY", ""))
 STRIPE_WEBHOOK_SECRET = str(os.environ.get("STRIPE_WEBHOOK_SECRET", ""))
 
+# Sekret endpointu rewalidacji keszu katalogu na webie (`/api/revalidate`,
+# ADR 0034, #318). Pusty (dev, testy) → backend nie woła webu.
+REVALIDATE_SECRET = str(os.environ.get("REVALIDATE_SECRET", ""))
+
 # Kanał push (issue #202, ADR 0027). Domyślnie donikąd — dev/test nic nie
 # wysyłają; produkcja wskazuje Expo jawną konfiguracją.
 PUSH_PROVIDER = str(

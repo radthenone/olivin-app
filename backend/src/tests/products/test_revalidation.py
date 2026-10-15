@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pytest
 import requests
 
-from apps.products.models import Product, ProductVariant
+from apps.products.models import Product, ProductStatus, ProductVariant
 from apps.products.services import activate_rate
 from apps.products.tasks import recalculate_variant_prices
 from core.integrations.web_revalidation import (
@@ -98,7 +98,19 @@ class TestProductSaveRevalidation:
                 product = PublishedProductFactory()
                 assert not post.called
 
-        assert _sent_tags(post) == [[f"product:{product.slug}"]]
+        assert _sent_tags(post) == [[f"product:{product.slug}", "catalog"]]
+
+    def test_unpublication_sends_catalog_tag(
+        self, revalidate_settings, django_capture_on_commit_callbacks
+    ):
+        """Zdjęcie produktu ze sklepu odświeża jego stronę i listy katalogu."""
+        product = PublishedProductFactory()
+        with patch(POST) as post:
+            with django_capture_on_commit_callbacks(execute=True):
+                product.status = ProductStatus.DRAFT
+                product.save(update_fields=["status", "updated_at"])
+
+        assert _sent_tags(post) == [[f"product:{product.slug}", "catalog"]]
 
     def test_edit_of_published_product_sends_product_tag(
         self, revalidate_settings, django_capture_on_commit_callbacks

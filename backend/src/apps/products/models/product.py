@@ -178,39 +178,45 @@ class Product(TimestampedModel):
     def save(self, *args, **kwargs) -> None:
         self._reject_production_time_mismatch()
         self._reject_engraving_mismatch()
-        just_published = self._is_becoming_published()
+        was_published = self._stored_status() == ProductStatus.PUBLISHED
+        just_published = self.is_published and not was_published
         if self.slug:
             self._reject_slug_change_after_publication()
         elif self.is_published:
             # Adres powstaje w chwili wyjścia do sklepu, nie wcześniej.
             self.slug = self._slug_from_english_name()
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None and "slug" not in update_fields:
+                # Akcja admina zapisuje tylko `status` — bez tego slug ginie.
+                kwargs["update_fields"] = [*update_fields, "slug"]
         super().save(*args, **kwargs)
         if just_published:
             self._queue_translation()
         if self.slug:
             # Strona produktu na webie jest keszowana (ADR 0034) — po commicie
-            # odświeżamy ją, także przy zdjęciu produktu ze sklepu.
+            # odświeżamy ją, a przy publikacji i zdjęciu ze sklepu także listy.
             from apps.products.tasks import revalidate_web_on_commit
 
-            revalidate_web_on_commit(f"product:{self.slug}")
+            tags = [f"product:{self.slug}"]
+            if self.is_published != was_published:
+                tags.append("catalog")
+            revalidate_web_on_commit(*tags)
 
-    def _is_becoming_published(self) -> bool:
-        """Czy ten zapis właśnie publikuje produkt.
+    def _stored_status(self) -> str | None:
+        """Status zapisany w bazie przed tym zapisem; `None` dla nowego produktu.
 
-        Tylko przejście, nie każdy zapis opublikowanego: inaczej poprawka
-        literówki kolejkowałaby zadanie, które i tak nie ma czego dołożyć.
+        Porównanie z nim odróżnia przejście (publikacja, zdjęcie ze sklepu) od
+        zwykłej edycji: poprawka literówki nie kolejkuje tłumaczeń ani
+        rewalidacji list katalogu.
         """
-        if not self.is_published:
-            return False
         if self.pk is None:
-            return True
-        previous = (
+            return None
+        return (
             type(self)
             .objects.filter(pk=self.pk)
             .values_list("status", flat=True)
             .first()
         )
-        return previous != ProductStatus.PUBLISHED
 
     def _queue_translation(self) -> None:
         """Publikacja kolejkuje uzupełnienie tłumaczeń (ADR 0027).

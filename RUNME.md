@@ -38,7 +38,8 @@ Strony katalogu na webie są keszowane; po zapisie produktu i po przeliczeniu
 cen backend woła `POST {FRONTEND_URL}/api/revalidate` z nagłówkiem
 `X-Revalidate-Secret` (ADR 0034). Sekret podaj w `REVALIDATE_SECRET`
 (`.envs/{dev,prod}/backend/django.env`, ta sama wartość po stronie webu).
-Na dev pusta wartość wyłącza wywołanie, w produkcji zmienna jest wymagana.
+Pusta wartość wyłącza wywołanie; w produkcji backend wtedy tylko ostrzega
+(wymóg wróci, gdy web dostanie route `/api/revalidate`).
 
 ## Frontend
 

@@ -59,13 +59,17 @@ class TestProductionBackendUrl:
 
 
 class TestProductionRevalidateSecret:
-    """Brak `REVALIDATE_SECRET` w produkcji zatrzymuje start (ADR 0034, #318)."""
+    """Brak `REVALIDATE_SECRET` w produkcji ostrzega, ale nie blokuje startu (#318).
 
-    def test_missing_revalidate_secret_raises(self, monkeypatch: pytest.MonkeyPatch):
-        """Bez sekretu web nie przyjąłby rewalidacji — ustawienia rzucają ImproperlyConfigured."""
+    Route `/api/revalidate` po stronie webu jeszcze nie istnieje; wymóg wróci
+    razem z nim.
+    """
+
+    def test_missing_revalidate_secret_warns(self, monkeypatch: pytest.MonkeyPatch):
+        """Bez sekretu ustawienia ładują się z ostrzeżeniem o wyłączonej rewalidacji."""
         monkeypatch.setenv("FRONTEND_URL", "https://olivin.example")
         monkeypatch.setenv("BACKEND_URL", "https://api.olivin.example")
         monkeypatch.delenv("REVALIDATE_SECRET", raising=False)
 
-        with pytest.raises(ImproperlyConfigured, match="REVALIDATE_SECRET"):
-            runpy.run_path(str(PRODUCTION))
+        with pytest.warns(RuntimeWarning, match="REVALIDATE_SECRET"):
+            assert runpy.run_path(str(PRODUCTION))["DEBUG"] is False

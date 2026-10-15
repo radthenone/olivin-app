@@ -32,10 +32,6 @@ FRONTEND_URL = str(os.environ.get("FRONTEND_URL", "http://localhost:3000")).rstr
 # język odbiorcy maila (`PreferredLanguage`, ADR 0035, #316).
 FRONTEND_LINK_BASE = f"{FRONTEND_URL}/pl"
 
-# Sekret endpointu rewalidacji keszu katalogu na webie (`/api/revalidate`,
-# ADR 0034, #318). Pusty (dev, testy) → backend nie woła webu.
-REVALIDATE_SECRET = os.environ.get("REVALIDATE_SECRET", "")
-
 # Linki z maili newslettera (#203) prowadzą na ekrany web, które wołają API
 # potwierdzenia i wypisu. `{token}` podstawia backend.
 NEWSLETTER_CONFIRM_URL = f"{FRONTEND_LINK_BASE}/newsletter/confirm/{{token}}"
