@@ -41,6 +41,11 @@ TRANSACTIONAL_KINDS: frozenset[str] = frozenset(
 )
 
 
+# Treść pusha (ADR 0037): ogólny tytuł i ta stała — bez kwot, adresów
+# i numerów; pełna treść czeka w skrzynce powiadomień w aplikacji.
+PUSH_BODY = "Szczegóły znajdziesz w aplikacji."
+
+
 class NotificationQuerySet(models.QuerySet["Notification"]):
     def unread(self) -> NotificationQuerySet:
         return self.filter(is_read=False)

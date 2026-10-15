@@ -117,6 +117,7 @@ def notify_restock_watches(variant: ProductVariant) -> int:
         payload = {
             "variant_sku": variant.sku,
             "product_name": variant.product.name,
+            "product_slug": variant.product.slug,
         }
         try:
             if _send_watch(watch, WATCH_RESTOCK_KIND, payload):
@@ -146,6 +147,7 @@ def notify_price_watches(variant: ProductVariant) -> int:
         payload = {
             "variant_sku": variant.sku,
             "product_name": variant.product.name,
+            "product_slug": variant.product.slug,
             "old_price": watch.price_at_watch,
             "new_price": current,
         }

@@ -23,11 +23,13 @@ from django.utils import timezone
 
 from apps.consents.models import Consent, ConsentDocument, ConsentKind
 from apps.notifications.models import (
+    PUSH_BODY,
     NewsletterStatus,
     NewsletterSubscription,
     NotificationPreference,
 )
 from core.integrations.notifications.mail import send_notification_email
+from core.integrations.push.base import MARKETING_CHANNEL
 
 if TYPE_CHECKING:
     from apps.accounts.models import CustomUser
@@ -298,11 +300,16 @@ def send_promotion_announcement(promotion: Promotion) -> int:
     # `cast(Any, ...)` jak w `notify()`: pyrefly nie widzi `.delay` zadania Celery.
     push_task = cast(Any, tasks.send_push_notification)
     for user_id in push_user_ids:
+        # Push z ogólnym tytułem, bez nazwy i kodu promocji (ADR 0037).
         push_task.delay(
             user_id=str(user_id),
-            title=subject,
-            body=message,
-            data={"promotion_id": str(promotion.pk)},
+            title="Nowa promocja",
+            body=PUSH_BODY,
+            data={
+                "promotion_id": str(promotion.pk),
+                "url": "/promotions",
+            },
+            channel=MARKETING_CHANNEL,
         )
     return len(recipients)
 
