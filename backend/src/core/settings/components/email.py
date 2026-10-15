@@ -25,24 +25,17 @@ SHOP_OWNER_EMAIL = str(
     or os.environ.get("DJANGO_SUPERUSER_EMAIL", "admin@example.com")
 )
 
+# Jedyna baza linków w mailach (ADR 0038): domena webu (Next). Na dev
+# `http://localhost:3000`, w produkcji kanoniczna domena bez przekierowań.
+FRONTEND_URL = str(os.environ.get("FRONTEND_URL", "http://localhost:3000")).rstrip("/")
+# ponytail: stały prefiks `/pl`; język z `PreferredLanguage` to osobne issue.
+FRONTEND_LINK_BASE = f"{FRONTEND_URL}/pl"
+
 # Linki z maili newslettera (#203) prowadzą na ekrany web, które wołają API
 # potwierdzenia i wypisu. `{token}` podstawia backend.
-NEWSLETTER_CONFIRM_URL = str(
-    os.environ.get(
-        "NEWSLETTER_CONFIRM_URL", "http://localhost:3000/newsletter/confirm/{token}"
-    )
-)
-NEWSLETTER_UNSUBSCRIBE_URL = str(
-    os.environ.get(
-        "NEWSLETTER_UNSUBSCRIBE_URL",
-        "http://localhost:3000/newsletter/unsubscribe/{token}",
-    )
-)
+NEWSLETTER_CONFIRM_URL = f"{FRONTEND_LINK_BASE}/newsletter/confirm/{{token}}"
+NEWSLETTER_UNSUBSCRIBE_URL = f"{FRONTEND_LINK_BASE}/newsletter/unsubscribe/{{token}}"
 
 # Linki z przypomnienia o koszyku (#208): koszyk i zmiana zgód marketingowych.
-CART_URL = str(os.environ.get("CART_URL", "http://localhost:3000/cart"))
-NOTIFICATION_PREFERENCES_URL = str(
-    os.environ.get(
-        "NOTIFICATION_PREFERENCES_URL", "http://localhost:3000/account/notifications"
-    )
-)
+CART_URL = f"{FRONTEND_LINK_BASE}/cart"
+NOTIFICATION_PREFERENCES_URL = f"{FRONTEND_LINK_BASE}/account/notifications"

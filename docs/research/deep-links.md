@@ -79,14 +79,16 @@ HEADLESS_FRONTEND_URLS = {
 
 ### Backend — `backend/src/core/settings/components/email.py`
 
-Pozostałe linki z maili czytają zmienne środowiskowe i wskazują na Next.js:
+Pozostałe linki z maili wskazują na Next.js. Od #313 nie czytają już
+własnych zmiennych środowiskowych. Składa je `FRONTEND_URL` z prefiksem `/pl`,
+do czasu wyboru języka z `PreferredLanguage` (ADR 0038):
 
-| Ustawienie | Domyślna wartość | Token |
+| Ustawienie | Wartość (z `FRONTEND_URL`) | Token |
 |---|---|---|
-| `NEWSLETTER_CONFIRM_URL` | `http://localhost:3000/newsletter/confirm/{token}` | UUID `confirmation_token` |
-| `NEWSLETTER_UNSUBSCRIBE_URL` | `http://localhost:3000/newsletter/unsubscribe/{token}` | UUID subskrypcji albo `signing.dumps(pk)` konta |
-| `CART_URL` | `http://localhost:3000/cart` | brak |
-| `NOTIFICATION_PREFERENCES_URL` | `http://localhost:3000/account/notifications` | brak |
+| `NEWSLETTER_CONFIRM_URL` | `{FRONTEND_URL}/pl/newsletter/confirm/{token}` | UUID `confirmation_token` |
+| `NEWSLETTER_UNSUBSCRIBE_URL` | `{FRONTEND_URL}/pl/newsletter/unsubscribe/{token}` | UUID subskrypcji albo `signing.dumps(pk)` konta |
+| `CART_URL` | `{FRONTEND_URL}/pl/cart` | brak |
+| `NOTIFICATION_PREFERENCES_URL` | `{FRONTEND_URL}/pl/account/notifications` | brak |
 
 Maile o statusie zamówienia (`apps/notifications/services.py`,
 `order_status_changed`, `order_paid` itd.) **nie zawierają dziś linku**.

@@ -8,9 +8,10 @@ export const passwordResetRequestSchema = z.object({
 });
 
 /**
- * Schemat formularza ustawienia nowego hasła.
+ * Schemat formularza ustawienia nowego hasła kodem z maila (ADR 0038).
  */
 export const passwordResetConfirmSchema = z.object({
+  code: z.string().trim().min(6, "Podaj kod resetu z wiadomości email."),
   password: z.string().min(8, "Hasło musi mieć co najmniej 8 znaków."),
 });
 

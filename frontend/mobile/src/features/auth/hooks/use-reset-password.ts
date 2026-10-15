@@ -3,7 +3,7 @@ import { authService } from "@core/auth/auth.service";
 import { authQueryKeys } from "../constants/auth-query-keys";
 
 /**
- * Ustawia nowe hasło na podstawie klucza resetu.
+ * Ustawia nowe hasło kodem resetu z maila (allauth przyjmuje go jako `key`).
  */
 export function useResetPassword() {
   const queryClient = useQueryClient();
