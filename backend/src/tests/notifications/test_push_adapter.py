@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 from unittest.mock import Mock, patch
 
 import pytest
 import requests
 
 from apps.notifications.models import PushDevice
-from apps.notifications.tasks import check_push_receipts, send_push_notification
+from apps.notifications import tasks
 from core.integrations.push.base import (
     MARKETING_CHANNEL,
     ORDERS_CHANNEL,
@@ -21,6 +21,10 @@ from core.integrations.push.noop import NoopPushProvider
 from tests.factories.accounts import UserFactory
 
 EXPO = "core.integrations.push.expo.ExpoPushProvider"
+
+# `cast(Any, ...)` jak w `notify()`: pyrefly widzi w zadaniu Celery `list[str]`.
+send_push_notification = cast(Any, tasks.send_push_notification)
+check_push_receipts = cast(Any, tasks.check_push_receipts)
 
 
 def _response(payload: dict, status_code: int = 200) -> Mock:
