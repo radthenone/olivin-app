@@ -212,6 +212,7 @@ class TestThrottling:
             "anon": "60/min",
             "user": "300/min",
             "auth": "10/min",
+            "unsubscribe": "600/min",
         }
 
     def test_default_classes(self):
