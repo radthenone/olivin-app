@@ -64,5 +64,7 @@ REST_FRAMEWORK = {
         "anon": "60/min",
         "user": "300/min",
         "auth": "10/min",
+        # Wypis one-click z nagłówka RFC 8058 — seria POST-ów serwerów skrzynek.
+        "unsubscribe": "600/min",
     },
 }

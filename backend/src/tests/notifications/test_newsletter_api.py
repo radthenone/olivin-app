@@ -117,3 +117,83 @@ class TestConfirmAndUnsubscribeEndpoints:
         response = _post(api_client, "newsletter-unsubscribe", {"token": "bogus"})
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def _one_click(client: APIClient, token: str) -> Any:
+    """POST RFC 8058, tak jak wysyła go skrzynka pocztowa (formularz, bez sesji)."""
+    return client.post(
+        reverse("newsletter-one-click-unsubscribe", kwargs={"token": token}),
+        "List-Unsubscribe=One-Click",
+        content_type="application/x-www-form-urlencoded",
+    )
+
+
+@pytest.mark.django_db
+class TestOneClickUnsubscribeEndpoint:
+    """Wypis jednym kliknięciem z nagłówka `List-Unsubscribe` (#314, RFC 8058)."""
+
+    def test_subscription_token_unsubscribes_idempotently(self, api_client: APIClient):
+        """POST wyłącza subskrypcję, a powtórka też kończy się sukcesem."""
+        subscription = NewsletterSubscription.objects.create(
+            email="a@test.com", status=NewsletterStatus.ACTIVE
+        )
+
+        first = _one_click(api_client, str(subscription.unsubscribe_token))
+        second = _one_click(api_client, str(subscription.unsubscribe_token))
+
+        assert first.status_code == status.HTTP_200_OK
+        assert second.status_code == status.HTTP_200_OK
+        subscription.refresh_from_db()
+        assert subscription.status == NewsletterStatus.UNSUBSCRIBED
+
+    def test_account_token_turns_off_marketing_email(self, api_client: APIClient):
+        """Token konta wyłącza zgodę `marketing_email`."""
+        from apps.notifications import newsletter
+        from apps.notifications.models import NotificationPreference
+        from tests.factories.accounts import UserFactory
+
+        user = UserFactory()
+        NotificationPreference.objects.create(user=user, marketing_email=True)
+        token = newsletter.account_unsubscribe_token(user.pk)
+
+        assert _one_click(api_client, token).status_code == status.HTTP_200_OK
+        assert _one_click(api_client, token).status_code == status.HTTP_200_OK
+        assert NotificationPreference.for_user(user).marketing_email is False
+
+    def test_get_does_not_unsubscribe(self, api_client: APIClient):
+        """GET (skaner poczty) daje 405 i nie wypisuje."""
+        subscription = NewsletterSubscription.objects.create(
+            email="a@test.com", status=NewsletterStatus.ACTIVE
+        )
+
+        response: Any = api_client.get(
+            reverse(
+                "newsletter-one-click-unsubscribe",
+                kwargs={"token": str(subscription.unsubscribe_token)},
+            )
+        )
+
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+        subscription.refresh_from_db()
+        assert subscription.status == NewsletterStatus.ACTIVE
+
+    def test_not_limited_by_auth_scope(self, api_client: APIClient):
+        """Seria wypisów z jednego IP (serwer skrzynki) nie dostaje 429 jak `auth`."""
+        tokens = [
+            str(
+                NewsletterSubscription.objects.create(
+                    email=f"u{i}@test.com", status=NewsletterStatus.ACTIVE
+                ).unsubscribe_token
+            )
+            for i in range(11)
+        ]
+
+        codes = {_one_click(api_client, token).status_code for token in tokens}
+
+        assert codes == {status.HTTP_200_OK}
+
+    def test_unknown_token_returns_404(self, api_client: APIClient):
+        """Nieznany token daje 404."""
+        response = _one_click(api_client, "bogus")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND

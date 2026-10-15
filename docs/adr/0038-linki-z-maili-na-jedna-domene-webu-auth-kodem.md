@@ -4,7 +4,7 @@ Backend składa wszystkie linki w mailach z jednej zmiennej `FRONTEND_URL`. Na �
 
 Reset hasła odbywa się kodem, tak jak weryfikacja e-maila. W uwierzytelnianiu nie ma więc żadnego linku z tokenem.
 
-Potwierdzenie zapisu do newslettera i wypis to strony z przyciskiem, a akcja zachodzi dopiero po POST, bo skanery poczty otwierają linki samoczynnie. Maile marketingowe niosą nagłówki `List-Unsubscribe` i `List-Unsubscribe-Post` (RFC 8058).
+Potwierdzenie zapisu do newslettera i wypis to strony z przyciskiem, a akcja zachodzi dopiero po POST, bo skanery poczty otwierają linki samoczynnie. Maile marketingowe niosą nagłówki `List-Unsubscribe` i `List-Unsubscribe-Post` (RFC 8058). Ten nagłówek jest wyjątkiem od jednej domeny webu: skrzynka sama wysyła na niego POST, więc wskazuje publiczne API z `BACKEND_URL` (HTTPS). Podpis DKIM u dostawcy maili musi obejmować oba nagłówki (`h=`), inaczej Gmail i Yahoo nie pokażą wypisu jednym kliknięciem.
 
 Aplikacja przejmuje strony produktów, konta i zamówień klienta z kontem. Newsletter, strony prawne, treści sklepu, kasa gościa i strona zamówienia gościa zostają w przeglądarce. W mailach transakcyjnych śledzenie kliknięć u dostawcy maili jest wyłączone. Android używa Play App Signing, a `assetlinks.json` zawiera odciski obu kluczy. Trasa AASA i `associatedDomains` powstają od razu, z Team ID ze zmiennej, a test na urządzeniu czeka na wydanie iOS.
 

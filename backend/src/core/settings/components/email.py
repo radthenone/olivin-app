@@ -36,6 +36,10 @@ FRONTEND_LINK_BASE = f"{FRONTEND_URL}/pl"
 NEWSLETTER_CONFIRM_URL = f"{FRONTEND_LINK_BASE}/newsletter/confirm/{{token}}"
 NEWSLETTER_UNSUBSCRIBE_URL = f"{FRONTEND_LINK_BASE}/newsletter/unsubscribe/{{token}}"
 
+# Publiczny adres API — nagłówek `List-Unsubscribe` (RFC 8058, #314) wskazuje
+# endpoint backendu, bo skrzynka wysyła tam POST bez udziału webu.
+BACKEND_URL = str(os.environ.get("BACKEND_URL", "http://localhost:8020")).rstrip("/")
+
 # Linki z przypomnienia o koszyku (#208): koszyk i zmiana zgód marketingowych.
 CART_URL = f"{FRONTEND_LINK_BASE}/cart"
 NOTIFICATION_PREFERENCES_URL = f"{FRONTEND_LINK_BASE}/account/notifications"

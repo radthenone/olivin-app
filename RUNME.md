@@ -26,6 +26,14 @@ a w produkcji zmienna jest wymagana. Dawne `NEWSLETTER_CONFIRM_URL`,
 nie są już czytane. Expo web (`:8081`) nie ma domyślnego originu w CORS/CSRF.
 Gdy go używasz, dopisz go do `FRONTEND_URLS` i `CSRF_TRUSTED_ORIGINS`.
 
+Nagłówek `List-Unsubscribe` (wypis jednym kliknięciem, RFC 8058) w mailach
+marketingowych wskazuje API, więc backend potrzebuje też `BACKEND_URL` —
+publicznego adresu API (na dev domyślnie `http://localhost:8020`, czyli
+`DJANGO_PORT`). W produkcji `.envs/prod/backend/django.env` musi mieć
+`BACKEND_URL=https://<api-host>` i `FRONTEND_URL`, inaczej backend nie
+wystartuje. Podpis DKIM u dostawcy maili ma obejmować (`h=`) nagłówki
+`List-Unsubscribe` i `List-Unsubscribe-Post`.
+
 ## Frontend
 
 ```bash

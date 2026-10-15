@@ -14,6 +14,10 @@ from apps.notifications.models import (
     NotificationPreference,
     PushDevice,
 )
+from apps.notifications.newsletter import (
+    account_unsubscribe_token,
+    one_click_unsubscribe_headers,
+)
 from core.integrations.notifications.mail import send_notification_email
 
 if TYPE_CHECKING:
@@ -225,9 +229,19 @@ def notify(
             user=user, kind=kind, message=message, data=payload
         )
 
+    # Marketing (tu zawsze do konta — gość odpada bramką wyżej) niesie
+    # nagłówki RFC 8058 z tokenem konta; transakcyjne ich nie dostają (#314).
+    extra: dict[str, Any] = {}
+    if kind not in TRANSACTIONAL_KINDS and user is not None:
+        extra["headers"] = one_click_unsubscribe_headers(
+            account_unsubscribe_token(user.pk)
+        )
+
     def _send() -> None:
         try:
-            send_notification_email(to=recipient_email, subject=subject, body=message)
+            send_notification_email(
+                to=recipient_email, subject=subject, body=message, **extra
+            )
         except Exception:
             # Wysyłka nie może zawalić reszty callbacków po commicie (np.
             # wystawienia dokumentu sprzedaży) — powiadomienie jest efektem

@@ -18,6 +18,7 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import QuerySet
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.consents.models import Consent, ConsentDocument, ConsentKind
@@ -77,6 +78,19 @@ def account_unsubscribe_url(user_pk: object) -> str:
     return settings.NEWSLETTER_UNSUBSCRIBE_URL.format(
         token=account_unsubscribe_token(user_pk)
     )
+
+
+def one_click_unsubscribe_headers(token: str) -> dict[str, str]:
+    """Nagłówki RFC 8058 — Gmail i Yahoo pokazują przy nich wypis jednym kliknięciem.
+
+    Adres wskazuje endpoint API, bo skrzynka wysyła na niego POST sama,
+    bez strony webu. `token` jak w linku wypisu: subskrypcji albo konta.
+    """
+    path = reverse("newsletter-one-click-unsubscribe", kwargs={"token": token})
+    return {
+        "List-Unsubscribe": f"<{settings.BACKEND_URL}{path}>",
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    }
 
 
 def _send_confirmation(subscription: NewsletterSubscription) -> None:
@@ -234,7 +248,7 @@ def _announcement_message(promotion: Promotion) -> tuple[str, str]:
 
 
 def announcement_recipients() -> dict[str, str]:
-    """Adres → link wypisu; konta ze zgodą e-mail i aktywne subskrypcje.
+    """Adres → token wypisu; konta ze zgodą e-mail i aktywne subskrypcje.
 
     Deduplikacja po adresie bez względu na wielkość liter. Konto wygrywa:
     jego link wypisu wyłącza zgodę konta i subskrypcję na ten sam adres.
@@ -243,7 +257,7 @@ def announcement_recipients() -> dict[str, str]:
     # sufit to dziesiątki tysięcy odbiorców; dalej batchowanie po kluczu
     # (`iterator()` + paczki zadań `send_email_payloads_task`).
     recipients: dict[str, str] = {
-        _normalise(subscription.email): subscription_unsubscribe_url(subscription)
+        _normalise(subscription.email): str(subscription.unsubscribe_token)
         for subscription in NewsletterSubscription.objects.filter(
             status=NewsletterStatus.ACTIVE
         )
@@ -252,7 +266,7 @@ def announcement_recipients() -> dict[str, str]:
         marketing_email=True, user__is_active=True
     ).values_list("user_id", "user__email")
     for user_pk, email in accounts:
-        recipients[_normalise(email)] = account_unsubscribe_url(user_pk)
+        recipients[_normalise(email)] = account_unsubscribe_token(user_pk)
     return recipients
 
 
@@ -267,7 +281,8 @@ def send_promotion_announcement(promotion: Promotion) -> int:
 
     subject, message = _announcement_message(promotion)
     recipients = announcement_recipients()
-    for address, unsubscribe_link in recipients.items():
+    for address, token in recipients.items():
+        unsubscribe_link = settings.NEWSLETTER_UNSUBSCRIBE_URL.format(token=token)
         send_notification_email(
             to=address,
             subject=subject,
@@ -275,6 +290,7 @@ def send_promotion_announcement(promotion: Promotion) -> int:
                 f"{message}\n\nNie chcesz dostawać takich wiadomości? "
                 f"Wypisz się: {unsubscribe_link}"
             ),
+            headers=one_click_unsubscribe_headers(token),
         )
     push_user_ids = NotificationPreference.objects.filter(
         marketing_push=True, user__is_active=True

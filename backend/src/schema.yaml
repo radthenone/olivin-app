@@ -1505,6 +1505,32 @@ paths:
               schema:
                 $ref: '#/components/schemas/NewsletterDetail'
           description: ''
+  /notifications/newsletter/unsubscribe/one-click/{token}/:
+    post:
+      operationId: notifications_newsletter_unsubscribe_one_click_create
+      description: Adres z nagłówka `List-Unsubscribe` maili marketingowych. Skrzynka
+        wysyła POST z treścią `List-Unsubscribe=One-Click`; token w ścieżce — subskrypcji
+        albo konta. Idempotentny, 404 dla nieznanego tokenu.
+      summary: Wypis jednym kliknięciem (RFC 8058)
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - Notifications
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterDetail'
+          description: ''
+        '404':
+          description: Nieznany albo sfałszowany token.
   /notifications/preferences/:
     get:
       operationId: notifications_preferences_retrieve
