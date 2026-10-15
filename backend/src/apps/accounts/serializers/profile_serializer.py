@@ -49,12 +49,16 @@ class ProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
             "age",
             "phone_number",
             "delivery_country",
+            "preferred_language",
             "role",
             "pending_consents",
         ]
         read_only_fields = ["id", "email", "role"]
-        # Brak kraju zapisujemy tylko jako null, nie jako pusty string.
-        extra_kwargs = {"delivery_country": {"allow_blank": False}}
+        # Brak kraju i języka zapisujemy tylko jako null, nie jako pusty string.
+        extra_kwargs = {
+            "delivery_country": {"allow_blank": False},
+            "preferred_language": {"allow_blank": False},
+        }
 
     def get_full_name(self, obj: Profile) -> str:
         return obj.full_name

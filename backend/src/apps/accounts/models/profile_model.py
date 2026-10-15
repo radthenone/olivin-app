@@ -9,6 +9,7 @@ from phonenumber_field.modelfields import PhoneNumberField
 from apps.accounts.models.roles_model import RoleChoices
 from common import TimestampedModel
 from common.countries import EU_COUNTRIES
+from common.languages import PreferredLanguage
 
 # Create your models here.
 
@@ -39,6 +40,7 @@ class Profile(TimestampedModel):
         date_of_birth: User's date of birth.
         phone_number: Primary phone number with country code.
         delivery_country: Kraj dostawy (tylko Unia); pusty oznacza Polskę.
+        preferred_language: Język maili (ADR 0035); pusty oznacza polski.
         role: User's role in the system.
     """
 
@@ -72,6 +74,13 @@ class Profile(TimestampedModel):
             "Kraj dostawy (tylko Unia); pusty oznacza Polskę. Waluty z niego "
             "nie liczymy — klient wysyła `currency` sam (ADR 0035)"
         ),
+    )
+    preferred_language = models.CharField(
+        max_length=2,
+        choices=PreferredLanguage.choices,
+        null=True,
+        blank=True,
+        help_text="Język maili (ADR 0035); pusty oznacza polski",
     )
     role = models.CharField(
         max_length=20,

@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime, time
 
+from common.languages import email_language
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Sum
@@ -451,6 +452,7 @@ def _notify(request: ReturnRequest) -> None:
             NotificationKind.RETURN_REQUEST_STATUS_CHANGED,
             payload,
             email=order.email,
+            language=email_language(order),
         ),
         robust=True,
     )

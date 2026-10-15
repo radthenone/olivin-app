@@ -235,3 +235,38 @@ class TestProfileDeliveryCountry:
         assert cast(dict, response.data)["delivery_country"] is None
         profile.refresh_from_db()
         assert not profile.delivery_country
+
+
+@pytest.mark.django_db
+class TestProfilePreferredLanguage:
+    """Język maili w profilu — `pl`, `en` albo null (#316, ADR 0035)."""
+
+    def _patch(self, client: APIClient, profile: Profile, language: Any) -> Any:
+        """PATCH profilu z podanym językiem."""
+        url = reverse("profile-detail", args=[profile.pk])
+        return client.patch(url, {"preferred_language": language}, format="json")
+
+    @pytest.mark.parametrize("language", ["en", None])
+    def test_language_is_editable(
+        self, authenticated_client: APIClient, user, language
+    ):
+        """`en` i null zapisują się i wracają w odpowiedzi."""
+        profile = ProfileFactory(user=user, preferred_language="pl")
+
+        response = self._patch(authenticated_client, profile, language)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert cast(dict, response.data)["preferred_language"] == language
+        profile.refresh_from_db()
+        assert profile.preferred_language == language
+
+    @pytest.mark.parametrize("language", ["de", ""])
+    def test_unknown_or_blank_language_is_rejected(
+        self, authenticated_client: APIClient, user, language
+    ):
+        """Język spoza listy albo pusty string → 400."""
+        profile = ProfileFactory(user=user)
+
+        response = self._patch(authenticated_client, profile, language)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST

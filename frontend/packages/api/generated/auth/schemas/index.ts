@@ -253,6 +253,7 @@ export * from './authenticatorType';
 export * from './baseAuthenticationMeta';
 export * from './baseAuthenticator';
 export * from './baseSignup';
+export * from './baseSignupPreferredLanguage';
 export * from './changePasswordBody';
 export * from './clientID';
 export * from './code';

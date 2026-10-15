@@ -5734,6 +5734,16 @@ components:
           oneOf:
           - $ref: '#/components/schemas/DeliveryCountryEnum'
           - $ref: '#/components/schemas/NullEnum'
+        preferredLanguage:
+          nullable: true
+          description: |-
+            Język maili (ADR 0035); pusty oznacza polski
+
+            * `pl` - Polski
+            * `en` - Angielski
+          oneOf:
+          - $ref: '#/components/schemas/PreferredLanguageEnum'
+          - $ref: '#/components/schemas/NullEnum'
         role:
           allOf:
           - $ref: '#/components/schemas/RoleEnum'
@@ -5801,6 +5811,14 @@ components:
         * `refunding` - Zwrot w toku
         * `refunded` - Zwrócona
         * `refund_failed` - Zwrot odrzucony
+    PreferredLanguageEnum:
+      enum:
+      - pl
+      - en
+      type: string
+      description: |-
+        * `pl` - Polski
+        * `en` - Angielski
     ProductDetail:
       type: object
       description: Strona produktu — pełna lista wariantów.
@@ -6291,6 +6309,16 @@ components:
             * `SE` - Sweden
           oneOf:
           - $ref: '#/components/schemas/DeliveryCountryEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        preferredLanguage:
+          nullable: true
+          description: |-
+            Język maili (ADR 0035); pusty oznacza polski
+
+            * `pl` - Polski
+            * `en` - Angielski
+          oneOf:
+          - $ref: '#/components/schemas/PreferredLanguageEnum'
           - $ref: '#/components/schemas/NullEnum'
         role:
           allOf:

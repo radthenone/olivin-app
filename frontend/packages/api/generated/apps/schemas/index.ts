@@ -97,6 +97,7 @@ export * from './patchedProfile';
 export * from './patchedReviewUpdate';
 export * from './paymentIntent';
 export * from './paymentStatusEnum';
+export * from './preferredLanguageEnum';
 export * from './productDetail';
 export * from './productImage';
 export * from './productImageUrls';

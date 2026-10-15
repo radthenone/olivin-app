@@ -8,6 +8,7 @@
 import type { ConsentDocument } from './consentDocument';
 import type { DeliveryCountryEnum } from './deliveryCountryEnum';
 import type { NullEnum } from './nullEnum';
+import type { PreferredLanguageEnum } from './preferredLanguageEnum';
 import type { RoleEnum } from './roleEnum';
 
 export interface Profile {
@@ -70,6 +71,13 @@ export interface Profile {
      * * `SE` - Sweden
      */
   deliveryCountry?: DeliveryCountryEnum | NullEnum | null;
+  /**
+     * Język maili (ADR 0035); pusty oznacza polski
+     *
+     * * `pl` - Polski
+     * * `en` - Angielski
+     */
+  preferredLanguage?: PreferredLanguageEnum | NullEnum | null;
   readonly role: RoleEnum;
   readonly pendingConsents: readonly ConsentDocument[];
 }

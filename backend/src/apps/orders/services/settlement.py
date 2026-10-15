@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from common.languages import email_language
 from django.db import transaction
 from django.db.models import QuerySet, Sum
 from django.utils import timezone
@@ -222,6 +223,7 @@ def _notify_settled(request: ReturnRequest) -> None:
             NotificationKind.RETURN_SETTLED,
             payload,
             email=order.email,
+            language=email_language(order),
         ),
         robust=True,
     )

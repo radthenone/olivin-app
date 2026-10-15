@@ -14,6 +14,7 @@ from django.utils import timezone
 from apps.orders.models.cart import ENGRAVING_MAX_LENGTH, MAX_ITEM_QUANTITY
 from apps.products.models.choices import RingSize
 from common import TimestampedModel
+from common.languages import PreferredLanguage
 from common.money import CurrencyField, Money, MoneyAmountField
 
 if TYPE_CHECKING:
@@ -123,6 +124,16 @@ class Order(TimestampedModel):
             "Adres, pod który idzie potwierdzenie. Zawsze wypełniony — także "
             "dla klienta z kontem, bo zamówienie ma zostać czytelne po "
             "anonimizacji konta."
+        ),
+    )
+    preferred_language = models.CharField(
+        max_length=2,
+        choices=PreferredLanguage.choices,
+        null=True,
+        blank=True,
+        help_text=(
+            "Język z `Accept-Language` przy składaniu; maile gościa idą w nim, "
+            "konta — w języku z profilu (ADR 0035). Pusty oznacza polski"
         ),
     )
     status = models.CharField(
