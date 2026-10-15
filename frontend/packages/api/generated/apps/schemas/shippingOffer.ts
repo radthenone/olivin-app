@@ -22,6 +22,6 @@ export interface ShippingOffer {
   readonly kind: ShippingMethodKindEnum;
   readonly zone: ShippingZoneEnum;
   readonly cost: Money;
-  /** Czy klient nie zapłaci za tę dostawę — z progu darmowej dostawy albo ze stawki zero, jak przy odbiorze osobistym */
+  /** Czy klient nie zapłaci za tę dostawę — z progu darmowej dostawy albo ze stawki zero */
   readonly isFree: boolean;
 }

@@ -21,14 +21,10 @@ export interface Shipment {
   /**
      * Rodzaj metody dostawy zamówienia — wybiera szablon linku śledzenia
      *
-     * * `parcel_locker` - Paczkomat
      * * `courier` - Kurier
-     * * `pickup` - Odbiór osobisty
      * * `eu` - Przesyłka do Unii
      */
   readonly shippingMethodKind: ShippingMethodKindEnum;
-  /** Kod punktu odbioru; wypełniany wyłącznie dla paczkomatu */
-  readonly pickupPointCode: string;
   /** Timestamp when the record was created */
   readonly createdAt: string;
 }

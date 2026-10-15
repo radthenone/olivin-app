@@ -7,17 +7,13 @@
  */
 
 /**
- * * `parcel_locker` - Paczkomat
  * * `courier` - Kurier
- * * `pickup` - Odbiór osobisty
  * * `eu` - Przesyłka do Unii
  */
 export type ShippingMethodKindEnum = typeof ShippingMethodKindEnum[keyof typeof ShippingMethodKindEnum];
 
 
 export const ShippingMethodKindEnum = {
-  parcel_locker: 'parcel_locker',
   courier: 'courier',
-  pickup: 'pickup',
   eu: 'eu',
 } as const;
