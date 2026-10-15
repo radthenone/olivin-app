@@ -26,6 +26,11 @@ a w produkcji zmienna jest wymagana. Dawne `NEWSLETTER_CONFIRM_URL`,
 nie są już czytane. Expo web (`:8081`) nie ma domyślnego originu w CORS/CSRF.
 Gdy go używasz, dopisz go do `FRONTEND_URLS` i `CSRF_TRUSTED_ORIGINS`.
 
+Nagłówek `List-Unsubscribe` (wypis jednym kliknięciem, RFC 8058) w mailach
+marketingowych wskazuje API, więc backend potrzebuje też `BACKEND_URL` —
+publicznego adresu HTTPS API (na dev domyślnie `http://localhost:8000`,
+w produkcji wymagane).
+
 ## Frontend
 
 ```bash

@@ -88,3 +88,15 @@ newsletter_unsubscribe_schema = extend_schema(
     request=NewsletterTokenSerializer,
     responses={200: NewsletterDetailSerializer},
 )
+
+newsletter_one_click_unsubscribe_schema = extend_schema(
+    tags=["Notifications"],
+    summary="Wypis jednym kliknięciem (RFC 8058)",
+    description=(
+        "Adres z nagłówka `List-Unsubscribe` maili marketingowych. Skrzynka "
+        "wysyła POST z treścią `List-Unsubscribe=One-Click`; token w ścieżce — "
+        "subskrypcji albo konta. Idempotentny, 404 dla nieznanego tokenu."
+    ),
+    request=None,
+    responses={200: NewsletterDetailSerializer},
+)

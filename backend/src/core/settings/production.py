@@ -12,6 +12,9 @@ DEBUG = False
 # `localhost` z `components/email.py` wysłałby klientom martwe linki.
 if not os.environ.get("FRONTEND_URL"):
     raise ImproperlyConfigured("FRONTEND_URL jest wymagane w produkcji.")
+# Nagłówek one-click wypisu (RFC 8058) musi wskazywać publiczny adres HTTPS API.
+if not os.environ.get("BACKEND_URL"):
+    raise ImproperlyConfigured("BACKEND_URL jest wymagane w produkcji.")
 
 # Security settings
 SECURE_BROWSER_XSS_FILTER = True

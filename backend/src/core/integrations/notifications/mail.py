@@ -16,7 +16,9 @@ from core.services.mail.tasks import send_email_payloads_task
 from core.services.mail.types import EmailPayload
 
 
-def send_notification_email(*, to: str, subject: str, body: str) -> None:
+def send_notification_email(
+    *, to: str, subject: str, body: str, headers: dict[str, str] | None = None
+) -> None:
     """Kolejkuje e-mail powiadomienia jako zadanie Celery."""
     payload: EmailPayload = {
         "subject": subject,
@@ -26,7 +28,7 @@ def send_notification_email(*, to: str, subject: str, body: str) -> None:
         "cc": [],
         "bcc": [],
         "reply_to": [],
-        "headers": {},
+        "headers": headers or {},
         "alternatives": {},
     }
     task = cast(Any, send_email_payloads_task)

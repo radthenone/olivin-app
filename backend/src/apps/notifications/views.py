@@ -13,6 +13,7 @@ from apps.notifications import newsletter
 from apps.notifications.models import Notification, NotificationPreference
 from apps.notifications.schema import (
     newsletter_confirm_schema,
+    newsletter_one_click_unsubscribe_schema,
     newsletter_subscribe_schema,
     newsletter_unsubscribe_schema,
     notification_preference_schema,
@@ -163,5 +164,20 @@ class NewsletterUnsubscribeView(_PublicNewsletterView):
         payload = NewsletterTokenSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
         if not newsletter.unsubscribe(payload.validated_data["token"]):
+            raise NotFound("Link wypisu jest nieważny.")
+        return Response({"detail": "Wypisano z newslettera."})
+
+
+class NewsletterOneClickUnsubscribeView(_PublicNewsletterView):
+    """`POST /notifications/newsletter/unsubscribe/one-click/<token>/` — RFC 8058.
+
+    Adres z nagłówka `List-Unsubscribe`. Skrzynka wysyła POST z treścią
+    `List-Unsubscribe=One-Click` i tokenem w ścieżce; treści nie czytamy —
+    sam POST na adres z tokenem to zgoda na wypis. Powtórka też daje 200.
+    """
+
+    @newsletter_one_click_unsubscribe_schema
+    def post(self, request: Request, token: str) -> Response:
+        if not newsletter.unsubscribe(token):
             raise NotFound("Link wypisu jest nieważny.")
         return Response({"detail": "Wypisano z newslettera."})
