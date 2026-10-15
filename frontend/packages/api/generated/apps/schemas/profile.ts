@@ -5,7 +5,6 @@
  * API documentation
  * OpenAPI spec version: 1.0.0
  */
-import type { BlankEnum } from './blankEnum';
 import type { ConsentDocument } from './consentDocument';
 import type { DeliveryCountryEnum } from './deliveryCountryEnum';
 import type { NullEnum } from './nullEnum';
@@ -70,7 +69,7 @@ export interface Profile {
      * * `SI` - Slovenia
      * * `SE` - Sweden
      */
-  deliveryCountry?: DeliveryCountryEnum | BlankEnum | NullEnum | null;
+  deliveryCountry?: DeliveryCountryEnum | NullEnum | null;
   readonly role: RoleEnum;
   readonly pendingConsents: readonly ConsentDocument[];
 }

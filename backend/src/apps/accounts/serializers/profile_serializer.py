@@ -53,6 +53,8 @@ class ProfileSerializer(CountryFieldMixin, serializers.ModelSerializer):
             "pending_consents",
         ]
         read_only_fields = ["id", "email", "role"]
+        # Brak kraju zapisujemy tylko jako null, nie jako pusty string.
+        extra_kwargs = {"delivery_country": {"allow_blank": False}}
 
     def get_full_name(self, obj: Profile) -> str:
         return obj.full_name

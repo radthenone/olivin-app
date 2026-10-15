@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import cast
+from typing import Any, cast
 
 import pytest
 from django.urls import reverse
@@ -166,13 +166,10 @@ class TestProfilePendingConsents:
 class TestProfileDeliveryCountry:
     """Kraj dostawy w profilu — tylko państwa Unii, brak oznacza Polskę (#317)."""
 
-    def _patch(self, client: APIClient, profile: Profile, country: str | None):
+    def _patch(self, client: APIClient, profile: Profile, country: str | None) -> Any:
         """PATCH profilu z podanym krajem dostawy."""
         url = reverse("profile-detail", args=[profile.pk])
-        return cast(
-            Response,
-            client.patch(url, {"delivery_country": country}, format="json"),
-        )
+        return client.patch(url, {"delivery_country": country}, format="json")
 
     def test_non_eu_country_is_rejected(self, authenticated_client: APIClient, user):
         """Kraj spoza Unii (US) → 400, profil bez zmian."""
@@ -184,6 +181,16 @@ class TestProfileDeliveryCountry:
         assert "delivery_country" in cast(dict, response.data)
         profile.refresh_from_db()
         assert not profile.delivery_country
+
+    def test_blank_country_is_rejected(self, authenticated_client: APIClient, user):
+        """Pusty string → 400; brak kraju zapisujemy tylko jako null."""
+        profile = ProfileFactory(user=user, delivery_country="DE")
+
+        response = self._patch(authenticated_client, profile, "")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        profile.refresh_from_db()
+        assert profile.delivery_country == "DE"
 
     def test_eu_country_is_persisted_and_returned(
         self, authenticated_client: APIClient, user

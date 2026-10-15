@@ -7,8 +7,8 @@ from django_countries.fields import CountryField
 from phonenumber_field.modelfields import PhoneNumberField
 
 from apps.accounts.models.roles_model import RoleChoices
-from apps.shipping.services import EU_COUNTRIES
 from common import TimestampedModel
+from common.countries import EU_COUNTRIES
 
 # Create your models here.
 
@@ -21,7 +21,10 @@ class MembershipLevel(models.TextChoices):
 
 
 class DeliveryCountries(Countries):
-    """Kraje dostawy do wyboru w profilu: Polska i reszta Unii (ADR 0019)."""
+    """Kraje dostawy do wyboru w profilu: Polska i reszta Unii (ADR 0019).
+
+    Używana przez migrację 0006 (ścieżka klasy w `countries=`) — nie przenosić.
+    """
 
     only = sorted(EU_COUNTRIES | {"PL"})
 

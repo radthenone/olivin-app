@@ -5733,7 +5733,6 @@ components:
             * `SE` - Sweden
           oneOf:
           - $ref: '#/components/schemas/DeliveryCountryEnum'
-          - $ref: '#/components/schemas/BlankEnum'
           - $ref: '#/components/schemas/NullEnum'
         role:
           allOf:
@@ -6292,7 +6291,6 @@ components:
             * `SE` - Sweden
           oneOf:
           - $ref: '#/components/schemas/DeliveryCountryEnum'
-          - $ref: '#/components/schemas/BlankEnum'
           - $ref: '#/components/schemas/NullEnum'
         role:
           allOf:
