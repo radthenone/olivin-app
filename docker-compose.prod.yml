@@ -12,6 +12,13 @@ x-backend-env: &backend-env
   - ./.envs/prod/backend/email.env
   - ./.envs/prod/backend/authorization.env
 
+# Rotacja logów kontenerów: driver local, domyślnie 20 MB x 5 plików (ADR 0039).
+x-logging: &logging
+  driver: local
+  options:
+    max-size: "20m"
+    max-file: "5"
+
 services:
   # S3 na prod: trwały wolumen z dev-definicji, ŻADNYCH portów na zewnątrz
   # (ani S3, ani wewnętrzne master/volume/filer). UI publikowane wyłącznie
@@ -30,8 +37,9 @@ services:
     ports:
       - "${DJANGO_PORT}:8000"
     working_dir: /app/src
-    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000 --access-logfile -
     restart: unless-stopped
+    logging: *logging
     depends_on:
       olivin-postgres:
         condition: service_healthy
@@ -49,6 +57,7 @@ services:
     entrypoint: ["/celery/celery-entrypoint.sh"]
     command: bash -c "/celery/worker.sh"
     restart: unless-stopped
+    logging: *logging
     depends_on:
       olivin-postgres:
         condition: service_healthy
@@ -64,6 +73,7 @@ services:
     entrypoint: ["/celery/celery-entrypoint.sh"]
     command: bash -c "/celery/beat.sh"
     restart: unless-stopped
+    logging: *logging
     depends_on:
       olivin-postgres:
         condition: service_healthy
