@@ -91,6 +91,7 @@ def anonymise_account(user: CustomUser) -> None:
         last_name="",
         date_of_birth=None,
         phone_number="",
+        delivery_country=None,
         updated_at=timezone.now(),
     )
     Favorite.objects.filter(user=user).delete()

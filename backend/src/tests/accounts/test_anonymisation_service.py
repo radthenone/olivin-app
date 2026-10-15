@@ -52,6 +52,7 @@ def customer() -> CustomUser:
         last_name="Kowalski",
         date_of_birth=datetime.date(1990, 5, 17),
         phone_number="+48600100200",
+        delivery_country="DE",
     )
     Address.objects.create(profile=profile, street="Złota 44", city="Warszawa")
     return user
@@ -111,6 +112,7 @@ def test_erases_personal_data_of_account_and_profile(customer) -> None:
     assert profile.first_name == profile.last_name == ""
     assert profile.date_of_birth is None
     assert str(profile.phone_number) == ""
+    assert profile.delivery_country is None
     assert not Address.objects.filter(profile=profile).exists()
 
 

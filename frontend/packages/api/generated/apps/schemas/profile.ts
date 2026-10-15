@@ -5,7 +5,10 @@
  * API documentation
  * OpenAPI spec version: 1.0.0
  */
+import type { BlankEnum } from './blankEnum';
 import type { ConsentDocument } from './consentDocument';
+import type { DeliveryCountryEnum } from './deliveryCountryEnum';
+import type { NullEnum } from './nullEnum';
 import type { RoleEnum } from './roleEnum';
 
 export interface Profile {
@@ -36,6 +39,38 @@ export interface Profile {
   /** @nullable */
   readonly age: number | null;
   phoneNumber?: string;
+  /**
+     * Kraj dostawy (tylko Unia); pusty oznacza Polskę. Waluty z niego nie liczymy — klient wysyła `currency` sam (ADR 0035)
+     *
+     * * `PL` - Poland
+     * * `DE` - Germany
+     * * `FR` - France
+     * * `IT` - Italy
+     * * `ES` - Spain
+     * * `AT` - Austria
+     * * `BE` - Belgium
+     * * `BG` - Bulgaria
+     * * `HR` - Croatia
+     * * `CY` - Cyprus
+     * * `CZ` - Czechia
+     * * `DK` - Denmark
+     * * `EE` - Estonia
+     * * `FI` - Finland
+     * * `GR` - Greece
+     * * `HU` - Hungary
+     * * `IE` - Ireland
+     * * `LV` - Latvia
+     * * `LT` - Lithuania
+     * * `LU` - Luxembourg
+     * * `MT` - Malta
+     * * `NL` - Netherlands
+     * * `PT` - Portugal
+     * * `RO` - Romania
+     * * `SK` - Slovakia
+     * * `SI` - Slovenia
+     * * `SE` - Sweden
+     */
+  deliveryCountry?: DeliveryCountryEnum | BlankEnum | NullEnum | null;
   readonly role: RoleEnum;
   readonly pendingConsents: readonly ConsentDocument[];
 }

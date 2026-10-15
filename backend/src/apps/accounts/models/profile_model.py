@@ -2,9 +2,12 @@ from datetime import date
 
 from django.conf import settings
 from django.db import models
+from django_countries import Countries
+from django_countries.fields import CountryField
 from phonenumber_field.modelfields import PhoneNumberField
 
 from apps.accounts.models.roles_model import RoleChoices
+from apps.shipping.services import EU_COUNTRIES
 from common import TimestampedModel
 
 # Create your models here.
@@ -17,6 +20,12 @@ class MembershipLevel(models.TextChoices):
     PREMIUM = "premium", "Premium"
 
 
+class DeliveryCountries(Countries):
+    """Kraje dostawy do wyboru w profilu: Polska i reszta Unii (ADR 0019)."""
+
+    only = sorted(EU_COUNTRIES | {"PL"})
+
+
 class Profile(TimestampedModel):
     """User profile model storing additional user information.
 
@@ -26,6 +35,7 @@ class Profile(TimestampedModel):
         last_name: User's last name.
         date_of_birth: User's date of birth.
         phone_number: Primary phone number with country code.
+        delivery_country: Kraj dostawy (tylko Unia); pusty oznacza Polskę.
         role: User's role in the system.
     """
 
@@ -50,6 +60,15 @@ class Profile(TimestampedModel):
     phone_number = PhoneNumberField(
         blank=True,
         help_text="Primary phone number with country code",
+    )
+    delivery_country = CountryField(
+        countries=DeliveryCountries,
+        null=True,
+        blank=True,
+        help_text=(
+            "Kraj dostawy (tylko Unia); pusty oznacza Polskę. Waluty z niego "
+            "nie liczymy — klient wysyła `currency` sam (ADR 0035)"
+        ),
     )
     role = models.CharField(
         max_length=20,
