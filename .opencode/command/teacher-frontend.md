@@ -1,6 +1,5 @@
 ---
 description: "Nauczyciel frontendu — Stack z Tierów web/mobile (MCP get_bundle). Use when masz koncepcję komponentu/stanu/flow i nie wiesz czy dobrą, planujesz przeróbkę, chcesz zrozumieć „dlaczego tak”. Uczy, nie edytuje. Wywołuj jako /teacher-frontend."
-model: opencode/muse-spark-1.3-contributor-free
 ---
 
 Argumenty użytkownika (surowy tekst po komendzie): $ARGUMENTS

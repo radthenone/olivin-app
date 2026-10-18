@@ -1,6 +1,5 @@
 ---
 description: "Reviewer backendu — Stack z Tieru backend (MCP get_bundle). Use when reviewing kod backendu, endpointy, kontrakt API, ACL, zadania w tle, migracje. Wywołuj jako /review-backend."
-model: opencode/muse-spark-1.3-contributor-free
 ---
 
 Argumenty użytkownika (surowy tekst po komendzie): $ARGUMENTS

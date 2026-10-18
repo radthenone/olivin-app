@@ -1,6 +1,5 @@
 ---
 description: "Jedna zmiana w konfiguracji projektu bez całego wywiadu — Stack per Tier, codegen, klienci, język albo sekcja .ai/project.md, z podglądem i reloadem; albo spór z treścią modułu kita zapisany jako odstępstwo w .ai/project.md. Use when /kit-project-edit, 'zmień web na angular', 'nie zgadzam się z modułem X'. Wywołuj jako /kit-project-edit."
-model: opencode/muse-spark-1.3-contributor-free
 ---
 
 Argumenty użytkownika (surowy tekst po komendzie): $ARGUMENTS
@@ -45,6 +44,7 @@ Cały wywiad od zera: /kit-project-begin
    | `language` | Profil | `pl` \| `en` |
    | Pytanie tak/nie (docker, taskfile, ci-cd, …) | Profil `include:` / `patterns:` | Wpisy z linii `Zapis` pytania |
    | Ścieżka Tieru, inna sekcja | `.ai/project.md` | Tekst użytkownika |
+   | `server:` (server-guard: `guard`, `deny`, `allow`) | Profil, sekcja `server` | `guard: auto` albo `off`; `deny`/`allow`: dosłowne wywołania (wyjątki `allow` wygrywają z deny) |
 
    Wartość spoza dozwolonych → pokaż listę, nie zgaduj. Brak Stacka w katalogu → `none` +
    podpowiedź `/create-task` w repo kita.
