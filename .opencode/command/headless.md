@@ -1,6 +1,5 @@
 ---
 description: "Zleć zadanie innemu klientowi kitu w trybie headless (np. tańszemu modelowi w OpenCode) i dostań krótki raport. Use when /headless <wykonawca> '<treść>', delegowanie implementacji do innego CLI, praca pod /goal z tańszym wykonawcą. Wywołuj jako /headless."
-model: opencode/muse-spark-1.3-contributor-free
 ---
 
 Argumenty użytkownika (surowy tekst po komendzie): $ARGUMENTS
@@ -8,8 +7,8 @@ Argumenty użytkownika (surowy tekst po komendzie): $ARGUMENTS
 # /headless — zadanie dla innego klienta
 
 Uruchamiasz innego klienta kitu bez interfejsu, czekasz na wynik i streszczasz go. Sam nie
-implementujesz zadania, nie interpretujesz go i nie commitujesz. Wykonawca commituje lokalnie
-po każdym zielonym tasku; push i PR robi host po review.
+implementujesz zadania, nie interpretujesz go i nie commitujesz. Wykonawca pracuje test-first
+i commituje lokalnie po każdym zielonym kroku; push i PR robi host po review.
 
 Ten klient (host): `opencode`. Host nie wywołuje sam siebie.
 

@@ -1,6 +1,5 @@
 ---
 description: "Backend reviewer do pracy w dwóch okienkach razem z subagent-frontend. Use when robisz cross-review backend/frontend w dwóch osobnych oknach Cursor. Wywołuj jako /subagent-backend."
-model: opencode/muse-spark-1.3-contributor-free
 ---
 
 Argumenty użytkownika (surowy tekst po komendzie): $ARGUMENTS

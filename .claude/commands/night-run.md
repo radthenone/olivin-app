@@ -1,5 +1,5 @@
 ---
-description: Autonomiczna nocna praca na liście issue pod /goal — orkiestrator, na każdy ticket świeży subagent (git-start → test-first → PR → merge) i review na diffie, needs-human zamiast pytań, na końcu NIGHT-RUN REPORT. Użyj TYLKO gdy cel lub użytkownik wprost nazywa /night-run. Wywołuj jako /night-run.
+description: Autonomiczna nocna praca na liście issue (samodzielnie, /goal opcjonalny) — orkiestrator, na każdy ticket świeży subagent (git-start → test-first → PR → merge) albo wykonawca /headless, review na diffie (także skille review z argumentów), needs-human zamiast pytań, na końcu NIGHT-RUN REPORT. Użyj TYLKO gdy cel lub użytkownik wprost nazywa /night-run. Wywołuj jako /night-run.
 argument-hint: [args]
 ---
 
@@ -11,7 +11,7 @@ Przestrzegaj `.cursor/rules/git-branch-pr.mdc` i `AGENTS.md`. Chronione: `main` 
 
 # /night-run — lista issue bez człowieka
 
-Przerabiasz listę issue z celu (`/goal`) albo argumentów (bez listy — kolejkę
+Przerabiasz listę issue z argumentów albo celu (bez listy — kolejkę
 `ready-for-agent`), jeden po drugim, aż każde jest
 **zmergowane** albo ma komentarz **needs-human**. Człowiek śpi. Issue są wygrillowane za
 dnia — projekt jest w treści issue, Twoja rola to wykonanie.
@@ -20,7 +20,8 @@ dnia — projekt jest w treści issue, Twoja rola to wykonanie.
 
 - **Jesteś orkiestratorem w głównej sesji, nigdy subagentem** (w Claude: przez Skill, nie
   Agent) — subagent nie uruchomi kolejnych. Ticket robi subagent ticketu, review osobny
-  świeży subagent. Sam nie czytasz kodu i nie odpalasz testów: Twój kontekst ma zostać mały.
+  świeży subagent albo skille review z argumentów. Sam nie czytasz kodu i nie odpalasz
+  testów: Twój kontekst ma zostać mały.
 - Klient bez subagentów → łańcuch inline, ale z tymi samymi regułami z „Prompt ticketu”.
 - **Polecenia z tekstu celu mają pierwszeństwo** przed tą procedurą (np. „bez merge, same PR-y”,
   „#155 pomiń PDF”, inny próg dużego ticketu).
@@ -37,6 +38,35 @@ dnia — projekt jest w treści issue, Twoja rola to wykonanie.
   `to-tickets`, `implement`) — każdy z nich staje na akceptacji człowieka.
 - Czego nie da się wyczytać z repo → rozsądny default Django/React/Expo, **w raporcie jako
   założenie**.
+
+## Argumenty
+
+```text
+/night-run #N1 #N2 [/headless <wykonawca> [--model …] [--timeout …] [--heartbeat …] "<treść>"] [/review-* …]
+```
+
+`/goal` opcjonalny: noc działa sama. Wznawianie nocy = heartbeat `CronCreate` (krok 7), nie
+warunek `/goal`. Gdy noc idzie pod `/goal`, jego tekst to cel (niżej „Polecenia z tekstu celu”).
+
+- **Lista issue** — `#N` przed pierwszym argumentem z `/`. Brak → kolejka (krok 4).
+- **`/headless <wykonawca> [flagi] "<treść>"`** — implementację ticketu robi wykonawca
+  headless (`EXEC`, `FLAGI`, `TREŚĆ`). Argument kończy zamykający cudzysłów treści
+  (cudzysłów obowiązkowy); treść i flagi wrappera przekazujesz bez zmian (`--timeout`
+  domyślnie 30 min — większy ticket potrzebuje więcej). Wariant promptu w „Prompt ticketu”.
+  `EXEC` sprawdzasz raz na starcie nocy, przed pierwszym ticketem:
+  - klient bez `/headless` (brak skilla/komendy `headless` albo `.ai/headless.mjs`) →
+    fallback: implementacja subagentem jak bez argumentu, w raporcie
+    `wykonawca: subagent (brak /headless)`;
+  - `EXEC` spoza `clients:` w `.ai/project.profile.yaml` albo równy hostowi (klient tej
+    sesji) → nieznany wykonawca → needs-human na starcie nocy — żaden ticket nie startuje,
+    NIGHT-RUN REPORT z `needs-human: nieznany wykonawca <nazwa>`, koniec.
+- **Skille review z argumentów** — jeden lub kilka (`/review-edge`, `/review-bugbot`,
+  `/code-review --fix`, …), z ich własnymi flagami. Bez nich → review jak dziś (łańcuch, krok 2).
+  Każdy sprawdzasz raz na starcie nocy na liście skilli klienta:
+  nieznany skill review → needs-human na starcie nocy — żaden ticket nie startuje,
+  NIGHT-RUN REPORT z `needs-human: nieznany skill review <nazwa>`, koniec.
+
+`EXEC` i `REVIEW` (albo „domyślne”) → nagłówek `CTX` i NIGHT-RUN REPORT.
 
 ## Start nocy (raz)
 
@@ -108,9 +138,15 @@ ticket dostaje needs-human „zablokowany przez #X spoza listy”.
 
 ### 6. Plik kontekstu nocy
 
-`CTX=/tmp/night-run-<repo>-<data>/context.md` — raz na noc, poniżej ~150 linii, sekcje:
+Katalog nocy: `CTX_DIR=~/.cache/night-run-<repo>-<data>/` — `CTX=$CTX_DIR/context.md`,
+raz na noc, poniżej ~150 linii, sekcje. Wszędzie (prompt ticketu, `CronCreate`, Read/Write)
+wpisujesz pełną ścieżkę z `$HOME` zamiast `~`. Katalog w `~/.cache` przeżywa restart hosta;
+`/tmp` po restarcie kontenera znika, więc nigdy tam (ani CTX, ani `## Stan`, ani logi
+pracy w tle).
 
-- **Nagłówek:** BASE, bramki szybkie, „pełny zestaw testów: tylko CI”.
+- **Nagłówek:** BASE, `Host: vps | local` (ustalany raz: bundle z MCP `get_bundle`
+  zawiera `infra:vps-lightweight` → `vps`, inaczej `local`), bramki szybkie, „pełny zestaw
+  testów: tylko CI”.
 - **Mapa aplikacji:** katalog → co w nim jest, 1 linia.
 - **Konwencje:** same reguły z AGENTS.md, BUGBOT.md, `.ai/project.md`.
 - **Pułapki toolchainu:** z pamięci projektu (CLAUDE.md, notatki agenta) i overlay — kit nie
@@ -132,11 +168,18 @@ Każde zakończenie nocy (wszystko MERGED, halt, raport) zaczyna się od `CronDe
 
 1. **Subagent ticketu** (świeży, `model: MODEL`): `N`, `BASE`, `CTX` + „Prompt ticketu”
    dosłownie. Wraca z hand-backiem i niewypchniętym branchem. Zapisz jego id, nadpisz
-   `## Stan` w `CTX` (ticket, id, krok `ticket`).
-2. **Subagent review** (zawsze nowy): „Review `git diff origin/$BASE...HEAD` na `<branch>`:
+   `## Stan` w `CTX` (ticket, id, krok `ticket`). Z `/headless` kroki 2–3 promptu zastępujesz
+   linią „2–3. (z `/headless`)” z wpisanymi `EXEC`, `FLAGI` i `TREŚĆ`; bez `/headless` tę
+   linię usuwasz.
+2. **Review.** Przed review — w obu wariantach — nadpisz `## Stan` (krok `review`; przy
+   skillach z argumentów także nazwa bieżącego skilla). Z argumentami skilli review: uruchamiasz je **Ty**, przez Skill (w Claude Skill,
+   nie Agent; skill może sam odpalać subagentów), każdy na `git diff origin/$BASE...HEAD`
+   brancha ticketu, w kolejności z argumentów. Od skilla bierzesz tylko tabelę niżej; skill
+   z `--fix` poprawia sam — subagent ticketu po wznowieniu zbiera to `/git-commit`.
+   Bez argumentów — **subagent review** (zawsze nowy): „Review `git diff origin/$BASE...HEAD` na `<branch>`:
    `/review-bugbot` + `/review-backend` i/lub `/review-frontend` wg diffa. Czytaj tylko diff
    i dotknięte pliki, zakresami. Zwróć `Severity | Location | Finding | Fix` +
-   potwierdzony/niepewny. Nie edytuj.” Zapisz jego id, nadpisz `## Stan` (krok `review`).
+   potwierdzony/niepewny. Nie edytuj.” Zapisz jego id w `## Stan`.
 3. **Wznów subagenta ticketu** (w Claude `SendMessage` na jego id, nie nowy start) z
    findingami: potwierdzone → poprawka + test; niepewne → opis PR. Review z kroku 2 **jest**
    potwierdzeniem review dla `/git-end`. Przed wznowieniem nadpisz `## Stan` (krok `resume`),
@@ -149,7 +192,7 @@ Hand-back needs-human albo halt od subagenta → sekcja „Gdy ticket napotka pr
 
 ## Prompt ticketu
 
-Przekazujesz go subagentowi bez skracania.
+Przekazujesz go subagentowi dosłownie, poza wyborem wariantu kroków 2–3 (łańcuch, krok 1).
 
 ```markdown
 Ticket #<N>, baza <BASE>. Kontekst projektu: <CTX> — przeczytaj go najpierw, zamiast
@@ -163,17 +206,27 @@ needs-human. Brak speca → layout domyślny z bundla (`stack:frontend:ui-struct
 Kroki:
 1. `/git-start #<N>`. Branch musi wychodzić z <BASE>; inaczej
    `gh issue develop <N> --name <typ>/<N>-<slug> --base <BASE> --checkout`.
+2–3. (z `/headless`) `/headless <wykonawca> [flagi] "<treść>"` z flagami i treścią bez zmian —
+   reguły ticketu i numer dokleja stopka wrappera. Sam nie piszesz kodu: pilnujesz wrappera
+   (wzorzec „Praca w tle”), sprawdzasz raport (`git stash list`, `git log`). Wrapper pada
+   → maks. 2 próby, potem needs-human. Dalej kroki 4–5.
 2. Duży ticket (>3 kryteria akceptacji albo >1 aplikacja/pakiet): plan 5–10 kroków.
-3. Test-first: test czerwony → kod → zielony.
+3. Test-first: test czerwony → kod → zielony → commit. Commit po każdym zielonym kroku
+   (nie czekasz z commitem do końca ticketu — restart hosta w nocy nie gubi pracy).
+   Końcowy `/git-commit` z kroku 5 zostaje.
 4. Lokalnie tylko testy dotknięte ticketem + bramki szybkie z <CTX>. Pełny zestaw: CI.
+   Na VPS (`Host: vps` w nagłówku <CTX>) `uv run` zawsze z `--no-sync`.
 5. `/git-commit`. Nie pushujesz. Oddajesz hand-back.
 --- po wznowieniu ---
 6. Poprawki z review, `/git-end` — review już zrobione, bramka review potwierdzona, nie
    czekaj. Opis PR: testy, założenia jako Q z odpowiedzią, niepewne findingi.
    CI: `sleep 20; gh pr checks <PR> --watch` wzorcem „Praca w tle” (`sleep`, bo checki
    rejestrują się z opóźnieniem). `EXIT` ≠ 0 i w logu `no checks reported` → to nie błąd:
-   powtórz raz po minucie; nadal brak → brak CI na tę bazę, merge po bramkach szybkich,
-   zapis w `Final report`. Inne `EXIT` ≠ 0 → napraw, maks. 2 próby.
+   powtórz raz po minucie; nadal brak → przy `Host: local` w nagłówku <CTX>: merge po
+   bramkach szybkich, zapis w `Final report`; przy `Host: vps`: brak CI = brak merge —
+   kroki 7–8 pomijasz, PR zostaje otwarty, branch wypchnięty, hand-back needs-human
+   „brak CI na <BASE>”, w raporcie przypadek A.
+   Inne `EXIT` ≠ 0 → napraw, maks. 2 próby.
 7. `gh pr merge <PR> --merge`.
 8. Jeden raport: komentarz na PR `## Final report (night-run) — #<N>`. Na issue tylko link
    do niego, potem `gh issue close <N>` (`Closes` nie zamyka przy merge na niedomyślną).
@@ -182,9 +235,18 @@ Reguły:
 - Plik > ~150 linii czytasz zakresami: `codegraph explore` (gdy jest `.codegraph/`) albo
   `grep -n` + `sed -n X,Yp`, wiele odczytów w jednej komendzie. Nigdy całego pliku: ani
   `cat` / `xargs cat`, ani Read bez `offset`/`limit`.
-- Bez skilli procesowych (writing-plans, tdd, verification, review-*). Wolno `/git-*`.
+- Bez skilli procesowych (writing-plans, tdd, verification, review-*). Wolno `/git-*`
+  i `/headless` z kroku 2–3.
+- Deny od guarda kita (`server-guard:` / `git-guard:` w powodzie) to reguła, nie awaria:
+  nie obchodzisz jej (ta sama komenda spod taska wpisana wprost, `bash -c`, własny skrypt,
+  inny interpreter), nie liczysz jej do prób naprawy. Wolno użyć alternatywy wskazanej
+  w powodzie deny (np. `uv run --no-sync`, `UV_NO_SYNC=1`, `git stash`). Deny
+  `server-guard:` → komenda trafia do raportu jako „tylko CI”; deny `git-guard:` → zapis
+  w raporcie, a gdy bez tej komendy nie da się skończyć — needs-human.
 - Praca w tle (CI, dłuższy `pytest`): od razu w tle (w Claude `run_in_background`), jeden
   wzorzec, bez pipe (`| tee` gubi exit code): `<cmd> > <log> 2>&1; echo "EXIT=$?" >> <log>`.
+  `<log>` w katalogu <CTX> (`<katalog CTX>/<nazwa>.log`), nigdy w `/tmp` — po restarcie hosta
+  wznawiasz po nim pracę.
   Koniec = powiadomienie o zakończeniu zadania albo linia `EXIT=` w logu; wynik = jej
   wartość. Nie czekasz na tekst narzędzia (`passed`, `All checks…`) ani na stan procesu
   (`ps`, `pgrep`, `kill -0`) — taka pętla wisi bez końca albo staje na prośbie o zgodę.
@@ -209,14 +271,27 @@ dodane modele, serwisy, endpointy, migracje; założenia.
 
 - Zewnętrzne API płatności i podobne zawsze atrapą.
 - **Nowe e2e** tylko gdy issue tego wymaga **i** runner e2e jest w repo. Inaczej „test
-  przepływu na API”, tak nazwany w raporcie.
+  przepływu na API”, tak nazwany w raporcie. Na VPS (`Host: vps` w nagłówku CTX)
+  nowe e2e piszesz, ale nie uruchamiasz lokalnie (guard je odrzuca) — w raporcie i opisie
+  PR oznaczasz „nieuruchomione lokalnie (VPS), weryfikuje CI”.
 - Liczby **z komend**: `pytest <pliki> -m <marker> --co -q`. Brak markerów → per plik
   (`pytest <plik> --co -q`) + „brak markerów”. Trafiają do opisu PR i `Final report`.
+
+## VPS (tylko przy `Host: vps` w nagłówku CTX)
+
+- Bramki z kroków CI: krok, który guard odrzuca, w nagłówku CTX oznaczasz „tylko CI”
+  (krok odrzucony przez guard = tylko CI; bez zgadywania: pierwsza próba i deny
+  `server-guard:` → tylko CI) — lokalnie idzie reszta. `uv run` zawsze
+  z `--no-sync`.
+- brak CI = brak merge (krok 6 promptu, kroki 7–8 pominięte): PR zostaje otwarty, ticket dostaje
+  needs-human „brak CI na <BASE>”, w raporcie przypadek A.
+- Nowe e2e: test pisany, nieuruchomiony lokalnie (sekcja „Testy” wyżej).
 
 ## Zakazy
 
 Nie skipujesz, nie usuwasz i nie osłabiasz testów. Nie `--no-verify`. Na `BASE` i inne
-chronione gałęzie tylko merge PR po zielonym CI, nigdy push.
+chronione gałęzie tylko merge PR po zielonym CI (przy `Host: local` bez CI: po bramkach
+szybkich, krok 6 promptu), nigdy push.
 
 ## Gdy ticket napotka problem
 
@@ -290,6 +365,10 @@ Najpierw zaległe powiadomienia, potem status subagenta z `## Stan` (`ListAgents
   ostatni check) → `TaskStop`, potem wznowienie jak wyżej;
 - nic nie działa, a noc nieskończona (także przerwana tura orkiestratora) → łańcuch od kroku
   z `## Stan` (przypadek D: pauzy ≤ 2 i przed końcem nocy → wznów, inaczej halt C).
+- restart hosta / `kill` sesji w trakcie ticketu: CTX i `## Stan` są w `~/.cache`, więc
+  przetrwały — łańcuch od kroku z `## Stan`, a pracę od ostatniego commitu na branchu
+  (`git log`). `CronCreate` żyje w sesji i ginie razem z nią: wznów sesję
+  (`claude --continue`) albo odpal nowy `/night-run` — czyta `## Stan` z `~/.cache`.
 
 ## Pomiar kosztu ticketu (Claude Code)
 
@@ -318,26 +397,30 @@ for p in sys.argv[1:]:
 
 Tura = unikalne `message.id` (odpowiedź zajmuje kilka linii, `output_tokens` rośnie — bierz
 maks.). Czas = wall-clock z oczekiwaniem na review. Inny klient → „brak transkryptu”.
+Z `/headless` albo skillami review z argumentów do wiersza ticketu dopisz notę
+„koszt bez wykonawcy headless i review w sesji głównej” (tych tokenów snippet nie widzi).
 
 ## NIGHT-RUN REPORT — ostatnia wiadomość
 
-Zaczynasz od `CronDelete`. Warunek `/goal` sprawdza transkrypt, więc raport i dowody muszą
-paść w rozmowie.
+Zaczynasz od `CronDelete`. Pod `/goal` jego warunek sprawdza transkrypt, więc raport i dowody
+muszą paść w rozmowie.
 
 ```markdown
 ## NIGHT-RUN REPORT
 Baza: <BASE> — <powód>
+Host: <vps | local> (z nagłówka CTX)
 Bramki szybkie: <lista> (źródło: CI / overlay / założenie) · pełny zestaw: CI
 Model ticketu: <MODEL> albo per ticket: #N <model> — <powód>
+Wykonawca: <EXEC / subagent / subagent (brak /headless)> · Review: <skille z argumentów / domyślne>
 Pauzy limitu: <liczba> (przestój <od>–<do>, reset: <godzina z komunikatu / brak>)
 Wznowienia per ticket: <#N: liczba>
 
-| Ticket | Stan | Dowód | Koszt (tury / cache_read / output / kontekst / czas) |
-| --- | --- | --- | --- |
-| #N | MERGED | `gh pr view <PR> --json state` → MERGED; <link Final report> | 58 / 6.1M / 41k / 164k / 20 min |
-| #M | needs-human → ready-for-human | <link do komentarza> | … |
-| #J | skipped: <etykieta> | etykieta stanu z listy ręcznej | — |
-| #K | halted | <link do komentarza night-run halted> | … |
+| Ticket | Stan | Wykonawca | Review | Dowód | Koszt (tury / cache_read / output / kontekst / czas) |
+| --- | --- | --- | --- | --- | --- |
+| #N | MERGED | opencode | /review-edge | `gh pr view <PR> --json state` → MERGED; <link Final report> | 58 / 6.1M / 41k / 164k / 20 min |
+| #M | needs-human → ready-for-human | subagent | domyślne | <link do komentarza> | … |
+| #J | skipped: <etykieta> | — | — | etykieta stanu z listy ręcznej | — |
+| #K | halted | … | … | <link do komentarza night-run halted> | … |
 
 Założenia: <co przyjęto bez danych z repo>
 Pomiar per agent: <wiersze ze snippetu>
