@@ -1,6 +1,5 @@
 ---
 description: "Reviewer frontendu — Stack z Tierów web/mobile (MCP get_bundle). Use when reviewing kod klienta web/mobile, generowany klient API, typy TypeScript. Wywołuj jako /review-frontend."
-model: opencode/muse-spark-1.3-contributor-free
 ---
 
 Argumenty użytkownika (surowy tekst po komendzie): $ARGUMENTS
