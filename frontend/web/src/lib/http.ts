@@ -48,6 +48,7 @@ export async function webRequest<TData>(
   { acceptAllStatuses = false }: { acceptAllStatuses?: boolean } = {},
 ): Promise<HttpResponse<TData>> {
   const target = resolve(url);
+  const locale = getApiLocale();
 
   let response: Response;
 
@@ -57,7 +58,7 @@ export async function webRequest<TData>(
       credentials: "include",
       headers: {
         accept: "application/json",
-        "accept-language": getApiLocale(),
+        ...(locale ? { "accept-language": locale } : {}),
         "content-type": "application/json",
         ...options.headers,
       },

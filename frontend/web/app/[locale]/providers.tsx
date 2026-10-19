@@ -13,6 +13,8 @@ configureWebApi();
 
 export function Providers({ children }: { children: ReactNode }) {
   // Ten sam język co interfejs trafia do nagłówka Accept-Language klienta API.
+  // Ustawiane w renderze, żeby zdążyć przed zapytaniami z efektów dzieci;
+  // na serwerze `setApiLocale` nic nie robi (stan żyje tylko w przeglądarce).
   setApiLocale(useLocale());
 
   // Klient zapytań tworzony w stanie, a nie w module: w renderowaniu po stronie

@@ -8,15 +8,28 @@ import { getApiLocale, setApiLocale } from "./request-locale";
 const originalFetch = globalThis.fetch;
 const originalBackendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-describe("webRequest Accept-Language", () => {
+function captureAcceptLanguage(requests: Array<string | null>): void {
+  globalThis.fetch = (async (_input, init) => {
+    requests.push(new Headers(init?.headers).get("accept-language"));
+    return new Response("{}", {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  }) as typeof fetch;
+}
+
+describe("webRequest Accept-Language in the browser", () => {
   beforeEach(() => {
     process.env.NEXT_PUBLIC_BACKEND_URL = "http://backend.test";
+    // Bun nie ma `window` — symulujemy przeglądarkę.
+    (globalThis as { window?: unknown }).window = globalThis;
     setApiLocale(defaultLocale);
   });
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
     setApiLocale(defaultLocale);
+    delete (globalThis as { window?: unknown }).window;
 
     if (originalBackendUrl === undefined) {
       delete process.env.NEXT_PUBLIC_BACKEND_URL;
@@ -63,5 +76,41 @@ describe("webRequest Accept-Language", () => {
     await webRequest("/health/");
 
     expect(requests).toEqual(["en", "pl"]);
+  });
+});
+
+describe("webRequest Accept-Language on the server", () => {
+  beforeEach(() => {
+    process.env.NEXT_PUBLIC_BACKEND_URL = "http://backend.test";
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+
+    if (originalBackendUrl === undefined) {
+      delete process.env.NEXT_PUBLIC_BACKEND_URL;
+    } else {
+      process.env.NEXT_PUBLIC_BACKEND_URL = originalBackendUrl;
+    }
+  });
+
+  test("ignores the shared locale and sends no header by default", async () => {
+    const requests: Array<string | null> = [];
+    captureAcceptLanguage(requests);
+
+    setApiLocale("en");
+    await webRequest("/health/");
+
+    expect(getApiLocale()).toBeUndefined();
+    expect(requests).toEqual([null]);
+  });
+
+  test("sends an explicitly passed Accept-Language", async () => {
+    const requests: Array<string | null> = [];
+    captureAcceptLanguage(requests);
+
+    await webRequest("/health/", { headers: { "accept-language": "en" } });
+
+    expect(requests).toEqual(["en"]);
   });
 });
