@@ -129,7 +129,7 @@ Plasterki, które mają już ADR, grillujemy głównie pod kątem kontraktu inte
 
 **Tor designu** (research w `docs/research/claude-design.md`):
 
-- Do Claude Design trafia wyłącznie biblioteka webowa (shadcn, `web/components/ui/`)
+- Do Claude Design trafia wyłącznie biblioteka webowa (shadcn, `web/src/components/ui/`)
   i to ona jest systemem referencyjnym. Mobile (RNR) nie jest synchronizowane
   osobno. Trzyma te same nazwy komponentów, warianty i tokeny z `packages/tokens`
   ([ADR 0003](adr/0003-shadcn-na-web-rnr-na-mobile.md)).
@@ -138,11 +138,11 @@ Plasterki, które mają już ADR, grillujemy głównie pod kątem kontraktu inte
   odpowiedniku na mobile, a potem idzie kolejny `/design-sync`.
 - Układ plików jest płaski, taki jak generuje CLI shadcn. Zmieniamy go, jeśli
   pierwszy sync wymusi foldery. Komponenty złożone z domeny
-  (`web/components/<obszar>/`) nie są synchronizowane.
+  (`web/src/components/<obszar>/`) nie są synchronizowane.
 - Komponenty `ui/` są czyste: bez danych, nawigacji i i18n, a style biorą
   wyłącznie z tokenów. Reguła jest zapisana w `.ai/project.md` i
   `frontend/web/AGENTS.md`. Egzekwowanie dochodzi w plasterku 0: ESLint
-  `no-restricted-imports` dla `web/components/ui/**` (zakaz `@olivin/api`,
+  `no-restricted-imports` dla `web/src/components/ui/**` (zakaz `@olivin/api`,
   `@olivin/features`, `next-intl`, `next/navigation`) oraz grep w CI na hexy i
   dowolne wartości Tailwinda. Wzorzec obejmuje tylko wartości (np. `-\[[0-9#]`),
   żeby nie łapać `data-[state=open]:` ani `aria-[...]`. Reguła jest też w
