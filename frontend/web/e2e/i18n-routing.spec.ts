@@ -90,6 +90,18 @@ test.describe("technical paths", () => {
   }
 });
 
+test.describe("API client language", () => {
+  test("sends Accept-Language from the interface locale", async ({ page }) => {
+    await stubHealth(page);
+    const healthRequest = page.waitForRequest("**/health/");
+
+    await page.goto("/en");
+
+    const request = await healthRequest;
+    expect(request.headers()["accept-language"]).toBe("en");
+  });
+});
+
 test.describe("health page translations", () => {
   test("shows Polish texts under /pl", async ({ page }) => {
     await stubHealth(page);
