@@ -3,13 +3,20 @@
 
 /* Tokeny pochodzą z @olivin/tokens i są przekładane na blok @theme przez
    scripts/generate-tokens-css.mjs. Nie wpisuj tu wartości kolorów ani
-   typografii — zmieniaj je w pakiecie tokenów. */
+   typografii — zmieniaj je w pakiecie tokenów. Semantyczne role shadcn
+   (background, primary, border…) też powstają w adapterze. */
 
 :root {
   color-scheme: light;
 }
 
-body {
-  background-color: var(--color-neutral-50);
-  color: var(--color-neutral-900);
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
 }
