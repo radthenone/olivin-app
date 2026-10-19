@@ -15,9 +15,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const uiDir = join(here, "..", "src", "components", "ui");
 
-const HEX_SOURCE = String.raw`#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{4}|[0-9a-f]{3})\b`;
+const HEX = /#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{4}|[0-9a-f]{3})\b/gi;
 const COLOR_FUNCTION = /\b(?:rgba?|hsla?|oklch|oklab|lab|lch|color)\s*\(/i;
-const BRACKET_SOURCE = String.raw`\[[^\]\n]*\]`;
+const BRACKET = /\[[^\]\n]*\]/g;
 const VARIANT_PREFIX =
   /(?:^|[\s"'`])(?:(?:group|peer)-)?(?:data|aria|has|not|in|supports|nth(?:-[a-z-]+)?)-$/;
 const SELECTOR_START = /^[&:>+~*.]/;
@@ -34,50 +34,32 @@ export function checkSource(source, file) {
   const violations = [];
 
   source.split(/\r?\n/).forEach((line, index) => {
-    const lineNumber = index + 1;
-
-    for (const match of line.matchAll(new RegExp(HEX_SOURCE, "gi"))) {
+    const report = (match, reason) =>
       violations.push({
         file,
-        line: lineNumber,
+        line: index + 1,
         column: match.index + 1,
         text: line.trim(),
-        reason: "hex color",
+        reason,
       });
+
+    for (const match of line.matchAll(HEX)) {
+      report(match, "hex color");
     }
 
-    for (const match of line.matchAll(new RegExp(BRACKET_SOURCE, "g"))) {
+    for (const match of line.matchAll(BRACKET)) {
       const content = match[0].slice(1, -1);
       const prefix = line.slice(Math.max(0, match.index - 40), match.index);
 
-      if (isVariantSelector(content, prefix)) {
-        continue;
-      }
-
       // Hex w wartości zgłasza już pętla wyżej — nie duplikujemy komunikatu.
-      if (new RegExp(HEX_SOURCE, "i").test(content)) {
+      if (isVariantSelector(content, prefix) || content.match(HEX)) {
         continue;
       }
 
       if (COLOR_FUNCTION.test(content)) {
-        violations.push({
-          file,
-          line: lineNumber,
-          column: match.index + 1,
-          text: line.trim(),
-          reason: "arbitrary color value",
-        });
-        continue;
-      }
-
-      if (/\d/.test(content)) {
-        violations.push({
-          file,
-          line: lineNumber,
-          column: match.index + 1,
-          text: line.trim(),
-          reason: "arbitrary numeric value",
-        });
+        report(match, "arbitrary color value");
+      } else if (/\d/.test(content)) {
+        report(match, "arbitrary numeric value");
       }
     }
   });
