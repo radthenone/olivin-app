@@ -28,7 +28,8 @@ test("home page shows the backend health status", async ({ page }) => {
     );
   }
 
-  await page.goto("/");
+  // Strona klienta żyje pod prefiksem języka (ADR 0035); `/` tylko przekierowuje.
+  await page.goto("/pl");
 
   await expect(
     page.getByRole("heading", { level: 1, name: "Olivin" }),

@@ -22,13 +22,19 @@ const technicalPaths = [
 const storefrontPaths = ["/", "/pl", "/en", "/pl/health", "/en/account"];
 
 describe("language routing matcher", () => {
-  test.each(technicalPaths)("leaves %s outside locale routing", (path) => {
-    expect(matchesLocaleRouting(path)).toBe(false);
-  });
+  test.each(technicalPaths)(
+    "leaves %s outside locale routing",
+    (path: string) => {
+      expect(matchesLocaleRouting(path)).toBe(false);
+    },
+  );
 
-  test.each(storefrontPaths)("routes %s through the locale proxy", (path) => {
-    expect(matchesLocaleRouting(path)).toBe(true);
-  });
+  test.each(storefrontPaths)(
+    "routes %s through the locale proxy",
+    (path: string) => {
+      expect(matchesLocaleRouting(path)).toBe(true);
+    },
+  );
 
   test("the Next matcher string describes the same paths as the helper", () => {
     const nextMatcher = new RegExp(`^${localeMatcher}$`);

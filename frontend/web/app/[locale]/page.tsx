@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useHealthRetrieve } from "@olivin/api/generated/apps/health/health";
 
 /**
@@ -11,27 +13,21 @@ import { useHealthRetrieve } from "@olivin/api/generated/apps/health/health";
  * backendzie pozostaje nieudowodnione.
  */
 export default function HomePage() {
+  const t = useTranslations("home");
   const health = useHealthRetrieve();
 
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-8 px-6 py-16">
       <header className="flex flex-col gap-2">
-        <h1 className="text-4xl font-semibold text-brand-600">Olivin</h1>
-        <p className="text-base text-neutral-600">
-          Sklep jubilerski. Katalog, koszyk i kasa powstaną w kolejnych krokach.
-        </p>
+        <h1 className="text-4xl font-semibold text-brand-600">{t("title")}</h1>
+        <p className="text-base text-neutral-600">{t("description")}</p>
       </header>
 
       <section
         aria-labelledby="stan-backendu"
         className="rounded-lg border border-neutral-200 bg-neutral-0 p-6 shadow-sm"
       >
-        <h2
-          id="stan-backendu"
-          className="text-sm font-semibold uppercase tracking-wide text-neutral-500"
-        >
-          Stan backendu
-        </h2>
+        <BackendHealthHeading />
 
         <div className="mt-4">
           <BackendStatus
@@ -42,6 +38,19 @@ export default function HomePage() {
         </div>
       </section>
     </main>
+  );
+}
+
+function BackendHealthHeading() {
+  const t = useTranslations("health");
+
+  return (
+    <h2
+      id="stan-backendu"
+      className="text-sm font-semibold uppercase tracking-wide text-neutral-500"
+    >
+      {t("heading")}
+    </h2>
   );
 }
 
@@ -58,33 +67,43 @@ function BackendStatus({
   isError: boolean;
   data: unknown;
 }) {
+  const t = useTranslations("health");
+
   if (isPending) {
-    return <p className="text-base text-neutral-500">Sprawdzanie…</p>;
+    return <p className="text-base text-neutral-500">{t("checking")}</p>;
   }
 
   if (isError) {
     return (
       <p role="status" className="text-base text-danger-700">
-        Backend nie odpowiada. Uruchom go poleceniem{" "}
-        <code className="font-mono text-sm">task backend:run</code>.
+        {t("error")}
       </p>
     );
   }
 
   const payload = (data as HealthPayload | undefined)?.data;
   const services = payload?.services ?? {};
+  const serviceNames: Record<string, string> = {
+    database: t("services.database"),
+    redis: t("services.redis"),
+    storage: t("services.storage"),
+  };
 
   return (
     <div className="flex flex-col gap-3">
       <p role="status" className="text-base text-success-700">
-        Backend odpowiada: {payload?.status ?? "brak statusu"}
+        {t("responding", {
+          status: payload?.status ?? t("missingStatus"),
+        })}
       </p>
 
       {Object.keys(services).length > 0 && (
         <dl className="grid grid-cols-2 gap-x-6 gap-y-1">
           {Object.entries(services).map(([name, state]) => (
             <div key={name} className="contents">
-              <dt className="text-sm text-neutral-500">{name}</dt>
+              <dt className="text-sm text-neutral-500">
+                {serviceNames[name] ?? name}
+              </dt>
               <dd className="text-sm text-neutral-800">{state}</dd>
             </div>
           ))}
