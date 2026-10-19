@@ -242,7 +242,7 @@ OAuth wymaga **Dev Client**, nie działa w Expo Go.
 
 ## Biblioteka komponentów UI (web)
 
-Komponenty w `web/components/ui/` są czyste: nie pobierają danych, nie nawigują i nie wołają i18n. Teksty dostają przez propsy, a style biorą wyłącznie z tokenów według modułu `stack:frontend:ui-structure` z bundla. Dowolne wartości Tailwinda z liczbą albo kolorem (`-[...]`) też są literałami. Warianty `data-[state=open]:` i `aria-[...]` z shadcn są dozwolone. Układ plików jest płaski, taki jak generuje CLI shadcn. Zmieniamy go, jeśli pierwszy `/design-sync` wymusi foldery. Komponenty złożone z domeny mieszkają w `web/components/<obszar>/` i nie trafiają do synchronizacji z Claude Design. Mobile (RNR) trzyma te same nazwy komponentów, warianty i tokeny (ADR 0003). Tor designu jest opisany w `docs/open-decisions.md`.
+Komponenty w `web/src/components/ui/` są czyste: nie pobierają danych, nie nawigują i nie wołają i18n. Teksty dostają przez propsy, a style biorą wyłącznie z tokenów według modułu `stack:frontend:ui-structure` z bundla. Dowolne wartości Tailwinda z liczbą albo kolorem (`-[...]`) też są literałami. Warianty `data-[state=open]:` i `aria-[...]` z shadcn są dozwolone. Układ plików jest płaski, taki jak generuje CLI shadcn. Zmieniamy go, jeśli pierwszy `/design-sync` wymusi foldery. Komponenty złożone z domeny mieszkają w `web/src/components/<obszar>/` i nie trafiają do synchronizacji z Claude Design. Mobile (RNR) trzyma te same nazwy komponentów, warianty i tokeny (ADR 0003). Tor designu jest opisany w `docs/open-decisions.md`.
 
 ## Storage
 

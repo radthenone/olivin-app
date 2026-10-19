@@ -123,6 +123,8 @@ const isMain =
 if (isMain) {
   const contents = buildTokensCss(tokens);
   writeFileSync(outputPath, contents, "utf8");
-  const count = contents.split("\n").filter((line) => line.includes(":")).length;
+  const count = contents
+    .split("\n")
+    .filter((line) => line.includes(":")).length;
   console.log(`Zapisano ${count} tokenów do ${outputPath}`);
 }
