@@ -40,6 +40,11 @@ tasks:
         dir: frontend
         cmds:
             - bun run typecheck -- {{.CLI_ARGS}}
+    frontend:ui:check:
+        desc: Reject hex colors and arbitrary numeric Tailwind values in web ui components
+        dir: frontend/web
+        cmds:
+            - node scripts/check-ui-purity.mjs
     frontend:format:
         desc: Format all frontend workspaces using Prettier
         dir: frontend

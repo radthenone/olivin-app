@@ -102,6 +102,15 @@ jobs:
       - name: ESLint
         run: task lints:frontend:lint:check
 
+      # Komponenty ui/ nie mogą nosić własnych kolorów ani arbitralnych
+      # wartości z liczbą — to samo, co robi `bun run lint`, ale jako osobny,
+      # czytelny krok CI.
+      - name: UI purity
+        run: task lints:frontend:ui:check
+
+      - name: Web unit tests
+        run: task web:test
+
       - name: TypeScript
         run: task lints:frontend:typecheck
 
