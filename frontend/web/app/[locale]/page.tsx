@@ -13,21 +13,28 @@ import { useHealthRetrieve } from "@olivin/api/generated/apps/health/health";
  * backendzie pozostaje nieudowodnione.
  */
 export default function HomePage() {
-  const t = useTranslations("home");
+  const t = useTranslations();
   const health = useHealthRetrieve();
 
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-8 px-6 py-16">
       <header className="flex flex-col gap-2">
-        <h1 className="text-4xl font-semibold text-brand-600">{t("title")}</h1>
-        <p className="text-base text-neutral-600">{t("description")}</p>
+        <h1 className="text-4xl font-semibold text-brand-600">
+          {t("home.title")}
+        </h1>
+        <p className="text-base text-neutral-600">{t("home.description")}</p>
       </header>
 
       <section
         aria-labelledby="stan-backendu"
         className="rounded-lg border border-neutral-200 bg-neutral-0 p-6 shadow-sm"
       >
-        <BackendHealthHeading />
+        <h2
+          id="stan-backendu"
+          className="text-sm font-semibold uppercase tracking-wide text-neutral-500"
+        >
+          {t("health.heading")}
+        </h2>
 
         <div className="mt-4">
           <BackendStatus
@@ -38,19 +45,6 @@ export default function HomePage() {
         </div>
       </section>
     </main>
-  );
-}
-
-function BackendHealthHeading() {
-  const t = useTranslations("health");
-
-  return (
-    <h2
-      id="stan-backendu"
-      className="text-sm font-semibold uppercase tracking-wide text-neutral-500"
-    >
-      {t("heading")}
-    </h2>
   );
 }
 
