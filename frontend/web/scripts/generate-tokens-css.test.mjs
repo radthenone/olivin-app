@@ -54,6 +54,12 @@ describe("buildTokensCss", () => {
     }
   });
 
+  test("resets the default Tailwind palette before the token colors", () => {
+    const css = buildTokensCss(tokens);
+
+    expect(css).toContain("@theme {\n  --color-*: initial;\n");
+  });
+
   test("keeps the raw token scales available to Tailwind", () => {
     const css = buildTokensCss(tokens);
 

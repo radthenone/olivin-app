@@ -110,6 +110,9 @@ export function buildTokensCss(palette) {
     "/* Wygenerowane z @olivin/tokens przez scripts/generate-tokens-css.mjs.",
     "   Nie edytuj ręcznie — zmieniaj wartości w pakiecie tokenów. */",
     "@theme {",
+    // Wyłącza domyślną paletę Tailwinda (bg-red-500, text-white) — kolory
+    // istnieją tylko te, które przychodzą z tokenów.
+    "  --color-*: initial;",
     ...lines,
     "}",
     "",

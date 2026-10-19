@@ -37,6 +37,23 @@ describe("checkSource", () => {
     ]);
   });
 
+  test("rejects named colors in arbitrary values", () => {
+    const violations = checkSource(
+      'const className = "bg-[red] text-[white] border-x-[transparent]";',
+      file,
+    );
+
+    expect(violations.map((violation) => violation.reason)).toEqual([
+      "arbitrary color value",
+      "arbitrary color value",
+      "arbitrary color value",
+    ]);
+  });
+
+  test("allows keyword arbitrary values outside color utilities", () => {
+    expect(checkSource('const className = "w-[auto]";', file)).toEqual([]);
+  });
+
   test("allows data and aria state variants", () => {
     const source = `
       const className =

@@ -20,6 +20,10 @@ const COLOR_FUNCTION = /\b(?:rgba?|hsla?|oklch|oklab|lab|lch|color)\s*\(/i;
 const BRACKET = /\[[^\]\n]*\]/g;
 const VARIANT_PREFIX =
   /(?:^|[\s"'`])(?:(?:group|peer)-)?(?:data|aria|has|not|in|supports|nth(?:-[a-z-]+)?)-$/;
+// Narzędzia przyjmujące kolor: `bg-[red]` to kolor spoza tokenów tak samo jak hex.
+const COLOR_UTILITY =
+  /(?:^|[\s"'`:])(?:bg|text|border(?:-[xytrblse])?|ring|ring-offset|fill|stroke|outline|decoration|accent|caret|shadow|from|via|to|divide|placeholder)-$/;
+const NAMED_VALUE = /^[a-z]+$/i;
 const SELECTOR_START = /^[&:>+~*.]/;
 
 function isVariantSelector(content, prefix) {
@@ -56,7 +60,10 @@ export function checkSource(source, file) {
         continue;
       }
 
-      if (COLOR_FUNCTION.test(content)) {
+      if (
+        COLOR_FUNCTION.test(content) ||
+        (NAMED_VALUE.test(content) && COLOR_UTILITY.test(prefix))
+      ) {
         report(match, "arbitrary color value");
       } else if (/\d/.test(content)) {
         report(match, "arbitrary numeric value");

@@ -1,6 +1,7 @@
 /* Wygenerowane z @olivin/tokens przez scripts/generate-tokens-css.mjs.
    Nie edytuj ręcznie — zmieniaj wartości w pakiecie tokenów. */
 @theme {
+  --color-*: initial;
   --color-brand-50: #FBF7EF;
   --color-brand-100: #F4EAD5;
   --color-brand-200: #E8D3A8;
