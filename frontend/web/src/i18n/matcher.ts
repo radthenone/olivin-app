@@ -1,12 +1,14 @@
 /**
  * Matcher proxy'ego języka.
  *
- * Poza routingiem językowym zostają adresy techniczne: `/api/*`
- * (kontrakt rewalidacji z ADR 0034), `/.well-known/*`, `robots.txt`,
- * `sitemap.xml`, zasoby Next i pliki statyczne. Pliki statyczne poznajemy po
- * kropce w ścieżce, tak jak w dokumentacji next-intl.
+ * Poza routingiem językowym zostają adresy techniczne: `/api` i `/api/*`
+ * (kontrakt rewalidacji z ADR 0034), `/_next/*`, `/.well-known/*`,
+ * `robots.txt`, `sitemap.xml` i pliki statyczne (kropka w ostatnim segmencie).
+ * Lookahead kotwiczy cały segment, żeby `/apiary` czy `/api-docs` nadal
+ * dostawały prefiks języka.
  */
-export const localeMatcher = "/((?!api|trpc|_next|_vercel|.*\\..*).*)";
+export const localeMatcher =
+  "/((?!api(?:/|$)|_next/|\\.well-known/|robots\\.txt$|sitemap\\.xml$|.*\\.[^/]+$).*)";
 
 const localeMatcherPattern = new RegExp(`^${localeMatcher}$`);
 

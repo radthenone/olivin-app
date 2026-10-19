@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
 
 import { localeMatcher, matchesLocaleRouting } from "./matcher";
 
@@ -15,11 +16,19 @@ const technicalPaths = [
   "/robots.txt",
   "/sitemap.xml",
   "/_next/static/chunks/main.js",
-  "/_vercel/insights/script.js",
   "/favicon.ico",
 ];
 
-const storefrontPaths = ["/", "/pl", "/en", "/pl/health", "/en/account"];
+const storefrontPaths = [
+  "/",
+  "/pl",
+  "/en",
+  "/pl/health",
+  "/en/account",
+  "/apiary",
+  "/api-docs",
+  "/_nextfoo",
+];
 
 describe("language routing matcher", () => {
   test.each(technicalPaths)(
@@ -36,11 +45,14 @@ describe("language routing matcher", () => {
     },
   );
 
-  test("the Next matcher string describes the same paths as the helper", () => {
-    const nextMatcher = new RegExp(`^${localeMatcher}$`);
+  test("Next applies the matcher to the same paths as the helper", () => {
+    const config = { matcher: localeMatcher };
 
     for (const path of [...technicalPaths, ...storefrontPaths]) {
-      expect(nextMatcher.test(path)).toBe(matchesLocaleRouting(path));
+      expect({
+        path,
+        matches: unstable_doesMiddlewareMatch({ config, url: path }),
+      }).toEqual({ path, matches: matchesLocaleRouting(path) });
     }
   });
 });
