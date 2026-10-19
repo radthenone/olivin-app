@@ -4,29 +4,59 @@ x-backend-build-prod: &backend-build-prod
   target: prod
 
 x-backend-env: &backend-env
-  - ./.envs/dev/backend/django.env
-  - ./.envs/dev/backend/db.env
-  - ./.envs/dev/backend/cache_broker.env
-  - ./.envs/dev/backend/broker.env
-  - ./.envs/dev/backend/s3.env
-  - ./.envs/dev/backend/email.env
-  - ./.envs/dev/backend/authorization.env
+  - ./.envs/prod/backend/django.env
+  - ./.envs/prod/backend/db.env
+  - ./.envs/prod/backend/cache_broker.env
+  - ./.envs/prod/backend/broker.env
+  - ./.envs/prod/backend/s3.env
+  - ./.envs/prod/backend/email.env
+  - ./.envs/prod/backend/authorization.env
+
+# Rotacja logów kontenerów: driver local, jawnie 20 MB x 5 plików (= domyślne local, ADR 0039).
+x-logging: &logging
+  driver: local
+  options:
+    max-size: "20m"
+    max-file: "5"
 
 services:
+  # S3 na prod: trwały wolumen z dev-definicji, ŻADNYCH portów na zewnątrz
+  # (ani S3, ani wewnętrzne master/volume/filer). UI publikowane wyłącznie
+  # na loopbacku hosta — dostęp tunelem SSH. Bind wewnątrz kontenera musi
+  # zostać 0.0.0.0: loopback kontenera nie jest osiągalny z hosta.
+  # Credentiale z sekretów przez ./.envs/prod/s3.env.
+  olivin-s3:
+    env_file: !override
+      - ./.envs/prod/s3.env
+    ports: !override
+      - "127.0.0.1:${S3_CONSOLE_PORT}:23646"
+    logging: *logging
+
+  olivin-postgres:
+    logging: *logging
+
+  olivin-redis:
+    logging: *logging
+
+  # Zależność django/celery w bazie, startuje też na prod.
+  olivin-libretranslate:
+    logging: *logging
+
   olivin-django:
     build: *backend-build-prod
     env_file: *backend-env
     ports:
       - "${DJANGO_PORT}:8000"
     working_dir: /app/src
-    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000 --access-logfile -
     restart: unless-stopped
+    logging: *logging
     depends_on:
       olivin-postgres:
         condition: service_healthy
       olivin-redis:
         condition: service_healthy
-      olivin-minio:
+      olivin-s3:
         condition: service_healthy
     networks:
       - olivin-network
@@ -38,6 +68,7 @@ services:
     entrypoint: ["/celery/celery-entrypoint.sh"]
     command: bash -c "/celery/worker.sh"
     restart: unless-stopped
+    logging: *logging
     depends_on:
       olivin-postgres:
         condition: service_healthy
@@ -53,6 +84,7 @@ services:
     entrypoint: ["/celery/celery-entrypoint.sh"]
     command: bash -c "/celery/beat.sh"
     restart: unless-stopped
+    logging: *logging
     depends_on:
       olivin-postgres:
         condition: service_healthy

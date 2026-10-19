@@ -82,6 +82,32 @@ class TestAnnouncePromotion:
         )
         assert "https://shop.test/unsub/" in bodies["yes@test.com"]
 
+    def test_every_email_has_one_click_unsubscribe_headers(self, settings):
+        """Każdy e-mail ma nagłówki RFC 8058 z adresem HTTPS (#314)."""
+        settings.BACKEND_URL = "https://api.shop.test"
+        user = UserFactory(email="yes@test.com")
+        NotificationPreference.objects.create(user=user, marketing_email=True)
+        subscription = NewsletterSubscription.objects.create(
+            email="sub@test.com", status=NewsletterStatus.ACTIVE
+        )
+
+        mail, _ = _announce(PromotionFactory())
+
+        headers = {c.kwargs["to"]: c.kwargs["headers"] for c in mail.call_args_list}
+        assert headers["sub@test.com"] == {
+            "List-Unsubscribe": (
+                "<https://api.shop.test/notifications/newsletter/unsubscribe/"
+                f"one-click/{subscription.unsubscribe_token}/>"
+            ),
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        }
+        assert headers["yes@test.com"]["List-Unsubscribe"].startswith(
+            "<https://api.shop.test/notifications/newsletter/unsubscribe/one-click/"
+        )
+        assert headers["yes@test.com"]["List-Unsubscribe-Post"] == (
+            "List-Unsubscribe=One-Click"
+        )
+
     def test_account_unsubscribe_link_turns_off_marketing_email(self, settings):
         """Link wypisania konta wyłącza e-maile marketingowe."""
         from apps.notifications import newsletter
@@ -118,4 +144,8 @@ class TestAnnouncePromotion:
         _, push = _announce(PromotionFactory())
 
         push.delay.assert_called_once()
-        assert push.delay.call_args.kwargs["user_id"] == str(pushy.pk)
+        kwargs = push.delay.call_args.kwargs
+        assert kwargs["user_id"] == str(pushy.pk)
+        assert kwargs["channel"] == "marketing"
+        assert kwargs["title"] == "Nowa promocja"
+        assert kwargs["data"]["url"] == "/promotions"

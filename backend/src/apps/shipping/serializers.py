@@ -51,8 +51,7 @@ class ShippingOfferSerializer(serializers.Serializer):
     id = serializers.UUIDField(source="method.id", read_only=True)
     name = serializers.CharField(source="method.name", read_only=True)
     # `ChoiceField`, a nie `CharField`: bez listy wartości schemat ogłasza goły
-    # `string`, a wygenerowany klient traci typ, po którym kasa rozgałęzia się
-    # na kod paczkomatu (ADR 0028).
+    # `string`, a wygenerowany klient traci typ rodzaju metody dostawy.
     kind = serializers.ChoiceField(
         choices=ShippingMethodKind.choices,
         source="method.kind",
@@ -68,6 +67,6 @@ class ShippingOfferSerializer(serializers.Serializer):
         read_only=True,
         help_text=(
             "Czy klient nie zapłaci za tę dostawę — z progu darmowej dostawy "
-            "albo ze stawki zero, jak przy odbiorze osobistym"
+            "albo ze stawki zero"
         ),
     )

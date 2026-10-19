@@ -224,6 +224,7 @@
  *     }
  * OpenAPI spec version: 1
  */
+import type { BaseSignupPreferredLanguage } from './baseSignupPreferredLanguage';
 import type { Email } from './email';
 
 export interface BaseSignup {
@@ -234,4 +235,6 @@ export interface BaseSignup {
   consent_privacy: boolean;
   /** Zgoda na komunikację marketingową e-mailem (opcjonalna) */
   consent_marketing?: boolean;
+  /** Język maili: pl albo en (opcjonalny, domyślnie z Accept-Language) */
+  preferred_language?: BaseSignupPreferredLanguage;
 }

@@ -4,17 +4,26 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
+from string import Formatter
 from typing import TYPE_CHECKING, Any
 
 from django.db import transaction
 
 from apps.notifications.models import (
+    PUSH_BODY,
     TRANSACTIONAL_KINDS,
     Notification,
+    NotificationKind,
     NotificationPreference,
     PushDevice,
 )
+from common.languages import PreferredLanguage, email_language
+from apps.notifications.newsletter import (
+    account_unsubscribe_token,
+    one_click_unsubscribe_headers,
+)
 from core.integrations.notifications.mail import send_notification_email
+from core.integrations.push.base import MARKETING_CHANNEL, ORDERS_CHANNEL
 
 if TYPE_CHECKING:
     from apps.accounts.models import CustomUser
@@ -64,8 +73,96 @@ _TEMPLATES: dict[str, tuple[str, str]] = {
 }
 
 
-def _render(kind: str, payload: dict[str, Any]) -> tuple[str, str]:
-    subject_tpl, body_tpl = _TEMPLATES.get(kind, (kind, kind))
+# Angielskie wersje `_TEMPLATES` dla `PreferredLanguage.EN` (ADR 0035).
+_TEMPLATES_EN: dict[str, tuple[str, str]] = {
+    "order_status_changed": (
+        "Order {order_number} status changed",
+        "Order {order_number} now has status: {status_label}.",
+    ),
+    "order_paid": (
+        "Order {order_number} paid",
+        "Thank you — order {order_number} has been paid.",
+    ),
+    "document_ready": (
+        "Document for order {order_number} is ready",
+        "Document {document_kind} for order {order_number} is ready.",
+    ),
+    "return_request_status_changed": (
+        "Return request for order {order_number}",
+        "Return request for order {order_number} is now: {status_label}.",
+    ),
+    "return_settled": (
+        "Return for order {order_number} settled",
+        "Return for order {order_number} settled for {compensation_amount}: "
+        "{compensation_form}.",
+    ),
+    "watch_restock": (
+        "Variant {variant_sku} is back in stock",
+        "Watched variant {variant_sku} ({product_name}) is available again.",
+    ),
+    "watch_price_drop": (
+        "Price of variant {variant_sku} dropped",
+        "Watched variant {variant_sku} ({product_name}) got cheaper: "
+        "was {old_price}, now {new_price}.",
+    ),
+    "cart_reminder": (
+        "Items are waiting in your cart",
+        "Items are still in your cart — today's prices and availability:\n"
+        "{items}\n\n"
+        "Back to your cart: {cart_url}\n\n"
+        "Don't want these messages? Change your consents: {preferences_url}\n"
+        "Unsubscribe: {unsubscribe_url}",
+    ),
+}
+
+
+# Ekran aplikacji do otwarcia po tapnięciu w push (`data.url`, ścieżka
+# expo-router); rodzaj spoza mapy otwiera skrzynkę powiadomień.
+_PUSH_URLS: dict[str, str] = {
+    "order_status_changed": "/orders/{order_number}",
+    "order_paid": "/orders/{order_number}",
+    "document_ready": "/orders/{order_number}",
+    "return_request_status_changed": "/orders/{order_number}",
+    "return_settled": "/orders/{order_number}",
+    "watch_restock": "/products/{product_slug}",
+    "watch_price_drop": "/products/{product_slug}",
+    "cart_reminder": "/cart",
+}
+DEFAULT_PUSH_URL = "/notifications"
+
+
+def _push_message(
+    kind: str,
+    payload: dict[str, Any],
+    push_body: str | None,
+    push_data: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Argumenty zadania push: ogólny tytuł, kanał i `data.url` (ADR 0037).
+
+    Tytuł to nazwa rodzaju, nie temat e-maila — bez kwot, adresów i numerów.
+    Surowy payload nie trafia do pusha; `data` to `push_data` plus `url`.
+    """
+    template = _PUSH_URLS.get(kind, DEFAULT_PUSH_URL)
+    fields = [name for _, name, _, _ in Formatter().parse(template) if name]
+    # Brak pola w payloadzie dałby `/orders/` — wtedy skrzynka powiadomień.
+    url = (
+        template.format(**payload)
+        if all(payload.get(name) for name in fields)
+        else DEFAULT_PUSH_URL
+    )
+    return {
+        "title": dict(NotificationKind.choices).get(kind, "Nowe powiadomienie"),
+        "body": push_body if push_body is not None else PUSH_BODY,
+        "data": {**(push_data or {}), "url": url},
+        "channel": ORDERS_CHANNEL if kind in TRANSACTIONAL_KINDS else MARKETING_CHANNEL,
+    }
+
+
+def _render(
+    kind: str, payload: dict[str, Any], language: str = PreferredLanguage.PL
+) -> tuple[str, str]:
+    templates = _TEMPLATES_EN if language == PreferredLanguage.EN else _TEMPLATES
+    subject_tpl, body_tpl = templates.get(kind, (kind, kind))
     try:
         return subject_tpl.format(**payload), body_tpl.format(**payload)
     except KeyError as exc:
@@ -147,6 +244,7 @@ def notify(
     email: str | None = None,
     push_body: str | None = None,
     push_data: dict[str, Any] | None = None,
+    language: str | None = None,
 ) -> Notification | None:
     """Zapisuje powiadomienie (dla konta) i wysyła e-mail (`CONTEXT.md`, Notification).
 
@@ -168,9 +266,12 @@ def notify(
     (`CONTEXT.md`, Account anonymisation). Rekord w aplikacji i tak idzie na
     konto z `user_or_email` — tylko adres wysyłki jest inny.
 
-    `push_body` i `push_data` zastępują w pushu treść e-maila i payload —
-    dla komunikatów, których pełna treść jest za długa na powiadomienie
-    (np. przypomnienie o koszyku z listą pozycji).
+    Push niesie tylko ogólny tytuł, krótką treść i `data.url` (ADR 0037,
+    `_push_message`). `push_body` zastępuje domyślną ogólną treść, a
+    `push_data` dokłada pola do `data` (np. typ przypomnienia o koszyku).
+
+    Język e-maila (ADR 0035): `language` od wywołującego (zamówienie gościa,
+    `email_language(order)`), a bez niego — z profilu konta; brak → polski.
 
     Bez idempotencji: każde wywołanie tworzy nowy rekord i kolejkuje nowy
     e-mail. To wywołujący odpowiada za wywołanie raz na realne zdarzenie —
@@ -184,7 +285,7 @@ def notify(
         user.email if user is not None else str(user_or_email)  # type: ignore[missing-attribute]
     )
 
-    subject, message = _render(kind, payload)
+    subject, message = _render(kind, payload, language or email_language(user))
 
     # Push jest niezależnym kanałem z własną zgodą (`marketing_push`):
     # kolejkowanie przed bramką e-mailową, żeby marketing z samym `push`
@@ -203,9 +304,7 @@ def notify(
             task = cast(Any, send_push_notification)
             task.delay(
                 user_id=str(user.pk),
-                title=subject,
-                body=push_body if push_body is not None else message,
-                data=push_data if push_data is not None else payload,
+                **_push_message(kind, payload, push_body, push_data),
             )
         except Exception:
             # Push nie blokuje pozostałych kanałów — błąd kolejkowania
@@ -225,9 +324,19 @@ def notify(
             user=user, kind=kind, message=message, data=payload
         )
 
+    # Marketing (tu zawsze do konta — gość odpada bramką wyżej) niesie
+    # nagłówki RFC 8058 z tokenem konta; transakcyjne ich nie dostają (#314).
+    extra: dict[str, Any] = {}
+    if kind not in TRANSACTIONAL_KINDS and user is not None:
+        extra["headers"] = one_click_unsubscribe_headers(
+            account_unsubscribe_token(user.pk)
+        )
+
     def _send() -> None:
         try:
-            send_notification_email(to=recipient_email, subject=subject, body=message)
+            send_notification_email(
+                to=recipient_email, subject=subject, body=message, **extra
+            )
         except Exception:
             # Wysyłka nie może zawalić reszty callbacków po commicie (np.
             # wystawienia dokumentu sprzedaży) — powiadomienie jest efektem

@@ -16,6 +16,11 @@
     "format:check": "turbo run format:check"
   },
   "devDependencies": {
-    "turbo": "^2.10.13"
-  }
+    "turbo": "^2.11.8"
+  },
+  "trustedDependencies": [
+    "esbuild",
+    "node-datachannel",
+    "unrs-resolver"
+  ]
 }

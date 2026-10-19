@@ -51,6 +51,15 @@ class TestProductSlug:
 
         assert product.slug == "en-pierscionek"
 
+    def test_publishing_with_update_fields_persists_slug(self):
+        """Akcja admina zapisuje tylko `status` — nadany wtedy slug też trafia do bazy."""
+        product = ProductFactory(name="Pierścionek")
+        product.status = ProductStatus.PUBLISHED
+        product.save(update_fields=["status", "updated_at"])
+
+        product.refresh_from_db()
+        assert product.slug == "en-pierscionek"
+
     def test_polish_name_is_not_used_in_slug(self):
         """Polska nazwa nie trafia wprost do adresu."""
         product = PublishedProductFactory(name="Łańcuszek złoty")

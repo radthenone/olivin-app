@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from apps.notifications.views import (
     NewsletterConfirmView,
+    NewsletterOneClickUnsubscribeView,
     NewsletterSubscribeView,
     NewsletterUnsubscribeView,
     NotificationPreferenceView,
@@ -29,6 +30,11 @@ urlpatterns = [
         "newsletter/unsubscribe/",
         NewsletterUnsubscribeView.as_view(),
         name="newsletter-unsubscribe",
+    ),
+    path(
+        "newsletter/unsubscribe/one-click/<str:token>/",
+        NewsletterOneClickUnsubscribeView.as_view(),
+        name="newsletter-one-click-unsubscribe",
     ),
     path(
         "preferences/",

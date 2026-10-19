@@ -3,35 +3,24 @@
 from __future__ import annotations
 
 import pytest
-from django.core.exceptions import ValidationError
-from django.db.utils import IntegrityError
 
-from apps.shipping.models import ShippingMethod, ShippingMethodKind
+from apps.shipping.models import Shipment, ShippingMethodKind
 from common.money import Money
-from tests.factories.shipping import ParcelLockerMethodFactory, ShippingMethodFactory
+from tests.factories.shipping import ShippingMethodFactory
 
 
-@pytest.mark.django_db
-class TestPickup:
-    """Odbiór osobisty."""
+class TestCourierOnly:
+    """Wysyłka wyłącznie kurierem (ADR 0036)."""
 
-    def test_pickup_with_limit_is_rejected(self):
-        """Odbiór osobisty z limitem wartości jest odrzucany."""
-        with pytest.raises(ValidationError) as error:
-            ShippingMethodFactory(
-                kind=ShippingMethodKind.PICKUP, max_order_value=100000
-            )
+    def test_only_courier_and_eu_kinds_exist(self):
+        """Rodzaje metody dostawy to tylko kurier krajowy i przesyłka do Unii."""
+        assert set(ShippingMethodKind.values) == {"courier", "eu"}
 
-        assert "max_order_value" in error.value.message_dict
+    def test_shipment_has_no_pickup_point(self):
+        """Przesyłka nie ma kodu punktu odbioru."""
+        field_names = {field.name for field in Shipment._meta.get_fields()}
 
-    def test_database_constraint_catches_unvalidated_save(self):
-        """Ograniczenie w bazie łapie zapis z pominięciem walidacji."""
-        method = ShippingMethodFactory(kind=ShippingMethodKind.PARCEL_LOCKER)
-
-        with pytest.raises(IntegrityError):
-            ShippingMethod.objects.filter(pk=method.pk).update(
-                kind=ShippingMethodKind.PICKUP, max_order_value=100000
-            )
+        assert "pickup_point_code" not in field_names
 
 
 @pytest.mark.django_db
@@ -47,7 +36,7 @@ class TestAmounts:
     def test_missing_limit_is_none_not_zero(self):
         """Brak limitu to brak kwoty, a nie zero."""
         without_limit = ShippingMethodFactory(max_order_value=None)
-        with_limit = ParcelLockerMethodFactory(max_order_value=500000)
+        with_limit = ShippingMethodFactory(max_order_value=500000)
 
         assert without_limit.max_order_value_money is None
         assert with_limit.max_order_value_money == Money(500000, "PLN")

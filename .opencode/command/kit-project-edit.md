@@ -1,6 +1,5 @@
 ---
 description: "Jedna zmiana w konfiguracji projektu bez całego wywiadu — Stack per Tier, codegen, klienci, język albo sekcja .ai/project.md, z podglądem i reloadem; albo spór z treścią modułu kita zapisany jako odstępstwo w .ai/project.md. Use when /kit-project-edit, 'zmień web na angular', 'nie zgadzam się z modułem X'. Wywołuj jako /kit-project-edit."
-model: opencode/muse-spark-1.3-contributor-free
 ---
 
 Argumenty użytkownika (surowy tekst po komendzie): $ARGUMENTS
@@ -45,6 +44,7 @@ Cały wywiad od zera: /kit-project-begin
    | `language` | Profil | `pl` \| `en` |
    | Pytanie tak/nie (docker, taskfile, ci-cd, …) | Profil `include:` / `patterns:` | Wpisy z linii `Zapis` pytania |
    | Ścieżka Tieru, inna sekcja | `.ai/project.md` | Tekst użytkownika |
+   | `server:` (server-guard: `guard`, `deny`, `allow`) | Profil, sekcja `server` | `guard: auto` albo `off`; `deny`/`allow`: dosłowne wywołania (wyjątki `allow` wygrywają z deny) |
 
    Wartość spoza dozwolonych → pokaż listę, nie zgaduj. Brak Stacka w katalogu → `none` +
    podpowiedź `/create-task` w repo kita.
@@ -62,11 +62,20 @@ Cały wywiad od zera: /kit-project-begin
    zmiana `clients` **usuwa** pliki kita klientów spoza listy (własne pliki zostają);
    zmiana Tieru może włączyć pytania zależne (np. `codegen`, warianty) — wymień je i podaj
    gotowe kolejne `/kit-project-edit` (jedna zmiana na wywołanie); Tier → `none` usuwa
-   w tym samym podglądzie jego linię `- <tier>:` z `## Ścieżki` w `.ai/project.md`.
+   w tym samym podglądzie jego linię `- <tier>:` z `## Ścieżki` w `.ai/project.md` oraz linie
+   pytań, które przestają być aktywne (`routes-web` / `routes-mobile`, `design-tokens` gdy
+   web i mobile są `none` — `list_questions` po zmianie). Tier `none` → Stack web/mobile:
+   zaproponuj kolejne `/kit-project-edit` na `design-tokens` i `routes-*` z wykryciem
+   z `detect:` katalogu.
 3. **Zapis** jednej linii (komentarze i reszta pliku nietknięte) → MCP
    `reload_workspace(dry_run=True)`; błąd → przywróć oryginał, pokaż błąd. OK →
    `reload_workspace(dry_run=False)`. Zmiana tylko w `.ai/project.md` → bez reloadu
    (serwer czyta overlay na żywo).
+4. **Etykiety** — gdy Tier zmienił się z `none` na Stack albo do `clients` doszedł `claude`
+   (przy Tierze web/mobile — etykiety `design: *`): MCP `ensure_labels(dry_run=True)`, lista
+   nowych etykiet, zgoda → `ensure_labels(dry_run=False)`. Brak zgody → pomiń i podaj
+   `kit-ai labels --apply`. Usunięcie `claude` niczego nie kasuje — jedna linia, że etykiety
+   `design: *` zostają bez użycia.
 
 ## Tryb B — odstępstwo od modułu
 

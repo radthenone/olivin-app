@@ -35,6 +35,7 @@ from apps.orders.services.returns import return_options as build_return_options
 from apps.orders.views.cart import token_of, user_of
 from apps.payments.serializers import PaymentIntentSerializer
 from apps.payments.services import request_cancellation, start_payment
+from common.languages import language_from_request
 
 
 @order_schema
@@ -115,6 +116,7 @@ class OrderViewSet(
                 user=user,
                 email=data["email"],
                 invoice_requested=data["invoice_requested"],
+                language=language_from_request(request),
             )
         except DjangoValidationError as error:
             raise ValidationError(error.message_dict) from error

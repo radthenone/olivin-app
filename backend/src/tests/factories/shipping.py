@@ -26,24 +26,6 @@ class ShippingMethodFactory(DjangoModelFactory):
     is_active = True
 
 
-class ParcelLockerMethodFactory(ShippingMethodFactory):
-    """Paczkomat: tani, ale z górną wartością zamówienia (ADR 0028)."""
-
-    name = Sequence(lambda n: f"Paczkomat {n}")
-    kind = ShippingMethodKind.PARCEL_LOCKER
-    rate = 1490
-    max_order_value = 500000
-
-
-class PickupMethodFactory(ShippingMethodFactory):
-    """Odbiór osobisty: bez kosztu i bez limitu — towar nie jedzie przewoźnikiem."""
-
-    name = Sequence(lambda n: f"Odbiór osobisty {n}")
-    kind = ShippingMethodKind.PICKUP
-    rate = 0
-    max_order_value = None
-
-
 class ShipmentFactory(DjangoModelFactory):
     """Przesyłka wpisana ręcznie w panelu, jeszcze przed nadaniem (ADR 0027)."""
 
@@ -55,4 +37,3 @@ class ShipmentFactory(DjangoModelFactory):
     tracking_number = ""
     declared_value = 25000
     currency = "PLN"
-    pickup_point_code = ""

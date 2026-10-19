@@ -15,7 +15,7 @@ def mock_s3_storage(request):
     """Globalny mock AWS/S3 dla testów unit/in-memory.
 
     Dla testów integracyjnych (marker `integration`) mock jest wyłączony,
-    bo testy mają korzystać z prawdziwego MinIO/S3.
+    bo testy mają korzystać z prawdziwego S3.
     """
 
     if request.node.get_closest_marker("integration") is not None:
@@ -40,7 +40,7 @@ def mock_s3_storage(request):
     try:
         with mock_aws():
             # Trzy buckety z ADR 0025, żeby testy widziały ten sam układ,
-            # co bootstrap MinIO — inaczej zapis trafiałby w nieistniejący
+            # co bootstrap S3 — inaczej zapis trafiałby w nieistniejący
             # bucket i test padał na czymś innym niż sprawdza.
             import boto3
 

@@ -101,3 +101,62 @@ tasks:
             ANDROID_SERIAL: '{{default "emulator-5554" .CLI_ARGS}}'
         cmds:
             - bash -lc './scripts/open-expo-android.sh "{{.ANDROID_SERIAL}}"'
+
+    # =======================================================
+    # SMOKE BUILDA (TO SAMO CO JOB "Mobile smoke" W CI)
+    # =======================================================
+    # Bundluje aplikację dla web, android i ios bez emulatora i bez sekretów —
+    # łapie błędy Metro/Babel/NativeWind, które przepuściły trzy zielone bramki
+    # w #72. Ciężkie: na słabym serwerze (1 CPU) zostaw to CI.
+    smoke:
+        desc: Bundle the mobile app for web, android and ios (CI smoke test)
+        dir: frontend/mobile
+        cmds:
+            - bun run smoke
+
+    doctor:
+        desc: Run expo-doctor (dependency and config health checks)
+        dir: frontend/mobile
+        cmds:
+            - bun run doctor
+
+    # =======================================================
+    # EXPO DEVICE HUB (LOKALNE EMULATORY / SYMULATORY W PRZEGLĄDARCE)
+    # =======================================================
+    # Przy `task mobile:metro` hub jest już dostępny jako plugin dev tools pod
+    # http://localhost:8081/_expo/plugins/expo-device-hub — ten task odpala go
+    # samodzielnie, bez Metro.
+    devices:
+        desc: Start Expo Device Hub standalone (needs Android SDK or macOS + Xcode)
+        dir: frontend/mobile
+        interactive: true
+        cmds:
+            - bun run devices
+
+    # =======================================================
+    # EAS SIMULATOR (CHMURA — WYMAGA DOSTĘPU Z WAITLISTY I `eas login`)
+    # =======================================================
+    eas:build:simulator:
+        desc: Build an installable simulator/emulator app on EAS (task mobile:eas:build:simulator -- ios|android)
+        dir: frontend/mobile
+        vars:
+            PLATFORM: '{{default "ios" .CLI_ARGS}}'
+        cmds:
+            - bunx eas-cli build --platform {{.PLATFORM}} --profile remote-device --non-interactive
+
+    eas:simulator:
+        # Sesja nalicza zużycie, dopóki trwa — limit czasu ucina zapomniane sesje.
+        desc: Start an EAS Simulator session (BUILD_ID=<id> task mobile:eas:simulator -- ios|android)
+        dir: frontend/mobile
+        requires:
+            vars: [BUILD_ID]
+        vars:
+            PLATFORM: '{{default "ios" .CLI_ARGS}}'
+        cmds:
+            - bunx eas-cli simulator:start --platform {{.PLATFORM}} --type agent-device --build-id {{.BUILD_ID}} --max-duration-minutes 30 --max-idle-time-minutes 10 --non-interactive
+
+    eas:simulator:stop:
+        desc: Stop the active EAS Simulator session
+        dir: frontend/mobile
+        cmds:
+            - bunx eas-cli simulator:stop

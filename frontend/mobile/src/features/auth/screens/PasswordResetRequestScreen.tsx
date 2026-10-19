@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Text } from "react-native";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { ErrorMessage } from "@ui/feedback/ErrorMessage";
 import { Button } from "@ui/primitives/Button";
 import { TextField } from "@ui/primitives/TextField";
@@ -12,6 +12,7 @@ import { useRequestPasswordReset } from "../hooks/use-request-password-reset";
  * Ekran rozpoczęcia resetu hasła.
  */
 export function PasswordResetRequestScreen() {
+  const router = useRouter();
   const requestReset = useRequestPasswordReset();
   const [email, setEmail] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
@@ -25,13 +26,15 @@ export function PasswordResetRequestScreen() {
     }
 
     setFormError(null);
-    requestReset.mutate(parsed.data);
+    requestReset.mutate(parsed.data, {
+      onSuccess: () => router.push("/reset-password"),
+    });
   }
 
   return (
     <AuthShell
       title="Reset hasła"
-      subtitle="Podaj email konta. Jeśli istnieje, wyślemy instrukcję ustawienia nowego hasła."
+      subtitle="Podaj email konta. Jeśli istnieje, wyślemy kod do ustawienia nowego hasła."
       footer={
         <Link href="/login">
           <Text className="text-center text-base text-neutral-950 underline">
@@ -56,12 +59,6 @@ export function PasswordResetRequestScreen() {
         value={email}
       />
 
-      {requestReset.isSuccess ? (
-        <Text className="text-sm leading-5 text-emerald-700">
-          Jeśli konto istnieje, wiadomość z resetem hasła została wysłana.
-        </Text>
-      ) : null}
-
       <ErrorMessage
         message={
           formError ??
@@ -70,7 +67,7 @@ export function PasswordResetRequestScreen() {
       />
 
       <Button disabled={requestReset.isPending} onPress={handleSubmit}>
-        {requestReset.isPending ? "Wysyłanie..." : "Wyślij instrukcję"}
+        {requestReset.isPending ? "Wysyłanie..." : "Wyślij kod"}
       </Button>
     </AuthShell>
   );

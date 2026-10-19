@@ -1,5 +1,4 @@
 import json
-import os
 from typing import Any
 
 import boto3
@@ -20,7 +19,9 @@ class S3BucketManager:
         self.client = self._build_client()
 
     def _build_config(self) -> Config:
-        addressing_style = os.environ.get("AWS_S3_ADDRESSING_STYLE", "path")
+        # Tylko z ustawień Django (patrz `_build_client`): styl adresowania
+        # też nie może zależeć od envu maszyny.
+        addressing_style = getattr(settings, "AWS_S3_ADDRESSING_STYLE", None) or "path"
         # botocore typuje `s3` jako wąski TypedDict domknięty na konkretne klucze,
         # więc zwykły dict — poprawny w czasie działania — nie przechodzi sprawdzenia.
         # Adnotacja `Any` mówi to wprost i przeżywa przeformatowanie pliku, czego
@@ -32,36 +33,16 @@ class S3BucketManager:
         )
 
     def _build_client(self):
-        aws_access_key_id = getattr(
-            settings,
-            "AWS_ACCESS_KEY_ID",
-            os.environ.get("AWS_ACCESS_KEY_ID", "minioadmin"),
-        )
-        aws_secret_access_key = getattr(
-            settings,
-            "AWS_SECRET_ACCESS_KEY",
-            os.environ.get("AWS_SECRET_ACCESS_KEY", "minioadmin"),
-        )
-        region_name = getattr(
-            settings,
-            "AWS_S3_REGION_NAME",
-            os.environ.get("AWS_S3_REGION_NAME", "us-east-1"),
-        )
-        endpoint_url = getattr(
-            settings,
-            "AWS_S3_ENDPOINT_URL",
-            os.environ.get("AWS_S3_ENDPOINT_URL", "http://minio:9000"),
-        )
-        use_ssl = getattr(
-            settings,
-            "AWS_S3_USE_SSL",
-            os.environ.get("AWS_S3_USE_SSL", "False").lower() == "true",
-        )
+        # Tylko z ustawień Django — bez czytania `os.environ`. Ustawienia
+        # testowe są hermetyczne, a `S3BucketManager` wołany jest też
+        # przy imporcie modułów (pola plików), zanim fixture posprząta env.
+        aws_access_key_id = getattr(settings, "AWS_ACCESS_KEY_ID", None)
+        aws_secret_access_key = getattr(settings, "AWS_SECRET_ACCESS_KEY", None)
+        region_name = getattr(settings, "AWS_S3_REGION_NAME", None) or "us-east-1"
+        endpoint_url = getattr(settings, "AWS_S3_ENDPOINT_URL", None) or ""
+        url_protocol = getattr(settings, "AWS_S3_URL_PROTOCOL", None) or "http:"
+        use_ssl = getattr(settings, "AWS_S3_USE_SSL", url_protocol == "https:")
 
-        # Opcjonalne: pomijamy endpoint_url jeśli łączymy się oryginalnie z AWS bez nadpisania
-        use_aws = getattr(
-            settings, "USE_AWS", os.environ.get("USE_AWS", "False").lower() == "true"
-        )
         client_kwargs = {
             "aws_access_key_id": aws_access_key_id,
             "aws_secret_access_key": aws_secret_access_key,
@@ -70,13 +51,11 @@ class S3BucketManager:
             "config": self.config,
         }
 
-        # Jeśli nie używamy czystego AWS'a lub wyraźnie jest podany inny endpoint, dodajemy endpoint_url
-        if endpoint_url and not (use_aws and "amazonaws.com" not in endpoint_url):
+        # Pusty endpoint oznacza właściwy AWS — wtedy boto3 wybiera adres sam
+        # i nie podajemy mu żadnego. Taka sama wartość w każdym środowisku:
+        # kod nie zgaduje dostawcy po nazwie hosta.
+        if endpoint_url:
             client_kwargs["endpoint_url"] = endpoint_url
-
-        # Upewniamy się, że w trybie AWS pominie lokalny endpoint
-        if use_aws and ("localhost" in endpoint_url or "minio" in endpoint_url):
-            client_kwargs.pop("endpoint_url", None)
 
         return boto3.client("s3", **client_kwargs)
 
@@ -105,16 +84,10 @@ class S3BucketManager:
         """
         kwargs: dict = {"Bucket": bucket_name}
 
-        region = getattr(
-            settings,
-            "AWS_S3_REGION_NAME",
-            os.environ.get("AWS_S3_REGION_NAME", "us-east-1"),
-        )
-        use_aws = getattr(
-            settings, "USE_AWS", os.environ.get("USE_AWS", "False").lower() == "true"
-        )
+        region = getattr(settings, "AWS_S3_REGION_NAME", None) or "us-east-1"
+        use_s3 = getattr(settings, "USE_S3", False)
 
-        if region != "us-east-1" and use_aws:
+        if region != "us-east-1" and use_s3:
             kwargs["CreateBucketConfiguration"] = {"LocationConstraint": region}
 
         self.client.create_bucket(**kwargs)

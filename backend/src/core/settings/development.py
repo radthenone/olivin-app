@@ -99,6 +99,11 @@ SPECTACULAR_SETTINGS = {
         "ReviewStatusEnum": "apps.reviews.models.ReviewStatus",
         "WatchKindEnum": "apps.watches.models.WatchKind",
         "WatchStatusEnum": "apps.watches.models.WatchStatus",
+        # Kraj dostawy w profilu (#317) — lista Unii, nie wszystkie kraje.
+        "DeliveryCountryEnum": "apps.accounts.models.profile_model.DeliveryCountries",
+        # Język maili w profilu (#316) — przypięty, żeby kolejne pole `language`
+        # nie przemianowało go po cichu.
+        "PreferredLanguageEnum": "common.languages.PreferredLanguage",
         # Stan zdrowia to `ChoiceField` z listą wartości, bez klasy `Choices`,
         # więc wpisujemy same wartości. Bez tego kolizja z `Order.status`
         # przemianowała go na `HealthCheckResponseStatusEnum` i zmieniła

@@ -7,6 +7,7 @@ from django.db import models
 from django.utils import timezone
 
 from common import TimestampedModel
+from common.languages import PreferredLanguage
 
 if TYPE_CHECKING:
     from apps.accounts.models import Customer
@@ -39,6 +40,11 @@ TRANSACTIONAL_KINDS: frozenset[str] = frozenset(
         NotificationKind.RETURN_SETTLED,
     }
 )
+
+
+# Treść pusha (ADR 0037): ogólny tytuł i ta stała — bez kwot, adresów
+# i numerów; pełna treść czeka w skrzynce powiadomień w aplikacji.
+PUSH_BODY = "Szczegóły znajdziesz w aplikacji."
 
 
 class NotificationQuerySet(models.QuerySet["Notification"]):
@@ -204,6 +210,13 @@ class NewsletterSubscription(TimestampedModel):
     )
     confirmed_at = models.DateTimeField(
         null=True, blank=True, help_text="Chwila potwierdzenia linkiem"
+    )
+    preferred_language = models.CharField(
+        max_length=2,
+        choices=PreferredLanguage.choices,
+        null=True,
+        blank=True,
+        help_text="Język z chwili zapisu (ADR 0035); pusty oznacza polski",
     )
 
     class Meta:

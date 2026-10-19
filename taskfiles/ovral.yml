@@ -29,8 +29,9 @@ tasks:
     schema:allauth:
         desc: Refresh the committed allauth OpenAPI snapshot (task ovral:schema:allauth)
         cmds:
-            # Schemat allauth pochodzi z biblioteki, nie z naszego kodu, więc
-            # zmienia się wyłącznie przy podbiciu jej wersji. Trzymamy snapshot
+            # Schemat allauth pochodzi z biblioteki, ale zawiera też pola
+            # własnego formularza rejestracji (`ACCOUNT_SIGNUP_FORM_CLASS`), więc
+            # zmienia się przy podbiciu wersji i przy zmianie tych pól. Trzymamy snapshot
             # w repozytorium, żeby generowanie klienta i bramka rozjazdu działały
             # bez uruchomionego Django. Wymaga działającego backendu.
             - curl -fsS "http://${EXPO_PUBLIC_BACKEND_URL}/_allauth/openapi.json" -o backend/src/allauth-schema.json

@@ -92,8 +92,12 @@ _Unikaj_: LineItem, CartLine
 Zamówienie złożone przez klienta — zalogowanego albo gościa podającego e-mail i adres; zamówienia gościa zostają podpięte do konta założonego później na ten sam e-mail. Powstaje na początku kroku płatności — przed zapłatą — w statusie `pending`, a zdarzenie od operatora przenosi je do `paid`; nieopłacone wygasa samo. Niemutowalne co do treści: zawiera kopię kosztu dostawy i kursu waluty z chwili złożenia; zmienia się wyłącznie jego status. Klient sam anuluje tylko zamówienie `pending` albo `paid`; później wyłącznie przez zwrot.
 _Unikaj_: Purchase, Transaction, Sale
 
+**OrderAccessToken**:
+Losowy token przypisany do jednego zamówienia gościa, wysyłany w każdym mailu po opłaceniu jako link „Zobacz zamówienie”. Daje wyłącznie odczyt: status, pozycje, numer przesyłki i dokument sprzedaży. Klient z kontem go nie potrzebuje, bo widzi zamówienie po zalogowaniu.
+_Unikaj_: Magic link, Guest login, Tracking link
+
 **ExchangeRate**:
-Kurs złotego do euro z Narodowego Banku Polskiego, odświeżany co 30 dni i działający bez ręcznej aktywacji, użyty do pokazania cen i pobrania zapłaty w euro od klienta z kraju Unii. Cena w euro jest zaokrąglana w górę do końcówki ,00 albo ,50 i nigdy nie schodzi poniżej kosztu wariantu. Ceny źródłowe są zawsze w złotych.
+Kurs złotego do euro z Narodowego Banku Polskiego, odświeżany co 30 dni i działający bez ręcznej aktywacji, użyty do pokazania cen i pobrania zapłaty w euro, gdy krajem dostawy jest inny kraj Unii niż Polska. Cena w euro jest zaokrąglana w górę do końcówki ,00 albo ,50 i nigdy nie schodzi poniżej kosztu wariantu. Ceny źródłowe są zawsze w złotych.
 _Unikaj_: Rate, Currency, Przelicznik
 
 **OrderItem**:
@@ -178,12 +182,16 @@ _Unikaj_: Hold, Lock, Blokada
 ## Wysyłka
 
 **ShippingMethod**:
-Sposób dostawy — paczkomat, kurier, odbiór osobisty, przesyłka do Unii — ze stałą ceną dla strefy (Polska albo Unia), wspólnym dla sklepu progiem darmowej dostawy i górną wartością zamówienia, powyżej której metoda jest niedostępna. Ubezpieczenie jest zawsze wliczone w stawkę; klient go nie wybiera. Koszt dostawy klient zawsze płaci pieniędzmi, nigdy kuponem.
+Sposób dostawy — wyłącznie kurier: krajowy albo do Unii — ze stałą ceną dla strefy (Polska albo Unia), wspólnym dla sklepu progiem darmowej dostawy i górną wartością zamówienia, powyżej której metoda jest niedostępna. Ubezpieczenie jest zawsze wliczone w stawkę; klient go nie wybiera. Koszt dostawy klient zawsze płaci pieniędzmi, nigdy kuponem.
 _Unikaj_: Delivery, Carrier, Dostawa
 
 **Shipment**:
-Konkretna przesyłka wysłana w ramach zamówienia: numer śledzenia, wartość zadeklarowana przewoźnikowi oraz — dla paczkomatu — kod punktu odbioru. Dla produktu na zamówienie powstaje dopiero po zakończeniu produkcji.
+Konkretna przesyłka wysłana w ramach zamówienia: numer śledzenia, wartość zadeklarowana przewoźnikowi. Dla produktu na zamówienie powstaje dopiero po zakończeniu produkcji.
 _Unikaj_: Delivery, Parcel
+
+**DeliveryCountry**:
+Kraj, do którego klient wysyła zamówienie: Polska albo inny kraj Unii. Wyznacza walutę: dla Polski złote, dla pozostałych krajów Unii euro. Klient nie wybiera waluty osobno. Przed kasą kraj ustawia przełącznik „Wysyłka do”, a w kasie rozstrzyga adres dostawy, który nadpisuje wcześniejszy wybór. Kraje spoza Unii nie występują w sklepie.
+_Unikaj_: Market, Region, Currency (jako wybór klienta)
 
 ## Dokumenty sprzedaży
 
@@ -206,6 +214,10 @@ _Unikaj_: Account, Customer (to nie to samo)
 **Profile**:
 Dane osobowe i preferencje powiązane z użytkownikiem.
 _Unikaj_: UserInfo, Details
+
+**PreferredLanguage**:
+Język komunikacji z klientem: polski albo angielski. Wybiera język maili. Konto ma go w profilu, ustawiany przy rejestracji i zmieniany w ustawieniach. Gość ma go zapisanego na zamówieniu, a subskrypcja newslettera z chwili zapisu. Bez ustawionej wartości obowiązuje polski. Nie zależy od kraju dostawy.
+_Unikaj_: Locale, Kraj, Język interfejsu (to wybór urządzenia)
 
 **Address**:
 Adres dostawy lub rozliczeniowy należący do profilu.

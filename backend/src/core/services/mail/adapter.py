@@ -9,6 +9,7 @@ from django.db import transaction
 from django.db.transaction import on_commit
 
 from apps.accounts.services import update_profile_from_signup_data
+from common.languages import language_from_request
 from core.services.allauth.signup_consents import record_signup_consents
 from core.services.mail.service import MailService
 from core.services.mail.tasks import send_email_payloads_task
@@ -52,10 +53,15 @@ class AsyncAccountAdapter(DefaultAccountAdapter):
         with transaction.atomic():
             saved_user = super().save_user(request, user, form, commit)
             if commit:
-                update_profile_from_signup_data(
+                profile = update_profile_from_signup_data(
                     saved_user,
                     get_request_payload(request),
                 )
+                # Pole formularza wygrywa z nagłówkiem żądania (ADR 0035).
+                profile.preferred_language = form.cleaned_data.get(
+                    "preferred_language"
+                ) or language_from_request(request)
+                profile.save(update_fields=["preferred_language", "updated_at"])
                 record_signup_consents(saved_user, form.cleaned_data)
             return saved_user
 

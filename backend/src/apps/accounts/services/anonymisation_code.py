@@ -13,6 +13,7 @@ from django.db import transaction
 from django.utils.crypto import constant_time_compare, salted_hmac
 
 from apps.accounts.models import CustomUser
+from common.languages import email_language
 from core.integrations.notifications.mail import send_notification_email
 
 CODE_TIMEOUT = 15 * 60
@@ -29,6 +30,23 @@ def _digest(code: str) -> str:
     return salted_hmac(_SALT, code).hexdigest()
 
 
+# Temat i treść maila z kodem; klucz to język konta (ADR 0035).
+_CODE_MESSAGES: dict[str, tuple[str, str]] = {
+    "pl": (
+        "Kod potwierdzenia usunięcia konta",
+        "Twój kod potwierdzenia usunięcia konta: {code}\n\n"
+        "Kod jest ważny 15 minut. Jeśli to nie Ty, zignoruj tę "
+        "wiadomość i zmień zabezpieczenia konta.",
+    ),
+    "en": (
+        "Account deletion confirmation code",
+        "Your account deletion confirmation code: {code}\n\n"
+        "The code is valid for 15 minutes. If this wasn't you, ignore this "
+        "message and review your account security.",
+    ),
+}
+
+
 def send_code(user: CustomUser) -> None:
     """Wysyła 6-cyfrowy kod na adres konta — najwyżej raz na `RESEND_COOLDOWN`."""
     if not cache.add(_key(user, "cooldown"), True, timeout=RESEND_COOLDOWN):
@@ -37,15 +55,10 @@ def send_code(user: CustomUser) -> None:
     cache.set(_key(user, "code"), _digest(code), timeout=CODE_TIMEOUT)
     cache.set(_key(user, "attempts"), 0, timeout=CODE_TIMEOUT)
     to = user.email
+    subject, body = _CODE_MESSAGES[email_language(user)]
     transaction.on_commit(
         lambda: send_notification_email(
-            to=to,
-            subject="Kod potwierdzenia usunięcia konta",
-            body=(
-                f"Twój kod potwierdzenia usunięcia konta: {code}\n\n"
-                "Kod jest ważny 15 minut. Jeśli to nie Ty, zignoruj tę "
-                "wiadomość i zmień zabezpieczenia konta."
-            ),
+            to=to, subject=subject, body=body.format(code=code)
         ),
         robust=True,
     )

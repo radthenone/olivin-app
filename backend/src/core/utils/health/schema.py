@@ -19,6 +19,6 @@ health_schema = extend_schema(
         )
     },
     summary="Health check",
-    description="Sprawdza stan wszystkich serwisów (DB, Redis, MinIO).",
+    description="Sprawdza stan wszystkich serwisów (DB, Redis, S3).",
     tags=["Health"],
 )

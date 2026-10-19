@@ -6,6 +6,7 @@ from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from apps.notifications import newsletter
@@ -13,6 +14,7 @@ from apps.notifications import newsletter
 from apps.notifications.models import Notification, NotificationPreference
 from apps.notifications.schema import (
     newsletter_confirm_schema,
+    newsletter_one_click_unsubscribe_schema,
     newsletter_subscribe_schema,
     newsletter_unsubscribe_schema,
     notification_preference_schema,
@@ -28,6 +30,7 @@ from apps.notifications.serializers import (
     PushDeviceWriteSerializer,
 )
 from apps.notifications.services import register_push_device, unregister_push_device
+from common.languages import language_from_request
 
 
 @notification_schema
@@ -132,7 +135,10 @@ class NewsletterSubscribeView(_PublicNewsletterView):
         payload = NewsletterSubscribeSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
         try:
-            newsletter.subscribe(payload.validated_data["email"])
+            newsletter.subscribe(
+                payload.validated_data["email"],
+                language=language_from_request(request),
+            )
         except newsletter.NoMarketingDocumentError as exc:
             raise ValidationError(
                 {"email": "Zapis chwilowo niedostępny — brak zgody marketingowej."}
@@ -163,5 +169,27 @@ class NewsletterUnsubscribeView(_PublicNewsletterView):
         payload = NewsletterTokenSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
         if not newsletter.unsubscribe(payload.validated_data["token"]):
+            raise NotFound("Link wypisu jest nieważny.")
+        return Response({"detail": "Wypisano z newslettera."})
+
+
+class NewsletterOneClickUnsubscribeView(_PublicNewsletterView):
+    """`POST /notifications/newsletter/unsubscribe/one-click/<token>/` — RFC 8058.
+
+    Adres z nagłówka `List-Unsubscribe`. Skrzynka wysyła POST z treścią
+    `List-Unsubscribe=One-Click` i tokenem w ścieżce; treści nie czytamy —
+    sam POST na adres z tokenem to zgoda na wypis. Powtórka też daje 200.
+
+    Własny zakres limitu zamiast `auth` i bez limitu `anon`: po kampanii
+    serwery skrzynek wysyłają serię POST-ów z kilku IP — 429 zgubiłby wypisy.
+    Token z 122 bitami losowości (albo podpisem) nie do zgadnięcia seriami.
+    """
+
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "unsubscribe"
+
+    @newsletter_one_click_unsubscribe_schema
+    def post(self, request: Request, token: str) -> Response:
+        if not newsletter.unsubscribe(token):
             raise NotFound("Link wypisu jest nieważny.")
         return Response({"detail": "Wypisano z newslettera."})

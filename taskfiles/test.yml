@@ -26,7 +26,7 @@ tasks:
             - uv run pytest src/ -m "unit" {{.CLI_ARGS}}
 
     backend-integration:
-        desc: Testy integracyjne uruchamiane w odizolowanym kontenerze Dockerowym z prawdziwymi usługami (Postgres, Redis, MinIO)
+        desc: Testy integracyjne uruchamiane w odizolowanym kontenerze Dockerowym z prawdziwymi usługami (Postgres, Redis, S3)
         cmds:
             - docker-compose -f docker-compose.yml -f docker-compose.test.yml --profile test run --rm olivin-django-test pytest -m "integration" {{.CLI_ARGS}}
 

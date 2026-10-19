@@ -10,11 +10,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from apps.shipping.models import ShippingZone
-from tests.factories.shipping import (
-    ParcelLockerMethodFactory,
-    PickupMethodFactory,
-    ShippingMethodFactory,
-)
+from tests.factories.shipping import ShippingMethodFactory
 
 
 def _url() -> str:
@@ -44,9 +40,9 @@ class TestMethodList:
             }
         ]
 
-    def test_value_limit_filters_out_parcel_locker(self, api_client: APIClient):
-        """Limit wartości odsiewa paczkomat."""
-        ParcelLockerMethodFactory(name="Paczkomat", max_order_value=500000)
+    def test_value_limit_filters_out_limited_method(self, api_client: APIClient):
+        """Limit wartości odsiewa metodę z limitem."""
+        ShippingMethodFactory(name="Kurier standard", max_order_value=500000)
         ShippingMethodFactory(name="Kurier")
 
         response: Any = api_client.get(_url(), {"order_value": 600000})
@@ -64,13 +60,13 @@ class TestMethodList:
         assert row["cost"] == {"amount": 0, "currency": "PLN"}
         assert row["isFree"] is True
 
-    def test_pickup_is_listed_for_any_value(self, api_client: APIClient):
-        """Odbiór osobisty wychodzi przy każdej wartości."""
-        PickupMethodFactory(name="Odbiór w pracowni")
+    def test_method_without_limit_is_listed_for_any_value(self, api_client: APIClient):
+        """Metoda bez limitu wychodzi przy każdej wartości."""
+        ShippingMethodFactory(name="Kurier z deklaracją", max_order_value=None)
 
         response: Any = api_client.get(_url(), {"order_value": 99_000_000})
 
-        assert [row["name"] for row in response.json()] == ["Odbiór w pracowni"]
+        assert [row["name"] for row in response.json()] == ["Kurier z deklaracją"]
 
     def test_zone_from_parameter(self, api_client: APIClient):
         """Strefa pochodzi z parametru."""
@@ -90,10 +86,10 @@ class TestMethodList:
 
         assert [row["name"] for row in response.json()] == ["Kurier PL"]
 
-    def test_pickup_is_free_below_threshold(self, api_client: APIClient, settings):
-        """Odbiór osobisty jest darmowy poniżej progu."""
+    def test_zero_rate_is_free_below_threshold(self, api_client: APIClient, settings):
+        """Metoda ze stawką zero jest darmowa poniżej progu."""
         settings.FREE_SHIPPING_THRESHOLD = 50000
-        PickupMethodFactory(name="Odbiór w pracowni")
+        ShippingMethodFactory(name="Kurier gratis", rate=0)
 
         response: Any = api_client.get(_url(), {"order_value": 1000})
 
@@ -127,7 +123,7 @@ class TestParameterNamesFromClient:
 
     def test_camel_case_from_generated_client_works(self, api_client: APIClient):
         """camelCase z wygenerowanego klienta działa."""
-        ParcelLockerMethodFactory(name="Paczkomat", max_order_value=500000)
+        ShippingMethodFactory(name="Kurier standard", max_order_value=500000)
         ShippingMethodFactory(name="Kurier")
 
         response: Any = api_client.get(_url(), {"orderValue": 600000})

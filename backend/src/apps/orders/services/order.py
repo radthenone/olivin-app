@@ -80,8 +80,11 @@ def create_order(
     user: Customer = None,
     email: str = "",
     invoice_requested: bool = False,
+    language: str | None = None,
 ) -> Order:
     """Składa zamówienie z koszyka w jednej transakcji (ADR 0030).
+
+    `language` to język z `Accept-Language` — maile gościa idą w nim (ADR 0035).
 
     Kolejność ma znaczenie: najpierw sprawdzenia, które mogą odmówić, potem
     snapshot, rezerwacje i dopiero na końcu czyszczenie koszyka. Gdyby
@@ -146,6 +149,7 @@ def create_order(
         discount=discount,
         coupon=summary.coupon_amount,
         rate=rate,
+        language=language,
     )
     _snapshot_items(order, items, discounts, lines)
     _record_redemptions(order, discounts)
@@ -471,6 +475,7 @@ def _build_order(
     discount: Money,
     coupon: Money,
     rate: ExchangeRate | None,
+    language: str | None,
 ) -> Order:
     terms = ConsentDocument.objects.current(ConsentKind.TERMS)
     if terms is None:
@@ -497,6 +502,7 @@ def _build_order(
         invoice_requested=invoice_requested,
         discount_amount=discount.amount,
         coupon_amount=coupon.amount,
+        preferred_language=language,
     )
 
 

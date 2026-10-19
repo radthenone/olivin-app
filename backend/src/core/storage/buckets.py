@@ -4,7 +4,7 @@ Podział idzie po tym, kto ma prawo czytać, a nie po tym, co leży w środku.
 Jeden bucket z prefiksami odrzucono świadomie: pomyłka w jednej regule
 wystawiłaby dokumenty klientów do internetu.
 
-Nazwy są jednym źródłem prawdy dla bootstrapu MinIO, klas magazynu i testów
+Nazwy są jednym źródłem prawdy dla bootstrapu S3, klas magazynu i testów
 polityk — rozjazd między nimi kończy się plikiem zapisanym tam, gdzie nikt
 go nie szuka.
 """

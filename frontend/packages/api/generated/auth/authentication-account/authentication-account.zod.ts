@@ -311,7 +311,8 @@ export const PostAllauthClientV1AuthSignupBody = zod.object({
   "email": zod.string().describe('The email address.\n'),
   "consent_terms": zod.boolean().describe('Zgoda na bieżącą wersję regulaminu (wymagana)'),
   "consent_privacy": zod.boolean().describe('Zgoda na bieżącą wersję polityki prywatności (wymagana)'),
-  "consent_marketing": zod.boolean().optional().describe('Zgoda na komunikację marketingową e-mailem (opcjonalna)')
+  "consent_marketing": zod.boolean().optional().describe('Zgoda na komunikację marketingową e-mailem (opcjonalna)'),
+  "preferred_language": zod.enum(['pl', 'en']).optional().describe('Język maili: pl albo en (opcjonalny, domyślnie z Accept-Language)')
 }).and(zod.object({
   "password": zod.string().describe('The password.\n')
 }))

@@ -15,6 +15,7 @@ from django.http import HttpRequest
 
 from apps.consents.models import Consent, ConsentDocument, ConsentKind
 from apps.notifications.models import NotificationPreference
+from common.languages import PreferredLanguage
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,12 @@ class SignupConsentsForm(forms.Form):
         required=False,
         initial=False,
         help_text="Zgoda na komunikację marketingową e-mailem (opcjonalna)",
+    )
+    # Język maili (ADR 0035); bez pola decyduje `Accept-Language` (adapter konta).
+    preferred_language = forms.ChoiceField(
+        choices=PreferredLanguage.choices,
+        required=False,
+        help_text="Język maili: pl albo en (opcjonalny, domyślnie z Accept-Language)",
     )
 
     def clean(self) -> dict:

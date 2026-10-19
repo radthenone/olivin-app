@@ -3,7 +3,7 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-echo "🪣 Setting up MinIO buckets..."
+echo "🪣 Setting up S3 buckets..."
 
 python << END
 import sys
