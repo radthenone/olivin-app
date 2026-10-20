@@ -23,16 +23,27 @@ const webRedirectUri =
     ? window.location.origin
     : undefined;
 
+type SocialProvider = "google" | "facebook";
+
 /**
  * Obsługuje logowanie social przez Expo AuthSession i allauth provider_token.
  */
 export function useSocialLogin() {
   const queryClient = useQueryClient();
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [startErrorMessage, setStartErrorMessage] = useState<string | null>(
+    null,
+  );
+  const [activeProvider, setActiveProvider] = useState<SocialProvider | null>(
+    null,
+  );
   const handledGoogleResponse = useRef<string | null>(null);
   const handledFacebookResponse = useRef<string | null>(null);
 
-  const loginWithProviderToken = useMutation({
+  const {
+    mutate: loginWithProviderToken,
+    isPending,
+    isError: isLoginError,
+  } = useMutation({
     mutationFn: authService.loginWithProviderToken,
     onSuccess: async (state) => {
       // Nowe konto z Google/Facebook: 401 z flow `provider_signup` — stan od
@@ -41,9 +52,6 @@ export function useSocialLogin() {
         queryClient.setQueryData(authQueryKeys.session(), state);
       }
       await queryClient.invalidateQueries({ queryKey: authQueryKeys.all });
-    },
-    onError: () => {
-      setErrorMessage("Nie udało się zalogować przez zewnętrznego providera.");
     },
   });
 
@@ -83,27 +91,31 @@ export function useSocialLogin() {
     });
   }, [googleRequest]);
 
+  const googleIdToken =
+    googleResponse?.type === "success"
+      ? (googleResponse.params.id_token ??
+        googleResponse.authentication?.idToken)
+      : undefined;
+  const facebookAccessToken =
+    facebookResponse?.type === "success"
+      ? (facebookResponse.params.access_token ??
+        facebookResponse.authentication?.accessToken)
+      : undefined;
+
   useEffect(() => {
     if (googleResponse?.type !== "success") return;
     if (handledGoogleResponse.current === googleResponse.url) return;
 
     handledGoogleResponse.current = googleResponse.url;
 
-    const idToken =
-      googleResponse.params.id_token ?? googleResponse.authentication?.idToken;
+    if (!googleIdToken) return;
 
-    if (!idToken) {
-      setErrorMessage("Google nie zwrócił tokena tożsamości.");
-      return;
-    }
-
-    setErrorMessage(null);
-    loginWithProviderToken.mutate({
+    loginWithProviderToken({
       provider: "google",
       clientId: googleClientId,
-      idToken,
+      idToken: googleIdToken,
     });
-  }, [googleResponse, loginWithProviderToken]);
+  }, [googleIdToken, googleResponse, loginWithProviderToken]);
 
   useEffect(() => {
     if (facebookResponse?.type !== "success") return;
@@ -111,49 +123,61 @@ export function useSocialLogin() {
 
     handledFacebookResponse.current = facebookResponse.url;
 
-    const accessToken =
-      facebookResponse.params.access_token ??
-      facebookResponse.authentication?.accessToken;
+    if (!facebookAccessToken) return;
 
-    if (!accessToken) {
-      setErrorMessage("Facebook nie zwrócił tokena dostępu.");
-      return;
-    }
-
-    setErrorMessage(null);
-    loginWithProviderToken.mutate({
+    loginWithProviderToken({
       provider: "facebook",
       clientId: ENV.FACEBOOK_CLIENT_ID,
-      accessToken,
+      accessToken: facebookAccessToken,
     });
-  }, [facebookResponse, loginWithProviderToken]);
+  }, [facebookAccessToken, facebookResponse, loginWithProviderToken]);
 
   const startGoogleLogin = useCallback(() => {
     if (!googleRequest || !googleClientId) {
-      setErrorMessage("Brakuje konfiguracji Google OAuth.");
+      setStartErrorMessage("Brakuje konfiguracji Google OAuth.");
       return;
     }
 
-    setErrorMessage(null);
+    setStartErrorMessage(null);
+    setActiveProvider("google");
     void promptGoogle();
   }, [googleRequest, promptGoogle]);
 
   const startFacebookLogin = useCallback(() => {
     if (!facebookRequest || !ENV.FACEBOOK_CLIENT_ID) {
-      setErrorMessage("Brakuje konfiguracji Facebook OAuth.");
+      setStartErrorMessage("Brakuje konfiguracji Facebook OAuth.");
       return;
     }
 
-    setErrorMessage(null);
+    setStartErrorMessage(null);
+    setActiveProvider("facebook");
     void promptFacebook();
   }, [facebookRequest, promptFacebook]);
+
+  const providerTokenErrorMessage =
+    activeProvider === "google" &&
+    googleResponse?.type === "success" &&
+    !googleIdToken
+      ? "Google nie zwrócił tokena tożsamości."
+      : activeProvider === "facebook" &&
+          facebookResponse?.type === "success" &&
+          !facebookAccessToken
+        ? "Facebook nie zwrócił tokena dostępu."
+        : null;
+
+  const errorMessage =
+    startErrorMessage ??
+    providerTokenErrorMessage ??
+    (isLoginError
+      ? "Nie udało się zalogować przez zewnętrznego providera."
+      : null);
 
   return {
     startGoogleLogin,
     startFacebookLogin,
     isGoogleReady: !!googleRequest && !!googleClientId,
     isFacebookReady: !!facebookRequest && !!ENV.FACEBOOK_CLIENT_ID,
-    isPending: loginWithProviderToken.isPending,
+    isPending,
     errorMessage,
   };
 }
