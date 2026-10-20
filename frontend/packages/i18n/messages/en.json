@@ -1,0 +1,18 @@
+{
+  "home": {
+    "title": "Olivin",
+    "description": "A jewellery store. The catalogue, cart and checkout will arrive in later steps."
+  },
+  "health": {
+    "heading": "Backend status",
+    "checking": "Checking…",
+    "error": "The backend is not responding. Start it and refresh the page.",
+    "responding": "Backend is responding: {status}",
+    "missingStatus": "no status",
+    "services": {
+      "database": "Database",
+      "redis": "Redis",
+      "storage": "Storage"
+    }
+  }
+}

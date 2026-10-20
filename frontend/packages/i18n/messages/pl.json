@@ -1,0 +1,18 @@
+{
+  "home": {
+    "title": "Olivin",
+    "description": "Sklep jubilerski. Katalog, koszyk i kasa powstaną w kolejnych krokach."
+  },
+  "health": {
+    "heading": "Stan backendu",
+    "checking": "Sprawdzanie…",
+    "error": "Backend nie odpowiada. Uruchom go i odśwież stronę.",
+    "responding": "Backend odpowiada: {status}",
+    "missingStatus": "brak statusu",
+    "services": {
+      "database": "Baza danych",
+      "redis": "Redis",
+      "storage": "Pamięć plików"
+    }
+  }
+}

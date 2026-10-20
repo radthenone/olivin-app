@@ -1,6 +1,8 @@
 import type { HttpResponse } from "@olivin/api";
 import { ApiError } from "@olivin/api";
 
+import { getApiLocale } from "./request-locale";
+
 /**
  * Klient HTTP aplikacji webowej.
  *
@@ -46,6 +48,7 @@ export async function webRequest<TData>(
   { acceptAllStatuses = false }: { acceptAllStatuses?: boolean } = {},
 ): Promise<HttpResponse<TData>> {
   const target = resolve(url);
+  const locale = getApiLocale();
 
   let response: Response;
 
@@ -55,6 +58,7 @@ export async function webRequest<TData>(
       credentials: "include",
       headers: {
         accept: "application/json",
+        ...(locale ? { "accept-language": locale } : {}),
         "content-type": "application/json",
         ...options.headers,
       },
