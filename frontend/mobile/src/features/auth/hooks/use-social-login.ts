@@ -36,6 +36,11 @@ export function useSocialLogin() {
   const [activeProvider, setActiveProvider] = useState<SocialProvider | null>(
     null,
   );
+  // Odpowiedź OAuth widoczna w chwili startu nowej próby — expo-auth-session
+  // nie czyści `response` przy promptAsync, więc jej błąd ukrywamy.
+  const [dismissedResponseUrl, setDismissedResponseUrl] = useState<
+    string | null
+  >(null);
   const handledGoogleResponse = useRef<string | null>(null);
   const handledFacebookResponse = useRef<string | null>(null);
 
@@ -43,6 +48,7 @@ export function useSocialLogin() {
     mutate: loginWithProviderToken,
     isPending,
     isError: isLoginError,
+    reset: resetLogin,
   } = useMutation({
     mutationFn: authService.loginWithProviderToken,
     onSuccess: async (state) => {
@@ -139,9 +145,13 @@ export function useSocialLogin() {
     }
 
     setStartErrorMessage(null);
+    resetLogin();
+    setDismissedResponseUrl(
+      googleResponse?.type === "success" ? googleResponse.url : null,
+    );
     setActiveProvider("google");
     void promptGoogle();
-  }, [googleRequest, promptGoogle]);
+  }, [googleRequest, googleResponse, promptGoogle, resetLogin]);
 
   const startFacebookLogin = useCallback(() => {
     if (!facebookRequest || !ENV.FACEBOOK_CLIENT_ID) {
@@ -150,17 +160,23 @@ export function useSocialLogin() {
     }
 
     setStartErrorMessage(null);
+    resetLogin();
+    setDismissedResponseUrl(
+      facebookResponse?.type === "success" ? facebookResponse.url : null,
+    );
     setActiveProvider("facebook");
     void promptFacebook();
-  }, [facebookRequest, promptFacebook]);
+  }, [facebookRequest, facebookResponse, promptFacebook, resetLogin]);
 
   const providerTokenErrorMessage =
     activeProvider === "google" &&
     googleResponse?.type === "success" &&
+    googleResponse.url !== dismissedResponseUrl &&
     !googleIdToken
       ? "Google nie zwrócił tokena tożsamości."
       : activeProvider === "facebook" &&
           facebookResponse?.type === "success" &&
+          facebookResponse.url !== dismissedResponseUrl &&
           !facebookAccessToken
         ? "Facebook nie zwrócił tokena dostępu."
         : null;
