@@ -1,35 +1,40 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { ErrorMessage } from "@ui/feedback/ErrorMessage";
 import { Screen } from "@ui/layout/Screen";
 import { Button } from "@ui/primitives/Button";
 import { TextField } from "@ui/primitives/TextField";
-import { profileRequiredSchema } from "../forms/profile-required.schema";
+import {
+  profileRequiredSchema,
+  type ProfileRequiredFormValues,
+} from "../forms/profile-required.schema";
 import { useCurrentProfile } from "../hooks/use-current-profile";
 import { useSaveRequiredProfile } from "../hooks/use-save-required-profile";
 
-/**
- * Ekran uzupełnienia danych profilu wymaganych przez aplikację.
- */
-export function ProfileCompletionScreen() {
-  const router = useRouter();
-  const profile = useCurrentProfile();
-  const saveProfile = useSaveRequiredProfile();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
+type ProfileCompletionValues = {
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  phoneNumber: string;
+};
+
+function ProfileCompletionForm({
+  initial,
+  isSaving,
+  isSaveError,
+  onSubmit,
+}: {
+  initial: ProfileCompletionValues;
+  isSaving: boolean;
+  isSaveError: boolean;
+  onSubmit: (values: ProfileRequiredFormValues) => void;
+}) {
+  const [firstName, setFirstName] = useState(initial.firstName);
+  const [lastName, setLastName] = useState(initial.lastName);
+  const [dateOfBirth, setDateOfBirth] = useState(initial.dateOfBirth);
+  const [phoneNumber, setPhoneNumber] = useState(initial.phoneNumber);
   const [formError, setFormError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!profile.data) return;
-
-    setFirstName(profile.data.firstName ?? "");
-    setLastName(profile.data.lastName ?? "");
-    setDateOfBirth(profile.data.dateOfBirth ?? "");
-    setPhoneNumber(profile.data.phoneNumber ?? "");
-  }, [profile.data]);
 
   function handleSubmit() {
     const parsed = profileRequiredSchema.safeParse({
@@ -45,9 +50,7 @@ export function ProfileCompletionScreen() {
     }
 
     setFormError(null);
-    saveProfile.mutate(parsed.data, {
-      onSuccess: () => router.replace("/home"),
-    });
+    onSubmit(parsed.data);
   }
 
   return (
@@ -64,7 +67,7 @@ export function ProfileCompletionScreen() {
 
         <View className="gap-4">
           <TextField
-            editable={!saveProfile.isPending}
+            editable={!isSaving}
             label="Imię"
             onChangeText={(value) => {
               setFirstName(value);
@@ -74,7 +77,7 @@ export function ProfileCompletionScreen() {
             value={firstName}
           />
           <TextField
-            editable={!saveProfile.isPending}
+            editable={!isSaving}
             label="Nazwisko"
             onChangeText={(value) => {
               setLastName(value);
@@ -84,7 +87,7 @@ export function ProfileCompletionScreen() {
             value={lastName}
           />
           <TextField
-            editable={!saveProfile.isPending}
+            editable={!isSaving}
             label="Data urodzenia"
             onChangeText={(value) => {
               setDateOfBirth(value);
@@ -95,7 +98,7 @@ export function ProfileCompletionScreen() {
             value={dateOfBirth}
           />
           <TextField
-            editable={!saveProfile.isPending}
+            editable={!isSaving}
             keyboardType="phone-pad"
             label="Telefon"
             onChangeText={(value) => {
@@ -111,19 +114,50 @@ export function ProfileCompletionScreen() {
           <ErrorMessage
             message={
               formError ??
-              (saveProfile.isError
-                ? "Nie udało się zapisać danych profilu."
-                : null)
+              (isSaveError ? "Nie udało się zapisać danych profilu." : null)
             }
           />
 
-          <Button disabled={saveProfile.isPending} onPress={handleSubmit}>
-            {saveProfile.isPending
-              ? "Zapisywanie..."
-              : "Zapisz i przejdź dalej"}
+          <Button disabled={isSaving} onPress={handleSubmit}>
+            {isSaving ? "Zapisywanie..." : "Zapisz i przejdź dalej"}
           </Button>
         </View>
       </View>
     </Screen>
+  );
+}
+
+/**
+ * Ekran uzupełnienia danych profilu wymaganych przez aplikację.
+ *
+ * Formularz jest montowany od nowa (`key`) po zmianie danych z zapytania,
+ * żeby wartości początkowe pochodziły z inicjalizatora `useState`, a nie
+ * z efektu kopiującego server state do stanu lokalnego.
+ */
+export function ProfileCompletionScreen() {
+  const router = useRouter();
+  const profile = useCurrentProfile();
+  const saveProfile = useSaveRequiredProfile();
+  const initial: ProfileCompletionValues = {
+    firstName: profile.data?.firstName ?? "",
+    lastName: profile.data?.lastName ?? "",
+    dateOfBirth: profile.data?.dateOfBirth ?? "",
+    phoneNumber: profile.data?.phoneNumber ?? "",
+  };
+
+  return (
+    <ProfileCompletionForm
+      initial={initial}
+      isSaveError={saveProfile.isError}
+      isSaving={saveProfile.isPending}
+      key={JSON.stringify(initial)}
+      onSubmit={(values) =>
+        // Mutacja i przekierowanie w rodzicu: formularz remountuje się po
+        // invalidateQueries, a callback `onSuccess` z `mutate` przepadłby.
+        saveProfile.mutate(values, {
+          onSuccess: () => router.replace("/home"),
+        })
+      }
+    />
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { z } from "zod";
@@ -23,6 +23,9 @@ import { useTotpAuthenticator } from "../hooks/use-totp-authenticator";
 const emailChangeSchema = z.object({
   email: z.email("Podaj poprawny adres email."),
 });
+
+type ProfileEditValues = z.infer<typeof profileEditSchema>;
+type EmailChangeValues = z.infer<typeof emailChangeSchema>;
 
 function getApiErrorMessage(error: unknown): string | null {
   if (!(error instanceof ApiError)) {
@@ -53,12 +56,175 @@ function FieldRow({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
+function ProfileEditForm({
+  initial,
+  isSaving,
+  isSaveError,
+  success,
+  onSubmit,
+  onEdit,
+}: {
+  initial: ProfileEditValues;
+  isSaving: boolean;
+  isSaveError: boolean;
+  success: boolean;
+  onSubmit: (values: ProfileEditValues) => void;
+  onEdit: () => void;
+}) {
+  const [firstName, setFirstName] = useState(initial.firstName);
+  const [lastName, setLastName] = useState(initial.lastName);
+  const [phoneNumber, setPhoneNumber] = useState(initial.phoneNumber);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  function handleSubmit() {
+    const parsed = profileEditSchema.safeParse({
+      firstName,
+      lastName,
+      phoneNumber,
+    });
+
+    if (!parsed.success) {
+      setFormError(parsed.error.issues[0]?.message ?? "Sprawdź dane profilu.");
+      return;
+    }
+
+    setFormError(null);
+    onSubmit(parsed.data);
+  }
+
+  return (
+    <View className="gap-3">
+      <Text className="text-lg font-semibold text-neutral-950">
+        Edycja profilu
+      </Text>
+      <TextField
+        editable={!isSaving}
+        label="Imię"
+        onChangeText={(value) => {
+          setFirstName(value);
+          setFormError(null);
+          onEdit();
+        }}
+        value={firstName}
+      />
+      <TextField
+        editable={!isSaving}
+        label="Nazwisko"
+        onChangeText={(value) => {
+          setLastName(value);
+          setFormError(null);
+          onEdit();
+        }}
+        value={lastName}
+      />
+      <TextField
+        editable={!isSaving}
+        keyboardType="phone-pad"
+        label="Telefon"
+        onChangeText={(value) => {
+          setPhoneNumber(value);
+          setFormError(null);
+          onEdit();
+        }}
+        onSubmitEditing={handleSubmit}
+        placeholder="+48 123 456 789"
+        returnKeyType="done"
+        value={phoneNumber}
+      />
+      <ErrorMessage
+        message={
+          formError ?? (isSaveError ? "Nie udało się zapisać profilu." : null)
+        }
+      />
+      {success ? (
+        <Text className="text-sm text-green-700">Profil został zapisany.</Text>
+      ) : null}
+      <Button disabled={isSaving} onPress={handleSubmit}>
+        {isSaving ? "Zapisywanie..." : "Zapisz profil"}
+      </Button>
+    </View>
+  );
+}
+
+function EmailChangeForm({
+  initialEmail,
+  isSaving,
+  isSaveError,
+  success,
+  onSubmit,
+  onEdit,
+}: {
+  initialEmail: string;
+  isSaving: boolean;
+  isSaveError: boolean;
+  success: boolean;
+  onSubmit: (values: EmailChangeValues) => void;
+  onEdit: () => void;
+}) {
+  const [email, setEmail] = useState(initialEmail);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  function handleSubmit() {
+    const parsed = emailChangeSchema.safeParse({ email });
+
+    if (!parsed.success) {
+      setFormError(parsed.error.issues[0]?.message ?? "Sprawdź email.");
+      return;
+    }
+
+    setFormError(null);
+    onSubmit(parsed.data);
+  }
+
+  return (
+    <View className="gap-3">
+      <Text className="text-lg font-semibold text-neutral-950">
+        Zmiana emaila
+      </Text>
+      <TextField
+        autoCapitalize="none"
+        autoComplete="email"
+        editable={!isSaving}
+        keyboardType="email-address"
+        label="Nowy email"
+        onChangeText={(value) => {
+          setEmail(value);
+          setFormError(null);
+          onEdit();
+        }}
+        onSubmitEditing={handleSubmit}
+        placeholder="email@example.com"
+        returnKeyType="done"
+        value={email}
+      />
+      <ErrorMessage
+        message={
+          formError ??
+          (isSaveError ? "Nie udało się rozpocząć zmiany emaila." : null)
+        }
+      />
+      {success ? (
+        <Text className="text-sm text-green-700">
+          Wysłano wiadomość potwierdzającą zmianę emaila.
+        </Text>
+      ) : null}
+      <Button disabled={isSaving} onPress={handleSubmit}>
+        {isSaving ? "Wysyłanie..." : "Zmień email"}
+      </Button>
+    </View>
+  );
+}
+
 /**
  * Ekran ustawień konta użytkownika.
  *
  * Dlaczego istnieje:
  * zbiera dane sesji, profil oraz ustawienia bezpieczeństwa w jednym miejscu,
  * bez przenoszenia server state do lokalnego store.
+ *
+ * Formularze profilu i emaila są montowane od nowa (`key`) po zmianie danych
+ * z zapytania, więc wartości początkowe pochodzą z inicjalizatorów `useState`,
+ * a nie z efektów kopiujących server state do stanu lokalnego.
  */
 export function AccountSettingsScreen() {
   const router = useRouter();
@@ -71,20 +237,10 @@ export function AccountSettingsScreen() {
   const saveProfile = useSaveProfile();
   const requestEmailChange = useRequestEmailChange();
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [profileFormError, setProfileFormError] = useState<string | null>(null);
   const [profileSuccess, setProfileSuccess] = useState(false);
-  const [email, setEmail] = useState("");
-  const [emailFormError, setEmailFormError] = useState<string | null>(null);
   const [emailSuccess, setEmailSuccess] = useState(false);
   const [mfaCode, setMfaCode] = useState("");
   const [mfaFormError, setMfaFormError] = useState<string | null>(null);
-  const [totpSetupSnapshot, setTotpSetupSnapshot] = useState<{
-    secret?: string;
-    totp_url?: string;
-  } | null>(null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [passwordFormError, setPasswordFormError] = useState<string | null>(
@@ -95,68 +251,22 @@ export function AccountSettingsScreen() {
   const displayName =
     profile.data?.fullName || auth.user?.display || auth.user?.email;
 
-  useEffect(() => {
-    if (!profile.data) return;
+  const profileInitial: ProfileEditValues = {
+    firstName: profile.data?.firstName ?? "",
+    lastName: profile.data?.lastName ?? "",
+    phoneNumber: profile.data?.phoneNumber ?? "",
+  };
 
-    setFirstName(profile.data.firstName ?? "");
-    setLastName(profile.data.lastName ?? "");
-    setPhoneNumber(profile.data.phoneNumber ?? "");
-  }, [profile.data]);
-
-  useEffect(() => {
-    setEmail(auth.user?.email ?? "");
-  }, [auth.user?.email]);
-
-  useEffect(() => {
-    if (totp.data?.status === "active") {
-      setTotpSetupSnapshot(null);
-      return;
-    }
-
-    if (
-      totp.data?.status === "inactive" &&
-      totp.data.setup &&
-      !totpSetupSnapshot
-    ) {
-      setTotpSetupSnapshot({
-        secret: totp.data.setup.secret,
-        totp_url: totp.data.setup.totp_url,
-      });
-    }
-  }, [totp.data, totpSetupSnapshot]);
-
-  function handleSaveProfile() {
-    const parsed = profileEditSchema.safeParse({
-      firstName,
-      lastName,
-      phoneNumber,
-    });
-
-    if (!parsed.success) {
-      setProfileFormError(
-        parsed.error.issues[0]?.message ?? "Sprawdź dane profilu.",
-      );
-      return;
-    }
-
-    setProfileFormError(null);
+  function handleSaveProfile(values: ProfileEditValues) {
     setProfileSuccess(false);
-    saveProfile.mutate(parsed.data, {
+    saveProfile.mutate(values, {
       onSuccess: () => setProfileSuccess(true),
     });
   }
 
-  function handleRequestEmailChange() {
-    const parsed = emailChangeSchema.safeParse({ email });
-
-    if (!parsed.success) {
-      setEmailFormError(parsed.error.issues[0]?.message ?? "Sprawdź email.");
-      return;
-    }
-
-    setEmailFormError(null);
+  function handleRequestEmailChange(values: EmailChangeValues) {
     setEmailSuccess(false);
-    requestEmailChange.mutate(parsed.data, {
+    requestEmailChange.mutate(values, {
       onSuccess: () => setEmailSuccess(true),
     });
   }
@@ -173,7 +283,6 @@ export function AccountSettingsScreen() {
     activateTotp.mutate(parsed.data, {
       onSuccess: () => {
         setMfaCode("");
-        setTotpSetupSnapshot(null);
       },
     });
   }
@@ -203,9 +312,7 @@ export function AccountSettingsScreen() {
   }
 
   const inactiveTotpSetup =
-    totp.data?.status === "inactive"
-      ? (totpSetupSnapshot ?? totp.data.setup)
-      : null;
+    totp.data?.status === "inactive" ? totp.data.setup : null;
 
   return (
     <Screen>
@@ -255,100 +362,25 @@ export function AccountSettingsScreen() {
           ) : null}
         </View>
 
-        <View className="gap-3">
-          <Text className="text-lg font-semibold text-neutral-950">
-            Edycja profilu
-          </Text>
-          <TextField
-            editable={!saveProfile.isPending}
-            label="Imię"
-            onChangeText={(value) => {
-              setFirstName(value);
-              setProfileFormError(null);
-              setProfileSuccess(false);
-            }}
-            value={firstName}
-          />
-          <TextField
-            editable={!saveProfile.isPending}
-            label="Nazwisko"
-            onChangeText={(value) => {
-              setLastName(value);
-              setProfileFormError(null);
-              setProfileSuccess(false);
-            }}
-            value={lastName}
-          />
-          <TextField
-            editable={!saveProfile.isPending}
-            keyboardType="phone-pad"
-            label="Telefon"
-            onChangeText={(value) => {
-              setPhoneNumber(value);
-              setProfileFormError(null);
-              setProfileSuccess(false);
-            }}
-            onSubmitEditing={handleSaveProfile}
-            placeholder="+48 123 456 789"
-            returnKeyType="done"
-            value={phoneNumber}
-          />
-          <ErrorMessage
-            message={
-              profileFormError ??
-              (saveProfile.isError ? "Nie udało się zapisać profilu." : null)
-            }
-          />
-          {profileSuccess ? (
-            <Text className="text-sm text-green-700">
-              Profil został zapisany.
-            </Text>
-          ) : null}
-          <Button disabled={saveProfile.isPending} onPress={handleSaveProfile}>
-            {saveProfile.isPending ? "Zapisywanie..." : "Zapisz profil"}
-          </Button>
-        </View>
+        <ProfileEditForm
+          initial={profileInitial}
+          isSaveError={saveProfile.isError}
+          isSaving={saveProfile.isPending}
+          key={JSON.stringify(profileInitial)}
+          onEdit={() => setProfileSuccess(false)}
+          onSubmit={handleSaveProfile}
+          success={profileSuccess}
+        />
 
-        <View className="gap-3">
-          <Text className="text-lg font-semibold text-neutral-950">
-            Zmiana emaila
-          </Text>
-          <TextField
-            autoCapitalize="none"
-            autoComplete="email"
-            editable={!requestEmailChange.isPending}
-            keyboardType="email-address"
-            label="Nowy email"
-            onChangeText={(value) => {
-              setEmail(value);
-              setEmailFormError(null);
-              setEmailSuccess(false);
-            }}
-            onSubmitEditing={handleRequestEmailChange}
-            placeholder="email@example.com"
-            returnKeyType="done"
-            value={email}
-          />
-          <ErrorMessage
-            message={
-              emailFormError ??
-              (requestEmailChange.isError
-                ? "Nie udało się rozpocząć zmiany emaila."
-                : null)
-            }
-          />
-          {emailSuccess ? (
-            <Text className="text-sm text-green-700">
-              Wysłano wiadomość potwierdzającą zmianę emaila.
-            </Text>
-          ) : null}
-          <Button
-            disabled={requestEmailChange.isPending}
-            onPress={handleRequestEmailChange}
-          >
-            {requestEmailChange.isPending ? "Wysyłanie..." : "Zmień email"}
-          </Button>
-        </View>
+        <EmailChangeForm
+          initialEmail={auth.user?.email ?? ""}
+          isSaveError={requestEmailChange.isError}
+          isSaving={requestEmailChange.isPending}
+          key={auth.user?.email ?? ""}
+          onEdit={() => setEmailSuccess(false)}
+          onSubmit={handleRequestEmailChange}
+          success={emailSuccess}
+        />
 
         <View className="gap-3">
           <Text className="text-lg font-semibold text-neutral-950">
