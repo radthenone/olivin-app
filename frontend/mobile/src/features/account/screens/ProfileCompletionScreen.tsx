@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { ErrorMessage } from "@ui/feedback/ErrorMessage";
@@ -9,27 +9,25 @@ import { profileRequiredSchema } from "../forms/profile-required.schema";
 import { useCurrentProfile } from "../hooks/use-current-profile";
 import { useSaveRequiredProfile } from "../hooks/use-save-required-profile";
 
-/**
- * Ekran uzupełnienia danych profilu wymaganych przez aplikację.
- */
-export function ProfileCompletionScreen() {
+type ProfileCompletionValues = {
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  phoneNumber: string;
+};
+
+function ProfileCompletionForm({
+  initial,
+}: {
+  initial: ProfileCompletionValues;
+}) {
   const router = useRouter();
-  const profile = useCurrentProfile();
   const saveProfile = useSaveRequiredProfile();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [firstName, setFirstName] = useState(initial.firstName);
+  const [lastName, setLastName] = useState(initial.lastName);
+  const [dateOfBirth, setDateOfBirth] = useState(initial.dateOfBirth);
+  const [phoneNumber, setPhoneNumber] = useState(initial.phoneNumber);
   const [formError, setFormError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!profile.data) return;
-
-    setFirstName(profile.data.firstName ?? "");
-    setLastName(profile.data.lastName ?? "");
-    setDateOfBirth(profile.data.dateOfBirth ?? "");
-    setPhoneNumber(profile.data.phoneNumber ?? "");
-  }, [profile.data]);
 
   function handleSubmit() {
     const parsed = profileRequiredSchema.safeParse({
@@ -125,5 +123,26 @@ export function ProfileCompletionScreen() {
         </View>
       </View>
     </Screen>
+  );
+}
+
+/**
+ * Ekran uzupełnienia danych profilu wymaganych przez aplikację.
+ *
+ * Formularz jest montowany od nowa (`key`) po zmianie danych z zapytania,
+ * żeby wartości początkowe pochodziły z inicjalizatora `useState`, a nie
+ * z efektu kopiującego server state do stanu lokalnego.
+ */
+export function ProfileCompletionScreen() {
+  const profile = useCurrentProfile();
+  const initial: ProfileCompletionValues = {
+    firstName: profile.data?.firstName ?? "",
+    lastName: profile.data?.lastName ?? "",
+    dateOfBirth: profile.data?.dateOfBirth ?? "",
+    phoneNumber: profile.data?.phoneNumber ?? "",
+  };
+
+  return (
+    <ProfileCompletionForm key={JSON.stringify(initial)} initial={initial} />
   );
 }
