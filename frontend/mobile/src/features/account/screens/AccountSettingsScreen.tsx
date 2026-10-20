@@ -62,12 +62,14 @@ function ProfileEditForm({
   isSaveError,
   success,
   onSubmit,
+  onEdit,
 }: {
   initial: ProfileEditValues;
   isSaving: boolean;
   isSaveError: boolean;
   success: boolean;
   onSubmit: (values: ProfileEditValues) => void;
+  onEdit: () => void;
 }) {
   const [firstName, setFirstName] = useState(initial.firstName);
   const [lastName, setLastName] = useState(initial.lastName);
@@ -101,6 +103,7 @@ function ProfileEditForm({
         onChangeText={(value) => {
           setFirstName(value);
           setFormError(null);
+          onEdit();
         }}
         value={firstName}
       />
@@ -110,6 +113,7 @@ function ProfileEditForm({
         onChangeText={(value) => {
           setLastName(value);
           setFormError(null);
+          onEdit();
         }}
         value={lastName}
       />
@@ -120,6 +124,7 @@ function ProfileEditForm({
         onChangeText={(value) => {
           setPhoneNumber(value);
           setFormError(null);
+          onEdit();
         }}
         onSubmitEditing={handleSubmit}
         placeholder="+48 123 456 789"
@@ -147,12 +152,14 @@ function EmailChangeForm({
   isSaveError,
   success,
   onSubmit,
+  onEdit,
 }: {
   initialEmail: string;
   isSaving: boolean;
   isSaveError: boolean;
   success: boolean;
   onSubmit: (values: EmailChangeValues) => void;
+  onEdit: () => void;
 }) {
   const [email, setEmail] = useState(initialEmail);
   const [formError, setFormError] = useState<string | null>(null);
@@ -183,6 +190,7 @@ function EmailChangeForm({
         onChangeText={(value) => {
           setEmail(value);
           setFormError(null);
+          onEdit();
         }}
         onSubmitEditing={handleSubmit}
         placeholder="email@example.com"
@@ -359,6 +367,7 @@ export function AccountSettingsScreen() {
           isSaveError={saveProfile.isError}
           isSaving={saveProfile.isPending}
           key={JSON.stringify(profileInitial)}
+          onEdit={() => setProfileSuccess(false)}
           onSubmit={handleSaveProfile}
           success={profileSuccess}
         />
@@ -368,6 +377,7 @@ export function AccountSettingsScreen() {
           isSaveError={requestEmailChange.isError}
           isSaving={requestEmailChange.isPending}
           key={auth.user?.email ?? ""}
+          onEdit={() => setEmailSuccess(false)}
           onSubmit={handleRequestEmailChange}
           success={emailSuccess}
         />
