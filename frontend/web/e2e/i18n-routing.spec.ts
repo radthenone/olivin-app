@@ -30,47 +30,50 @@ async function stubHealth(page: Page) {
   );
 }
 
+// `Accept-Language` ustawiamy przez `locale` kontekstu: Chromium nadpisuje nim
+// nagłówek z `setExtraHTTPHeaders`, a Playwright Test domyślnie ma `en-US`.
 test.describe("language prefix routing", () => {
-  test("redirects / by the language cookie before Accept-Language", async ({
-    page,
-  }) => {
-    await page.goto("/pl");
-    const origin = new URL(page.url()).origin;
+  test.describe("with a Polish browser", () => {
+    test.use({ locale: "pl-PL" });
 
-    await page
-      .context()
-      .addCookies([{ name: "NEXT_LOCALE", value: "en", url: origin }]);
-    await page.setExtraHTTPHeaders({
-      "accept-language": "pl-PL,pl;q=0.9",
+    test("redirects / by the language cookie before Accept-Language", async ({
+      page,
+    }) => {
+      await page.goto("/pl");
+      const origin = new URL(page.url()).origin;
+
+      await page
+        .context()
+        .addCookies([{ name: "NEXT_LOCALE", value: "en", url: origin }]);
+
+      await page.goto("/");
+
+      await expect(page).toHaveURL(`${origin}/en`);
     });
-
-    await page.goto("/");
-
-    await expect(page).toHaveURL(`${origin}/en`);
   });
 
-  test("redirects / by Accept-Language when there is no cookie", async ({
-    page,
-  }) => {
-    await page.setExtraHTTPHeaders({
-      "accept-language": "en-US,en;q=0.9",
+  test.describe("with an English browser", () => {
+    test.use({ locale: "en-US" });
+
+    test("redirects / by Accept-Language when there is no cookie", async ({
+      page,
+    }) => {
+      await page.goto("/");
+
+      await expect(page).toHaveURL(/\/en$/);
     });
-
-    await page.goto("/");
-
-    await expect(page).toHaveURL(/\/en$/);
   });
 
-  test("redirects / to Polish when the language is unsupported", async ({
-    page,
-  }) => {
-    await page.setExtraHTTPHeaders({
-      "accept-language": "de-DE,de;q=0.9",
+  test.describe("with a German browser", () => {
+    test.use({ locale: "de-DE" });
+
+    test("redirects / to Polish when the language is unsupported", async ({
+      page,
+    }) => {
+      await page.goto("/");
+
+      await expect(page).toHaveURL(/\/pl$/);
     });
-
-    await page.goto("/");
-
-    await expect(page).toHaveURL(/\/pl$/);
   });
 });
 

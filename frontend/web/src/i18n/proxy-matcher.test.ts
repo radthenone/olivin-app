@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
 
-import { localeMatcher, matchesLocaleRouting } from "./matcher";
+import { config } from "../../proxy";
 
 /**
  * Proxy language routing must never touch technical paths. ADR 0034 depends on
@@ -30,29 +30,20 @@ const storefrontPaths = [
   "/_nextfoo",
 ];
 
+const matches = (url: string) => unstable_doesMiddlewareMatch({ config, url });
+
 describe("language routing matcher", () => {
   test.each(technicalPaths)(
     "leaves %s outside locale routing",
     (path: string) => {
-      expect(matchesLocaleRouting(path)).toBe(false);
+      expect(matches(path)).toBe(false);
     },
   );
 
   test.each(storefrontPaths)(
     "routes %s through the locale proxy",
     (path: string) => {
-      expect(matchesLocaleRouting(path)).toBe(true);
+      expect(matches(path)).toBe(true);
     },
   );
-
-  test("Next applies the matcher to the same paths as the helper", () => {
-    const config = { matcher: localeMatcher };
-
-    for (const path of [...technicalPaths, ...storefrontPaths]) {
-      expect({
-        path,
-        matches: unstable_doesMiddlewareMatch({ config, url: path }),
-      }).toEqual({ path, matches: matchesLocaleRouting(path) });
-    }
-  });
 });
