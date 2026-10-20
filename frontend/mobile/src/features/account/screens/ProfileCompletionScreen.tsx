@@ -5,7 +5,10 @@ import { ErrorMessage } from "@ui/feedback/ErrorMessage";
 import { Screen } from "@ui/layout/Screen";
 import { Button } from "@ui/primitives/Button";
 import { TextField } from "@ui/primitives/TextField";
-import { profileRequiredSchema } from "../forms/profile-required.schema";
+import {
+  profileRequiredSchema,
+  type ProfileRequiredFormValues,
+} from "../forms/profile-required.schema";
 import { useCurrentProfile } from "../hooks/use-current-profile";
 import { useSaveRequiredProfile } from "../hooks/use-save-required-profile";
 
@@ -18,11 +21,15 @@ type ProfileCompletionValues = {
 
 function ProfileCompletionForm({
   initial,
+  isSaving,
+  isSaveError,
+  onSubmit,
 }: {
   initial: ProfileCompletionValues;
+  isSaving: boolean;
+  isSaveError: boolean;
+  onSubmit: (values: ProfileRequiredFormValues) => void;
 }) {
-  const router = useRouter();
-  const saveProfile = useSaveRequiredProfile();
   const [firstName, setFirstName] = useState(initial.firstName);
   const [lastName, setLastName] = useState(initial.lastName);
   const [dateOfBirth, setDateOfBirth] = useState(initial.dateOfBirth);
@@ -43,9 +50,7 @@ function ProfileCompletionForm({
     }
 
     setFormError(null);
-    saveProfile.mutate(parsed.data, {
-      onSuccess: () => router.replace("/home"),
-    });
+    onSubmit(parsed.data);
   }
 
   return (
@@ -62,7 +67,7 @@ function ProfileCompletionForm({
 
         <View className="gap-4">
           <TextField
-            editable={!saveProfile.isPending}
+            editable={!isSaving}
             label="Imię"
             onChangeText={(value) => {
               setFirstName(value);
@@ -72,7 +77,7 @@ function ProfileCompletionForm({
             value={firstName}
           />
           <TextField
-            editable={!saveProfile.isPending}
+            editable={!isSaving}
             label="Nazwisko"
             onChangeText={(value) => {
               setLastName(value);
@@ -82,7 +87,7 @@ function ProfileCompletionForm({
             value={lastName}
           />
           <TextField
-            editable={!saveProfile.isPending}
+            editable={!isSaving}
             label="Data urodzenia"
             onChangeText={(value) => {
               setDateOfBirth(value);
@@ -93,7 +98,7 @@ function ProfileCompletionForm({
             value={dateOfBirth}
           />
           <TextField
-            editable={!saveProfile.isPending}
+            editable={!isSaving}
             keyboardType="phone-pad"
             label="Telefon"
             onChangeText={(value) => {
@@ -109,16 +114,12 @@ function ProfileCompletionForm({
           <ErrorMessage
             message={
               formError ??
-              (saveProfile.isError
-                ? "Nie udało się zapisać danych profilu."
-                : null)
+              (isSaveError ? "Nie udało się zapisać danych profilu." : null)
             }
           />
 
-          <Button disabled={saveProfile.isPending} onPress={handleSubmit}>
-            {saveProfile.isPending
-              ? "Zapisywanie..."
-              : "Zapisz i przejdź dalej"}
+          <Button disabled={isSaving} onPress={handleSubmit}>
+            {isSaving ? "Zapisywanie..." : "Zapisz i przejdź dalej"}
           </Button>
         </View>
       </View>
@@ -134,7 +135,9 @@ function ProfileCompletionForm({
  * z efektu kopiującego server state do stanu lokalnego.
  */
 export function ProfileCompletionScreen() {
+  const router = useRouter();
   const profile = useCurrentProfile();
+  const saveProfile = useSaveRequiredProfile();
   const initial: ProfileCompletionValues = {
     firstName: profile.data?.firstName ?? "",
     lastName: profile.data?.lastName ?? "",
@@ -143,6 +146,18 @@ export function ProfileCompletionScreen() {
   };
 
   return (
-    <ProfileCompletionForm key={JSON.stringify(initial)} initial={initial} />
+    <ProfileCompletionForm
+      initial={initial}
+      isSaveError={saveProfile.isError}
+      isSaving={saveProfile.isPending}
+      key={JSON.stringify(initial)}
+      onSubmit={(values) =>
+        // Mutacja i przekierowanie w rodzicu: formularz remountuje się po
+        // invalidateQueries, a callback `onSuccess` z `mutate` przepadłby.
+        saveProfile.mutate(values, {
+          onSuccess: () => router.replace("/home"),
+        })
+      }
+    />
   );
 }
