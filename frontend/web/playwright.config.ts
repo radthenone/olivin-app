@@ -31,5 +31,8 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // Logi Next (status żądań, błędy kompilacji) trafiają do wyjścia testu —
+    // bez tego timeout webServera w CI nie mówi, na czym utknął.
+    stdout: "pipe",
   },
 });
