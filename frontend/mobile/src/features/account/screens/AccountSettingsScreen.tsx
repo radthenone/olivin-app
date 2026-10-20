@@ -25,6 +25,7 @@ const emailChangeSchema = z.object({
 });
 
 type ProfileEditValues = z.infer<typeof profileEditSchema>;
+type EmailChangeValues = z.infer<typeof emailChangeSchema>;
 
 function getApiErrorMessage(error: unknown): string | null {
   if (!(error instanceof ApiError)) {
@@ -151,7 +152,7 @@ function EmailChangeForm({
   isSaving: boolean;
   isSaveError: boolean;
   success: boolean;
-  onSubmit: (email: string) => void;
+  onSubmit: (values: EmailChangeValues) => void;
 }) {
   const [email, setEmail] = useState(initialEmail);
   const [formError, setFormError] = useState<string | null>(null);
@@ -165,7 +166,7 @@ function EmailChangeForm({
     }
 
     setFormError(null);
-    onSubmit(parsed.data.email);
+    onSubmit(parsed.data);
   }
 
   return (
@@ -255,14 +256,11 @@ export function AccountSettingsScreen() {
     });
   }
 
-  function handleRequestEmailChange(value: string) {
+  function handleRequestEmailChange(values: EmailChangeValues) {
     setEmailSuccess(false);
-    requestEmailChange.mutate(
-      { email: value },
-      {
-        onSuccess: () => setEmailSuccess(true),
-      },
-    );
+    requestEmailChange.mutate(values, {
+      onSuccess: () => setEmailSuccess(true),
+    });
   }
 
   function handleActivateTotp() {
