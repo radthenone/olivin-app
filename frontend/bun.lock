@@ -91,6 +91,18 @@
       "name": "@olivin/config",
       "version": "0.0.0",
     },
+    "packages/features": {
+      "name": "@olivin/features",
+      "version": "0.0.0",
+      "dependencies": {
+        "@olivin/api": "workspace:*",
+        "@tanstack/react-query": "^5.104.2",
+      },
+      "devDependencies": {
+        "@olivin/config": "workspace:*",
+        "typescript": "~6.0.3",
+      },
+    },
     "packages/i18n": {
       "name": "@olivin/i18n",
       "version": "0.0.0",
@@ -127,6 +139,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@olivin/api": "workspace:*",
+        "@olivin/features": "workspace:*",
         "@olivin/i18n": "workspace:*",
         "@olivin/tokens": "workspace:*",
         "@radix-ui/react-slot": "^1.2.3",
@@ -601,6 +614,8 @@
     "@olivin/api": ["@olivin/api@workspace:packages/api"],
 
     "@olivin/config": ["@olivin/config@workspace:packages/config"],
+
+    "@olivin/features": ["@olivin/features@workspace:packages/features"],
 
     "@olivin/i18n": ["@olivin/i18n@workspace:packages/i18n"],
 

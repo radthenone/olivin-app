@@ -11,10 +11,11 @@ export default createMiddleware(routing);
 
 /**
  * Poza routingiem językowym zostają adresy techniczne: `/api` i `/api/*`
- * (kontrakt rewalidacji z ADR 0034), `/_next/*`, `/.well-known/*`,
- * `robots.txt`, `sitemap.xml` i pliki statyczne (kropka w ostatnim segmencie).
- * Lookahead kotwiczy cały segment, żeby `/apiary` czy `/api-docs` nadal
- * dostawały prefiks języka.
+ * (kontrakt rewalidacji z ADR 0034), `/_allauth/*` (przekazywane do Django
+ * przez rewrite, żeby ciasteczka sesji i CSRF były widoczne dla webu),
+ * `/_next/*`, `/.well-known/*`, `robots.txt`, `sitemap.xml` i pliki statyczne
+ * (kropka w ostatnim segmencie). Lookahead kotwiczy cały segment, żeby
+ * `/apiary` czy `/api-docs` nadal dostawały prefiks języka.
  *
  * Matcher musi być literałem w tym pliku: Next czyta `config` statycznie
  * z kodu źródłowego, a importowana stała kończy się błędem kompilacji
@@ -22,5 +23,5 @@ export default createMiddleware(routing);
  */
 export const config = {
   matcher:
-    "/((?!api(?:/|$)|_next/|\\.well-known/|robots\\.txt$|sitemap\\.xml$|.*\\.[^/]+$).*)",
+    "/((?!api(?:/|$)|_allauth(?:/|$)|_next/|\\.well-known/|robots\\.txt$|sitemap\\.xml$|.*\\.[^/]+$).*)",
 };

@@ -114,3 +114,92 @@ describe("webRequest Accept-Language on the server", () => {
     expect(requests).toEqual(["en"]);
   });
 });
+
+describe("webRequest CSRF for browser allauth", () => {
+  type FakeDocument = { cookie: string };
+
+  beforeEach(() => {
+    process.env.NEXT_PUBLIC_BACKEND_URL = "http://backend.test";
+    (globalThis as { window?: unknown }).window = globalThis;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    delete (globalThis as { window?: unknown }).window;
+    delete (globalThis as { document?: FakeDocument }).document;
+
+    if (originalBackendUrl === undefined) {
+      delete process.env.NEXT_PUBLIC_BACKEND_URL;
+    } else {
+      process.env.NEXT_PUBLIC_BACKEND_URL = originalBackendUrl;
+    }
+  });
+
+  test("sends the CSRF token from the cookie on unsafe requests", async () => {
+    (globalThis as { document?: FakeDocument }).document = {
+      cookie: "csrftoken=token-z-ciasteczka",
+    };
+    let headers: Headers | undefined;
+
+    globalThis.fetch = (async (_input, init) => {
+      headers = new Headers(init?.headers);
+      return new Response("{}", {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }) as typeof fetch;
+
+    await webRequest("/_allauth/browser/v1/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email: "jan@example.com", password: "tajne" }),
+    });
+
+    expect(headers?.get("x-csrftoken")).toBe("token-z-ciasteczka");
+  });
+
+  test("does not add the header to safe requests", async () => {
+    (globalThis as { document?: FakeDocument }).document = {
+      cookie: "csrftoken=token-z-ciasteczka",
+    };
+    let headers: Headers | undefined;
+
+    globalThis.fetch = (async (_input, init) => {
+      headers = new Headers(init?.headers);
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+
+    await webRequest("/health/");
+
+    expect(headers?.get("x-csrftoken")).toBeNull();
+  });
+
+  test("does not send the token or fetch the session for non-allauth mutations", async () => {
+    (globalThis as { document?: FakeDocument }).document = { cookie: "" };
+    const calls: Array<{ url: string; headers: Headers }> = [];
+
+    globalThis.fetch = (async (input, init) => {
+      calls.push({ url: String(input), headers: new Headers(init?.headers) });
+      return new Response("{}", {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }) as typeof fetch;
+
+    await webRequest("http://backend.test/api/customers/profile/", {
+      method: "PATCH",
+      body: "{}",
+    });
+    await webRequest("/api/customers/profile/", {
+      method: "PATCH",
+      body: "{}",
+    });
+
+    expect(calls.map((call) => call.url)).toEqual([
+      "http://backend.test/api/customers/profile/",
+      "http://backend.test/api/customers/profile/",
+    ]);
+    expect(
+      calls.every((call) => call.headers.get("x-csrftoken") === null),
+    ).toBe(true);
+  });
+});
