@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
     "@olivin/api",
     "@olivin/features",
     "@olivin/i18n",
+    "@olivin/schemas",
     "@olivin/tokens",
   ],
 

@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardContent,
@@ -83,6 +84,17 @@ describe("ui primitives", () => {
     expect(html).toContain("Twoje dane");
     expect(html).toContain("Treść");
     expect(html).toContain("Stopka");
+  });
+
+  test("Checkbox renders a native, token-styled consent control", () => {
+    const html = renderToStaticMarkup(
+      <Checkbox aria-invalid id="consent-terms" />,
+    );
+
+    expect(html).toContain('type="checkbox"');
+    expect(html).toContain('id="consent-terms"');
+    expect(html).toContain('aria-invalid="true"');
+    expect(html).toContain("accent-primary");
   });
 
   test("Form wires react-hook-form state into label, control and message", () => {

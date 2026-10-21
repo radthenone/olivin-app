@@ -22,7 +22,7 @@ USERNAME_MIN_LENGTH = 3
 USERNAME_MAX_LENGTH = 30
 username_chars_validator = RegexValidator(
     r"^[A-Za-z0-9._-]+$",
-    "Nazwa może zawierać tylko litery a-z, cyfry oraz znaki . _ -",
+    "Nazwa może zawierać tylko litery a-z i A-Z, cyfry oraz znaki . _ -",
 )
 
 

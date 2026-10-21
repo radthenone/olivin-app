@@ -24,6 +24,33 @@
       "submit": "Zaloguj",
       "submitting": "Logowanie…"
     },
+    "register": {
+      "title": "Utwórz konto",
+      "description": "Załóż konto klienta Olivin. Wyślemy kod potwierdzający na podany adres e-mail.",
+      "email": "E-mail",
+      "username": "Nazwa użytkownika",
+      "usernameHint": "3–30 znaków: litery, cyfry, kropka, myślnik lub podkreślenie.",
+      "password": "Hasło",
+      "passwordHint": "Minimum 8 znaków.",
+      "passwordConfirm": "Powtórz hasło",
+      "consentsLegend": "Zgody",
+      "consentTerms": "Akceptuję regulamin.",
+      "consentPrivacy": "Akceptuję politykę prywatności.",
+      "consentMarketing": "Chcę otrzymywać informacje marketingowe e-mailem (opcjonalnie).",
+      "submit": "Utwórz konto",
+      "submitting": "Tworzenie konta…",
+      "haveAccount": "Masz już konto?",
+      "loginLink": "Zaloguj się"
+    },
+    "verifyEmail": {
+      "title": "Potwierdź e-mail",
+      "description": "Wysłaliśmy kod potwierdzający na adres podany przy rejestracji. Wpisz go poniżej.",
+      "code": "Kod z e-maila",
+      "submit": "Potwierdź e-mail",
+      "submitting": "Potwierdzanie…",
+      "success": "E-mail potwierdzony. Konto jest gotowe.",
+      "backToHome": "Przejdź do sklepu"
+    },
     "header": {
       "signedInAs": "Zalogowano jako {name}",
       "logout": "Wyloguj",
@@ -33,9 +60,22 @@
     "errors": {
       "emailRequired": "Podaj adres e-mail.",
       "emailInvalid": "Podaj poprawny adres e-mail.",
+      "emailTaken": "Konto z tym adresem e-mail już istnieje.",
+      "usernameRequired": "Podaj nazwę użytkownika.",
+      "usernameInvalid": "Nazwa użytkownika może zawierać litery, cyfry, kropkę, myślnik i podkreślenie (3–30 znaków).",
+      "usernameTaken": "Ta nazwa użytkownika jest już zajęta.",
       "passwordRequired": "Podaj hasło.",
+      "passwordTooShort": "Hasło musi mieć co najmniej 8 znaków.",
+      "passwordInvalid": "Hasło nie spełnia wymagań bezpieczeństwa.",
+      "passwordConfirmRequired": "Powtórz hasło.",
+      "passwordMismatch": "Hasła muszą być takie same.",
+      "consentRequired": "Zaakceptuj regulamin i politykę prywatności.",
+      "codeRequired": "Wpisz kod z e-maila.",
+      "codeInvalid": "Kod jest nieprawidłowy lub wygasł.",
       "invalidCredentials": "Nieprawidłowy e-mail lub hasło.",
-      "tooManyAttempts": "Zbyt wiele prób logowania. Odczekaj chwilę.",
+      "tooManyAttempts": "Zbyt wiele prób. Odczekaj chwilę.",
+      "registrationFailed": "Nie udało się utworzyć konta. Spróbuj ponownie.",
+      "verificationFailed": "Nie udało się potwierdzić e-maila. Spróbuj ponownie.",
       "generic": "Nie udało się zalogować. Spróbuj ponownie."
     }
   }

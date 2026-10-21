@@ -24,6 +24,33 @@
       "submit": "Sign in",
       "submitting": "Signing in…"
     },
+    "register": {
+      "title": "Create an account",
+      "description": "Create your Olivin account. We will send a confirmation code to the email address you provide.",
+      "email": "Email",
+      "username": "Username",
+      "usernameHint": "3–30 characters: letters, digits, dot, hyphen or underscore.",
+      "password": "Password",
+      "passwordHint": "At least 8 characters.",
+      "passwordConfirm": "Repeat password",
+      "consentsLegend": "Consents",
+      "consentTerms": "I accept the terms of service.",
+      "consentPrivacy": "I accept the privacy policy.",
+      "consentMarketing": "I want to receive marketing information by email (optional).",
+      "submit": "Create an account",
+      "submitting": "Creating an account…",
+      "haveAccount": "Already have an account?",
+      "loginLink": "Sign in"
+    },
+    "verifyEmail": {
+      "title": "Confirm your email",
+      "description": "We sent a confirmation code to the address you used during registration. Enter it below.",
+      "code": "Code from the email",
+      "submit": "Confirm email",
+      "submitting": "Confirming…",
+      "success": "Email confirmed. Your account is ready.",
+      "backToHome": "Go to the shop"
+    },
     "header": {
       "signedInAs": "Signed in as {name}",
       "logout": "Sign out",
@@ -33,9 +60,22 @@
     "errors": {
       "emailRequired": "Enter your email address.",
       "emailInvalid": "Enter a valid email address.",
+      "emailTaken": "An account with this email address already exists.",
+      "usernameRequired": "Enter a username.",
+      "usernameInvalid": "A username can contain letters, digits, dots, hyphens and underscores (3–30 characters).",
+      "usernameTaken": "This username is already taken.",
       "passwordRequired": "Enter your password.",
+      "passwordTooShort": "The password must be at least 8 characters long.",
+      "passwordInvalid": "The password does not meet the security requirements.",
+      "passwordConfirmRequired": "Repeat your password.",
+      "passwordMismatch": "The passwords must match.",
+      "consentRequired": "Accept the terms of service and the privacy policy.",
+      "codeRequired": "Enter the code from the email.",
+      "codeInvalid": "The code is invalid or has expired.",
       "invalidCredentials": "Incorrect email or password.",
-      "tooManyAttempts": "Too many sign-in attempts. Wait a moment.",
+      "tooManyAttempts": "Too many attempts. Wait a moment.",
+      "registrationFailed": "Could not create the account. Try again.",
+      "verificationFailed": "Could not confirm the email. Try again.",
       "generic": "Could not sign in. Try again."
     }
   }

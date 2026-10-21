@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { postAllauthClientV1AuthSignup } from "@olivin/api/generated/auth/authentication-account/authentication-account";
+import type { SignupBody } from "@olivin/api/generated/auth/schemas/signupBody";
 
 import { getAuthClient } from "./auth-config";
 import { requireAuthStatus } from "./auth-response";
@@ -11,14 +12,18 @@ export type SignupConsents = {
   consent_marketing?: boolean;
 };
 
-export type RegisterInput = {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  phoneNumber: string;
-} & SignupConsents;
+/**
+ * Rejestracja e-mailem: ładunek allauth plus opcjonalne dane profilu.
+ *
+ * Web wysyła tylko to, co wynika z formularza; mobile dokłada dane profilu
+ * (`firstName`, `dateOfBirth`, …), które backend zapisuje w profilu.
+ */
+export type RegisterInput = SignupBody & {
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: string;
+  phoneNumber?: string;
+};
 
 /**
  * Rejestruje użytkownika przez allauth.

@@ -12,8 +12,22 @@ export {
   allauthErrorMessage,
   requireAuthStatus,
 } from "./auth-response";
-export { mapLoginErrors } from "./errors";
-export type { LoginError, LoginErrorCode, LoginErrorTarget } from "./errors";
+export {
+  mapLoginErrors,
+  mapSignupErrors,
+  mapVerifyEmailErrors,
+} from "./errors";
+export type {
+  LoginError,
+  LoginErrorCode,
+  LoginErrorTarget,
+  SignupError,
+  SignupErrorCode,
+  SignupErrorTarget,
+  VerifyEmailError,
+  VerifyEmailErrorCode,
+  VerifyEmailErrorTarget,
+} from "./errors";
 export { getAuthSessionQueryKey } from "./session-query-key";
 export { handleAllauthSessionLifecycle } from "./session-lifecycle";
 export { useAuth } from "./use-auth";

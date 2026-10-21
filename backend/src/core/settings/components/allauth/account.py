@@ -1,5 +1,7 @@
 ACCOUNT_LOGIN_METHODS = {"email"}
-ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+# Nazwa użytkownika jest opcjonalna: klient webu ją wybiera, a konto z mobile
+# albo z logowania społecznościowego dostaje `anon<liczba>` z modelu (#195).
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*", "username"]
 
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 ACCOUNT_EMAIL_VERIFICATION_BY_CODE_ENABLED = True
