@@ -1,0 +1,131 @@
+import { describe, expect, test } from "bun:test";
+
+import { mapSignupErrors, mapVerifyEmailErrors } from "./errors";
+
+describe("mapSignupErrors", () => {
+  test("maps backend fields onto form fields", () => {
+    const errors = mapSignupErrors({
+      status: 400,
+      errors: [
+        { param: "username", code: "username_taken", message: "Taken" },
+        { param: "password", code: "password_too_short", message: "Short" },
+        { param: "consent_terms", code: "required", message: "Required" },
+        { param: "email", code: "invalid", message: "Invalid" },
+      ],
+    });
+
+    expect(errors.map((error) => error.target)).toEqual([
+      "username",
+      "password",
+      "consentTerms",
+      "email",
+    ]);
+    expect(errors.map((error) => error.code)).toEqual([
+      "usernameTaken",
+      "invalid",
+      "consentRequired",
+      "invalid",
+    ]);
+  });
+
+  test("recognises a taken email even though the backend hides it", () => {
+    const errors = mapSignupErrors({
+      status: 400,
+      errors: [{ param: "email", code: "email_taken" }],
+    });
+
+    expect(errors).toEqual([{ target: "email", code: "emailTaken" }]);
+  });
+
+  test("maps the signup rate limit", () => {
+    const errors = mapSignupErrors({
+      status: 429,
+      errors: [{ code: "too_many_signup_attempts" }],
+    });
+
+    expect(errors).toEqual([{ target: "form", code: "tooManyAttempts" }]);
+  });
+
+  test("keeps the backend message next to a known code", () => {
+    expect(
+      mapSignupErrors({
+        status: 400,
+        errors: [
+          {
+            param: "consent_terms",
+            code: "required",
+            message: "To pole jest wymagane.",
+          },
+        ],
+      }),
+    ).toEqual([
+      {
+        target: "consentTerms",
+        code: "consentRequired",
+        message: "To pole jest wymagane.",
+      },
+    ]);
+  });
+
+  test("keeps an unknown error message and puts it on the form", () => {
+    const errors = mapSignupErrors({
+      status: 400,
+      errors: [
+        { param: "unknown", code: "consent_document_missing", message: "Brak" },
+      ],
+    });
+
+    expect(errors).toEqual([
+      { target: "form", code: "backend", message: "Brak" },
+    ]);
+  });
+
+  test("falls back to a generic form error without an error list", () => {
+    expect(mapSignupErrors({ status: 400 })).toEqual([
+      { target: "form", code: "backend" },
+    ]);
+  });
+});
+
+describe("mapVerifyEmailErrors", () => {
+  test("maps a wrong or expired code", () => {
+    expect(
+      mapVerifyEmailErrors({
+        status: 400,
+        errors: [{ param: "key", code: "invalid" }],
+      }),
+    ).toEqual([{ target: "form", code: "codeInvalid" }]);
+  });
+
+  test("keeps the backend message next to a wrong or expired code", () => {
+    expect(
+      mapVerifyEmailErrors({
+        status: 400,
+        errors: [
+          { param: "key", code: "invalid", message: "Invalid or expired key." },
+        ],
+      }),
+    ).toEqual([
+      {
+        target: "form",
+        code: "codeInvalid",
+        message: "Invalid or expired key.",
+      },
+    ]);
+  });
+
+  test("maps too many attempts", () => {
+    expect(
+      mapVerifyEmailErrors({
+        status: 429,
+        errors: [{ code: "too_many_confirm_email_attempts" }],
+      }),
+    ).toEqual([{ target: "form", code: "tooManyAttempts" }]);
+  });
+
+  test("falls back to a generic form error", () => {
+    expect(mapVerifyEmailErrors({ status: 400 })).toEqual([
+      { target: "form", code: "backend" },
+    ]);
+  });
+});

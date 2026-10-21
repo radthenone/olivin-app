@@ -59,6 +59,16 @@ export const registerFormSchema = z
 export type RegisterFormValues = z.infer<typeof registerFormSchema>;
 
 /**
+ * Wartości formularza przed walidacją: zgody są boolowskie, bo startują jako
+ * niezaznaczone. Dopiero schemat wymusza `true` przy wymaganych zgodach.
+ */
+export type RegisterFormInput = Omit<
+  z.input<typeof registerFormSchema>,
+  keyof SignupConsentsValues
+> &
+  SignupConsentsValues;
+
+/**
  * Zamienia wartości formularza na ciało żądania allauth (`consent_*`).
  *
  * `preferred_language` pomijamy: backend bierze język maili z `Accept-Language`

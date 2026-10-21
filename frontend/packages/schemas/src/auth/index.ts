@@ -8,6 +8,10 @@ export {
   signupConsentsSchema,
   toSignupBody,
 } from "./register";
-export type { RegisterFormValues, SignupConsentsValues } from "./register";
+export type {
+  RegisterFormInput,
+  RegisterFormValues,
+  SignupConsentsValues,
+} from "./register";
 export { toVerifyEmailBody, verifyEmailFormSchema } from "./verify-email";
 export type { VerifyEmailFormValues } from "./verify-email";
