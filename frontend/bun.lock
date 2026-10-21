@@ -123,6 +123,10 @@
     "packages/schemas": {
       "name": "@olivin/schemas",
       "version": "0.0.0",
+      "dependencies": {
+        "@olivin/api": "workspace:*",
+        "zod": "^4.5.4",
+      },
       "devDependencies": {
         "@olivin/config": "workspace:*",
         "typescript": "~6.0.3",

@@ -117,6 +117,13 @@ jobs:
         working-directory: frontend/packages/features
         run: bun test ./src
 
+      # Schematy formularzy opierają się na zod z Orvala. Test pilnuje, że
+      # rejestracja i weryfikacja e-maila wysyłają dokładnie ten kształt, który
+      # opisuje wygenerowany klient (#351).
+      - name: Schemas unit tests
+        working-directory: frontend/packages/schemas
+        run: bun test ./src
+
       - name: TypeScript
         run: task lints:frontend:typecheck
 
