@@ -66,6 +66,20 @@ class TestSignupUsername:
         assert any(error.get("param") == "username" for error in _errors(response))
         assert not CustomUser.objects.filter(email="second@test.com").exists()
 
+    def test_taken_username_ignores_letter_case(
+        self, api_client: APIClient, consent_documents
+    ):
+        """Nazwa różniąca się tylko wielkością liter też jest zajęta."""
+        CustomUser.objects.create_user(
+            email="existing@test.com", password="testpass123!", username="olive_lover"
+        )
+
+        response = _signup(api_client, "case@test.com", username="Olive_Lover")
+
+        assert response.status_code == 400
+        assert any(error.get("param") == "username" for error in _errors(response))
+        assert not CustomUser.objects.filter(email="case@test.com").exists()
+
     def test_reserved_username_is_rejected(
         self, api_client: APIClient, consent_documents
     ):
@@ -79,7 +93,7 @@ class TestSignupUsername:
     def test_username_with_forbidden_characters_is_rejected(
         self, api_client: APIClient, consent_documents
     ):
-        """Znaki spoza `a-z 0-9 . _ -` są odrzucane tym samym walidatorem co w profilu."""
+        """Znaki spoza `a-z A-Z 0-9 . _ -` są odrzucane tym samym walidatorem co w profilu."""
         response = _signup(api_client, "chars@test.com", username="jan kowalski")
 
         assert response.status_code == 400
