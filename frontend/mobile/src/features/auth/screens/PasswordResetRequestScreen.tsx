@@ -6,7 +6,7 @@ import { Button } from "@ui/primitives/Button";
 import { TextField } from "@ui/primitives/TextField";
 import { AuthShell } from "../components/AuthShell";
 import { passwordResetRequestSchema } from "../forms/password-reset.schema";
-import { useRequestPasswordReset } from "../hooks/use-request-password-reset";
+import { useRequestPasswordReset } from "@olivin/features/auth";
 
 /**
  * Ekran rozpoczęcia resetu hasła.

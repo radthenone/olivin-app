@@ -6,7 +6,7 @@ import { Button } from "@ui/primitives/Button";
 import { TextField } from "@ui/primitives/TextField";
 import { AuthShell } from "../components/AuthShell";
 import { passwordResetConfirmSchema } from "../forms/password-reset.schema";
-import { useResetPassword } from "../hooks/use-reset-password";
+import { useResetPassword } from "@olivin/features/auth";
 
 /**
  * Ekran ustawienia nowego hasła: kod z maila + nowe hasło (ADR 0038).

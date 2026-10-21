@@ -12,7 +12,7 @@ import {
   signupConsentsSchema,
   toSignupConsentsBody,
 } from "../forms/register.schema";
-import { useProviderSignup } from "../hooks/use-provider-signup";
+import { useProviderSignup } from "@olivin/features/auth";
 
 const providerSignupSchema = signupConsentsSchema.extend({
   email: z.email("Podaj poprawny adres email."),

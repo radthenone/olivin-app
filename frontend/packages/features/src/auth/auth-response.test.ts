@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { requireAuthStatus } from "./auth-response";
+import { AuthResponseError, requireAuthStatus } from "./auth-response";
 
 function response(status: number, data: unknown = {}) {
   return { status, data };
@@ -40,5 +40,21 @@ describe("requireAuthStatus", () => {
         "Nie udało się utworzyć konta.",
       ),
     ).toThrow("Nie udało się utworzyć konta.");
+  });
+
+  test("zachowuje ciało odpowiedzi dla mapowania błędów pól", () => {
+    try {
+      requireAuthStatus(
+        response(400, {
+          errors: [{ param: "password", message: "Złe hasło." }],
+        }),
+        [200, 401],
+        "Błąd",
+      );
+      throw new Error("requireAuthStatus powinien rzucić");
+    } catch (error) {
+      expect(error).toBeInstanceOf(AuthResponseError);
+      expect((error as AuthResponseError).response.status).toBe(400);
+    }
   });
 });

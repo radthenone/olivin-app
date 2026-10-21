@@ -1,22 +1,25 @@
 import { useSession } from "./use-session";
 
 /**
- * Zamienia surowe query sesji na flagi wygodne dla UI i routingu.
+ * Zamienia stan sesji na flagi wygodne dla UI i routingu.
+ *
+ * Expo Router potrzebuje prostych predykatów do ochrony route group, a źródłem
+ * prawdy nadal pozostaje endpoint allauth `auth/session`.
  */
 export function useAuth() {
   const session = useSession();
-  const status = session.data?.status;
+  const status = session.state.status;
 
   return {
     session,
     status,
-    isChecking: session.isLoading,
+    isChecking: session.isChecking,
     isAuthenticated: status === "authenticated",
     isUnauthenticated: status === "unauthenticated",
     isMfaRequired: status === "mfa_required",
     isEmailVerificationRequired: status === "email_verification_required",
     isProviderSignupRequired: status === "provider_signup_required",
-    user: status === "authenticated" ? session.data?.user : null,
-    flows: session.data?.flows ?? [],
+    user: session.user,
+    flows: session.state.flows,
   };
 }

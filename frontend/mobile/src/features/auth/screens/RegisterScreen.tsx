@@ -11,7 +11,7 @@ import {
   registerSchema,
   toSignupConsentsBody,
 } from "../forms/register.schema";
-import { useRegister } from "../hooks/use-register";
+import { useRegister } from "@olivin/features/auth";
 
 /**
  * Ekran rejestracji.

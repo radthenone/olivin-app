@@ -1,7 +1,7 @@
 import { createContext, useContext, type PropsWithChildren } from "react";
-import { useAuth } from "@features/auth/hooks/use-auth";
-import { useLogin } from "@features/auth/hooks/use-login";
-import { useLogout } from "@features/auth/hooks/use-logout";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth, useLogin, useLogout } from "@olivin/features/auth";
+import { accountQueryKeys } from "@features/account/constants/account-query-keys";
 
 type AuthContextValue = ReturnType<typeof useAuth> & {
   login: ReturnType<typeof useLogin>;
@@ -18,9 +18,16 @@ const AuthContext = createContext<AuthContextValue | null>(null);
  * a źródłem prawdy nadal pozostaje endpoint allauth `auth/session`.
  */
 export function AuthProvider({ children }: PropsWithChildren) {
+  const queryClient = useQueryClient();
   const auth = useAuth();
   const login = useLogin();
-  const logout = useLogout();
+  // Cache konta zostaje w mobile (plasterek konta, ADR 0033), więc to
+  // aplikacja dokłada swoje sprzątanie do wspólnego wylogowania.
+  const logout = useLogout({
+    onLogout: () => {
+      queryClient.removeQueries({ queryKey: accountQueryKeys.all });
+    },
+  });
 
   return (
     <AuthContext.Provider value={{ ...auth, login, logout }}>

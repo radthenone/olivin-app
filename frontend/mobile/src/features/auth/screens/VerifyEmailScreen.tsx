@@ -5,7 +5,7 @@ import { ErrorMessage } from "@ui/feedback/ErrorMessage";
 import { Button } from "@ui/primitives/Button";
 import { TextField } from "@ui/primitives/TextField";
 import { AuthShell } from "../components/AuthShell";
-import { useVerifyEmail } from "../hooks/use-verify-email";
+import { useVerifyEmail } from "@olivin/features/auth";
 
 /**
  * Ekran weryfikacji email.

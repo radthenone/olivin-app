@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { authQueryKeys } from "@features/auth/constants/auth-query-keys";
+import { getAuthSessionQueryKey } from "@olivin/features/auth";
 import { securityService } from "../services/security.service";
 
 /**
@@ -11,7 +11,9 @@ export function useRequestEmailChange() {
   return useMutation({
     mutationFn: securityService.requestEmailChange,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: authQueryKeys.all });
+      await queryClient.invalidateQueries({
+        queryKey: getAuthSessionQueryKey(),
+      });
     },
   });
 }

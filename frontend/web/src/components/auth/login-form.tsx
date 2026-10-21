@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { useTranslations } from "next-intl";
 
 import {
+  AuthResponseError,
   mapLoginErrors,
   useLogin,
   type LoginError,
@@ -70,14 +71,25 @@ export function LoginForm() {
         return;
       }
 
-      for (const error of mapLoginErrors(response.data)) {
-        form.setError(error.target === "form" ? "root" : error.target, {
-          type: "server",
-          message: errorMessage(error),
-        });
+      showErrors(mapLoginErrors(response.data));
+    } catch (error) {
+      // Backend może odrzucić logowanie błędem 400 z listą pól — wtedy
+      // pokazujemy je przy właściwych polach, a nie jako ogólny komunikat.
+      if (error instanceof AuthResponseError) {
+        showErrors(mapLoginErrors(error.response.data));
+        return;
       }
-    } catch {
+
       form.setError("root", { type: "server", message: t("errors.generic") });
+    }
+  }
+
+  function showErrors(errors: LoginError[]) {
+    for (const error of errors) {
+      form.setError(error.target === "form" ? "root" : error.target, {
+        type: "server",
+        message: errorMessage(error),
+      });
     }
   }
 

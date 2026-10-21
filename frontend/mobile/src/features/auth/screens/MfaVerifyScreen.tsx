@@ -4,9 +4,9 @@ import { Link } from "expo-router";
 import { ErrorMessage } from "@ui/feedback/ErrorMessage";
 import { Button } from "@ui/primitives/Button";
 import { TextField } from "@ui/primitives/TextField";
+import { useMfaAuthenticate } from "@olivin/features/auth";
 import { AuthShell } from "../components/AuthShell";
 import { mfaSchema } from "../forms/mfa.schema";
-import { useMfaAuthenticate } from "../hooks/use-mfa-authenticate";
 
 /**
  * Ekran potwierdzenia MFA po logowaniu.

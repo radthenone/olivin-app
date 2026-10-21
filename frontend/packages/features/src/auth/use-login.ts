@@ -1,11 +1,10 @@
-import { useQueryClient } from "@tanstack/react-query";
-import {
-  getGetAllauthClientV1AuthSessionQueryKey,
-  useGetAllauthClientV1AuthSession,
-} from "@olivin/api/generated/auth/authentication-current-session/authentication-current-session";
-import { usePostAllauthClientV1AuthLogin } from "@olivin/api/generated/auth/authentication-account/authentication-account";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { postAllauthClientV1AuthLogin } from "@olivin/api/generated/auth/authentication-account/authentication-account";
 
-import { AUTH_CLIENT } from "./auth-client";
+import { getAuthClient } from "./auth-config";
+import { mapAllauthBodyToAuthState } from "./auth-mapper";
+import { requireAuthStatus } from "./auth-response";
+import { getAuthSessionQueryKey } from "./session-query-key";
 
 export type LoginCredentials = {
   email: string;
@@ -13,29 +12,38 @@ export type LoginCredentials = {
 };
 
 /**
- * Logowanie e-mailem i hasłem w trybie przeglądarkowym.
+ * Logowanie e-mailem i hasłem.
  *
- * Po udanej odpowiedzi unieważnia wyłącznie wygenerowany klucz sesji, więc
- * nagłówek i każdy inny odbiorca sesji widzą nowy stan bez ręcznej synchronizacji.
+ * Po odpowiedzi unieważnia wyłącznie wygenerowany klucz sesji, więc routing
+ * i każdy odbiorca sesji widzą nowy stan bez ręcznej synchronizacji.
  */
 export function useLogin() {
   const queryClient = useQueryClient();
+  const client = getAuthClient();
 
-  const mutation = usePostAllauthClientV1AuthLogin({
-    mutation: {
-      onSuccess: async (response) => {
-        if (response.status !== 200) return;
+  const mutation = useMutation({
+    mutationFn: async (credentials: LoginCredentials) => {
+      const response = await postAllauthClientV1AuthLogin(client, credentials);
 
-        await queryClient.invalidateQueries({
-          queryKey: getGetAllauthClientV1AuthSessionQueryKey(AUTH_CLIENT),
-        });
-      },
+      requireAuthStatus(response, [200, 401], "Nie udało się zalogować.");
+
+      return {
+        response,
+        state: mapAllauthBodyToAuthState(response.data),
+      };
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: getAuthSessionQueryKey(),
+      });
     },
   });
 
   return {
-    login: (credentials: LoginCredentials) =>
-      mutation.mutateAsync({ client: AUTH_CLIENT, data: credentials }),
-    isPending: mutation.isPending,
+    ...mutation,
+    login: async (credentials: LoginCredentials) => {
+      const { response } = await mutation.mutateAsync(credentials);
+      return response;
+    },
   };
 }

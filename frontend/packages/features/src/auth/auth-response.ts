@@ -8,6 +8,22 @@ type AllauthError = {
 };
 
 /**
+ * Błąd odpowiedzi allauth z zachowanym ciałem.
+ *
+ * Dzięki temu formularz webowy może dalej przypisać błędy do pól, a mobile
+ * dostaje zwykły `error.message` do wyświetlenia.
+ */
+export class AuthResponseError extends Error {
+  readonly response: AuthHttpResponse;
+
+  constructor(response: AuthHttpResponse, message: string) {
+    super(message);
+    this.name = "AuthResponseError";
+    this.response = response;
+  }
+}
+
+/**
  * Komunikaty walidacji allauth (`errors[].message` z 400), np. brak zgody
  * albo zajęty email — czytelniejsze niż ogólny błąd formularza.
  */
@@ -33,7 +49,10 @@ export function requireAuthStatus<TResponse extends AuthHttpResponse>(
   fallbackMessage: string,
 ): TResponse {
   if (!expectedStatuses.includes(response.status)) {
-    throw new Error(allauthErrorMessage(response.data) ?? fallbackMessage);
+    throw new AuthResponseError(
+      response,
+      allauthErrorMessage(response.data) ?? fallbackMessage,
+    );
   }
 
   return response;
