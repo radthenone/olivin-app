@@ -38,7 +38,9 @@ export function SiteHeader() {
                 <Button
                   disabled={isPending}
                   onClick={() => {
-                    void logout();
+                    // Nieudane wylogowanie nie może wywrócić aplikacji;
+                    // użytkownik zostaje na koncie i może spróbować ponownie.
+                    void logout().catch(() => undefined);
                   }}
                   size="sm"
                   type="button"
