@@ -1,11 +1,10 @@
-import type { AuthFlow, AuthState } from "./auth.types";
-import { isAllauthBody } from "./auth.types";
+import type { AuthFlow, AuthState } from "./auth-types";
+import { isAllauthBody } from "./auth-types";
 
 /**
  * Mapuje odpowiedź allauth na prosty stan aplikacji.
  *
- * Dlaczego istnieje:
- * UI i routing nie powinny znać statusów 401/410, meta ani flows allauth.
+ * Dzięki temu UI i routing nie znają statusów 401/410, meta ani flows allauth.
  */
 export function mapAllauthBodyToAuthState(body: unknown): AuthState {
   if (!isAllauthBody(body)) {
@@ -38,6 +37,6 @@ export function mapAllauthBodyToAuthState(body: unknown): AuthState {
   return { status: "unauthenticated", flows };
 }
 
-function hasFlow(flows: AuthFlow[], id: string) {
+function hasFlow(flows: AuthFlow[], id: string): boolean {
   return flows.some((flow) => flow.id === id);
 }

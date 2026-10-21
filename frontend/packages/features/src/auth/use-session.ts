@@ -1,28 +1,30 @@
 import { useGetAllauthClientV1AuthSession } from "@olivin/api/generated/auth/authentication-current-session/authentication-current-session";
 import type { User } from "@olivin/api/generated/auth/schemas/user";
 
-import { AUTH_CLIENT } from "./auth-client";
+import { getAuthClient } from "./auth-config";
+import { mapAllauthBodyToAuthState } from "./auth-mapper";
 
 export type AuthUser = User;
 
 /**
  * Bieżąca sesja allauth jako stan gotowy dla interfejsu.
  *
- * Klucz zapytania pochodzi z Orvala — unieważnianie po loginie i logoutcie
- * trafia w ten sam cache, bez ręcznie składanych kluczy.
+ * Query pochodzi z Orvala, a mapowanie zdejmuje z UI statusy 401/410 oraz
+ * flows. Klucz zapytania jest wygenerowany, więc każda invalidacja trafia w
+ * ten sam cache.
  */
 export function useSession() {
-  const query = useGetAllauthClientV1AuthSession(AUTH_CLIENT, {
+  const query = useGetAllauthClientV1AuthSession(getAuthClient(), {
     query: { retry: false },
   });
 
-  const body = query.data?.status === 200 ? query.data.data : null;
-  const user = (body?.data.user as AuthUser | undefined) ?? null;
+  const state = mapAllauthBodyToAuthState(query.data?.data);
 
   return {
     query,
-    user,
-    isAuthenticated: user !== null,
+    state,
+    user: state.status === "authenticated" ? state.user : null,
+    isAuthenticated: state.status === "authenticated",
     isChecking: query.isPending,
   };
 }

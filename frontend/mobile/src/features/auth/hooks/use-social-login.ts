@@ -2,11 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/build/providers/Google";
 import * as Facebook from "expo-auth-session/build/providers/Facebook";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useProviderTokenLogin } from "@olivin/features/auth";
 import { Platform } from "react-native";
 import { ENV } from "@core/config/env";
-import { authService } from "@core/auth/auth.service";
-import { authQueryKeys } from "../constants/auth-query-keys";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -29,7 +27,6 @@ type SocialProvider = "google" | "facebook";
  * Obsługuje logowanie social przez Expo AuthSession i allauth provider_token.
  */
 export function useSocialLogin() {
-  const queryClient = useQueryClient();
   const [startErrorMessage, setStartErrorMessage] = useState<string | null>(
     null,
   );
@@ -49,17 +46,7 @@ export function useSocialLogin() {
     isPending,
     isError: isLoginError,
     reset: resetLogin,
-  } = useMutation({
-    mutationFn: authService.loginWithProviderToken,
-    onSuccess: async (state) => {
-      // Nowe konto z Google/Facebook: 401 z flow `provider_signup` — stan od
-      // razu w cache, żeby routing przeniósł na ekran zgód (#207).
-      if (state.status === "provider_signup_required") {
-        queryClient.setQueryData(authQueryKeys.session(), state);
-      }
-      await queryClient.invalidateQueries({ queryKey: authQueryKeys.all });
-    },
-  });
+  } = useProviderTokenLogin();
 
   const [googleRequest, googleResponse, promptGoogle] =
     Google.useIdTokenAuthRequest(

@@ -1,3 +1,10 @@
+/**
+ * Kształt odpowiedzi allauth, zanim UI zobaczy statusy HTTP.
+ *
+ * `isAllauthBody` jest granicą na odpowiedzi z backendu — dalej nie
+ * przepuszczamy `any` do rdzenia auth.
+ */
+
 export type AuthFlow = {
   id: string;
   providers?: string[];
@@ -33,9 +40,6 @@ export type AuthState =
 
 /**
  * Sprawdza, czy nieznana odpowiedź wygląda jak body allauth.
- *
- * Dlaczego istnieje:
- * granica z backendem nie powinna przepuszczać `any` do rdzenia auth.
  */
 export function isAllauthBody(value: unknown): value is AllauthBody {
   if (!value || typeof value !== "object") return false;

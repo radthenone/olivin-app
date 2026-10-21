@@ -1,7 +1,12 @@
 import { configureApi } from "@olivin/api";
 import type { HttpMethod, HttpRequestConfig } from "@olivin/api";
+import {
+  configureAuth,
+  handleAllauthSessionLifecycle,
+} from "@olivin/features/auth";
 import { httpClient } from "@core/http/client";
-import { handleAllauthSessionLifecycle } from "@core/auth/session-lifecycle";
+import { allauthClient } from "@core/config/platform";
+import { sessionTokenStorage } from "@core/auth/session-token.storage";
 
 /**
  * Implementacja transportu dla aplikacji mobilnej.
@@ -43,6 +48,14 @@ function toConfig(url: string, options: RequestInit): HttpRequestConfig {
  * ekran wykona żądanie.
  */
 export function configureMobileApi(): void {
+  // Ta sama granica co transport: wspólne hooki auth nie wiedzą, którym
+  // klientem allauth rozmawiamy ani gdzie leży token sesji. Mobile wstrzykuje
+  // oba przy starcie, web zostaje przy domyślnym trybie przeglądarkowym.
+  configureAuth({
+    client: allauthClient,
+    sessionTokenStorage,
+  });
+
   configureApi({
     app: async <TData>(url: string, options: RequestInit = {}) => {
       return httpClient.request(toConfig(url, options)) as Promise<TData>;

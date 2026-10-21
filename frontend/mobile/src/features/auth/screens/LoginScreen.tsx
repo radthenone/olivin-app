@@ -3,7 +3,7 @@ import { Text } from "react-native";
 import { ErrorMessage } from "@ui/feedback/ErrorMessage";
 import { Button } from "@ui/primitives/Button";
 import { TextField } from "@ui/primitives/TextField";
-import { useLogin } from "../hooks/use-login";
+import { useLogin } from "@olivin/features/auth";
 import { loginSchema } from "../forms/login.schema";
 import { Link } from "expo-router";
 import { AuthShell } from "../components/AuthShell";

@@ -9,8 +9,10 @@ import {
   confirmLoginCodeSchema,
   requestLoginCodeSchema,
 } from "../forms/login-by-code.schema";
-import { useConfirmLoginCode } from "../hooks/use-confirm-login-code";
-import { useRequestLoginCode } from "../hooks/use-request-login-code";
+import {
+  useConfirmLoginCode,
+  useRequestLoginCode,
+} from "@olivin/features/auth";
 
 type LoginByCodeStep = "email" | "code";
 
