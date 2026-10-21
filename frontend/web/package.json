@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@olivin/api": "workspace:*",
+    "@olivin/features": "workspace:*",
     "@olivin/i18n": "workspace:*",
     "@olivin/tokens": "workspace:*",
     "@radix-ui/react-slot": "^1.2.3",

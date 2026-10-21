@@ -17,6 +17,7 @@ const technicalPaths = [
   "/sitemap.xml",
   "/_next/static/chunks/main.js",
   "/favicon.ico",
+  "/_allauth/browser/v1/auth/session",
 ];
 
 const storefrontPaths = [

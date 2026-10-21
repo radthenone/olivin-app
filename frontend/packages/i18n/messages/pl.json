@@ -14,5 +14,29 @@
       "redis": "Redis",
       "storage": "Pamięć plików"
     }
+  },
+  "auth": {
+    "login": {
+      "title": "Zaloguj się",
+      "description": "Wejdź do konta Olivin, żeby zarządzać profilem i zamówieniami.",
+      "email": "E-mail",
+      "password": "Hasło",
+      "submit": "Zaloguj",
+      "submitting": "Logowanie…"
+    },
+    "header": {
+      "signedInAs": "Zalogowano jako {name}",
+      "logout": "Wyloguj",
+      "loggingOut": "Wylogowywanie…",
+      "login": "Zaloguj się"
+    },
+    "errors": {
+      "emailRequired": "Podaj adres e-mail.",
+      "emailInvalid": "Podaj poprawny adres e-mail.",
+      "passwordRequired": "Podaj hasło.",
+      "invalidCredentials": "Nieprawidłowy e-mail lub hasło.",
+      "tooManyAttempts": "Zbyt wiele prób logowania. Odczekaj chwilę.",
+      "generic": "Nie udało się zalogować. Spróbuj ponownie."
+    }
   }
 }

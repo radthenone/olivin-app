@@ -1,7 +1,11 @@
 import type { HttpResponse } from "@olivin/api";
 import { ApiError } from "@olivin/api";
+import { getGetAllauthClientV1AuthSessionUrl } from "@olivin/api/generated/auth/authentication-current-session/authentication-current-session";
 
+import { ensureCsrfToken } from "./csrf";
 import { getApiLocale } from "./request-locale";
+
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 /**
  * Klient HTTP aplikacji webowej.
@@ -28,7 +32,18 @@ function baseUrl(): string {
 }
 
 function resolve(url: string): string {
-  return url.startsWith("http") ? url : `${baseUrl()}${url}`;
+  if (url.startsWith("http")) {
+    return url;
+  }
+
+  // Allauth idzie przez rewrite Nexta na tym samym originie — tylko wtedy
+  // przeglądarka widzi ciasteczka `sessionid` i `csrftoken` wystawione przez
+  // Django. Reszta API nadal rozmawia z backendem bezpośrednio.
+  if (url.startsWith("/_allauth/")) {
+    return url;
+  }
+
+  return `${baseUrl()}${url}`;
 }
 
 async function readBody(response: Response): Promise<unknown> {
@@ -49,6 +64,12 @@ export async function webRequest<TData>(
 ): Promise<HttpResponse<TData>> {
   const target = resolve(url);
   const locale = getApiLocale();
+  const method = (options.method ?? "GET").toUpperCase();
+  const csrfToken = SAFE_METHODS.has(method)
+    ? null
+    : await ensureCsrfToken(
+        resolve(getGetAllauthClientV1AuthSessionUrl("browser")),
+      );
 
   let response: Response;
 
@@ -60,6 +81,7 @@ export async function webRequest<TData>(
         accept: "application/json",
         ...(locale ? { "accept-language": locale } : {}),
         "content-type": "application/json",
+        ...(csrfToken ? { "x-csrftoken": csrfToken } : {}),
         ...options.headers,
       },
     });

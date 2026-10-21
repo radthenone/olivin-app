@@ -8,6 +8,7 @@ import {
 import { notFound } from "next/navigation";
 
 import { routing } from "@/i18n/routing";
+import { SiteHeader } from "@/components/site-header";
 
 import "../globals.css";
 import { Providers } from "./providers";
@@ -57,7 +58,10 @@ export default async function LocaleLayout({
     <html lang={locale}>
       <body className="font-body antialiased">
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <Providers>{children}</Providers>
+          <Providers>
+            <SiteHeader />
+            {children}
+          </Providers>
         </NextIntlClientProvider>
       </body>
     </html>

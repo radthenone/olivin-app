@@ -14,5 +14,29 @@
       "redis": "Redis",
       "storage": "Storage"
     }
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "description": "Sign in to your Olivin account to manage your profile and orders.",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in…"
+    },
+    "header": {
+      "signedInAs": "Signed in as {name}",
+      "logout": "Sign out",
+      "loggingOut": "Signing out…",
+      "login": "Sign in"
+    },
+    "errors": {
+      "emailRequired": "Enter your email address.",
+      "emailInvalid": "Enter a valid email address.",
+      "passwordRequired": "Enter your password.",
+      "invalidCredentials": "Incorrect email or password.",
+      "tooManyAttempts": "Too many sign-in attempts. Wait a moment.",
+      "generic": "Could not sign in. Try again."
+    }
   }
 }
