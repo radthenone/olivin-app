@@ -4,11 +4,18 @@ import json
 from typing import Any, cast
 
 from allauth.account.adapter import DefaultAccountAdapter
+from django.core.exceptions import ValidationError
 from django.http import RawPostDataException
 from django.db import transaction
 from django.db.transaction import on_commit
 
 from apps.accounts.services import update_profile_from_signup_data
+from apps.accounts.usernames import (
+    USERNAME_MAX_LENGTH,
+    USERNAME_MIN_LENGTH,
+    is_reserved_username,
+    username_chars_validator,
+)
 from common.languages import language_from_request
 from core.services.allauth.signup_consents import record_signup_consents
 from core.services.mail.service import MailService
@@ -78,3 +85,28 @@ class AsyncAccountAdapter(DefaultAccountAdapter):
         `anon<liczba>` z ponowieniem przy kolizji (#195). Dotyczy też kont
         społecznościowych — allauth woła tę metodę z `SocialAccountAdapter.save_user`.
         """
+
+    def clean_username(self, username: str, shallow: bool = False) -> str:
+        """Waliduje nazwę wybraną przy rejestracji regułami profilu (#195).
+
+        Te same ograniczenia co `ProfileSerializer`: długość, dozwolone znaki
+        i nazwy zastrzeżone. Unikalność sprawdza allauth (bez wielkości liter),
+        więc błąd wraca przy polu `username`.
+        """
+        if not username:
+            return username
+
+        if not USERNAME_MIN_LENGTH <= len(username) <= USERNAME_MAX_LENGTH:
+            raise ValidationError(
+                f"Nazwa użytkownika musi mieć od {USERNAME_MIN_LENGTH} do "
+                f"{USERNAME_MAX_LENGTH} znaków.",
+                code="invalid_username",
+            )
+        if is_reserved_username(username):
+            raise ValidationError(
+                "Ta nazwa użytkownika jest zarezerwowana.",
+                code="username_reserved",
+            )
+        username_chars_validator(username)
+
+        return super().clean_username(username, shallow=shallow)

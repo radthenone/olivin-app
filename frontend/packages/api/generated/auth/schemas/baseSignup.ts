@@ -226,9 +226,11 @@
  */
 import type { BaseSignupPreferredLanguage } from './baseSignupPreferredLanguage';
 import type { Email } from './email';
+import type { Username } from './username';
 
 export interface BaseSignup {
   email: Email;
+  username?: Username;
   /** Zgoda na bieżącą wersję regulaminu (wymagana) */
   consent_terms: boolean;
   /** Zgoda na bieżącą wersję polityki prywatności (wymagana) */

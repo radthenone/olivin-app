@@ -375,6 +375,7 @@ export const PostAllauthClientV1AuthProviderSignupParams = zod.object({
 
 export const PostAllauthClientV1AuthProviderSignupBody = zod.object({
   "email": zod.string().describe('The email address.\n'),
+  "username": zod.string().optional().describe('The username.\n'),
   "consent_terms": zod.boolean().describe('Zgoda na bieżącą wersję regulaminu (wymagana)'),
   "consent_privacy": zod.boolean().describe('Zgoda na bieżącą wersję polityki prywatności (wymagana)'),
   "consent_marketing": zod.boolean().optional().describe('Zgoda na komunikację marketingową e-mailem (opcjonalna)'),
