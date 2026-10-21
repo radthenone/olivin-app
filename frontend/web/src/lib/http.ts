@@ -65,7 +65,10 @@ export async function webRequest<TData>(
   const target = resolve(url);
   const locale = getApiLocale();
   const method = (options.method ?? "GET").toUpperCase();
-  const csrfToken = SAFE_METHODS.has(method)
+  // Token CSRF dotyczy tylko allauth na tym samym originie — nie wysyłamy go
+  // do backendu pod innym adresem i nie robimy zbędnego GET sesji.
+  const needsCsrf = !SAFE_METHODS.has(method) && url.startsWith("/_allauth/");
+  const csrfToken = !needsCsrf
     ? null
     : await ensureCsrfToken(
         resolve(getGetAllauthClientV1AuthSessionUrl("browser")),

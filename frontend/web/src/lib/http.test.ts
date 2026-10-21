@@ -172,4 +172,34 @@ describe("webRequest CSRF for browser allauth", () => {
 
     expect(headers?.get("x-csrftoken")).toBeNull();
   });
+
+  test("does not send the token or fetch the session for non-allauth mutations", async () => {
+    (globalThis as { document?: FakeDocument }).document = { cookie: "" };
+    const calls: Array<{ url: string; headers: Headers }> = [];
+
+    globalThis.fetch = (async (input, init) => {
+      calls.push({ url: String(input), headers: new Headers(init?.headers) });
+      return new Response("{}", {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }) as typeof fetch;
+
+    await webRequest("http://backend.test/api/customers/profile/", {
+      method: "PATCH",
+      body: "{}",
+    });
+    await webRequest("/api/customers/profile/", {
+      method: "PATCH",
+      body: "{}",
+    });
+
+    expect(calls.map((call) => call.url)).toEqual([
+      "http://backend.test/api/customers/profile/",
+      "http://backend.test/api/customers/profile/",
+    ]);
+    expect(
+      calls.every((call) => call.headers.get("x-csrftoken") === null),
+    ).toBe(true);
+  });
 });
