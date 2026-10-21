@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
-import { mapLoginErrors } from "@olivin/features/auth";
+import { AuthResponseError, mapLoginErrors } from "@olivin/features/auth";
+
+import { loginErrorsFromFailure } from "./login-errors";
 
 /**
  * Błędy allauth trafiają do właściwego pola formularza (#349).
@@ -86,5 +88,44 @@ describe("mapLoginErrors", () => {
     expect(mapLoginErrors({ status: 401, data: {} })).toEqual([
       { target: "form", code: "backend" },
     ]);
+  });
+});
+
+/**
+ * Wspólny `useLogin` rzuca `AuthResponseError` dla 400 (#350) — formularz
+ * webowy nadal ma pokazać błędy przy polach, a nie ogólny komunikat.
+ */
+describe("loginErrorsFromFailure", () => {
+  test("maps field errors from a rejected 400 login to form fields", () => {
+    const error = new AuthResponseError(
+      {
+        status: 400,
+        data: {
+          status: 400,
+          errors: [
+            {
+              param: "email",
+              code: "invalid_email",
+              message: "Enter a valid email address.",
+            },
+            { param: "password", code: "required", message: "Required." },
+          ],
+        },
+      },
+      "Enter a valid email address.",
+    );
+
+    expect(loginErrorsFromFailure(error)).toEqual([
+      {
+        target: "email",
+        code: "backend",
+        message: "Enter a valid email address.",
+      },
+      { target: "password", code: "backend", message: "Required." },
+    ]);
+  });
+
+  test("returns null for non-response failures such as network errors", () => {
+    expect(loginErrorsFromFailure(new TypeError("Failed to fetch"))).toBeNull();
   });
 });

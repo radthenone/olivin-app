@@ -4,11 +4,12 @@ import { useForm } from "react-hook-form";
 import { useTranslations } from "next-intl";
 
 import {
-  AuthResponseError,
   mapLoginErrors,
   useLogin,
   type LoginError,
 } from "@olivin/features/auth";
+
+import { loginErrorsFromFailure } from "./login-errors";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -75,8 +76,9 @@ export function LoginForm() {
     } catch (error) {
       // Backend może odrzucić logowanie błędem 400 z listą pól — wtedy
       // pokazujemy je przy właściwych polach, a nie jako ogólny komunikat.
-      if (error instanceof AuthResponseError) {
-        showErrors(mapLoginErrors(error.response.data));
+      const fieldErrors = loginErrorsFromFailure(error);
+      if (fieldErrors) {
+        showErrors(fieldErrors);
         return;
       }
 
