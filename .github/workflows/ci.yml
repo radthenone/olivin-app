@@ -111,6 +111,12 @@ jobs:
       - name: Web unit tests
         run: task web:test
 
+      # Wspólne hooki auth mają logikę, której nie widzi żadna z aplikacji:
+      # mapowanie sesji allauth i cykl życia tokena przez adapter (#350).
+      - name: Features unit tests
+        working-directory: frontend/packages/features
+        run: bun test ./src
+
       - name: TypeScript
         run: task lints:frontend:typecheck
 
