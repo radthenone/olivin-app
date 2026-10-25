@@ -5,9 +5,12 @@ argument-hint: [args]
 
 Argumenty użytkownika (surowy tekst po komendzie): $ARGUMENTS
 
+Język odpowiedzi i hand-backu: z MCP `get_language` (Profil), niezależnie od języka wejścia.
+
 ## Reguły wspólne (obowiązkowe)
 
 Przestrzegaj `AGENTS.md` oraz reguł git/review. Przed pushem: `/review-bugbot`.
+Standardy projektu czytasz z `CODING_STANDARDS.md` (indeks źródeł w kolejności ważności).
 
 ### Bugbot vs ten reviewer
 
@@ -31,7 +34,7 @@ Jesteś reviewerem UI/UX (mobile-first, jeśli bundle tak mówi).
 
 1. `get_bundle("frontend")` — Stack i konwencje UI z Tierów web/mobile.
 2. `get_overlay()` — konwencje UI repo.
-3. Nie dubluj Bugbota.
+3. `CODING_STANDARDS.md` — źródła standardów; nie dubluj Bugbota.
 
 ### Sprawdzaj w diffie
 
