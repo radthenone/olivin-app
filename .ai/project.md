@@ -29,8 +29,8 @@ Task regeneracji klienta w tym repo: `task ovral:generate` (namespace to `ovral`
 
 | Wejście  | Plik (nie HTTP)                                                                   | Mutator               |
 | -------- | --------------------------------------------------------------------------------- | --------------------- |
-| Allauth  | `backend/src/allauth-schema.json` (snapshot; odśwież `task ovral:schema:allauth`) | `src/auth-mutator.ts` |
-| DRF apps | `backend/src/schema.yaml` (pilnowany przez `backend:schema:check`)                | `src/app-mutator.ts`  |
+| Allauth  | `backend/src/allauth-schema.json` (snapshot; odśwież `task ovral:schema:allauth`) | `frontend/packages/api/src/auth-mutator.ts` |
+| DRF apps | `backend/src/schema.yaml` (pilnowany przez `backend:schema:check`)                | `frontend/packages/api/src/app-mutator.ts`  |
 
 Generowane są też schematy Zod (`.zod.ts`) dla obu wejść.
 
@@ -56,6 +56,8 @@ Katalog kodu każdego Tieru — moduły Stacków odwołują się do tych kluczy 
 - design-tokens: `frontend/packages/tokens/`
 - routes-web: `frontend/web/app/`
 - routes-mobile: `frontend/mobile/app/`
+- api-generated: `frontend/packages/api/generated/`
+- ui: `frontend/web/src/components/ui/`
 - Taskfile: `Taskfile.yml` — główny punkt wejścia komend
 
 ## Taskfile
@@ -108,7 +110,7 @@ Testy integracyjne: `docker-compose.test.yml`, próg pokrycia **60%**.
 | `EXPO_PUBLIC_EMULATOR_URL` | `10.0.2.2:8020` (emulator Androida)                                                                       |
 | `EXPO_PUBLIC_VERSION`      | `v1` — wersjonowanie API (`URLPathVersioning`)                                                            |
 | Sieć Docker                | **`olivin-network`** — musi istnieć przed `docker compose up`                                             |
-| `FREE_SHIPPING_THRESHOLD`  | **50000** groszy — próg darmowej dostawy wspólny dla sklepu (`components/shop.py`); pusta wartość wyłącza |
+| `FREE_SHIPPING_THRESHOLD`  | **50000** groszy — próg darmowej dostawy wspólny dla sklepu (`backend/src/core/settings/components/shop.py`); pusta wartość wyłącza |
 
 Zmienne ładowane z `.env` oraz `.envs/dev/**` przez `dotenv:` w `Taskfile.yml` i `core/envs.py`; przy `DJANGO_ENVIRONMENT=testing` (pytest) `core/envs.py` nie czyta żadnego z tych plików.
 
@@ -236,13 +238,13 @@ Dopisuje `/kit-project-edit` (tryb odstępstwa), jedna linia na wyjątek:
 | Regeneracja projektu natywnego  | `task mobile:prebuild:clean`                                          |
 | Web                             | `task web:run` — Next dev na porcie 3000, natywnie, poza Dockerem     |
 
-`web.output: "static"` w `app.config.js`. Platforma w kodzie przez `moduleSuffixes: [".native", ".web", ""]`. Pliki: `session-token.storage.native.ts` (SecureStore) vs `.web.ts` (cookies). Wybór klienta allauth: `src/core/auth/platform.ts`.
+`web.output: "static"` w `app.config.js`. Platforma w kodzie przez `moduleSuffixes: [".native", ".web", ""]`. Pliki: `session-token.storage.native.ts` (SecureStore) vs `.web.ts` (cookies). Wybór klienta allauth: `frontend/mobile/src/core/config/platform/platform.ts`.
 
 OAuth wymaga **Dev Client**, nie działa w Expo Go.
 
 ## Biblioteka komponentów UI (web)
 
-Komponenty w `web/src/components/ui/` są czyste: nie pobierają danych, nie nawigują i nie wołają i18n. Teksty dostają przez propsy, a style biorą wyłącznie z tokenów według modułu `stack:frontend:ui-structure` z bundla. Dowolne wartości Tailwinda z liczbą albo kolorem (`-[...]`) też są literałami. Warianty `data-[state=open]:` i `aria-[...]` z shadcn są dozwolone. Układ plików jest płaski, taki jak generuje CLI shadcn. Zmieniamy go, jeśli pierwszy `/design-sync` wymusi foldery. Komponenty złożone z domeny mieszkają w `web/src/components/<obszar>/` i nie trafiają do synchronizacji z Claude Design. Mobile (RNR) trzyma te same nazwy komponentów, warianty i tokeny (ADR 0003). Tor designu jest opisany w `docs/open-decisions.md`.
+Komponenty w `frontend/web/src/components/ui/` są czyste: nie pobierają danych, nie nawigują i nie wołają i18n. Teksty dostają przez propsy, a style biorą wyłącznie z tokenów według modułu `stack:frontend:ui-structure` z bundla. Dowolne wartości Tailwinda z liczbą albo kolorem (`-[...]`) też są literałami. Warianty `data-[state=open]:` i `aria-[...]` z shadcn są dozwolone. Układ plików jest płaski, taki jak generuje CLI shadcn. Zmieniamy go, jeśli pierwszy `/design-sync` wymusi foldery. Komponenty złożone z domeny mieszkają w `frontend/web/src/components/<obszar>/` i nie trafiają do synchronizacji z Claude Design. Mobile (RNR) trzyma te same nazwy komponentów, warianty i tokeny (ADR 0003). Tor designu jest opisany w `docs/open-decisions.md`.
 
 ## Storage
 
@@ -253,7 +255,7 @@ Komponenty w `web/src/components/ui/` są czyste: nie pobierają danych, nie naw
 
 ## Konwencje API (rozstrzygnięte 2026-09-19)
 
-**W kodzie globalnie** (`core/settings/components/auth.py`, `core/api/`): paginacja, backendy filtrów, limity żądań i domyślna permisja. Limity trzymają historię w cache'u — `CACHES` wskazuje Redisa (`components/cache.py`, `REDIS_CACHE_URL`, domyślnie baza 1), bo pamięć procesu mnoży limit przez liczbę workerów. Reszta punktów niżej dotyczy widoków, które dopiero powstaną.
+**W kodzie globalnie** (`core/settings/components/auth.py`, `core/api/`): paginacja, backendy filtrów, limity żądań i domyślna permisja. Limity trzymają historię w cache'u — `CACHES` wskazuje Redisa (`backend/src/core/settings/components/cache.py`, `REDIS_CACHE_URL`, domyślnie baza 1), bo pamięć procesu mnoży limit przez liczbę workerów. Reszta punktów niżej dotyczy widoków, które dopiero powstaną.
 
 - Permisje: globalnie `IsAuthenticated` zostaje. `AllowAny` odczyt: products, categories, collections, aktywne promotions, shipping-methods. Koszyk gościa po `session_key`. Zapis własnych danych: zalogowany + queryset filtrowany po `request.user`. **Bez django-guardian.**
 - Mutacje katalogu, promocji, kursów kruszcu, metod dostawy — **wyłącznie Django admin** (ADR 0021). Zero POST/PUT/DELETE na te zasoby w API. Staff nie ma osobnego API.
@@ -264,8 +266,8 @@ Komponenty w `web/src/components/ui/` są czyste: nie pobierają danych, nie naw
 - Throttling DRF (wbudowany): anon 60/min, user 300/min; osobny scope `auth` 10/min, włączany na widoku przez `throttle_scope` — czeka na logowanie i walidację kuponu. Stripe webhook: podpis + idempotencja przez `WebhookEvent`. Stripe Radar włączony. Limity: max 5 szt. na pozycję, gość max 10 000 zł (powyżej wymaga konta).
 - Staff: TOTP obowiązkowe dla `is_staff` (allauth); e-mail do właściciela po aktywacji `MetalRate`; `LogEntry` admina jako audyt.
 - Celery beat (`DatabaseScheduler` jest; aplikacja Celery ładowana z `core/__init__.py`): `propose_metal_rates` pierwszego dnia miesiąca i `translate_published_catalog` co 24 h — **w kodzie**; sprzątanie koszyków gości co dobę, rezerwacje co 5 min (TTL 30 min), `pending` > 24 h → `cancelled` co godzinę — **w kodzie**; MetalRate miesięcznie → proposed; NBP dziennie; porzucone koszyki e-mail po 24 h (opt-in). `Watch` zdarzeniowo, nie cyklicznie.
-- Analityka: Umami self-hosted (kontener + baza na tym samym Postgresie), bez cookies; baner web: „niezbędne” + „marketing” (off), bez „analityczne”. `apps/analytics` usunięta. Mobile: nic.
-- Testy: backend pytest per app + factory_boy, markery, 60%; MSW w `packages/api` wspólny web+mobile; Playwright smoke web; Maestro smoke mobile (ADR 0020). Kolejność: backend → MSW → Playwright → Maestro.
+- Analityka: Umami self-hosted (kontener + baza na tym samym Postgresie), bez cookies; baner web: „niezbędne” + „marketing” (off), bez „analityczne”. Aplikacja analytics usunięta. Mobile: nic.
+- Testy: backend pytest per app + factory_boy, markery, 60%; MSW w `frontend/packages/api/` wspólny web+mobile; Playwright smoke web; Maestro smoke mobile (ADR 0020). Kolejność: backend → MSW → Playwright → Maestro.
 - Paczki instalowane przy bilecie, nie z góry: backend `weasyprint`, `deepl`; frontend `msw`, `expo-notifications`, `expo-file-system`, `expo-sharing`. Widget InPost odpada — ADR 0036 zastąpił paczkomaty wysyłką kurierem. **Nie**: guardian, django-weasyprint, elasticsearch, GA, Plausible CE.
 
 ## Payments
@@ -290,7 +292,7 @@ Adaptery w **`core/integrations/`** — kurs kruszcu (`metal_rate/`, dostawca pr
 
 **Backend:** `core/`, `apps/`, `common/`, `schema.yaml`, `tests/` (centralnie, nie per-app `tests.py`).
 
-**Tokeny designu:** `@olivin/tokens` — paleta robocza (brand/neutral/semantyczne), typografia, promienie, cienie, breakpointy. Adaptery: `mobile/tailwind.config.js` (v3) i `web/scripts/generate-tokens-css.mjs` → `web/app/tokens.css` (v4). Tożsamość wizualna marki **nie jest** jeszcze dobrana.
+**Tokeny designu:** `@olivin/tokens` — paleta robocza (brand/neutral/semantyczne), typografia, promienie, cienie, breakpointy. Adaptery: `frontend/mobile/tailwind.config.js` (v3) i `frontend/web/scripts/generate-tokens-css.mjs` → `frontend/web/app/tokens.css` (v4). Tożsamość wizualna marki **nie jest** jeszcze dobrana.
 
 ## CI (`.github/workflows/ci.yml`)
 
