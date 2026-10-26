@@ -44,7 +44,7 @@ If the PR modifies backend files (`backend/` — key `backend:` in `.ai/project.
 If changed files include API schema, endpoints, routes, or models affecting API
 **and** the project uses Orval (`codegen: orval` in `.ai/project.profile.yaml`; MCP `get_codegen`):
 
-- Add a blocking bug unless the generated API client (`frontend/packages/api/generated/` — key `api-generated:` or `codegen-output:` in `.ai/project.md` → `## Ścieżki`) was regenerated.
+- Add a blocking bug unless the generated API client (`frontend/packages/api/generated/` — key `api-generated:` or `codegen-output:` in `.ai/project.md` → `## Ścieżki`; defaults to `src/api/generated/` under `web:`) was regenerated.
 - Body: "Po zmianie kontraktu API uruchom `task ovral:generate` i commituj wygenerowany klient."
 
 If profile says `codegen: manual` or `codegen: none`: do **not** require Orval regeneration.
@@ -62,7 +62,7 @@ If the PR modifies client code (`frontend/web/`, `frontend/mobile/` — keys `we
 - Flag native-only imports in web-only files (and DOM-only APIs in native files), if the Stack splits platforms.
 - Flag `any` on new public interfaces without `@ts-expect-error` justification.
 
-If the PR changes UI library components (`frontend/web/src/components/ui/` — key `ui:` in `.ai/project.md` → `## Ścieżki`) and they import the API client, stores, or feature code:
+If the PR changes UI library components (`frontend/web/src/components/ui/` — key `ui:` in `.ai/project.md` → `## Ścieżki`; defaults to `src/components/ui/` under `web:`) and they import the API client, stores, or feature code:
 
 - Add a non-blocking finding titled "Impure UI library component"
 - Body: "Komponenty biblioteki UI są czyste — dane i logika przychodzą przez propsy."
