@@ -10,7 +10,7 @@ import type { RequestLoginCodeBody } from "@olivin/api/generated/auth/schemas/re
  * należy do aplikacji mobilnej.
  */
 export const requestLoginCodeFormSchema = z.object({
-  email: z.email("email_invalid"),
+  email: z.string().min(1, "email_required").pipe(z.email("email_invalid")),
 });
 
 export type RequestLoginCodeFormValues = z.infer<
