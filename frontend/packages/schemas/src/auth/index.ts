@@ -1,4 +1,14 @@
 export {
+  passwordResetConfirmFormSchema,
+  passwordResetRequestFormSchema,
+  toPasswordResetConfirmBody,
+  toPasswordResetRequestBody,
+} from "./password-reset";
+export type {
+  PasswordResetConfirmFormValues,
+  PasswordResetRequestFormValues,
+} from "./password-reset";
+export {
   NO_SIGNUP_CONSENTS,
   PASSWORD_MIN_LENGTH,
   USERNAME_MAX_LENGTH,

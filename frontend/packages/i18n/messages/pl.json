@@ -22,7 +22,8 @@
       "email": "E-mail",
       "password": "Hasło",
       "submit": "Zaloguj",
-      "submitting": "Logowanie…"
+      "submitting": "Logowanie…",
+      "forgotPassword": "Nie pamiętasz hasła?"
     },
     "register": {
       "title": "Utwórz konto",
@@ -50,6 +51,22 @@
       "submitting": "Potwierdzanie…",
       "success": "E-mail potwierdzony. Konto jest gotowe.",
       "backToHome": "Przejdź do sklepu"
+    },
+    "passwordReset": {
+      "title": "Odzyskaj hasło",
+      "description": "Podaj adres e-mail konta. Wyślemy kod do ustawienia nowego hasła.",
+      "email": "E-mail",
+      "requestSubmit": "Wyślij kod",
+      "requestSubmitting": "Wysyłanie…",
+      "requestFailed": "Nie udało się wysłać kodu resetu. Spróbuj ponownie.",
+      "confirmTitle": "Ustaw nowe hasło",
+      "confirmDescription": "Wpisz kod z e-maila i nowe hasło.",
+      "code": "Kod z e-maila",
+      "password": "Nowe hasło",
+      "passwordHint": "Minimum 8 znaków.",
+      "confirmSubmit": "Ustaw hasło",
+      "confirmSubmitting": "Zapisywanie…",
+      "backToLogin": "Wróć do logowania"
     },
     "header": {
       "signedInAs": "Zalogowano jako {name}",

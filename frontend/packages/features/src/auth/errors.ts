@@ -191,3 +191,56 @@ export function mapVerifyEmailErrors(body: unknown): VerifyEmailError[] {
       : { target: "form", code };
   });
 }
+
+export type PasswordResetErrorTarget = "email" | "key" | "password" | "form";
+
+export type PasswordResetErrorCode =
+  "codeInvalid" | "passwordInvalid" | "tooManyAttempts" | "backend";
+
+export type PasswordResetError = {
+  target: PasswordResetErrorTarget;
+  code: PasswordResetErrorCode;
+  message?: string;
+};
+
+const PASSWORD_RESET_PARAMS: Record<string, PasswordResetErrorTarget> = {
+  email: "email",
+  key: "key",
+  password: "password",
+};
+
+/**
+ * Zamienia błędy resetu hasła na błędy pól formularza.
+ *
+ * Allauth zwraca odrzucony kod pod `key`, a wymagania hasła pod `password` —
+ * dzięki temu kod trafia do pola kodu, a hasło do pola hasła, zamiast jednego
+ * komunikatu pod całym formularzem.
+ */
+export function mapPasswordResetErrors(body: unknown): PasswordResetError[] {
+  const rawErrors = (body as { errors?: unknown } | null)?.errors;
+
+  if (!Array.isArray(rawErrors) || rawErrors.length === 0) {
+    return [{ target: "form", code: "backend" }];
+  }
+
+  return rawErrors.map((raw) => {
+    const error = raw as AllauthError;
+    const target = PASSWORD_RESET_PARAMS[String(error.param)] ?? "form";
+    const backendCode = typeof error.code === "string" ? error.code : "";
+    const message =
+      typeof error.message === "string" && error.message.length > 0
+        ? error.message
+        : undefined;
+
+    const code: PasswordResetErrorCode =
+      target === "key"
+        ? "codeInvalid"
+        : target === "password"
+          ? "passwordInvalid"
+          : backendCode.startsWith("too_many")
+            ? "tooManyAttempts"
+            : "backend";
+
+    return message ? { target, code, message } : { target, code };
+  });
+}
