@@ -37,6 +37,14 @@ describe("requestLoginCodeFormSchema", () => {
     );
   });
 
+  test("reports an empty email as required and a malformed one as invalid", () => {
+    const empty = requestLoginCodeFormSchema.safeParse({ email: "" });
+    const malformed = requestLoginCodeFormSchema.safeParse({ email: "jan" });
+
+    expect(empty.error?.issues[0]?.message).toBe("email_required");
+    expect(malformed.error?.issues[0]?.message).toBe("email_invalid");
+  });
+
   test("matches the generated allauth request-login-code body", () => {
     const body = toRequestLoginCodeBody(
       requestLoginCodeFormSchema.parse({ email: "jan@example.com" }),
