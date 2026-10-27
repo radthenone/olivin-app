@@ -14,6 +14,7 @@ export {
 } from "./auth-response";
 export {
   mapLoginErrors,
+  mapMfaErrors,
   mapSignupErrors,
   mapVerifyEmailErrors,
 } from "./errors";
@@ -21,6 +22,9 @@ export type {
   LoginError,
   LoginErrorCode,
   LoginErrorTarget,
+  MfaError,
+  MfaErrorCode,
+  MfaErrorTarget,
   SignupError,
   SignupErrorCode,
   SignupErrorTarget,

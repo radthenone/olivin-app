@@ -2,14 +2,17 @@
 
 import { useForm } from "react-hook-form";
 import { useTranslations } from "next-intl";
+import { useState } from "react";
 
 import {
+  mapAllauthBodyToAuthState,
   mapLoginErrors,
   useLogin,
   type LoginError,
 } from "@olivin/features/auth";
 
 import { loginErrorsFromFailure } from "./login-errors";
+import { MfaForm } from "./mfa-form";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -43,6 +46,7 @@ type LoginFormValues = {
 export function LoginForm() {
   const t = useTranslations("auth");
   const { login, isPending } = useLogin();
+  const [isMfaRequired, setIsMfaRequired] = useState(false);
   const form = useForm<LoginFormValues>({
     defaultValues: { email: "", password: "" },
   });
@@ -72,6 +76,13 @@ export function LoginForm() {
         return;
       }
 
+      // Allauth po poprawnym haśle może wymagać drugiego składnika — wtedy
+      // zamiast błędu logowania pokazujemy ekran MFA.
+      if (mapAllauthBodyToAuthState(response.data).status === "mfa_required") {
+        setIsMfaRequired(true);
+        return;
+      }
+
       showErrors(mapLoginErrors(response.data));
     } catch (error) {
       // Backend może odrzucić logowanie błędem 400 z listą pól — wtedy
@@ -93,6 +104,10 @@ export function LoginForm() {
         message: errorMessage(error),
       });
     }
+  }
+
+  if (isMfaRequired) {
+    return <MfaForm />;
   }
 
   return (

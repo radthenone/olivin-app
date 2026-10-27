@@ -191,3 +191,46 @@ export function mapVerifyEmailErrors(body: unknown): VerifyEmailError[] {
       : { target: "form", code };
   });
 }
+
+export type MfaErrorTarget = "code" | "form";
+
+export type MfaErrorCode = "codeInvalid" | "tooManyAttempts" | "backend";
+
+export type MfaError = {
+  target: MfaErrorTarget;
+  code: MfaErrorCode;
+  message?: string;
+};
+
+/**
+ * Zamienia błędy potwierdzenia MFA na błędy formularza.
+ *
+ * Allauth odrzuca zły kod jako `incorrect_code` przy polu `code`, a limit prób
+ * zgłasza bez pola — wtedy komunikat trafia na formularz.
+ */
+export function mapMfaErrors(body: unknown): MfaError[] {
+  const rawErrors = (body as { errors?: unknown } | null)?.errors;
+
+  if (!Array.isArray(rawErrors) || rawErrors.length === 0) {
+    return [{ target: "form", code: "backend" }];
+  }
+
+  return rawErrors.map((raw) => {
+    const error = raw as AllauthError;
+    const backendCode = typeof error.code === "string" ? error.code : "";
+    const target: MfaErrorTarget = error.param === "code" ? "code" : "form";
+    const message =
+      typeof error.message === "string" && error.message.length > 0
+        ? error.message
+        : undefined;
+
+    const code: MfaErrorCode =
+      backendCode === "incorrect_code"
+        ? "codeInvalid"
+        : backendCode === "too_many_attempts"
+          ? "tooManyAttempts"
+          : "backend";
+
+    return message ? { target, code, message } : { target, code };
+  });
+}

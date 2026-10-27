@@ -51,6 +51,15 @@
       "success": "E-mail potwierdzony. Konto jest gotowe.",
       "backToHome": "Przejdź do sklepu"
     },
+    "mfa": {
+      "title": "Weryfikacja dwuetapowa",
+      "description": "Podaj kod z aplikacji uwierzytelniającej albo kod odzyskiwania, żeby dokończyć logowanie.",
+      "code": "Kod MFA",
+      "submit": "Potwierdź",
+      "submitting": "Sprawdzanie…",
+      "success": "Kod przyjęty. Jesteś zalogowany.",
+      "backToHome": "Przejdź do sklepu"
+    },
     "header": {
       "signedInAs": "Zalogowano jako {name}",
       "logout": "Wyloguj",
@@ -76,6 +85,9 @@
       "tooManyAttempts": "Zbyt wiele prób. Odczekaj chwilę.",
       "registrationFailed": "Nie udało się utworzyć konta. Spróbuj ponownie.",
       "verificationFailed": "Nie udało się potwierdzić e-maila. Spróbuj ponownie.",
+      "mfaCodeRequired": "Wpisz kod MFA.",
+      "mfaCodeInvalid": "Nieprawidłowy kod MFA.",
+      "mfaFailed": "Nie udało się potwierdzić kodu. Spróbuj ponownie.",
       "generic": "Nie udało się zalogować. Spróbuj ponownie."
     }
   }
