@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 
 import { useRequestLoginCode } from "@olivin/features/auth";
@@ -38,9 +39,15 @@ import { isTooManyAttempts } from "./login-errors";
  *
  * Po przyjęciu adresu przez allauth przechodzimy na ekran wpisania kodu —
  * backend trzyma oczekujący etap w sesji, więc ekran kodu nie potrzebuje
- * adresu w adresie strony.
+ * adresu w adresie strony. Flaga `expired` oznacza powrót z ekranu MFA po
+ * wygaśnięciu logowania (#409); komunikat pokazujemy raz, a adres zaraz
+ * czyścimy, żeby odświeżenie go nie przywracało.
  */
-export function LoginCodeRequestForm() {
+export function LoginCodeRequestForm({
+  expired = false,
+}: {
+  expired?: boolean;
+}) {
   const t = useTranslations("auth");
   const locale = useLocale();
   const router = useRouter();
@@ -49,6 +56,18 @@ export function LoginCodeRequestForm() {
     defaultValues: { email: "" },
   });
   const isPending = requestCode.isPending;
+
+  useEffect(() => {
+    if (!expired) {
+      return;
+    }
+
+    form.setError("root", {
+      type: "server",
+      message: t("errors.mfaExpired"),
+    });
+    router.replace(`/${locale}/login/code` as Route);
+  }, [expired, form, locale, router, t]);
 
   const rootError = form.formState.errors.root?.message;
 

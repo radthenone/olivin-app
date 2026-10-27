@@ -42,7 +42,8 @@ type MfaFormValues = {
  * Allauth po poprawnym haśle zwraca flow `mfa_authenticate`, więc formularz
  * hasła przekazuje sterowanie tutaj. Poprawny kod kończy logowanie (sesja
  * odświeża się przez wspólny hook), a zły zostaje przy polu kodu. Gdy
- * oczekujące logowanie wygaśnie, `onExpired` wraca do formularza hasła.
+ * oczekujące logowanie wygaśnie, `onExpired` zgłasza to rodzicowi, który
+ * wraca do formularza, z którego logowanie się zaczęło (hasło albo kod).
  */
 export function MfaForm({ onExpired }: { onExpired: () => void }) {
   const t = useTranslations("auth");
