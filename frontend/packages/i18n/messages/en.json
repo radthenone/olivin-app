@@ -22,7 +22,22 @@
       "email": "Email",
       "password": "Password",
       "submit": "Sign in",
-      "submitting": "Signing in…"
+      "submitting": "Signing in…",
+      "codeLink": "Sign in with a code"
+    },
+    "loginCode": {
+      "title": "Sign in with a code",
+      "description": "Enter your email address and we will send you a one-time sign-in code.",
+      "email": "Email",
+      "requestSubmit": "Send the code",
+      "requestSubmitting": "Sending…",
+      "requestFailed": "Could not send the sign-in code. Try again.",
+      "confirmTitle": "Enter the code from the email",
+      "confirmDescription": "We sent a one-time code to the email address you provided. Enter it below.",
+      "code": "Sign-in code",
+      "confirmSubmit": "Sign in with the code",
+      "confirmSubmitting": "Signing in…",
+      "backToPassword": "Back to password sign-in"
     },
     "register": {
       "title": "Create an account",
