@@ -52,6 +52,7 @@ type SeenRequests = {
 };
 
 type StubOptions = {
+  requestStatus?: number;
   confirmStatus?: number;
   confirmBody?: unknown;
 };
@@ -87,10 +88,11 @@ async function stubAllauth(
       seen.csrf = request.headers()["x-csrftoken"];
       seen.email = (request.postDataJSON() as { email?: string }).email;
 
+      const status = options.requestStatus ?? 401;
       await route.fulfill({
-        status: 401,
+        status,
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(pendingCodeBody()),
+        body: JSON.stringify(status === 401 ? pendingCodeBody() : { status }),
       });
     },
   );
@@ -209,5 +211,41 @@ test.describe("login by email code on the web", () => {
     await expect(
       page.getByRole("link", { name: "Zaloguj się", exact: true }),
     ).toBeVisible();
+  });
+
+  test("tells an MFA account that the website cannot finish the sign-in", async ({
+    page,
+  }) => {
+    await stubAllauth(page, {
+      confirmStatus: 401,
+      confirmBody: {
+        status: 401,
+        data: { flows: [{ id: "mfa_authenticate", is_pending: true }] },
+        meta: { is_authenticated: false },
+      },
+    });
+
+    await requestCode(page, stubUser.email);
+    await page.getByLabel("Kod logowania").fill(validCode);
+    await page.getByRole("button", { name: "Zaloguj kodem" }).click();
+
+    await expect(
+      page.getByText(
+        "Konto ma włączone logowanie dwuetapowe, którego strona jeszcze nie obsługuje.",
+      ),
+    ).toBeVisible();
+  });
+
+  test("asks to wait when requesting codes hits the rate limit", async ({
+    page,
+  }) => {
+    await stubAllauth(page, { requestStatus: 429 });
+
+    await requestCode(page, stubUser.email);
+
+    await expect(
+      page.getByText("Zbyt wiele prób. Odczekaj chwilę."),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/\/pl\/login\/code$/);
   });
 });

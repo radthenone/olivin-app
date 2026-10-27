@@ -89,6 +89,7 @@
       "codeInvalid": "The code is invalid or has expired.",
       "invalidCredentials": "Incorrect email or password.",
       "tooManyAttempts": "Too many attempts. Wait a moment.",
+      "mfaUnsupported": "This account uses two-step sign-in, which the website does not support yet.",
       "registrationFailed": "Could not create the account. Try again.",
       "verificationFailed": "Could not confirm the email. Try again.",
       "generic": "Could not sign in. Try again."

@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
+import { isTooManyAttempts } from "./login-errors";
+
 /**
  * Zamówienie jednorazowego kodu logowania (#352).
  *
@@ -65,10 +67,12 @@ export function LoginCodeRequestForm() {
     try {
       await requestCode.mutateAsync(toRequestLoginCodeBody(parsed.data));
       router.push(`/${locale}/login/code/confirm` as Route);
-    } catch {
+    } catch (error) {
       form.setError("root", {
         type: "server",
-        message: t("loginCode.requestFailed"),
+        message: isTooManyAttempts(error)
+          ? t("errors.tooManyAttempts")
+          : t("loginCode.requestFailed"),
       });
     }
   }

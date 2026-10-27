@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
+import { isTooManyAttempts } from "./login-errors";
+
 /**
  * Wpisanie jednorazowego kodu logowania (#352).
  *
@@ -72,15 +74,21 @@ export function LoginCodeConfirmForm() {
         return;
       }
 
+      // Poprawny kod przy koncie z MFA kończy się etapem drugiego składnika,
+      // którego web jeszcze nie ma — to nie jest zły kod.
       form.setError("root", {
         type: "server",
-        message: t("errors.codeInvalid"),
+        message:
+          state.status === "mfa_required"
+            ? t("errors.mfaUnsupported")
+            : t("errors.codeInvalid"),
       });
     } catch (error) {
       form.setError("root", {
         type: "server",
-        message:
-          error instanceof AuthResponseError
+        message: isTooManyAttempts(error)
+          ? t("errors.tooManyAttempts")
+          : error instanceof AuthResponseError
             ? t("errors.codeInvalid")
             : t("errors.generic"),
       });
