@@ -28,6 +28,7 @@ import {
   signupErrorKey,
 } from "./signup-errors";
 import { SignupConsents } from "./signup-consents";
+import { ProviderButtons } from "./provider-buttons";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -268,6 +269,10 @@ export function RegisterForm() {
             </p>
           </form>
         </Form>
+
+        <div className="mt-6">
+          <ProviderButtons />
+        </div>
       </CardContent>
     </Card>
   );
