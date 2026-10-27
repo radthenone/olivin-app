@@ -23,6 +23,7 @@
       "password": "Password",
       "submit": "Sign in",
       "submitting": "Signing in…",
+      "forgotPassword": "Forgot your password?",
       "codeLink": "Sign in with a code"
     },
     "loginCode": {
@@ -65,6 +66,22 @@
       "submitting": "Confirming…",
       "success": "Email confirmed. Your account is ready.",
       "backToHome": "Go to the shop"
+    },
+    "passwordReset": {
+      "title": "Recover your password",
+      "description": "Enter the email address of your account. We will send you a code to set a new password.",
+      "email": "Email",
+      "requestSubmit": "Send the code",
+      "requestSubmitting": "Sending…",
+      "requestFailed": "Could not send the reset code. Try again.",
+      "confirmTitle": "Set a new password",
+      "confirmDescription": "Enter the code from the email and your new password.",
+      "code": "Code from the email",
+      "password": "New password",
+      "passwordHint": "At least 8 characters.",
+      "confirmSubmit": "Set the password",
+      "confirmSubmitting": "Saving…",
+      "backToLogin": "Back to sign-in"
     },
     "header": {
       "signedInAs": "Signed in as {name}",

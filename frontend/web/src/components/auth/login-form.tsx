@@ -174,6 +174,12 @@ export function LoginForm() {
 
             <Link
               className="text-center text-sm text-neutral-700 underline underline-offset-4"
+              href={`/${locale}/reset-password` as Route}
+            >
+              {t("login.forgotPassword")}
+            </Link>
+            <Link
+              className="text-center text-sm text-neutral-700 underline underline-offset-4"
               href={`/${locale}/login/code` as Route}
             >
               {t("login.codeLink")}

@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
-import { mapSignupErrors, mapVerifyEmailErrors } from "./errors";
+import {
+  mapPasswordResetErrors,
+  mapSignupErrors,
+  mapVerifyEmailErrors,
+} from "./errors";
 
 describe("mapSignupErrors", () => {
   test("maps backend fields onto form fields", () => {
@@ -125,6 +129,99 @@ describe("mapVerifyEmailErrors", () => {
 
   test("falls back to a generic form error", () => {
     expect(mapVerifyEmailErrors({ status: 400 })).toEqual([
+      { target: "form", code: "backend" },
+    ]);
+  });
+});
+
+describe("mapPasswordResetErrors", () => {
+  test("maps a wrong or expired reset code onto the code field", () => {
+    expect(
+      mapPasswordResetErrors({
+        status: 400,
+        errors: [
+          {
+            param: "key",
+            code: "token_invalid",
+            message: "The password reset token was invalid.",
+          },
+        ],
+      }),
+    ).toEqual([
+      {
+        target: "key",
+        code: "codeInvalid",
+        message: "The password reset token was invalid.",
+      },
+    ]);
+  });
+
+  test("maps a malformed email onto the email field", () => {
+    expect(
+      mapPasswordResetErrors({
+        status: 400,
+        errors: [
+          {
+            param: "email",
+            code: "invalid",
+            message: "Enter a valid email address.",
+          },
+        ],
+      }),
+    ).toEqual([
+      {
+        target: "email",
+        code: "backend",
+        message: "Enter a valid email address.",
+      },
+    ]);
+  });
+
+  test("maps a password rejected by the backend onto the password field", () => {
+    expect(
+      mapPasswordResetErrors({
+        status: 400,
+        errors: [
+          {
+            param: "password",
+            code: "password_too_short",
+            message: "This password is too short.",
+          },
+        ],
+      }),
+    ).toEqual([
+      {
+        target: "password",
+        code: "passwordInvalid",
+        message: "This password is too short.",
+      },
+    ]);
+  });
+
+  test("maps the reset rate limit", () => {
+    expect(
+      mapPasswordResetErrors({
+        status: 429,
+        errors: [{ code: "too_many_password_reset_attempts" }],
+      }),
+    ).toEqual([{ target: "form", code: "tooManyAttempts" }]);
+  });
+
+  test("keeps an unknown error message on the form", () => {
+    expect(
+      mapPasswordResetErrors({
+        status: 400,
+        errors: [
+          { param: "account", code: "unknown", message: "Coś poszło nie tak." },
+        ],
+      }),
+    ).toEqual([
+      { target: "form", code: "backend", message: "Coś poszło nie tak." },
+    ]);
+  });
+
+  test("falls back to a generic form error without an error list", () => {
+    expect(mapPasswordResetErrors({ status: 400 })).toEqual([
       { target: "form", code: "backend" },
     ]);
   });
