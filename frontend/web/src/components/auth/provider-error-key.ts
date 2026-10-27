@@ -11,7 +11,9 @@ export type ProviderErrorKey =
  * dostaje osobny komunikat. Odmowa polityki rejestracji i wymóg ponownego
  * logowania też mają własne teksty, a reszta ląduje w komunikacie ogólnym.
  */
-export function providerErrorKey(code: string | null | undefined): ProviderErrorKey {
+export function providerErrorKey(
+  code: string | null | undefined,
+): ProviderErrorKey {
   switch (code) {
     case "access_denied":
     case "cancelled":

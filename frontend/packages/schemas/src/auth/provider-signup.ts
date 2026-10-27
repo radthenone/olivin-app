@@ -19,9 +19,7 @@ export const providerSignupFormSchema = z
   .object({ username: usernameSchema })
   .extend(signupConsentsSchema.shape);
 
-export type ProviderSignupFormValues = z.infer<
-  typeof providerSignupFormSchema
->;
+export type ProviderSignupFormValues = z.infer<typeof providerSignupFormSchema>;
 
 /** Wartości formularza przed walidacją — zgody startują jako niezaznaczone. */
 export type ProviderSignupFormInput = {

@@ -19,9 +19,7 @@ describe("providerErrorKey", () => {
   });
 
   test("explains when the provider or signup policy refused the account", () => {
-    expect(providerErrorKey("denied")).toBe(
-      "auth.provider.errors.notAllowed",
-    );
+    expect(providerErrorKey("denied")).toBe("auth.provider.errors.notAllowed");
     expect(providerErrorKey("permission_denied")).toBe(
       "auth.provider.errors.notAllowed",
     );
