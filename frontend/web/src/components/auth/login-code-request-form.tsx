@@ -73,9 +73,10 @@ export function LoginCodeRequestForm({
 
     const parsed = requestLoginCodeFormSchema.safeParse(values);
     if (!parsed.success) {
+      const isEmpty = parsed.error.issues[0]?.message === "email_required";
       form.setError("email", {
         type: "validation",
-        message: t("errors.emailInvalid"),
+        message: t(isEmpty ? "errors.emailRequired" : "errors.emailInvalid"),
       });
       return;
     }
@@ -107,7 +108,6 @@ export function LoginCodeRequestForm({
           <FormField
             control={form.control}
             name="email"
-            rules={{ required: t("errors.emailRequired") }}
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{t("loginCode.email")}</FormLabel>
