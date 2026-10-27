@@ -146,7 +146,9 @@ test.describe("MFA step after password on the web", () => {
     await expect(
       page.getByRole("heading", { name: "Weryfikacja dwuetapowa" }),
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: "Zaloguj się" })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Zaloguj się", exact: true }),
+    ).toBeVisible();
 
     await page.getByLabel("Kod MFA").fill(MFA_CODE);
     await page.getByRole("button", { name: "Potwierdź" }).click();
@@ -168,7 +170,9 @@ test.describe("MFA step after password on the web", () => {
     await page.getByRole("button", { name: "Potwierdź" }).click();
 
     await expect(page.getByText("Nieprawidłowy kod MFA.")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Zaloguj się" })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Zaloguj się", exact: true }),
+    ).toBeVisible();
     await expect(page.getByRole("button", { name: "Wyloguj" })).toBeHidden();
   });
 

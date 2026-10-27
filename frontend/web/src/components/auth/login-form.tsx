@@ -1,8 +1,10 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { useTranslations } from "next-intl";
+import Link from "next/link";
+import type { Route } from "next";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 
 import {
   mapAllauthBodyToAuthState,
@@ -45,6 +47,7 @@ type LoginFormValues = {
  */
 export function LoginForm() {
   const t = useTranslations("auth");
+  const locale = useLocale();
   const { login, isPending } = useLogin();
   const [isMfaRequired, setIsMfaRequired] = useState(false);
   const form = useForm<LoginFormValues>({
@@ -188,6 +191,13 @@ export function LoginForm() {
             <Button disabled={isPending} type="submit">
               {isPending ? t("login.submitting") : t("login.submit")}
             </Button>
+
+            <Link
+              className="text-center text-sm text-neutral-700 underline underline-offset-4"
+              href={`/${locale}/login/code` as Route}
+            >
+              {t("login.codeLink")}
+            </Link>
           </form>
         </Form>
       </CardContent>
