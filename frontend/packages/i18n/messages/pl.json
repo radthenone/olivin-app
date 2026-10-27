@@ -23,6 +23,7 @@
       "password": "Hasło",
       "submit": "Zaloguj",
       "submitting": "Logowanie…",
+      "forgotPassword": "Nie pamiętasz hasła?",
       "codeLink": "Zaloguj się kodem"
     },
     "loginCode": {
@@ -74,6 +75,22 @@
       "submitting": "Sprawdzanie…",
       "success": "Kod przyjęty. Jesteś zalogowany.",
       "backToHome": "Przejdź do sklepu"
+    },
+    "passwordReset": {
+      "title": "Odzyskaj hasło",
+      "description": "Podaj adres e-mail konta. Wyślemy kod do ustawienia nowego hasła.",
+      "email": "E-mail",
+      "requestSubmit": "Wyślij kod",
+      "requestSubmitting": "Wysyłanie…",
+      "requestFailed": "Nie udało się wysłać kodu resetu. Spróbuj ponownie.",
+      "confirmTitle": "Ustaw nowe hasło",
+      "confirmDescription": "Wpisz kod z e-maila i nowe hasło.",
+      "code": "Kod z e-maila",
+      "password": "Nowe hasło",
+      "passwordHint": "Minimum 8 znaków.",
+      "confirmSubmit": "Ustaw hasło",
+      "confirmSubmitting": "Zapisywanie…",
+      "backToLogin": "Wróć do logowania"
     },
     "header": {
       "signedInAs": "Zalogowano jako {name}",

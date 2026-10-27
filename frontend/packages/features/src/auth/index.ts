@@ -15,6 +15,7 @@ export {
 export {
   mapLoginErrors,
   mapMfaErrors,
+  mapPasswordResetErrors,
   mapSignupErrors,
   mapVerifyEmailErrors,
 } from "./errors";
@@ -25,6 +26,9 @@ export type {
   MfaError,
   MfaErrorCode,
   MfaErrorTarget,
+  PasswordResetError,
+  PasswordResetErrorCode,
+  PasswordResetErrorTarget,
   SignupError,
   SignupErrorCode,
   SignupErrorTarget,
