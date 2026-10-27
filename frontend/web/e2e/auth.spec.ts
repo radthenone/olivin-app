@@ -168,7 +168,9 @@ test.describe("password login on the web", () => {
       await expect(page.getByText(display)).toBeVisible();
     }
     await expect(page.getByRole("button", { name: "Wyloguj" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Zaloguj się" })).toBeHidden();
+    await expect(
+      page.getByRole("link", { name: "Zaloguj się", exact: true }),
+    ).toBeHidden();
   });
 
   test("shows a wrong password at the password field", async ({ page }) => {
@@ -185,7 +187,9 @@ test.describe("password login on the web", () => {
       "aria-invalid",
       "true",
     );
-    await expect(page.getByRole("link", { name: "Zaloguj się" })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Zaloguj się", exact: true }),
+    ).toBeVisible();
   });
 
   test("logs out and clears the account from the header", async ({ page }) => {
@@ -198,7 +202,9 @@ test.describe("password login on the web", () => {
 
     await page.getByRole("button", { name: "Wyloguj" }).click();
 
-    await expect(page.getByRole("link", { name: "Zaloguj się" })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Zaloguj się", exact: true }),
+    ).toBeVisible();
     await expect(page.getByRole("button", { name: "Wyloguj" })).toBeHidden();
 
     const display = expectedDisplay();
