@@ -122,6 +122,25 @@
       "mfaFailed": "Could not confirm the code. Try again.",
       "mfaExpired": "Your sign-in expired. Sign in again.",
       "generic": "Could not sign in. Try again."
+    },
+    "provider": {
+      "continueGoogle": "Continue with Google",
+      "continueFacebook": "Continue with Facebook",
+      "backToLogin": "Back to sign in",
+      "signup": {
+        "title": "Complete your registration",
+        "description": "Google or Facebook gave us your email address. Choose a username and accept the consents to create your account.",
+        "email": "Email address from your provider account",
+        "submit": "Create account",
+        "submitting": "Creating account…",
+        "failed": "We couldn't complete your registration. Please try again."
+      },
+      "errors": {
+        "cancelled": "Sign-in was cancelled. Please try again.",
+        "notAllowed": "We can't create an account with this provider. Sign in with email or contact us.",
+        "reauthentication": "Please confirm your sign-in with the provider again.",
+        "failed": "Sign-in with the provider failed. Please try again."
+      }
     }
   }
 }

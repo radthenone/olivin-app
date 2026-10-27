@@ -122,6 +122,25 @@
       "mfaFailed": "Nie udało się potwierdzić kodu. Spróbuj ponownie.",
       "mfaExpired": "Logowanie wygasło. Zaloguj się ponownie.",
       "generic": "Nie udało się zalogować. Spróbuj ponownie."
+    },
+    "provider": {
+      "continueGoogle": "Kontynuuj z Google",
+      "continueFacebook": "Kontynuuj z Facebook",
+      "backToLogin": "Wróć do logowania",
+      "signup": {
+        "title": "Dokończ rejestrację",
+        "description": "Google lub Facebook podało nam adres e-mail. Wybierz nazwę użytkownika i zaakceptuj zgody, żeby założyć konto.",
+        "email": "Adres e-mail z konta dostawcy",
+        "submit": "Załóż konto",
+        "submitting": "Tworzenie konta…",
+        "failed": "Nie udało się dokończyć rejestracji. Spróbuj ponownie."
+      },
+      "errors": {
+        "cancelled": "Logowanie zostało anulowane. Spróbuj ponownie.",
+        "notAllowed": "Nie możemy założyć konta z tym dostawcą. Zaloguj się e-mailem albo skontaktuj się z nami.",
+        "reauthentication": "Potwierdź logowanie u dostawcy jeszcze raz.",
+        "failed": "Logowanie przez dostawcę nie powiodło się. Spróbuj ponownie."
+      }
     }
   }
 }
