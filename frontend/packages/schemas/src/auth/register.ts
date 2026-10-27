@@ -9,6 +9,14 @@ export const USERNAME_MAX_LENGTH = 30;
 const USERNAME_PATTERN = /^[A-Za-z0-9._-]+$/;
 export const PASSWORD_MIN_LENGTH = 8;
 
+/** Reguły nazwy konta wspólne dla rejestracji e-mailem i provider signup. */
+export const usernameSchema = z
+  .string()
+  .trim()
+  .min(USERNAME_MIN_LENGTH, "username_too_short")
+  .max(USERNAME_MAX_LENGTH, "username_too_long")
+  .regex(USERNAME_PATTERN, "username_invalid");
+
 /**
  * Zgody przy zakładaniu konta — wspólne dla rejestracji e-mailem
  * i dokończenia rejestracji po Google/Facebook (#351).
@@ -41,12 +49,7 @@ export const NO_SIGNUP_CONSENTS: SignupConsentsValues = {
 export const registerFormSchema = z
   .object({
     email: z.email("email_invalid"),
-    username: z
-      .string()
-      .trim()
-      .min(USERNAME_MIN_LENGTH, "username_too_short")
-      .max(USERNAME_MAX_LENGTH, "username_too_long")
-      .regex(USERNAME_PATTERN, "username_invalid"),
+    username: usernameSchema,
     password: z.string().min(PASSWORD_MIN_LENGTH, "password_too_short"),
     passwordConfirm: z.string().min(1, "password_confirm_required"),
   })

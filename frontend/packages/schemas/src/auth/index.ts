@@ -27,11 +27,21 @@ export {
   registerFormSchema,
   signupConsentsSchema,
   toSignupBody,
+  usernameSchema,
 } from "./register";
 export type {
   RegisterFormInput,
   RegisterFormValues,
   SignupConsentsValues,
 } from "./register";
+export {
+  assertProviderSignupBody,
+  providerSignupFormSchema,
+  toProviderSignupBody,
+} from "./provider-signup";
+export type {
+  ProviderSignupFormInput,
+  ProviderSignupFormValues,
+} from "./provider-signup";
 export { toVerifyEmailBody, verifyEmailFormSchema } from "./verify-email";
 export type { VerifyEmailFormValues } from "./verify-email";
