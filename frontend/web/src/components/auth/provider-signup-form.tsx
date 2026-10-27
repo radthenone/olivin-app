@@ -21,6 +21,7 @@ import {
   type ProviderSignupFormInput,
 } from "@olivin/schemas";
 
+import { ProviderCallbackMessage } from "./provider-callback-message";
 import { SignupConsents } from "./signup-consents";
 import {
   registerErrorsFromFailure,
@@ -170,11 +171,7 @@ export function ProviderSignupForm() {
   }
 
   if (!email) {
-    return (
-      <p className="text-sm text-destructive" role="alert">
-        {t("provider.signup.failed")}
-      </p>
-    );
+    return <ProviderCallbackMessage message={t("provider.signup.failed")} />;
   }
 
   return (
