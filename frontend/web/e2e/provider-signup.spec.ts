@@ -223,7 +223,7 @@ test.describe("social provider authentication on the web", () => {
   }) => {
     await stubProviderFlow(page);
 
-    await page.goto("/pl/auth/provider/callback?error=access_denied");
+    await page.goto("/pl/auth/provider/callback?error=cancelled");
 
     await expect(
       page.getByText("Logowanie zostało anulowane. Spróbuj ponownie."),
