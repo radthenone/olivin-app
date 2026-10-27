@@ -3,15 +3,18 @@
 import Link from "next/link";
 import type { Route } from "next";
 import { useLocale, useTranslations } from "next-intl";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import {
+  mapAllauthBodyToAuthState,
   mapLoginErrors,
   useLogin,
   type LoginError,
 } from "@olivin/features/auth";
 
 import { loginErrorsFromFailure } from "./login-errors";
+import { MfaForm } from "./mfa-form";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +49,7 @@ export function LoginForm() {
   const t = useTranslations("auth");
   const locale = useLocale();
   const { login, isPending } = useLogin();
+  const [isMfaRequired, setIsMfaRequired] = useState(false);
   const form = useForm<LoginFormValues>({
     defaultValues: { email: "", password: "" },
   });
@@ -75,6 +79,13 @@ export function LoginForm() {
         return;
       }
 
+      // Allauth po poprawnym haśle może wymagać drugiego składnika — wtedy
+      // zamiast błędu logowania pokazujemy ekran MFA.
+      if (mapAllauthBodyToAuthState(response.data).status === "mfa_required") {
+        setIsMfaRequired(true);
+        return;
+      }
+
       showErrors(mapLoginErrors(response.data));
     } catch (error) {
       // Backend może odrzucić logowanie błędem 400 z listą pól — wtedy
@@ -96,6 +107,15 @@ export function LoginForm() {
         message: errorMessage(error),
       });
     }
+  }
+
+  function onMfaExpired() {
+    setIsMfaRequired(false);
+    form.setError("root", { type: "server", message: t("errors.mfaExpired") });
+  }
+
+  if (isMfaRequired) {
+    return <MfaForm onExpired={onMfaExpired} />;
   }
 
   return (

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import {
+  mapMfaErrors,
   mapPasswordResetErrors,
   mapSignupErrors,
   mapVerifyEmailErrors,
@@ -222,6 +223,47 @@ describe("mapPasswordResetErrors", () => {
 
   test("falls back to a generic form error without an error list", () => {
     expect(mapPasswordResetErrors({ status: 400 })).toEqual([
+      { target: "form", code: "backend" },
+    ]);
+  });
+});
+
+describe("mapMfaErrors", () => {
+  test("maps an incorrect authenticator code to the code field", () => {
+    expect(
+      mapMfaErrors({
+        status: 400,
+        errors: [
+          { param: "code", code: "incorrect_code", message: "Incorrect code." },
+        ],
+      }),
+    ).toEqual([
+      { target: "code", code: "codeInvalid", message: "Incorrect code." },
+    ]);
+  });
+
+  test("maps too many attempts to a readable form error", () => {
+    expect(
+      mapMfaErrors({
+        status: 429,
+        errors: [{ code: "too_many_attempts" }],
+      }),
+    ).toEqual([{ target: "form", code: "tooManyAttempts" }]);
+  });
+
+  test("keeps an unknown backend error with its message", () => {
+    expect(
+      mapMfaErrors({
+        status: 400,
+        errors: [{ code: "unexpected", message: "Something else." }],
+      }),
+    ).toEqual([
+      { target: "form", code: "backend", message: "Something else." },
+    ]);
+  });
+
+  test("falls back to a generic form error when the body has no errors", () => {
+    expect(mapMfaErrors({ status: 400 })).toEqual([
       { target: "form", code: "backend" },
     ]);
   });

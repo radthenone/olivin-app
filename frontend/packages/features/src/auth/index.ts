@@ -14,6 +14,7 @@ export {
 } from "./auth-response";
 export {
   mapLoginErrors,
+  mapMfaErrors,
   mapPasswordResetErrors,
   mapSignupErrors,
   mapVerifyEmailErrors,
@@ -22,6 +23,9 @@ export type {
   LoginError,
   LoginErrorCode,
   LoginErrorTarget,
+  MfaError,
+  MfaErrorCode,
+  MfaErrorTarget,
   PasswordResetError,
   PasswordResetErrorCode,
   PasswordResetErrorTarget,
