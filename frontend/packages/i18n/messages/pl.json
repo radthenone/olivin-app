@@ -115,7 +115,6 @@
       "codeInvalid": "Kod jest nieprawidłowy lub wygasł.",
       "invalidCredentials": "Nieprawidłowy e-mail lub hasło.",
       "tooManyAttempts": "Zbyt wiele prób. Odczekaj chwilę.",
-      "mfaUnsupported": "Konto ma włączone logowanie dwuetapowe, którego strona jeszcze nie obsługuje.",
       "registrationFailed": "Nie udało się utworzyć konta. Spróbuj ponownie.",
       "verificationFailed": "Nie udało się potwierdzić e-maila. Spróbuj ponownie.",
       "mfaCodeRequired": "Wpisz kod MFA.",

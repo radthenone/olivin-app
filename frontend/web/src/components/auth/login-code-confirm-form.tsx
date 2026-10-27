@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { AuthResponseError, useConfirmLoginCode } from "@olivin/features/auth";
@@ -31,19 +32,26 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
+import {
+  LOGIN_CODE_EXPIRED_PARAM,
+  LOGIN_CODE_EXPIRED_VALUE,
+} from "./login-code-expired";
 import { isTooManyAttempts } from "./login-errors";
+import { MfaForm } from "./mfa-form";
 
 /**
  * Wpisanie jednorazowego kodu logowania (#352).
  *
  * Kod potwierdza allauth; po sukcesie sesja jest już zalogowana, więc
- * przechodzimy do sklepu, a nagłówek pokazuje nazwę użytkownika.
+ * przechodzimy do sklepu, a nagłówek pokazuje nazwę użytkownika. Gdy konto ma
+ * MFA, poprawny kod dopiero otwiera drugi składnik (#409).
  */
 export function LoginCodeConfirmForm() {
   const t = useTranslations("auth");
   const locale = useLocale();
   const router = useRouter();
   const confirmCode = useConfirmLoginCode();
+  const [isMfaRequired, setIsMfaRequired] = useState(false);
   const form = useForm<ConfirmLoginCodeFormValues>({
     defaultValues: { code: "" },
   });
@@ -74,14 +82,16 @@ export function LoginCodeConfirmForm() {
         return;
       }
 
-      // Poprawny kod przy koncie z MFA kończy się etapem drugiego składnika,
-      // którego web jeszcze nie ma — to nie jest zły kod.
+      // Poprawny kod przy koncie z MFA otwiera drugi składnik — to nie jest
+      // zły kod, więc nie pokazujemy błędu przy polu.
+      if (state.status === "mfa_required") {
+        setIsMfaRequired(true);
+        return;
+      }
+
       form.setError("root", {
         type: "server",
-        message:
-          state.status === "mfa_required"
-            ? t("errors.mfaUnsupported")
-            : t("errors.codeInvalid"),
+        message: t("errors.codeInvalid"),
       });
     } catch (error) {
       form.setError("root", {
@@ -93,6 +103,18 @@ export function LoginCodeConfirmForm() {
             : t("errors.generic"),
       });
     }
+  }
+
+  // Wygaśnięcie oczekującego logowania oznacza, że kod też przepadł — wracamy
+  // na początek logowania kodem, żeby klient mógł zamówić nowy.
+  function onMfaExpired() {
+    router.push(
+      `/${locale}/login/code?${LOGIN_CODE_EXPIRED_PARAM}=${LOGIN_CODE_EXPIRED_VALUE}` as Route,
+    );
+  }
+
+  if (isMfaRequired) {
+    return <MfaForm onExpired={onMfaExpired} />;
   }
 
   return (

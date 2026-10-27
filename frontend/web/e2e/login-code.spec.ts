@@ -20,10 +20,23 @@ const stubUser = {
 };
 
 const validCode = "ABC123";
+const mfaCode = "654321";
 
 const unauthBody = {
   status: 401,
   data: { flows: [{ id: "login" }] },
+  meta: { is_authenticated: false },
+};
+
+/** Poprawny kod bywa dopiero pierwszym składnikiem — allauth czeka na MFA. */
+const mfaRequiredBody = {
+  status: 401,
+  data: {
+    flows: [
+      { id: "login_by_code" },
+      { id: "mfa_authenticate", is_pending: true },
+    ],
+  },
   meta: { is_authenticated: false },
 };
 
@@ -48,6 +61,7 @@ type SeenRequests = {
   csrf?: string;
   email?: string;
   code?: string;
+  mfaCode?: string;
   requestCalls: number;
 };
 
@@ -55,6 +69,7 @@ type StubOptions = {
   requestStatus?: number;
   confirmStatus?: number;
   confirmBody?: unknown;
+  mfaExpired?: boolean;
 };
 
 /**
@@ -115,6 +130,48 @@ async function stubAllauth(
         body: JSON.stringify(
           options.confirmBody ??
             (status === 200 ? authenticatedBody() : unauthBody),
+        ),
+      });
+    },
+  );
+
+  await page.route(
+    "**/_allauth/browser/v1/auth/2fa/authenticate",
+    async (route) => {
+      const body = route.request().postDataJSON() as { code?: string };
+
+      seen.mfaCode = body.code;
+
+      // Wygaśnięcie: allauth nie zna już oczekującego logowania, więc
+      // odpowiada 401 bez flow `mfa_authenticate`.
+      if (options.mfaExpired) {
+        await route.fulfill({
+          status: 401,
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(unauthBody),
+        });
+        return;
+      }
+
+      const valid = body.code === mfaCode;
+      authenticated = valid;
+
+      await route.fulfill({
+        status: valid ? 200 : 400,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(
+          valid
+            ? authenticatedBody()
+            : {
+                status: 400,
+                errors: [
+                  {
+                    param: "code",
+                    code: "incorrect_code",
+                    message: "Incorrect code.",
+                  },
+                ],
+              },
         ),
       });
     },
@@ -213,16 +270,32 @@ test.describe("login by email code on the web", () => {
     ).toBeVisible();
   });
 
-  test("tells an MFA account that the website cannot finish the sign-in", async ({
+  test("keeps the second-factor step and shows an error for a wrong MFA code", async ({
     page,
   }) => {
     await stubAllauth(page, {
       confirmStatus: 401,
-      confirmBody: {
-        status: 401,
-        data: { flows: [{ id: "mfa_authenticate", is_pending: true }] },
-        meta: { is_authenticated: false },
-      },
+      confirmBody: mfaRequiredBody,
+    });
+
+    await requestCode(page, stubUser.email);
+    await page.getByLabel("Kod logowania").fill(validCode);
+    await page.getByRole("button", { name: "Zaloguj kodem" }).click();
+
+    await page.getByLabel("Kod MFA").fill("000000");
+    await page.getByRole("button", { name: "Potwierdź" }).click();
+
+    await expect(page.getByText("Nieprawidłowy kod MFA.")).toBeVisible();
+    await expect(page.getByLabel("Kod MFA")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Wyloguj" })).toBeHidden();
+  });
+
+  test("asks for the second factor after the code and signs in", async ({
+    page,
+  }) => {
+    const seen = await stubAllauth(page, {
+      confirmStatus: 401,
+      confirmBody: mfaRequiredBody,
     });
 
     await requestCode(page, stubUser.email);
@@ -230,10 +303,45 @@ test.describe("login by email code on the web", () => {
     await page.getByRole("button", { name: "Zaloguj kodem" }).click();
 
     await expect(
-      page.getByText(
-        "Konto ma włączone logowanie dwuetapowe, którego strona jeszcze nie obsługuje.",
-      ),
+      page.getByRole("heading", { name: "Weryfikacja dwuetapowa" }),
     ).toBeVisible();
+
+    await page.getByLabel("Kod MFA").fill(mfaCode);
+    await page.getByRole("button", { name: "Potwierdź" }).click();
+
+    await expect(
+      page.getByText("Kod przyjęty. Jesteś zalogowany."),
+    ).toBeVisible();
+    await expect(page.getByText(stubUser.display)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Wyloguj" })).toBeVisible();
+    expect(seen.code).toBe(validCode);
+    expect(seen.mfaCode).toBe(mfaCode);
+  });
+
+  test("returns to the code sign-in screen when the pending login expired", async ({
+    page,
+  }) => {
+    await stubAllauth(page, {
+      confirmStatus: 401,
+      confirmBody: mfaRequiredBody,
+      mfaExpired: true,
+    });
+
+    await requestCode(page, stubUser.email);
+    await page.getByLabel("Kod logowania").fill(validCode);
+    await page.getByRole("button", { name: "Zaloguj kodem" }).click();
+
+    await page.getByLabel("Kod MFA").fill(mfaCode);
+    await page.getByRole("button", { name: "Potwierdź" }).click();
+
+    await expect(page).toHaveURL(/\/pl\/login\/code$/);
+    await expect(
+      page.getByRole("heading", { name: "Zaloguj się kodem" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Logowanie wygasło. Zaloguj się ponownie."),
+    ).toBeVisible();
+    await expect(page.getByLabel("Kod MFA")).toBeHidden();
   });
 
   test("asks to wait when requesting codes hits the rate limit", async ({
