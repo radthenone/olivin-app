@@ -6,7 +6,11 @@ import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
-import { useMfaAuthenticate, type MfaError } from "@olivin/features/auth";
+import {
+  mapAllauthBodyToAuthState,
+  useMfaAuthenticate,
+  type MfaError,
+} from "@olivin/features/auth";
 
 import { mfaErrorsFromFailure } from "./mfa-errors";
 
@@ -37,9 +41,10 @@ type MfaFormValues = {
  *
  * Allauth po poprawnym haśle zwraca flow `mfa_authenticate`, więc formularz
  * hasła przekazuje sterowanie tutaj. Poprawny kod kończy logowanie (sesja
- * odświeża się przez wspólny hook), a zły zostaje przy polu kodu.
+ * odświeża się przez wspólny hook), a zły zostaje przy polu kodu. Gdy
+ * oczekujące logowanie wygaśnie, `onExpired` wraca do formularza hasła.
  */
-export function MfaForm() {
+export function MfaForm({ onExpired }: { onExpired: () => void }) {
   const t = useTranslations("auth");
   const locale = useLocale();
   const { mutateAsync, isPending } = useMfaAuthenticate();
@@ -78,6 +83,13 @@ export function MfaForm() {
       if (response.status === 200) {
         form.reset();
         setIsDone(true);
+        return;
+      }
+
+      // 401 bez flow `mfa_authenticate` znaczy, że allauth porzucił oczekujące
+      // logowanie — kolejne kody nic nie dadzą, trzeba wrócić do hasła.
+      if (mapAllauthBodyToAuthState(response.data).status !== "mfa_required") {
+        onExpired();
         return;
       }
 

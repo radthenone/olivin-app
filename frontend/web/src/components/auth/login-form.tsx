@@ -106,8 +106,13 @@ export function LoginForm() {
     }
   }
 
+  function onMfaExpired() {
+    setIsMfaRequired(false);
+    form.setError("root", { type: "server", message: t("errors.mfaExpired") });
+  }
+
   if (isMfaRequired) {
-    return <MfaForm />;
+    return <MfaForm onExpired={onMfaExpired} />;
   }
 
   return (

@@ -50,8 +50,13 @@ type StubbedRequests = { mfaCode?: string };
 /**
  * Podstawia sesję, logowanie hasłem i potwierdzenie MFA. Poprawny kod
  * przełącza sesję w stan zalogowany, zły kończy się błędem 400 allauth.
+ * `mfaExpired` udaje wygasłe oczekujące logowanie: allauth odpowiada 401
+ * bez flow `mfa_authenticate`.
  */
-async function stubAllauth(page: Page): Promise<StubbedRequests> {
+async function stubAllauth(
+  page: Page,
+  { mfaExpired = false }: { mfaExpired?: boolean } = {},
+): Promise<StubbedRequests> {
   const seen: StubbedRequests = {};
   let authenticated = false;
 
@@ -79,6 +84,15 @@ async function stubAllauth(page: Page): Promise<StubbedRequests> {
     async (route) => {
       const body = route.request().postDataJSON() as { code?: string };
       seen.mfaCode = body.code;
+
+      if (mfaExpired) {
+        await route.fulfill({
+          status: 401,
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(unauthBody),
+        });
+        return;
+      }
 
       const valid = body.code === MFA_CODE;
       authenticated = valid;
@@ -156,5 +170,23 @@ test.describe("MFA step after password on the web", () => {
     await expect(page.getByText("Nieprawidłowy kod MFA.")).toBeVisible();
     await expect(page.getByRole("link", { name: "Zaloguj się" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Wyloguj" })).toBeHidden();
+  });
+
+  test("returns to the password step when the pending login expired", async ({
+    page,
+  }) => {
+    await stubAllauth(page, { mfaExpired: true });
+
+    await page.goto("/pl/login");
+    await fillPasswordStep(page);
+
+    await page.getByLabel("Kod MFA").fill(MFA_CODE);
+    await page.getByRole("button", { name: "Potwierdź" }).click();
+
+    await expect(
+      page.getByText("Logowanie wygasło. Zaloguj się ponownie."),
+    ).toBeVisible();
+    await expect(page.getByLabel("Hasło")).toBeVisible();
+    await expect(page.getByLabel("Kod MFA")).toBeHidden();
   });
 });

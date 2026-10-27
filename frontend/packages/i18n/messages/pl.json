@@ -88,6 +88,7 @@
       "mfaCodeRequired": "Wpisz kod MFA.",
       "mfaCodeInvalid": "Nieprawidłowy kod MFA.",
       "mfaFailed": "Nie udało się potwierdzić kodu. Spróbuj ponownie.",
+      "mfaExpired": "Logowanie wygasło. Zaloguj się ponownie.",
       "generic": "Nie udało się zalogować. Spróbuj ponownie."
     }
   }

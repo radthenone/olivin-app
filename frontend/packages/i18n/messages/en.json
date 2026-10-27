@@ -88,6 +88,7 @@
       "mfaCodeRequired": "Enter your MFA code.",
       "mfaCodeInvalid": "Incorrect MFA code.",
       "mfaFailed": "Could not confirm the code. Try again.",
+      "mfaExpired": "Your sign-in expired. Sign in again.",
       "generic": "Could not sign in. Try again."
     }
   }
