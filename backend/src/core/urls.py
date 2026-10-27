@@ -24,10 +24,20 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 
+from allauth.headless.constants import Client
+
 from core.utils import (
     AllauthRedocView,
     AllauthSwaggerView,
+    ConfirmLoginCodeView,
     HealthCheckView,
+    RequestLoginCodeView,
+)
+
+HEADLESS_CLIENTS = (Client.APP, Client.BROWSER)
+LOGIN_CODE_VIEWS = (
+    ("request", RequestLoginCodeView),
+    ("confirm", ConfirmLoginCodeView),
 )
 
 urlpatterns = [
@@ -51,6 +61,15 @@ urlpatterns = [
     path("shipping-methods/", include("apps.shipping.urls")),
     # Headless API
     path("accounts/", include("allauth.urls")),
+    # Logowanie kodem: własne widoki, żeby limit zwracał 429 zamiast 400 (#407).
+    *[
+        path(
+            f"_allauth/{client.value}/v1/auth/code/{suffix}",
+            view.as_api_view(client=client),
+        )
+        for client in HEADLESS_CLIENTS
+        for suffix, view in LOGIN_CODE_VIEWS
+    ],
     path("_allauth/", include("allauth.headless.urls")),
 ]
 
