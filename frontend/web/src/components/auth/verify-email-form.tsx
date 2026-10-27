@@ -12,6 +12,12 @@ import {
   type VerifyEmailFormValues,
 } from "@olivin/schemas";
 
+import {
+  AuthCodeField,
+  AuthFormCard,
+  AuthFormError,
+  AuthSubmitButton,
+} from "./auth-form-shell";
 import { authRoutes } from "./auth-routes";
 import {
   verifyEmailErrorKey,
@@ -19,22 +25,7 @@ import {
 } from "./signup-errors";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Form } from "@/components/ui/form";
 
 /**
  * Potwierdzenie e-maila kodem z wiadomości (#351).
@@ -107,76 +98,46 @@ export function VerifyEmailForm() {
 
   if (isVerified) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <h1 className="text-2xl font-semibold text-neutral-900">
-              {t("verifyEmail.title")}
-            </h1>
-          </CardTitle>
-          <CardDescription>{t("verifyEmail.success")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button asChild>
-            <Link href={authRoutes.home(locale)}>
-              {t("verifyEmail.backToHome")}
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <AuthFormCard
+        description={t("verifyEmail.success")}
+        title={t("verifyEmail.title")}
+      >
+        <Button asChild>
+          <Link href={authRoutes.home(locale)}>
+            {t("verifyEmail.backToHome")}
+          </Link>
+        </Button>
+      </AuthFormCard>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <h1 className="text-2xl font-semibold text-neutral-900">
-            {t("verifyEmail.title")}
-          </h1>
-        </CardTitle>
-        <CardDescription>{t("verifyEmail.description")}</CardDescription>
-      </CardHeader>
+    <AuthFormCard
+      description={t("verifyEmail.description")}
+      title={t("verifyEmail.title")}
+    >
+      <Form {...form}>
+        <form
+          className="flex flex-col gap-4"
+          noValidate
+          onSubmit={form.handleSubmit(onSubmit)}
+        >
+          <AuthCodeField
+            control={form.control}
+            disabled={isPending}
+            label={t("verifyEmail.code")}
+            name="key"
+          />
 
-      <CardContent>
-        <Form {...form}>
-          <form
-            className="flex flex-col gap-4"
-            noValidate
-            onSubmit={form.handleSubmit(onSubmit)}
-          >
-            <FormField
-              control={form.control}
-              name="key"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("verifyEmail.code")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      autoComplete="one-time-code"
-                      disabled={isPending}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <AuthFormError message={rootError} />
 
-            {rootError && (
-              <p className="text-sm text-destructive" role="alert">
-                {rootError}
-              </p>
-            )}
-
-            <Button disabled={isPending} type="submit">
-              {isPending
-                ? t("verifyEmail.submitting")
-                : t("verifyEmail.submit")}
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+          <AuthSubmitButton
+            isPending={isPending}
+            label={t("verifyEmail.submit")}
+            pendingLabel={t("verifyEmail.submitting")}
+          />
+        </form>
+      </Form>
+    </AuthFormCard>
   );
 }

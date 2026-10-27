@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -13,24 +12,15 @@ import {
   type ConfirmLoginCodeFormValues,
 } from "@olivin/schemas";
 
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Form } from "@/components/ui/form";
 
+import {
+  AuthCodeField,
+  AuthFormCard,
+  AuthFormError,
+  AuthFormLink,
+  AuthSubmitButton,
+} from "./auth-form-shell";
 import { authRoutes } from "./auth-routes";
 import { isTooManyAttempts } from "./login-errors";
 import { MfaForm } from "./mfa-form";
@@ -112,62 +102,36 @@ export function LoginCodeConfirmForm() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <h1 className="text-2xl font-semibold text-neutral-900">
-            {t("loginCode.confirmTitle")}
-          </h1>
-        </CardTitle>
-        <CardDescription>{t("loginCode.confirmDescription")}</CardDescription>
-      </CardHeader>
+    <AuthFormCard
+      description={t("loginCode.confirmDescription")}
+      title={t("loginCode.confirmTitle")}
+    >
+      <Form {...form}>
+        <form
+          className="flex flex-col gap-4"
+          noValidate
+          onSubmit={form.handleSubmit(onSubmit)}
+        >
+          <AuthCodeField
+            control={form.control}
+            disabled={isPending}
+            label={t("loginCode.code")}
+            name="code"
+          />
 
-      <CardContent>
-        <Form {...form}>
-          <form
-            className="flex flex-col gap-4"
-            noValidate
-            onSubmit={form.handleSubmit(onSubmit)}
-          >
-            <FormField
-              control={form.control}
-              name="code"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("loginCode.code")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      autoComplete="one-time-code"
-                      disabled={isPending}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <AuthFormError message={rootError} />
 
-            {rootError && (
-              <p className="text-sm text-destructive" role="alert">
-                {rootError}
-              </p>
-            )}
+          <AuthSubmitButton
+            isPending={isPending}
+            label={t("loginCode.confirmSubmit")}
+            pendingLabel={t("loginCode.confirmSubmitting")}
+          />
 
-            <Button disabled={isPending} type="submit">
-              {isPending
-                ? t("loginCode.confirmSubmitting")
-                : t("loginCode.confirmSubmit")}
-            </Button>
-
-            <Link
-              className="text-center text-sm text-neutral-700 underline underline-offset-4"
-              href={authRoutes.login(locale)}
-            >
-              {t("loginCode.backToPassword")}
-            </Link>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+          <AuthFormLink href={authRoutes.login(locale)}>
+            {t("loginCode.backToPassword")}
+          </AuthFormLink>
+        </form>
+      </Form>
+    </AuthFormCard>
   );
 }

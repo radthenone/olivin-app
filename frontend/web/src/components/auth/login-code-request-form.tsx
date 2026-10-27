@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -13,14 +12,6 @@ import {
   type RequestLoginCodeFormValues,
 } from "@olivin/schemas";
 
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -31,6 +22,12 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
+import {
+  AuthFormCard,
+  AuthFormError,
+  AuthFormLink,
+  AuthSubmitButton,
+} from "./auth-form-shell";
 import { authRoutes } from "./auth-routes";
 import { isTooManyAttempts } from "./login-errors";
 
@@ -97,64 +94,49 @@ export function LoginCodeRequestForm({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <h1 className="text-2xl font-semibold text-neutral-900">
-            {t("loginCode.title")}
-          </h1>
-        </CardTitle>
-        <CardDescription>{t("loginCode.description")}</CardDescription>
-      </CardHeader>
-
-      <CardContent>
-        <Form {...form}>
-          <form
-            className="flex flex-col gap-4"
-            noValidate
-            onSubmit={form.handleSubmit(onSubmit)}
-          >
-            <FormField
-              control={form.control}
-              name="email"
-              rules={{ required: t("errors.emailRequired") }}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("loginCode.email")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      autoComplete="email"
-                      disabled={isPending}
-                      type="email"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {rootError && (
-              <p className="text-sm text-destructive" role="alert">
-                {rootError}
-              </p>
+    <AuthFormCard
+      description={t("loginCode.description")}
+      title={t("loginCode.title")}
+    >
+      <Form {...form}>
+        <form
+          className="flex flex-col gap-4"
+          noValidate
+          onSubmit={form.handleSubmit(onSubmit)}
+        >
+          <FormField
+            control={form.control}
+            name="email"
+            rules={{ required: t("errors.emailRequired") }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("loginCode.email")}</FormLabel>
+                <FormControl>
+                  <Input
+                    autoComplete="email"
+                    disabled={isPending}
+                    type="email"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
+          />
 
-            <Button disabled={isPending} type="submit">
-              {isPending
-                ? t("loginCode.requestSubmitting")
-                : t("loginCode.requestSubmit")}
-            </Button>
+          <AuthFormError message={rootError} />
 
-            <Link
-              className="text-center text-sm text-neutral-700 underline underline-offset-4"
-              href={authRoutes.login(locale)}
-            >
-              {t("loginCode.backToPassword")}
-            </Link>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+          <AuthSubmitButton
+            isPending={isPending}
+            label={t("loginCode.requestSubmit")}
+            pendingLabel={t("loginCode.requestSubmitting")}
+          />
+
+          <AuthFormLink href={authRoutes.login(locale)}>
+            {t("loginCode.backToPassword")}
+          </AuthFormLink>
+        </form>
+      </Form>
+    </AuthFormCard>
   );
 }
