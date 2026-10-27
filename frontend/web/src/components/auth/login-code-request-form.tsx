@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import type { Route } from "next";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -32,6 +31,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
+import { authRoutes } from "./auth-routes";
 import { isTooManyAttempts } from "./login-errors";
 
 /**
@@ -66,7 +66,7 @@ export function LoginCodeRequestForm({
       type: "server",
       message: t("errors.mfaExpired"),
     });
-    router.replace(`/${locale}/login/code` as Route);
+    router.replace(authRoutes.loginCode(locale));
   }, [expired, form, locale, router, t]);
 
   const rootError = form.formState.errors.root?.message;
@@ -85,7 +85,7 @@ export function LoginCodeRequestForm({
 
     try {
       await requestCode.mutateAsync(toRequestLoginCodeBody(parsed.data));
-      router.push(`/${locale}/login/code/confirm` as Route);
+      router.push(authRoutes.loginCodeConfirm(locale));
     } catch (error) {
       form.setError("root", {
         type: "server",
@@ -148,7 +148,7 @@ export function LoginCodeRequestForm({
 
             <Link
               className="text-center text-sm text-neutral-700 underline underline-offset-4"
-              href={`/${locale}/login` as Route}
+              href={authRoutes.login(locale)}
             >
               {t("loginCode.backToPassword")}
             </Link>

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import type { Route } from "next";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -32,10 +31,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
-import {
-  LOGIN_CODE_EXPIRED_PARAM,
-  LOGIN_CODE_EXPIRED_VALUE,
-} from "./login-code-expired";
+import { authRoutes } from "./auth-routes";
 import { isTooManyAttempts } from "./login-errors";
 import { MfaForm } from "./mfa-form";
 
@@ -78,7 +74,7 @@ export function LoginCodeConfirmForm() {
 
       if (state.status === "authenticated") {
         form.reset();
-        router.push(`/${locale}` as Route);
+        router.push(authRoutes.home(locale));
         return;
       }
 
@@ -108,9 +104,7 @@ export function LoginCodeConfirmForm() {
   // Wygaśnięcie oczekującego logowania oznacza, że kod też przepadł — wracamy
   // na początek logowania kodem, żeby klient mógł zamówić nowy.
   function onMfaExpired() {
-    router.push(
-      `/${locale}/login/code?${LOGIN_CODE_EXPIRED_PARAM}=${LOGIN_CODE_EXPIRED_VALUE}` as Route,
-    );
+    router.push(authRoutes.loginCodeExpired(locale));
   }
 
   if (isMfaRequired) {
@@ -167,7 +161,7 @@ export function LoginCodeConfirmForm() {
 
             <Link
               className="text-center text-sm text-neutral-700 underline underline-offset-4"
-              href={`/${locale}/login` as Route}
+              href={authRoutes.login(locale)}
             >
               {t("loginCode.backToPassword")}
             </Link>

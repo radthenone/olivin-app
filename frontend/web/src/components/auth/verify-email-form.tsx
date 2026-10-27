@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import type { Route } from "next";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -13,6 +12,7 @@ import {
   type VerifyEmailFormValues,
 } from "@olivin/schemas";
 
+import { authRoutes } from "./auth-routes";
 import {
   verifyEmailErrorKey,
   verifyEmailErrorsFromFailure,
@@ -118,7 +118,7 @@ export function VerifyEmailForm() {
         </CardHeader>
         <CardContent>
           <Button asChild>
-            <Link href={`/${locale}` as Route}>
+            <Link href={authRoutes.home(locale)}>
               {t("verifyEmail.backToHome")}
             </Link>
           </Button>
