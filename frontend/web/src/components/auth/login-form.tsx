@@ -1,9 +1,9 @@
 "use client";
 
-import { useForm } from "react-hook-form";
 import Link from "next/link";
 import type { Route } from "next";
 import { useLocale, useTranslations } from "next-intl";
+import { useForm } from "react-hook-form";
 
 import {
   mapLoginErrors,
@@ -177,6 +177,12 @@ export function LoginForm() {
               href={`/${locale}/reset-password` as Route}
             >
               {t("login.forgotPassword")}
+            </Link>
+            <Link
+              className="text-center text-sm text-neutral-700 underline underline-offset-4"
+              href={`/${locale}/login/code` as Route}
+            >
+              {t("login.codeLink")}
             </Link>
           </form>
         </Form>

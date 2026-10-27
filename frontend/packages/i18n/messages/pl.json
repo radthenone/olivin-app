@@ -23,7 +23,22 @@
       "password": "Hasło",
       "submit": "Zaloguj",
       "submitting": "Logowanie…",
-      "forgotPassword": "Nie pamiętasz hasła?"
+      "forgotPassword": "Nie pamiętasz hasła?",
+      "codeLink": "Zaloguj się kodem"
+    },
+    "loginCode": {
+      "title": "Zaloguj się kodem",
+      "description": "Podaj adres e-mail, a wyślemy jednorazowy kod do logowania.",
+      "email": "E-mail",
+      "requestSubmit": "Wyślij kod",
+      "requestSubmitting": "Wysyłanie…",
+      "requestFailed": "Nie udało się wysłać kodu logowania. Spróbuj ponownie.",
+      "confirmTitle": "Wpisz kod z e-maila",
+      "confirmDescription": "Wysłaliśmy jednorazowy kod na podany adres e-mail. Wpisz go poniżej.",
+      "code": "Kod logowania",
+      "confirmSubmit": "Zaloguj kodem",
+      "confirmSubmitting": "Logowanie…",
+      "backToPassword": "Wróć do logowania hasłem"
     },
     "register": {
       "title": "Utwórz konto",
@@ -91,6 +106,7 @@
       "codeInvalid": "Kod jest nieprawidłowy lub wygasł.",
       "invalidCredentials": "Nieprawidłowy e-mail lub hasło.",
       "tooManyAttempts": "Zbyt wiele prób. Odczekaj chwilę.",
+      "mfaUnsupported": "Konto ma włączone logowanie dwuetapowe, którego strona jeszcze nie obsługuje.",
       "registrationFailed": "Nie udało się utworzyć konta. Spróbuj ponownie.",
       "verificationFailed": "Nie udało się potwierdzić e-maila. Spróbuj ponownie.",
       "generic": "Nie udało się zalogować. Spróbuj ponownie."
