@@ -281,10 +281,10 @@ class TestAppClientProviderSignup:
         user = CustomUser.objects.get(email="tok-g@test.com")
         assert Consent.objects.filter(user=user).count() == 2
 
-    def test_existing_email_account_connects_without_signup(
+    def test_existing_email_account_is_not_entered_by_social_login(
         self, api_client: APIClient, user: CustomUser
     ):
-        """Konto e-mail logujące się przez Google wchodzi bez kroku signup."""
+        """Google z adresem istniejącego konta nie loguje do niego ani go nie podpina."""
         EmailAddress.objects.create(
             user=user, email=user.email, verified=True, primary=True
         )
@@ -292,9 +292,10 @@ class TestAppClientProviderSignup:
 
         body = _token_login(api_client, _google_login(user.email, "existing-g"))
 
-        assert "provider_signup" not in _pending_flows(body)
+        assert "provider_signup" in _pending_flows(body)
+        assert body["meta"]["is_authenticated"] is False
         assert CustomUser.objects.count() == users_before
-        assert SocialAccount.objects.filter(user=user, uid="existing-g").exists()
+        assert not SocialAccount.objects.filter(uid="existing-g").exists()
 
 
 def test_passkey_signup_without_consents_is_rejected(
