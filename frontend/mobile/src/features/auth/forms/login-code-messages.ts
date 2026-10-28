@@ -1,3 +1,4 @@
+import type { LoginCodeErrorCode } from "@olivin/features/auth";
 import type { ZodError } from "zod";
 
 /**
@@ -20,4 +21,21 @@ export function loginCodeValidationMessage(
   const [issue] = error.issues;
 
   return (issue && LOGIN_CODE_MESSAGES[issue.message]) || fallback;
+}
+
+const LOGIN_CODE_FAILURE_MESSAGES: Record<
+  Exclude<LoginCodeErrorCode, "backend">,
+  string
+> = {
+  tooManyAttempts: "Zbyt wiele prób. Odczekaj chwilę.",
+  codeExpired: "Kod wygasł albo wykorzystano limit prób. Wyślij nowy kod.",
+  codeInvalid: "Kod jest nieprawidłowy lub wygasł.",
+};
+
+/** Zamienia kod odrzucenia z `loginCodeErrorCode` na komunikat ekranu (#414). */
+export function loginCodeFailureMessage(
+  code: LoginCodeErrorCode,
+  fallback: string,
+): string {
+  return code === "backend" ? fallback : LOGIN_CODE_FAILURE_MESSAGES[code];
 }

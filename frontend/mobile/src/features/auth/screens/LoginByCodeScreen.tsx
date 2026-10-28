@@ -5,8 +5,12 @@ import { ErrorMessage } from "@ui/feedback/ErrorMessage";
 import { Button } from "@ui/primitives/Button";
 import { TextField } from "@ui/primitives/TextField";
 import { AuthShell } from "../components/AuthShell";
-import { loginCodeValidationMessage } from "../forms/login-code-messages";
 import {
+  loginCodeFailureMessage,
+  loginCodeValidationMessage,
+} from "../forms/login-code-messages";
+import {
+  loginCodeErrorCode,
   useConfirmLoginCode,
   useRequestLoginCode,
 } from "@olivin/features/auth";
@@ -71,6 +75,7 @@ export function LoginByCodeScreen() {
     }
 
     setFormError(null);
+    confirmLoginCode.reset();
     requestLoginCode.mutate(toRequestLoginCodeBody(parsed.data), {
       onSuccess: () => {
         setStep("code");
@@ -89,7 +94,15 @@ export function LoginByCodeScreen() {
     }
 
     setFormError(null);
-    confirmLoginCode.mutate(toConfirmLoginCodeBody(parsed.data));
+    confirmLoginCode.mutate(toConfirmLoginCodeBody(parsed.data), {
+      onError: (error) => {
+        // Etap potwierdzenia przepadł — wracamy do adresu, żeby zamówić nowy kod.
+        if (loginCodeErrorCode(error) === "codeExpired") {
+          setStep("email");
+          setCode("");
+        }
+      },
+    });
   }
 
   const isPending = requestLoginCode.isPending || confirmLoginCode.isPending;
@@ -174,10 +187,16 @@ export function LoginByCodeScreen() {
         message={
           formError ??
           (requestLoginCode.isError
-            ? "Nie udało się wysłać kodu logowania."
+            ? loginCodeFailureMessage(
+                loginCodeErrorCode(requestLoginCode.error),
+                "Nie udało się wysłać kodu logowania.",
+              )
             : null) ??
           (confirmLoginCode.isError
-            ? "Nie udało się potwierdzić kodu logowania."
+            ? loginCodeFailureMessage(
+                loginCodeErrorCode(confirmLoginCode.error),
+                "Nie udało się potwierdzić kodu logowania.",
+              )
             : null)
         }
       />

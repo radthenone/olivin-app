@@ -13,6 +13,7 @@ export {
   requireAuthStatus,
 } from "./auth-response";
 export {
+  loginCodeErrorCode,
   mapLoginErrors,
   mapMfaErrors,
   mapPasswordResetErrors,
@@ -20,6 +21,7 @@ export {
   mapVerifyEmailErrors,
 } from "./errors";
 export type {
+  LoginCodeErrorCode,
   LoginError,
   LoginErrorCode,
   LoginErrorTarget,

@@ -67,6 +67,7 @@ type SeenRequests = {
 
 type StubOptions = {
   requestStatus?: number;
+  requestBody?: unknown;
   confirmStatus?: number;
   confirmBody?: unknown;
   mfaExpired?: boolean;
@@ -107,7 +108,10 @@ async function stubAllauth(
       await route.fulfill({
         status,
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(status === 401 ? pendingCodeBody() : { status }),
+        body: JSON.stringify(
+          options.requestBody ??
+            (status === 401 ? pendingCodeBody() : { status }),
+        ),
       });
     },
   );
@@ -252,7 +256,9 @@ test.describe("login by email code on the web", () => {
     ).toBeVisible();
   });
 
-  test("shows the same error when the code has expired", async ({ page }) => {
+  test("returns to requesting a new code when the confirmation stage is gone", async ({
+    page,
+  }) => {
     await stubAllauth(page, {
       confirmStatus: 409,
       confirmBody: { status: 409 },
@@ -262,12 +268,13 @@ test.describe("login by email code on the web", () => {
     await page.getByLabel("Kod logowania").fill(validCode);
     await page.getByRole("button", { name: "Zaloguj kodem" }).click();
 
+    await expect(page).toHaveURL(/\/pl\/login\/code$/);
     await expect(
-      page.getByText("Kod jest nieprawidłowy lub wygasł."),
+      page.getByText(
+        "Kod wygasł albo wykorzystano limit prób. Zamów nowy kod.",
+      ),
     ).toBeVisible();
-    await expect(
-      page.getByRole("link", { name: "Zaloguj się", exact: true }),
-    ).toBeVisible();
+    await expect(page.getByLabel("Kod logowania")).toBeHidden();
   });
 
   test("keeps the second-factor step and shows an error for a wrong MFA code", async ({
@@ -347,7 +354,19 @@ test.describe("login by email code on the web", () => {
   test("asks to wait when requesting codes hits the rate limit", async ({
     page,
   }) => {
-    await stubAllauth(page, { requestStatus: 429 });
+    await stubAllauth(page, {
+      requestStatus: 400,
+      requestBody: {
+        status: 400,
+        errors: [
+          {
+            param: "email",
+            code: "too_many_login_attempts",
+            message: "Too many failed login attempts. Try again later.",
+          },
+        ],
+      },
+    });
 
     await requestCode(page, stubUser.email);
 

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 
-import { useRequestLoginCode } from "@olivin/features/auth";
+import { loginCodeErrorCode, useRequestLoginCode } from "@olivin/features/auth";
 import {
   requestLoginCodeFormSchema,
   toRequestLoginCodeBody,
@@ -29,21 +29,21 @@ import {
   AuthSubmitButton,
 } from "./auth-form-shell";
 import { authRoutes } from "./auth-routes";
-import { isTooManyAttempts } from "./login-errors";
+import type { LoginCodeExpiredReason } from "./login-code-expired";
 
 /**
  * Zamówienie jednorazowego kodu logowania (#352).
  *
  * Po przyjęciu adresu przez allauth przechodzimy na ekran wpisania kodu —
  * backend trzyma oczekujący etap w sesji, więc ekran kodu nie potrzebuje
- * adresu w adresie strony. Flaga `expired` oznacza powrót z ekranu MFA po
- * wygaśnięciu logowania (#409); komunikat pokazujemy raz, a adres zaraz
- * czyścimy, żeby odświeżenie go nie przywracało.
+ * adresu w adresie strony. `expired` oznacza powrót po przepadnięciu
+ * logowania: z ekranu MFA (#409) albo z ekranu kodu po 409 (#414). Komunikat
+ * pokazujemy raz, a adres zaraz czyścimy, żeby odświeżenie go nie przywracało.
  */
 export function LoginCodeRequestForm({
-  expired = false,
+  expired = null,
 }: {
-  expired?: boolean;
+  expired?: LoginCodeExpiredReason | null;
 }) {
   const t = useTranslations("auth");
   const locale = useLocale();
@@ -61,7 +61,9 @@ export function LoginCodeRequestForm({
 
     form.setError("root", {
       type: "server",
-      message: t("errors.mfaExpired"),
+      message: t(
+        expired === "code" ? "errors.codeExpired" : "errors.mfaExpired",
+      ),
     });
     router.replace(authRoutes.loginCode(locale));
   }, [expired, form, locale, router, t]);
@@ -87,9 +89,10 @@ export function LoginCodeRequestForm({
     } catch (error) {
       form.setError("root", {
         type: "server",
-        message: isTooManyAttempts(error)
-          ? t("errors.tooManyAttempts")
-          : t("loginCode.requestFailed"),
+        message:
+          loginCodeErrorCode(error) === "tooManyAttempts"
+            ? t("errors.tooManyAttempts")
+            : t("loginCode.requestFailed"),
       });
     }
   }

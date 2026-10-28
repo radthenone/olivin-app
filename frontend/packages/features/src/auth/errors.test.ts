@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 
+import { AuthResponseError } from "./auth-response";
 import {
+  loginCodeErrorCode,
   mapMfaErrors,
   mapPasswordResetErrors,
   mapSignupErrors,
@@ -266,5 +268,52 @@ describe("mapMfaErrors", () => {
     expect(mapMfaErrors({ status: 400 })).toEqual([
       { target: "form", code: "backend" },
     ]);
+  });
+});
+
+/**
+ * Logowanie kodem zostaje na natywnych statusach allauth (#414): limit
+ * zamówienia to 400 z kodem, a 409 oznacza, że etap potwierdzenia przepadł.
+ */
+describe("loginCodeErrorCode", () => {
+  function rejected(status: number, data: unknown) {
+    return new AuthResponseError({ status, data }, "Rejected.");
+  }
+
+  test("recognises the native request limit by its error code", () => {
+    const error = rejected(400, {
+      status: 400,
+      errors: [{ param: "email", code: "too_many_login_attempts" }],
+    });
+
+    expect(loginCodeErrorCode(error)).toBe("tooManyAttempts");
+  });
+
+  test("treats a proxy 429 as the same limit", () => {
+    expect(loginCodeErrorCode(rejected(429, { status: 429 }))).toBe(
+      "tooManyAttempts",
+    );
+  });
+
+  test("maps a lost confirmation stage (409) to an expired code", () => {
+    expect(loginCodeErrorCode(rejected(409, { status: 409 }))).toBe(
+      "codeExpired",
+    );
+  });
+
+  test("maps an incorrect code to an invalid code", () => {
+    const error = rejected(400, {
+      status: 400,
+      errors: [{ param: "code", code: "incorrect_code" }],
+    });
+
+    expect(loginCodeErrorCode(error)).toBe("codeInvalid");
+  });
+
+  test("falls back to backend for unknown rejections and network errors", () => {
+    expect(loginCodeErrorCode(rejected(400, { status: 400 }))).toBe("backend");
+    expect(loginCodeErrorCode(new TypeError("Failed to fetch"))).toBe(
+      "backend",
+    );
   });
 });

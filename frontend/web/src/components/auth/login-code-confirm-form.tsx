@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
-import { AuthResponseError, useConfirmLoginCode } from "@olivin/features/auth";
+import { loginCodeErrorCode, useConfirmLoginCode } from "@olivin/features/auth";
 import {
   confirmLoginCodeFormSchema,
   toConfirmLoginCodeBody,
@@ -22,7 +22,6 @@ import {
   AuthSubmitButton,
 } from "./auth-form-shell";
 import { authRoutes } from "./auth-routes";
-import { isTooManyAttempts } from "./login-errors";
 import { MfaForm } from "./mfa-form";
 
 /**
@@ -80,13 +79,23 @@ export function LoginCodeConfirmForm() {
         message: t("errors.codeInvalid"),
       });
     } catch (error) {
+      const code = loginCodeErrorCode(error);
+
+      // Etap potwierdzenia przepadł (limit prób albo wygasły kod), więc
+      // kolejne kody nic nie dadzą — wracamy do zamówienia nowego.
+      if (code === "codeExpired") {
+        router.push(authRoutes.loginCodeExpired(locale, "code"));
+        return;
+      }
+
       form.setError("root", {
         type: "server",
-        message: isTooManyAttempts(error)
-          ? t("errors.tooManyAttempts")
-          : error instanceof AuthResponseError
-            ? t("errors.codeInvalid")
-            : t("errors.generic"),
+        message:
+          code === "tooManyAttempts"
+            ? t("errors.tooManyAttempts")
+            : code === "codeInvalid"
+              ? t("errors.codeInvalid")
+              : t("errors.generic"),
       });
     }
   }

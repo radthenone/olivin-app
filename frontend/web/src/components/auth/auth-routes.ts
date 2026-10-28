@@ -2,7 +2,8 @@ import type { Route } from "next";
 
 import {
   LOGIN_CODE_EXPIRED_PARAM,
-  LOGIN_CODE_EXPIRED_VALUE,
+  loginCodeExpiredValue,
+  type LoginCodeExpiredReason,
 } from "./login-code-expired";
 
 /**
@@ -17,6 +18,6 @@ export const authRoutes = {
   loginCode: (locale: string) => `/${locale}/login/code` as Route,
   loginCodeConfirm: (locale: string) =>
     `/${locale}/login/code/confirm` as Route,
-  loginCodeExpired: (locale: string) =>
-    `/${locale}/login/code?${LOGIN_CODE_EXPIRED_PARAM}=${LOGIN_CODE_EXPIRED_VALUE}` as Route,
+  loginCodeExpired: (locale: string, reason: LoginCodeExpiredReason = "mfa") =>
+    `/${locale}/login/code?${LOGIN_CODE_EXPIRED_PARAM}=${loginCodeExpiredValue(reason)}` as Route,
 };

@@ -113,6 +113,7 @@
       "consentRequired": "Accept the terms of service and the privacy policy.",
       "codeRequired": "Enter the code from the email.",
       "codeInvalid": "The code is invalid or has expired.",
+      "codeExpired": "The code expired or the attempt limit was reached. Request a new code.",
       "invalidCredentials": "Incorrect email or password.",
       "tooManyAttempts": "Too many attempts. Wait a moment.",
       "registrationFailed": "Could not create the account. Try again.",
