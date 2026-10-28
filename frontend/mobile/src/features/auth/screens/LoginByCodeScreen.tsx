@@ -5,14 +5,17 @@ import { ErrorMessage } from "@ui/feedback/ErrorMessage";
 import { Button } from "@ui/primitives/Button";
 import { TextField } from "@ui/primitives/TextField";
 import { AuthShell } from "../components/AuthShell";
-import {
-  confirmLoginCodeSchema,
-  requestLoginCodeSchema,
-} from "../forms/login-by-code.schema";
+import { loginCodeValidationMessage } from "../forms/login-code-messages";
 import {
   useConfirmLoginCode,
   useRequestLoginCode,
 } from "@olivin/features/auth";
+import {
+  confirmLoginCodeFormSchema,
+  requestLoginCodeFormSchema,
+  toConfirmLoginCodeBody,
+  toRequestLoginCodeBody,
+} from "@olivin/schemas";
 
 type LoginByCodeStep = "email" | "code";
 
@@ -60,15 +63,15 @@ export function LoginByCodeScreen() {
   }
 
   function handleRequestCode() {
-    const parsed = requestLoginCodeSchema.safeParse({ email });
+    const parsed = requestLoginCodeFormSchema.safeParse({ email });
 
     if (!parsed.success) {
-      setFormError(parsed.error.issues[0]?.message ?? "Sprawdź email.");
+      setFormError(loginCodeValidationMessage(parsed.error, "Sprawdź email."));
       return;
     }
 
     setFormError(null);
-    requestLoginCode.mutate(parsed.data, {
+    requestLoginCode.mutate(toRequestLoginCodeBody(parsed.data), {
       onSuccess: () => {
         setStep("code");
         setCode("");
@@ -78,15 +81,15 @@ export function LoginByCodeScreen() {
   }
 
   function handleConfirmCode() {
-    const parsed = confirmLoginCodeSchema.safeParse({ code });
+    const parsed = confirmLoginCodeFormSchema.safeParse({ code });
 
     if (!parsed.success) {
-      setFormError(parsed.error.issues[0]?.message ?? "Sprawdź kod.");
+      setFormError(loginCodeValidationMessage(parsed.error, "Sprawdź kod."));
       return;
     }
 
     setFormError(null);
-    confirmLoginCode.mutate(parsed.data);
+    confirmLoginCode.mutate(toConfirmLoginCodeBody(parsed.data));
   }
 
   const isPending = requestLoginCode.isPending || confirmLoginCode.isPending;
