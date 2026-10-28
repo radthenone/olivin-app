@@ -1,6 +1,7 @@
 import {
   AuthResponseError,
   mapPasswordResetErrors,
+  passwordResetErrorCode,
   type PasswordResetError,
 } from "@olivin/features/auth";
 
@@ -16,6 +17,9 @@ export type PasswordResetValidationError = {
   field: PasswordResetField;
   key: PasswordResetErrorKey;
 };
+
+export type PasswordResetFailureKey =
+  "errors.codeInvalid" | "errors.codeExpired" | "errors.tooManyAttempts";
 
 const FIELDS: Record<
   string,
@@ -78,11 +82,24 @@ export function passwordResetErrorsFromFailure(
 }
 
 /**
- * Odrzucenie przez limit prób allauth (429).
+ * Odrzucenie resetu hasła bez błędów pól (#421).
  *
- * Przy limicie klient ma odczekać, a nie poprawiać kod — o komunikacie
- * decyduje sam status, bez listy pól.
+ * Allauth zgłasza limit zamówienia jako 429 bez kodu błędu, a po wyczerpaniu
+ * prób kodu etap resetu znika i przychodzi 409. Oba przypadki mają własny
+ * komunikat — klient odczekuje albo zamawia nowy kod, zamiast poprawiać kod.
+ * `null` znaczy, że błąd nie jest znany i formularz pokazuje komunikat ogólny.
  */
-export function isTooManyAttempts(error: unknown): boolean {
-  return error instanceof AuthResponseError && error.response.status === 429;
+export function passwordResetFailureKey(
+  error: unknown,
+): PasswordResetFailureKey | null {
+  switch (passwordResetErrorCode(error)) {
+    case "codeExpired":
+      return "errors.codeExpired";
+    case "tooManyAttempts":
+      return "errors.tooManyAttempts";
+    case "codeInvalid":
+      return "errors.codeInvalid";
+    default:
+      return null;
+  }
 }

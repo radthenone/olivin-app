@@ -5,8 +5,12 @@ import { ErrorMessage } from "@ui/feedback/ErrorMessage";
 import { Button } from "@ui/primitives/Button";
 import { TextField } from "@ui/primitives/TextField";
 import { AuthShell } from "../components/AuthShell";
+import { passwordResetFailureMessage } from "../forms/password-reset-messages";
 import { passwordResetConfirmSchema } from "../forms/password-reset.schema";
-import { useResetPassword } from "@olivin/features/auth";
+import {
+  passwordResetErrorCode,
+  useResetPassword,
+} from "@olivin/features/auth";
 
 /**
  * Ekran ustawienia nowego hasła: kod z maila + nowe hasło (ADR 0038).
@@ -19,6 +23,9 @@ export function PasswordResetConfirmScreen() {
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const failure = resetPassword.isError
+    ? passwordResetErrorCode(resetPassword.error)
+    : null;
 
   function handleSubmit() {
     const parsed = passwordResetConfirmSchema.safeParse({ code, password });
@@ -84,9 +91,22 @@ export function PasswordResetConfirmScreen() {
       <ErrorMessage
         message={
           formError ??
-          (resetPassword.isError ? resetPassword.error.message : null)
+          (failure
+            ? passwordResetFailureMessage(
+                failure,
+                resetPassword.error?.message ?? "Nie udało się ustawić hasła.",
+              )
+            : null)
         }
       />
+
+      {failure === "codeExpired" ? (
+        <Link href="/forgot-password">
+          <Text className="text-center text-base text-neutral-950 underline">
+            Wyślij nowy kod
+          </Text>
+        </Link>
+      ) : null}
 
       <Button disabled={resetPassword.isPending} onPress={handleSubmit}>
         {resetPassword.isPending ? "Zapisywanie..." : "Ustaw hasło"}

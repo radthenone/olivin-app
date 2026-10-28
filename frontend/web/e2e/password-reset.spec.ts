@@ -283,4 +283,44 @@ test.describe("password reset by code on the web", () => {
       page.getByRole("heading", { name: "Odzyskaj hasło" }),
     ).toBeVisible();
   });
+
+  test("asks to wait when the reset request hits the native 429 limit", async ({
+    page,
+  }) => {
+    await stubAllauth(page, {
+      requestStatus: 429,
+      requestBody: { status: 429 },
+    });
+
+    await page.goto("/pl/reset-password");
+    await page.getByLabel("E-mail", { exact: true }).fill(EMAIL);
+    await page.getByRole("button", { name: "Wyślij kod" }).click();
+
+    await expect(
+      page.getByText("Zbyt wiele prób. Odczekaj chwilę."),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/\/pl\/reset-password$/);
+  });
+
+  test("returns to requesting a new code when the reset stage is gone", async ({
+    page,
+  }) => {
+    await stubAllauth(page, {
+      resetStatus: 409,
+      resetBody: { status: 409 },
+    });
+
+    await page.goto("/pl/reset-password/confirm");
+    await page.getByLabel("Kod z e-maila").fill(CODE);
+    await page.getByLabel("Nowe hasło").fill(NEW_PASSWORD);
+    await page.getByRole("button", { name: "Ustaw hasło" }).click();
+
+    await expect(page).toHaveURL(/\/pl\/reset-password$/);
+    await expect(
+      page.getByText(
+        "Kod wygasł albo wykorzystano limit prób. Zamów nowy kod.",
+      ),
+    ).toBeVisible();
+    await expect(page.getByLabel("Kod z e-maila")).toBeHidden();
+  });
 });

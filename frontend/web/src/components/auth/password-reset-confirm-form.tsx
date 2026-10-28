@@ -17,9 +17,10 @@ import {
   type PasswordResetConfirmFormValues,
 } from "@olivin/schemas";
 
+import { authRoutes } from "./auth-routes";
 import {
-  isTooManyAttempts,
   passwordResetErrorsFromFailure,
+  passwordResetFailureKey,
   passwordResetValidationErrors,
 } from "./password-reset-errors";
 
@@ -110,10 +111,18 @@ export function PasswordResetConfirmForm() {
           : `/${locale}/login`) as Route,
       );
     } catch (error) {
-      if (isTooManyAttempts(error)) {
+      const failure = passwordResetFailureKey(error);
+
+      if (failure === "errors.codeExpired") {
+        // Etap resetu przepadł (409) — nowy kod da się zamówić tylko od nowa.
+        router.push(authRoutes.passwordResetExpired(locale));
+        return;
+      }
+
+      if (failure === "errors.tooManyAttempts") {
         form.setError("root", {
           type: "server",
-          message: t("errors.tooManyAttempts"),
+          message: t(failure),
         });
         return;
       }

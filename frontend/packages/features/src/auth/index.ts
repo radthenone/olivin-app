@@ -19,6 +19,7 @@ export {
   mapPasswordResetErrors,
   mapSignupErrors,
   mapVerifyEmailErrors,
+  passwordResetErrorCode,
 } from "./errors";
 export type {
   LoginCodeErrorCode,
@@ -31,6 +32,7 @@ export type {
   PasswordResetError,
   PasswordResetErrorCode,
   PasswordResetErrorTarget,
+  PasswordResetFailureCode,
   SignupError,
   SignupErrorCode,
   SignupErrorTarget,

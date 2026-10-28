@@ -3,8 +3,8 @@ import { describe, expect, test } from "bun:test";
 import { AuthResponseError } from "@olivin/features/auth";
 
 import {
-  isTooManyAttempts,
   passwordResetErrorsFromFailure,
+  passwordResetFailureKey,
   passwordResetValidationErrors,
 } from "./password-reset-errors";
 
@@ -68,14 +68,45 @@ describe("passwordResetErrorsFromFailure", () => {
   });
 });
 
-describe("isTooManyAttempts", () => {
-  test("recognises the allauth rate limit by status", () => {
-    const error = new AuthResponseError({ status: 429, data: {} }, "Too many");
+describe("passwordResetFailureKey", () => {
+  function rejected(status: number, data: unknown) {
+    return new AuthResponseError({ status, data }, "Rejected.");
+  }
 
-    expect(isTooManyAttempts(error)).toBe(true);
+  test("turns the native reset request limit (429) into a wait message", () => {
+    expect(passwordResetFailureKey(rejected(429, { status: 429 }))).toBe(
+      "errors.tooManyAttempts",
+    );
   });
 
-  test("ignores other failures", () => {
-    expect(isTooManyAttempts(new TypeError("Failed to fetch"))).toBe(false);
+  test("turns a lost reset stage (409) into an expired-code message", () => {
+    expect(passwordResetFailureKey(rejected(409, { status: 409 }))).toBe(
+      "errors.codeExpired",
+    );
+  });
+
+  test("recognises a limit sent with an error code", () => {
+    const error = rejected(400, {
+      status: 400,
+      errors: [{ code: "too_many_password_reset_attempts" }],
+    });
+
+    expect(passwordResetFailureKey(error)).toBe("errors.tooManyAttempts");
+  });
+
+  test("keeps an incorrect code at the code field", () => {
+    const error = rejected(400, {
+      status: 400,
+      errors: [{ param: "key", code: "incorrect_code" }],
+    });
+
+    expect(passwordResetFailureKey(error)).toBe("errors.codeInvalid");
+  });
+
+  test("returns null for failures without a known meaning", () => {
+    expect(
+      passwordResetFailureKey(new TypeError("Failed to fetch")),
+    ).toBeNull();
+    expect(passwordResetFailureKey(rejected(500, { status: 500 }))).toBeNull();
   });
 });
