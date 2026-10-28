@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import type { Route } from "next";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -14,14 +12,6 @@ import {
   type RequestLoginCodeFormValues,
 } from "@olivin/schemas";
 
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -32,6 +22,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
+import {
+  AuthFormCard,
+  AuthFormError,
+  AuthFormLink,
+  AuthSubmitButton,
+} from "./auth-form-shell";
+import { authRoutes } from "./auth-routes";
 import { isTooManyAttempts } from "./login-errors";
 
 /**
@@ -66,7 +63,7 @@ export function LoginCodeRequestForm({
       type: "server",
       message: t("errors.mfaExpired"),
     });
-    router.replace(`/${locale}/login/code` as Route);
+    router.replace(authRoutes.loginCode(locale));
   }, [expired, form, locale, router, t]);
 
   const rootError = form.formState.errors.root?.message;
@@ -76,16 +73,17 @@ export function LoginCodeRequestForm({
 
     const parsed = requestLoginCodeFormSchema.safeParse(values);
     if (!parsed.success) {
+      const isEmpty = parsed.error.issues[0]?.message === "email_required";
       form.setError("email", {
         type: "validation",
-        message: t("errors.emailInvalid"),
+        message: t(isEmpty ? "errors.emailRequired" : "errors.emailInvalid"),
       });
       return;
     }
 
     try {
       await requestCode.mutateAsync(toRequestLoginCodeBody(parsed.data));
-      router.push(`/${locale}/login/code/confirm` as Route);
+      router.push(authRoutes.loginCodeConfirm(locale));
     } catch (error) {
       form.setError("root", {
         type: "server",
@@ -97,64 +95,48 @@ export function LoginCodeRequestForm({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <h1 className="text-2xl font-semibold text-neutral-900">
-            {t("loginCode.title")}
-          </h1>
-        </CardTitle>
-        <CardDescription>{t("loginCode.description")}</CardDescription>
-      </CardHeader>
-
-      <CardContent>
-        <Form {...form}>
-          <form
-            className="flex flex-col gap-4"
-            noValidate
-            onSubmit={form.handleSubmit(onSubmit)}
-          >
-            <FormField
-              control={form.control}
-              name="email"
-              rules={{ required: t("errors.emailRequired") }}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("loginCode.email")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      autoComplete="email"
-                      disabled={isPending}
-                      type="email"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {rootError && (
-              <p className="text-sm text-destructive" role="alert">
-                {rootError}
-              </p>
+    <AuthFormCard
+      description={t("loginCode.description")}
+      title={t("loginCode.title")}
+    >
+      <Form {...form}>
+        <form
+          className="flex flex-col gap-4"
+          noValidate
+          onSubmit={form.handleSubmit(onSubmit)}
+        >
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("loginCode.email")}</FormLabel>
+                <FormControl>
+                  <Input
+                    autoComplete="email"
+                    disabled={isPending}
+                    type="email"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
+          />
 
-            <Button disabled={isPending} type="submit">
-              {isPending
-                ? t("loginCode.requestSubmitting")
-                : t("loginCode.requestSubmit")}
-            </Button>
+          <AuthFormError message={rootError} />
 
-            <Link
-              className="text-center text-sm text-neutral-700 underline underline-offset-4"
-              href={`/${locale}/login` as Route}
-            >
-              {t("loginCode.backToPassword")}
-            </Link>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+          <AuthSubmitButton
+            isPending={isPending}
+            label={t("loginCode.requestSubmit")}
+            pendingLabel={t("loginCode.requestSubmitting")}
+          />
+
+          <AuthFormLink href={authRoutes.login(locale)}>
+            {t("loginCode.backToPassword")}
+          </AuthFormLink>
+        </form>
+      </Form>
+    </AuthFormCard>
   );
 }
