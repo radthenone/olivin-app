@@ -247,6 +247,40 @@ export function mapPasswordResetErrors(body: unknown): PasswordResetError[] {
   });
 }
 
+export type PasswordResetFailureCode =
+  "codeInvalid" | "codeExpired" | "tooManyAttempts" | "backend";
+
+/**
+ * Zamienia odrzucenie zamówienia albo potwierdzenia resetu hasła na kod błędu.
+ *
+ * Allauth zgłasza limit zamówienia resetu jako 429 bez kodu błędu, a po
+ * wyczerpaniu prób kodu etap znika i kolejne ustawienie hasła dostaje 409
+ * (ADR 0041). Kod `too_many_password_reset_attempts` jest rozpoznawany, gdyby
+ * backend albo proxy dołożyły go do odpowiedzi, a 429 zawsze oznacza limit.
+ */
+export function passwordResetErrorCode(
+  error: unknown,
+): PasswordResetFailureCode {
+  if (!(error instanceof AuthResponseError)) {
+    return "backend";
+  }
+
+  const { status, data } = error.response;
+  if (status === 429) return "tooManyAttempts";
+  if (status === 409) return "codeExpired";
+
+  const rawErrors = (data as { errors?: unknown } | null)?.errors;
+  const codes = Array.isArray(rawErrors)
+    ? rawErrors.map((raw) => (raw as AllauthError).code)
+    : [];
+
+  if (codes.includes("too_many_password_reset_attempts")) {
+    return "tooManyAttempts";
+  }
+  if (codes.includes("incorrect_code")) return "codeInvalid";
+  return "backend";
+}
+
 export type MfaErrorTarget = "code" | "form";
 
 export type MfaErrorCode = "codeInvalid" | "tooManyAttempts" | "backend";

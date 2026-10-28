@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 
 import { useRequestPasswordReset } from "@olivin/features/auth";
@@ -13,8 +14,9 @@ import {
   type PasswordResetRequestFormValues,
 } from "@olivin/schemas";
 
+import { authRoutes } from "./auth-routes";
 import {
-  isTooManyAttempts,
+  passwordResetFailureKey,
   passwordResetValidationErrors,
 } from "./password-reset-errors";
 
@@ -41,9 +43,14 @@ import { Input } from "@/components/ui/input";
  *
  * Po przyjęciu adresu przez allauth przechodzimy na ekran wpisania kodu.
  * Oczekujący etap resetu trzyma sesja backendu, więc w adresie strony nie ma
- * ani adresu e-mail, ani kodu.
+ * ani adresu e-mail, ani kodu. `expired` oznacza powrót z ekranu ustawienia
+ * hasła po 409: etap resetu przepadł, więc trzeba zamówić nowy kod (#421).
  */
-export function PasswordResetRequestForm() {
+export function PasswordResetRequestForm({
+  expired = false,
+}: {
+  expired?: boolean;
+}) {
   const t = useTranslations("auth");
   const locale = useLocale();
   const router = useRouter();
@@ -52,6 +59,18 @@ export function PasswordResetRequestForm() {
     defaultValues: { email: "" },
   });
   const isPending = requestReset.isPending;
+
+  useEffect(() => {
+    if (!expired) {
+      return;
+    }
+
+    form.setError("root", {
+      type: "server",
+      message: t("errors.codeExpired"),
+    });
+    router.replace(authRoutes.passwordReset(locale));
+  }, [expired, form, locale, router, t]);
 
   const rootError = form.formState.errors.root?.message;
 
@@ -72,13 +91,15 @@ export function PasswordResetRequestForm() {
 
     try {
       await requestReset.mutateAsync(toPasswordResetRequestBody(parsed.data));
-      router.push(`/${locale}/reset-password/confirm` as Route);
+      router.push(authRoutes.passwordResetConfirm(locale));
     } catch (error) {
+      const failure = passwordResetFailureKey(error);
       form.setError("root", {
         type: "server",
-        message: isTooManyAttempts(error)
-          ? t("errors.tooManyAttempts")
-          : t("passwordReset.requestFailed"),
+        message:
+          failure === "errors.tooManyAttempts"
+            ? t(failure)
+            : t("passwordReset.requestFailed"),
       });
     }
   }

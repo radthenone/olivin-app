@@ -25,4 +25,14 @@ describe("authRoutes", () => {
       "/pl/login/code?expired=code",
     );
   });
+
+  test("builds the password reset paths and the expired-code return path", () => {
+    expect(authRoutes.passwordReset("pl")).toBe("/pl/reset-password");
+    expect(authRoutes.passwordResetConfirm("pl")).toBe(
+      "/pl/reset-password/confirm",
+    );
+    expect(authRoutes.passwordResetExpired("pl")).toBe(
+      "/pl/reset-password?expired=code",
+    );
+  });
 });

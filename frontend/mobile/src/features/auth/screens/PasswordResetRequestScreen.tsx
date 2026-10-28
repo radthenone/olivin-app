@@ -5,8 +5,12 @@ import { ErrorMessage } from "@ui/feedback/ErrorMessage";
 import { Button } from "@ui/primitives/Button";
 import { TextField } from "@ui/primitives/TextField";
 import { AuthShell } from "../components/AuthShell";
+import { passwordResetFailureMessage } from "../forms/password-reset-messages";
 import { passwordResetRequestSchema } from "../forms/password-reset.schema";
-import { useRequestPasswordReset } from "@olivin/features/auth";
+import {
+  passwordResetErrorCode,
+  useRequestPasswordReset,
+} from "@olivin/features/auth";
 
 /**
  * Ekran rozpoczęcia resetu hasła.
@@ -62,7 +66,12 @@ export function PasswordResetRequestScreen() {
       <ErrorMessage
         message={
           formError ??
-          (requestReset.isError ? "Nie udało się wysłać resetu hasła." : null)
+          (requestReset.isError
+            ? passwordResetFailureMessage(
+                passwordResetErrorCode(requestReset.error),
+                "Nie udało się wysłać resetu hasła.",
+              )
+            : null)
         }
       />
 

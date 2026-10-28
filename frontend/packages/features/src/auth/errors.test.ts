@@ -7,6 +7,7 @@ import {
   mapPasswordResetErrors,
   mapSignupErrors,
   mapVerifyEmailErrors,
+  passwordResetErrorCode,
 } from "./errors";
 
 describe("mapSignupErrors", () => {
@@ -313,6 +314,56 @@ describe("loginCodeErrorCode", () => {
   test("falls back to backend for unknown rejections and network errors", () => {
     expect(loginCodeErrorCode(rejected(400, { status: 400 }))).toBe("backend");
     expect(loginCodeErrorCode(new TypeError("Failed to fetch"))).toBe(
+      "backend",
+    );
+  });
+});
+
+/**
+ * Reset hasła na natywnych odpowiedziach allauth (#421): limit zamówienia
+ * to 429 bez kodu błędu, a po wyczerpaniu prób kodu etap znika i przychodzi
+ * 409. 429 z proxy znaczy to samo, co limit allauth.
+ */
+describe("passwordResetErrorCode", () => {
+  function rejected(status: number, data: unknown) {
+    return new AuthResponseError({ status, data }, "Rejected.");
+  }
+
+  test("recognises the limit by its error code when the backend sends one", () => {
+    const error = rejected(400, {
+      status: 400,
+      errors: [{ code: "too_many_password_reset_attempts" }],
+    });
+
+    expect(passwordResetErrorCode(error)).toBe("tooManyAttempts");
+  });
+
+  test("treats a 429 as the same limit", () => {
+    expect(passwordResetErrorCode(rejected(429, { status: 429 }))).toBe(
+      "tooManyAttempts",
+    );
+  });
+
+  test("maps a lost reset stage (409) to an expired code", () => {
+    expect(passwordResetErrorCode(rejected(409, { status: 409 }))).toBe(
+      "codeExpired",
+    );
+  });
+
+  test("maps an incorrect reset code to an invalid code", () => {
+    const error = rejected(400, {
+      status: 400,
+      errors: [{ param: "key", code: "incorrect_code" }],
+    });
+
+    expect(passwordResetErrorCode(error)).toBe("codeInvalid");
+  });
+
+  test("falls back to backend for unknown rejections and network errors", () => {
+    expect(passwordResetErrorCode(rejected(400, { status: 400 }))).toBe(
+      "backend",
+    );
+    expect(passwordResetErrorCode(new TypeError("Failed to fetch"))).toBe(
       "backend",
     );
   });
