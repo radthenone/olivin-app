@@ -21,5 +21,8 @@ describe("authRoutes", () => {
 
   test("builds the expired-login return path with the expired flag", () => {
     expect(authRoutes.loginCodeExpired("pl")).toBe("/pl/login/code?expired=1");
+    expect(authRoutes.loginCodeExpired("pl", "code")).toBe(
+      "/pl/login/code?expired=code",
+    );
   });
 });

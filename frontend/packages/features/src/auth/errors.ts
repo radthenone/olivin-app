@@ -1,3 +1,5 @@
+import { AuthResponseError } from "./auth-response";
+
 type AllauthError = {
   code?: unknown;
   param?: unknown;
@@ -286,4 +288,33 @@ export function mapMfaErrors(body: unknown): MfaError[] {
 
     return message ? { target, code, message } : { target, code };
   });
+}
+
+export type LoginCodeErrorCode =
+  "codeInvalid" | "codeExpired" | "tooManyAttempts" | "backend";
+
+/**
+ * Zamienia odrzucenie zamówienia lub potwierdzenia kodu logowania na kod błędu.
+ *
+ * Allauth zgłasza limit zamówień jako 400 z kodem `too_many_login_attempts`,
+ * a po wyczerpaniu prób albo wygaśnięciu kodu etap potwierdzenia znika i
+ * kolejne próby dostają 409 (ADR 0040). 429 przychodzi tylko z proxy.
+ */
+export function loginCodeErrorCode(error: unknown): LoginCodeErrorCode {
+  if (!(error instanceof AuthResponseError)) {
+    return "backend";
+  }
+
+  const { status, data } = error.response;
+  if (status === 429) return "tooManyAttempts";
+  if (status === 409) return "codeExpired";
+
+  const rawErrors = (data as { errors?: unknown } | null)?.errors;
+  const codes = Array.isArray(rawErrors)
+    ? rawErrors.map((raw) => (raw as AllauthError).code)
+    : [];
+
+  if (codes.includes("too_many_login_attempts")) return "tooManyAttempts";
+  if (codes.includes("incorrect_code")) return "codeInvalid";
+  return "backend";
 }

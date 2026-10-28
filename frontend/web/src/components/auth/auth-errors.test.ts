@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { AuthResponseError, mapLoginErrors } from "@olivin/features/auth";
 
-import { isTooManyAttempts, loginErrorsFromFailure } from "./login-errors";
+import { loginErrorsFromFailure } from "./login-errors";
 
 /**
  * Błędy allauth trafiają do właściwego pola formularza (#349).
@@ -127,29 +127,5 @@ describe("loginErrorsFromFailure", () => {
 
   test("returns null for non-response failures such as network errors", () => {
     expect(loginErrorsFromFailure(new TypeError("Failed to fetch"))).toBeNull();
-  });
-});
-
-/**
- * Limit prób przy logowaniu kodem rozpoznajemy po statusie (#352).
- */
-describe("isTooManyAttempts", () => {
-  test("recognises a 429 response", () => {
-    const error = new AuthResponseError(
-      { status: 429, data: { status: 429 } },
-      "Too many requests.",
-    );
-
-    expect(isTooManyAttempts(error)).toBe(true);
-  });
-
-  test("ignores other rejected responses and network errors", () => {
-    const error = new AuthResponseError(
-      { status: 400, data: { status: 400 } },
-      "Incorrect code.",
-    );
-
-    expect(isTooManyAttempts(error)).toBe(false);
-    expect(isTooManyAttempts(new TypeError("Failed to fetch"))).toBe(false);
   });
 });

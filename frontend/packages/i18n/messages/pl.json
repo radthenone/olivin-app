@@ -113,6 +113,7 @@
       "consentRequired": "Zaakceptuj regulamin i politykę prywatności.",
       "codeRequired": "Wpisz kod z e-maila.",
       "codeInvalid": "Kod jest nieprawidłowy lub wygasł.",
+      "codeExpired": "Kod wygasł albo wykorzystano limit prób. Zamów nowy kod.",
       "invalidCredentials": "Nieprawidłowy e-mail lub hasło.",
       "tooManyAttempts": "Zbyt wiele prób. Odczekaj chwilę.",
       "registrationFailed": "Nie udało się utworzyć konta. Spróbuj ponownie.",
