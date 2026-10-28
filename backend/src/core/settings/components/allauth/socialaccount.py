@@ -13,8 +13,7 @@ class GoogleOAuthApp(TypedDict, total=False):
 
 # Email jako główny identyfikator – username opcjonalne, unikalne (NULL ≠ duplikat w PostgreSQL)
 SOCIALACCOUNT_USER_MODEL_USERNAME_FIELD = "username"
-SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
-SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = False
 # Nowe konto z logowania zewnętrznego wymaga zgód (#207): zamiast zakładać je
 # automatycznie, allauth headless przechodzi krok provider signup z tymi samymi
 # polami zgód co rejestracja e-mailem. Logowanie na istniejące konto bez zmian.
@@ -53,7 +52,7 @@ SOCIALACCOUNT_PROVIDERS = {
         "AUTH_PARAMS": {
             "access_type": "online",
         },
-        "EMAIL_AUTHENTICATION": True,
+        "EMAIL_AUTHENTICATION": False,
     },
     "facebook": {
         "APP": {
