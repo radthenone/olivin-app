@@ -31,6 +31,7 @@ ACCOUNT_RATE_LIMITS = {
     "signup": "10/m/ip",
     "reset_password": "10/m/ip,5/m/key",
     "confirm_email": "5/m/key",
+    "request_login_code": "20/m/ip,3/m/key",
     "login_by_code": "10/m/ip,5/m/key",
     "login_by_code_resend": "3/m/key",
     "webauthn_login_request": "10/m/ip",

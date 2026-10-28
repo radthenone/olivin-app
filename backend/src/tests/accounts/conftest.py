@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from tests.factories.accounts import AdminUserFactory, ProfileFactory, UserFactory
@@ -21,6 +23,16 @@ def admin_factory(db):
 def profile_factory(db):
     """Fabryka profili dostępna w testach accounts."""
     return ProfileFactory
+
+
+@pytest.fixture
+def request_response():
+    """Parser ładunku JSON odpowiedzi allauth."""
+
+    def parse(response) -> dict:
+        return json.loads(response.content)
+
+    return parse
 
 
 @pytest.fixture
