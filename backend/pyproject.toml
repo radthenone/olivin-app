@@ -32,7 +32,7 @@ dependencies = [
     "rich>=14.2.0",
     "pack-logger[django]",
     "django-countries>=9.1.0",
-    "django-phonenumber-field>=8.4.0",
+    "django-phonenumber-field>=9.0.0",
     "phonenumbers>=9.0.42",
     "fido2>=2.1.1",
     "google-auth",
