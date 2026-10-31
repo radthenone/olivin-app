@@ -70,7 +70,7 @@
   "prettier": "@olivin/config/prettier/index.json",
   "devDependencies": {
     "@olivin/config": "workspace:*",
-    "@tanstack/react-query-devtools": "^5.104.5",
+    "@tanstack/react-query-devtools": "^5.105.0",
     "@types/react": "~19.2.0",
     "ajv": "^8.18.0",
     "babel-plugin-module-resolver": "^5.0.2",
