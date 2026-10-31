@@ -10,7 +10,7 @@ requires-python = ">=3.12.10"
 # uv sync --all-extras
 # uv lock
 dependencies = [
-    "boto3>=1.43.116",
+    "boto3>=1.43.120",
     "celery>=5.6.3",
     "django>=5.2.11",
     "django-allauth[headless,headless-spec,mfa]>=65.20.1",
@@ -28,12 +28,12 @@ dependencies = [
     "psycopg2-binary>=2.9.13 ; sys_platform == 'win32'",
     "python-dotenv>=1.2.4",
     "redis>=8.1.0",
-    "stripe>=16.0.0",
+    "stripe>=16.0.1",
     "rich>=14.2.0",
     "pack-logger[django]",
     "django-countries>=9.1.0",
     "django-phonenumber-field>=8.4.0",
-    "phonenumbers>=9.0.41",
+    "phonenumbers>=9.0.42",
     "fido2>=2.1.1",
     "google-auth",
     "requests>=2.32.3",
@@ -50,7 +50,7 @@ dev = [
     "drf-spectacular>=0.29.0",
     "ipython>=9.11.0",
     "pyrefly>=1.4.0",
-    "ruff>=0.17.1",
+    "ruff>=0.17.3",
 ]
 test = [
     "factory-boy>=3.3.3",
@@ -60,7 +60,7 @@ test = [
     "pytest>=9.0.3",
     "pytest-cov>=7.1.0",
     "pytest-django>=4.14.0",
-    "pytest-env>=1.8.1",
+    "pytest-env>=1.8.3",
     "pytest-randomly>=4.0.1",
     "pytest-watch>=4.2.0",
     "pytest-xdist>=3.8.0",
