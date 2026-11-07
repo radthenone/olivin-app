@@ -10,7 +10,7 @@ requires-python = ">=3.12.10"
 # uv sync --all-extras
 # uv lock
 dependencies = [
-    "boto3>=1.43.120",
+    "boto3>=1.43.123",
     "celery>=5.6.3",
     "django>=5.2.11",
     "django-allauth[headless,headless-spec,mfa]>=65.21.0",
@@ -60,7 +60,7 @@ test = [
     "pytest>=9.2.0",
     "pytest-cov>=7.1.0",
     "pytest-django>=4.14.0",
-    "pytest-env>=1.8.3",
+    "pytest-env>=1.8.5",
     "pytest-randomly>=4.0.1",
     "pytest-watch>=4.2.0",
     "pytest-xdist>=3.8.0",
