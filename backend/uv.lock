@@ -108,7 +108,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "boto3", specifier = ">=1.43.120" },
+    { name = "boto3", specifier = ">=1.43.123" },
     { name = "celery", specifier = ">=5.6.3" },
     { name = "django", specifier = ">=5.2.11" },
     { name = "django-allauth", extras = ["headless", "headless-spec", "mfa"], specifier = ">=65.21.0" },
@@ -144,7 +144,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'test'", specifier = ">=9.2.0" },
     { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=7.1.0" },
     { name = "pytest-django", marker = "extra == 'test'", specifier = ">=4.14.0" },
-    { name = "pytest-env", marker = "extra == 'test'", specifier = ">=1.8.3" },
+    { name = "pytest-env", marker = "extra == 'test'", specifier = ">=1.8.5" },
     { name = "pytest-randomly", marker = "extra == 'test'", specifier = ">=4.0.1" },
     { name = "pytest-watch", marker = "extra == 'test'", specifier = ">=4.2.0" },
     { name = "pytest-xdist", marker = "extra == 'test'", specifier = ">=3.8.0" },
@@ -169,16 +169,16 @@ wheels = [
 
 [[package]]
 name = "boto3"
-version = "1.43.120"
+version = "1.43.123"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "botocore" },
     { name = "jmespath" },
     { name = "s3transfer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0f/d3/9426f7c627719bd0f8ab3827a91362805b72fc721dcddd61a3daef555d4a/boto3-1.43.120.tar.gz", hash = "sha256:9d85840e721869f8202ab5f6b4ec3e697ac46343116cc8d1d0804ec58f90c503", size = 112687, upload-time = "2026-10-27T19:20:31.944Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fc/8a/64b46f075149f9160da44aa7e1052dd18431b9ad4435beb0cfb02cc48624/boto3-1.43.123.tar.gz", hash = "sha256:055fabb990c5d2f31fce4ca569255bd640cdd11a3ca68c9ecad35f4f8a5b83b5", size = 112638, upload-time = "2026-10-30T19:18:50.085Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7a/42/04025133386d7881ca2235044c2ed9ffa33c8f80c91453b2114567463b9c/boto3-1.43.120-py3-none-any.whl", hash = "sha256:86978245a7b911549a44df3f805ae4ce94a8154f4ebe4a166631b8a6d7af2697", size = 140041, upload-time = "2026-10-27T19:20:27.812Z" },
+    { url = "https://files.pythonhosted.org/packages/96/b2/a7986c327f80aa6f1544f4cb8f2fa7da4e1fccd472379a21cad0508b8a0e/boto3-1.43.123-py3-none-any.whl", hash = "sha256:d18d66e1e13faa0c25d0b1b8c5ce946e29fb5fc0b6456b655a93a678ff4cc313", size = 140044, upload-time = "2026-10-30T19:18:47.734Z" },
 ]
 
 [[package]]
@@ -1133,15 +1133,15 @@ wheels = [
 
 [[package]]
 name = "google-auth"
-version = "2.62.0"
+version = "2.62.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cryptography" },
     { name = "pyasn1-modules" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f5/b9/4b2528f30114b106e3c3a7298ba38d85e682fd1f83fe7c4a5b77c7677082/google_auth-2.62.0.tar.gz", hash = "sha256:0bef0ce54bdf9ce226c5d66e4264413bd918141c31bbe49fb52eac882f513d69", size = 398180, upload-time = "2026-10-12T19:20:48.328Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c4/38/d79ab09dcfc1e1638d887c8f65657619d3ebc454165c558ef79355971ce3/google_auth-2.62.1.tar.gz", hash = "sha256:3c8e1ce2553784ae17fd220e6f88df3281d86ab98019278f436d06dffab17a9e", size = 398519, upload-time = "2026-11-03T03:06:03.008Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/eb/a3/87fe9b7203ec2e56ea6a57c75e6d632eaf9487c7f7978cdad1d801bee0af/google_auth-2.62.0-py3-none-any.whl", hash = "sha256:4ff4319aeb4ad128409759d397a9fcafad126d0031d241cc0dd6b9a00b43e3f3", size = 267911, upload-time = "2026-10-12T19:20:46.355Z" },
+    { url = "https://files.pythonhosted.org/packages/14/dd/2e11f0976ecb3ce48ef3f324837460e9ea50071fa4eb01f1e49df87d3cee/google_auth-2.62.1-py3-none-any.whl", hash = "sha256:015399a5abde39033c69404cc1c079e6d4c2de2993e164c9f4eac6e5376ad72b", size = 267975, upload-time = "2026-11-03T03:06:01.422Z" },
 ]
 
 [[package]]
@@ -1770,15 +1770,15 @@ wheels = [
 
 [[package]]
 name = "pytest-env"
-version = "1.8.3"
+version = "1.8.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pytest" },
     { name = "python-dotenv" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/71/10/fb9c10b886bf04070ee4152a54a8319ac9327eecea9a6804e5930fc3c64f/pytest_env-1.8.3.tar.gz", hash = "sha256:50fbdd23c64406bdc51ddd0cd17977b8f642b497b1ce0cd5a9ae39dd3cdbe16f", size = 49380, upload-time = "2026-10-27T17:36:40.699Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2d/ae/a9397814bd3361623e49198bc110e316c7ac79d2d9d5b993182376a8c8e7/pytest_env-1.8.5.tar.gz", hash = "sha256:992c37efdc1bde2f0783975080ac4cdcea85f36df9d6fe3a835edd01a7e06584", size = 52398, upload-time = "2026-11-04T05:10:54.11Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a8/a7/43081d5f61b102a3801bfb748d00b157ef00e47fd924f5d402cceb5fdf6a/pytest_env-1.8.3-py3-none-any.whl", hash = "sha256:b3f26d04140b0ffaca3b7dc7765386291ba03dced58f2a58221a0597bc59824c", size = 9962, upload-time = "2026-10-27T17:36:39.541Z" },
+    { url = "https://files.pythonhosted.org/packages/4c/da/584de88bdcbd8ecb66a1af87ddfc2bc57cd58fa21e974138ac6cb2f78a1b/pytest_env-1.8.5-py3-none-any.whl", hash = "sha256:0e3b3a4c84d3303904005e3b62eab51e197c36735f5862bed229c0ac6f1fd739", size = 10035, upload-time = "2026-11-04T05:10:52.777Z" },
 ]
 
 [[package]]
