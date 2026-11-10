@@ -1,4 +1,8 @@
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from "node:http";
 
 import type {
   ProductDetail,
@@ -33,7 +37,10 @@ type Fixture = {
 
 function variant(
   overrides: Partial<ProductVariant> &
-    Pick<ProductVariant, "sku" | "metalColor" | "price" | "isAvailable" | "isLowStock">,
+    Pick<
+      ProductVariant,
+      "sku" | "metalColor" | "price" | "isAvailable" | "isLowStock"
+    >,
 ): ProductVariant {
   return {
     id: overrides.sku,

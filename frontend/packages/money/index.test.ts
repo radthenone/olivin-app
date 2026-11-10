@@ -23,6 +23,8 @@ describe("formatMoney", () => {
   });
 
   test("keeps the currency from the API even when the locale differs", () => {
-    expect(formatMoney({ amount: 500, currency: "PLN" }, "en")).toContain("PLN");
+    expect(formatMoney({ amount: 500, currency: "PLN" }, "en")).toContain(
+      "PLN",
+    );
   });
 });

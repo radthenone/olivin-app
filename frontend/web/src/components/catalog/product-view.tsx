@@ -28,7 +28,9 @@ export async function ProductView({
   return (
     <article className="flex flex-col gap-8">
       <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold text-brand-600">{product.name}</h1>
+        <h1 className="text-3xl font-semibold text-brand-600">
+          {product.name}
+        </h1>
         {product.averageRating !== null && (
           <p className="text-sm text-neutral-600">
             {t("catalog.product.rating", { rating: product.averageRating })}

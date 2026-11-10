@@ -29,7 +29,9 @@ test("shows the cached product card with a PLN price and every availability cate
   test.skip(liveBackend, "Szczegóły fixture'u dotyczą wyłącznie stubu.");
 
   await expect(page.getByText(/2.?500,00.?zł/)).toBeVisible();
-  await expect(page.getByText("Ostatnie sztuki", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Ostatnie sztuki", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByText("Niedostępny", { exact: true })).toBeVisible();
   await expect(page.getByText("Diament", { exact: true })).toBeVisible();
   await expect(page.getByText(/Grawer dostępny/)).toBeVisible();
@@ -55,9 +57,11 @@ test("reads the currency from the cookie without changing the URL", async ({
 }) => {
   test.skip(liveBackend, "Waluta w stubie dotyczy wyłącznie stubu.");
 
-  await page.context().addCookies([
-    { name: "currency", value: "EUR", domain: "localhost", path: "/" },
-  ]);
+  await page
+    .context()
+    .addCookies([
+      { name: "currency", value: "EUR", domain: "localhost", path: "/" },
+    ]);
   await page.goto("/pl/products/ring");
 
   await expect(page.getByText(/581,50.?€/)).toBeVisible();

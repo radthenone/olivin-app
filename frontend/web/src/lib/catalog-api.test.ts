@@ -1,9 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
-import {
-  currencyCookieName,
-  getProductPrice,
-} from "./catalog-api";
+import { currencyCookieName, getProductPrice } from "./catalog-api";
 
 const originalFetch = globalThis.fetch;
 const originalEnv = process.env.CATALOG_API_URL;

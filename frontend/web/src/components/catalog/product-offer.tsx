@@ -6,16 +6,8 @@ import type { Locale } from "@olivin/i18n";
 import { formatMoney } from "@olivin/money";
 import { getTranslations } from "next-intl/server";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  getProductPrice,
-  getRequestCurrency,
-} from "@/lib/catalog-api";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getProductPrice, getRequestCurrency } from "@/lib/catalog-api";
 
 /**
  * Dynamiczny fragment karty: cena, dostępność i cena graweru.
