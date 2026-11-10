@@ -20,7 +20,7 @@
       "description": "Opis",
       "material": "Materiał",
       "fineness": "Próba",
-      "rating": "Ocena {rating} z 5",
+      "rating": "Ocena {rating, number} z 5",
       "productionTime": "Czas realizacji: {days, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}",
       "variants": "Warianty",
       "engravingAvailable": "Grawer dostępny — {price}",

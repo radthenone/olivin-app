@@ -20,7 +20,7 @@
       "description": "Description",
       "material": "Material",
       "fineness": "Fineness",
-      "rating": "Rated {rating} out of 5",
+      "rating": "Rated {rating, number} out of 5",
       "productionTime": "Production time: {days, plural, one {# day} other {# days}}",
       "variants": "Variants",
       "engravingAvailable": "Engraving available — {price}",
