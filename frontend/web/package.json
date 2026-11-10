@@ -20,6 +20,7 @@
     "@olivin/api": "workspace:*",
     "@olivin/features": "workspace:*",
     "@olivin/i18n": "workspace:*",
+    "@olivin/money": "workspace:*",
     "@olivin/schemas": "workspace:*",
     "@olivin/tokens": "workspace:*",
     "@radix-ui/react-slot": "^1.5.0",
