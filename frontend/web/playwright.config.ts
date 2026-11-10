@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { parseEnv } from "node:util";
+
 import { defineConfig, devices } from "@playwright/test";
 
 /**
@@ -27,6 +31,23 @@ const catalogApiUrl = liveBackend
 // o zasoby z innego originu niż ten, na którym nasłuchuje (allowedDevOrigins),
 // a bez zasobów strona nigdy się nie hydratuje.
 const baseURL = `http://localhost:${port}`;
+// W CI testy idą na buildzie produkcyjnym. `next dev` z Cache Components
+// hydratuje wolno i w pierwszym podejściu akcje testu ścigały się z hydracją
+// (#357). Next i tak zaleca e2e na buildzie produkcyjnym.
+const prodServer = !!process.env.CI || process.env.E2E_PROD === "1";
+// `next build` i `next start` nie czytają `.env.development`, więc te same
+// wartości co w dev podajemy jawnie. Zmienna z powłoki wygrywa z plikiem,
+// tak jak w Next.
+const devFileEnv = prodServer
+  ? Object.fromEntries(
+      Object.entries(
+        parseEnv(readFileSync(join(__dirname, ".env.development"), "utf8")),
+      ).map(([key, value]): [string, string] => [
+        key,
+        process.env[key] ?? value ?? "",
+      ]),
+    )
+  : {};
 
 export default defineConfig({
   testDir: "./e2e",
@@ -37,6 +58,8 @@ export default defineConfig({
   use: {
     baseURL,
     trace: "on-first-retry",
+    // Zrzut po porażce trafia do artefaktu CI razem z `error-context.md`.
+    screenshot: "only-on-failure",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
@@ -54,11 +77,14 @@ export default defineConfig({
         ]),
     {
       // Osobny port, żeby test nie wchodził w paradę `task web:run` na 3000.
-      command: `bun run dev --port ${port}`,
+      command: prodServer
+        ? `bun run build && bun run start --port ${port}`
+        : `bun run dev --port ${port}`,
       url: baseURL,
       reuseExistingServer: !process.env.CI,
-      timeout: 120_000,
-      env: { CATALOG_API_URL: catalogApiUrl },
+      // Build produkcyjny trwa dłużej niż start serwera deweloperskiego.
+      timeout: prodServer ? 300_000 : 120_000,
+      env: { ...devFileEnv, CATALOG_API_URL: catalogApiUrl },
       // Logi Next (status żądań, błędy kompilacji) trafiają do wyjścia testu —
       // bez tego timeout webServera w CI nie mówi, na czym utknął.
       stdout: "pipe",
