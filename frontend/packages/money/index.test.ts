@@ -3,8 +3,9 @@ import { describe, expect, test } from "bun:test";
 import { formatMoney } from "./index";
 
 /**
- * Formatowanie jest wyłącznie prezentacją: grosze przychodzą z API i nigdy nie
- * zamieniają się w liczbę zmiennoprzecinkową przed podziałem (ADR 0009).
+ * Formatowanie jest wyłącznie prezentacją: kwota w groszach z API jest dzielona
+ * przez 100 dopiero tuż przed `Intl.NumberFormat`; żadne obliczenia nie
+ * wykonują się na wyniku dzielenia.
  */
 describe("formatMoney", () => {
   test("formats grosze as a Polish złoty amount", () => {

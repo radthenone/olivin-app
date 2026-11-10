@@ -26,6 +26,8 @@ export type Money = {
  *     Napis gotowy do pokazania klientowi, np. `1 234,50 zł`.
  */
 export function formatMoney(money: Money, locale: string): string {
+  // Dzielenie przez 100 zakłada dwa miejsca po przecinku (PLN, EUR, USD); waluty
+  // o innej liczbie miejsc wymagałyby wykładnika per waluta.
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: money.currency,
