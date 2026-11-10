@@ -14,6 +14,12 @@ import { getProductForPage } from "@/lib/catalog-api";
  * (`product:<slug>`), a cena i dostępność streamują się dalej jako dynamiczny
  * fragment w `ProductView` (ADR 0034).
  */
+
+// Trasa świadomie blokuje na `params` i odczycie z kesza, żeby 404 padło przed
+// streamingiem. `false` wyłącza tylko walidację natychmiastowej nawigacji
+// i pustej powłoki statycznej, nie zmienia modelu renderowania.
+export const instant = false;
+
 export default async function ProductPage({
   params,
 }: {
