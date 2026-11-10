@@ -1,7 +1,6 @@
 import type { Locale } from "@olivin/i18n";
 import { hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 
 import { ProductView } from "@/components/catalog/product-view";
 import { routing } from "@/i18n/routing";
@@ -10,32 +9,12 @@ import { getProductForPage } from "@/lib/catalog-api";
 /**
  * Karta produktu pod prefiksem języka.
  *
- * Część z treścią produktu jest keszowana (`product:<slug>`), a cena i
- * dostępność streamują się jako dynamiczny fragment w tym samym żądaniu —
- * dlatego `params` czytamy dopiero wewnątrz `<Suspense>` (ADR 0034).
+ * Slug sprawdzamy przed jakimkolwiek `<Suspense>`, żeby nieznany albo zdjęty
+ * produkt dawał prawdziwy status 404 w języku strony. Treść jest keszowana
+ * (`product:<slug>`), a cena i dostępność streamują się dalej jako dynamiczny
+ * fragment w `ProductView` (ADR 0034).
  */
-export default function ProductPage({
-  params,
-}: {
-  params: Promise<{ locale: string; slug: string }>;
-}) {
-  return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-16">
-      <Suspense
-        fallback={
-          <div
-            aria-hidden
-            className="h-96 w-full animate-pulse rounded-xl bg-neutral-100"
-          />
-        }
-      >
-        <ProductContent params={params} />
-      </Suspense>
-    </main>
-  );
-}
-
-async function ProductContent({
+export default async function ProductPage({
   params,
 }: {
   params: Promise<{ locale: string; slug: string }>;
@@ -48,10 +27,13 @@ async function ProductContent({
 
   const product = await getProductForPage(slug, locale as Locale);
 
-  // Zdjęty albo nieistniejący produkt daje 404 w języku strony.
   if (!product) {
     notFound();
   }
 
-  return <ProductView locale={locale} product={product} />;
+  return (
+    <main className="mx-auto w-full max-w-3xl px-6 py-16">
+      <ProductView locale={locale} product={product} />
+    </main>
+  );
 }
