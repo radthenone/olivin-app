@@ -20,12 +20,33 @@ Język odpowiedzi i raportu: z MCP `get_language` (Profil), niezależnie od jęz
 /headless <wykonawca> [--model <id>] [--timeout <min>] [--heartbeat <min>] "<treść>"
 ```
 
+Przykłady (host → wywołanie):
+
+```text
+claude:       /headless opencode "..."   albo   /headless gemini "..."
+opencode:     /headless gemini "..."
+antigravity:  /headless opencode "..."
+```
+
+Limit dostawcy, brak postępu (`HANG`), inny błąd wykonawcy albo brak binarki → wrapper sam przekazuje
+tę samą treść 1:1 drugiemu tańszemu wykonawcy: `opencode → gemini` albo `gemini → opencode` (pomija hosta
+i klientów spoza `clients:`). Ostatni z limitem → kod `75` i zadanie przejmuje host (krok 2).
+Ostatni z innym błędem → jego kod wyjścia i wiersz `HANG`/`ERROR` w raporcie.
+Zastępca bierze swój domyślny model (`--model` dotyczy tylko wykonawcy z wywołania).
+
 - `<wykonawca>` — klient z `clients:` w `.ai/project.profile.yaml`, inny niż host, z trybem
-  headless (dziś: `claude`, `opencode`).
+  headless (dziś: `claude`, `opencode`, `antigravity`; alias `gemini` = `antigravity`).
 - `--model` — model sesji wykonawcy; bez flagi decyduje jego projektowy config (np. `model`
-  w `opencode.json`), potem jego domyślny model.
-- `--timeout` — minuty, domyślnie 30.
+  w `opencode.json`), potem jego domyślny model. `gemini`/`antigravity`: agy nie ma
+  projektowego configu, więc wrapper czyta `.agents/agy.json` (gitignored, edytujesz sam),
+  np. `{"model": "gemini-3.8-flash-high"}` albo `{"model": "gemini-3.8-flash", "effort": "high"}`
+  (poziom w sufiksie nazwy albo w `effort`, nie oba); bez pliku `gemini-3.8-flash-medium`.
+- Linked worktree: zakładasz i usuwasz przez `node .ai/worktree.mjs add|remove` (reguła git-branch-pr; przenosi pliki z `.gitignore` i zależności). Gdy worktree powstało poza skryptem (`git worktree add`), uruchom `node .ai/worktree.mjs sync [<ścieżka>]`. Jeśli w worktree nadal brakuje projektowego configu, wrapper bierze `opencode.json` z głównego checkoutu jako `OPENCODE_CONFIG` i czyta z niego `model`. Raport końcowy mówi wprost `CONFIG=main-checkout <ścieżka>` albo `CONFIG=missing — executor default model`.
+- `--timeout` — minuty, domyślnie 60; liczony osobno dla każdego wykonawcy w łańcuchu.
 - `--heartbeat` — co ile minut linia stanu `[headless] ♥` w logu, domyślnie 10.
+- `--ctx <katalog>` — katalog nocy (CTX z `/night-run`); bez flagi wrapper nic nie zapisuje. Z nią
+  dopisuje wiersz wywołania (ostatnia linia wyjścia, JSON) do `<katalog>/headless-rows.jsonl`, a przy
+  klasie innej niż OK także wycinek logu. Bufor czyta `--report --ctx <katalog>`. Ręczny `/headless` tej flagi nie potrzebuje.
 - Inne flagi = błąd. Walidację robi wrapper — nie zgaduj i nie poprawiaj argumentów.
 
 ## Kroki
@@ -34,7 +55,7 @@ Język odpowiedzi i raportu: z MCP `get_language` (Profil), niezależnie od jęz
    cudzysłowów wokół, bez własnych dopisków); wrapper sam doda stopkę z zasadami:
 
    ```bash
-   node .ai/headless.mjs --host claude <wykonawca> [--model <id>] [--timeout <min>] [--heartbeat <min>] <<'HEADLESS_EOF'
+   node .ai/headless.mjs --host claude <wykonawca> [--model <id>] [--timeout <min>] [--heartbeat <min>] [--ctx <katalog>] <<'HEADLESS_EOF'
    <treść>
    HEADLESS_EOF
    ```
@@ -44,28 +65,40 @@ Język odpowiedzi i raportu: z MCP `get_language` (Profil), niezależnie od jęz
    apostrof w treści podwój: `''`).
 
    Zadanie trwa zwykle dłużej niż limit pojedynczej komendy (10 min) — jeśli klient pozwala,
-   uruchom komendę w tle i poczekaj na jej koniec; nie przerywaj jej sam. Wrapper po
-   zakończeniu, błędzie albo timeoucie zabija całe drzewo procesów wykonawcy.
+   uruchom komendę w tle i poczekaj na jej koniec; nie przerywaj jej sam. Zakaz czekania przez
+   `sleep N; <cmd>` (harness to blokuje) — czekaj na powiadomienie tła; w Claude
+   `run_in_background` z `until grep -q ^EXIT= <log>; do sleep 5; done`. `Monitor` z tą pętlą
+   to opcja, ale wygasa po 30 min i trzeba go uzbroić ponownie.
+   Wrapper po zakończeniu, błędzie albo timeoucie zabija całe drzewo procesów wykonawcy.
 
    Pierwsza linia wyjścia to ścieżka logu (`[headless] log: <log>`). Nie śledź wyjścia na
    bieżąco — stan w razie potrzeby czytasz jedną linią:
    `grep '^\[headless\]' <log> | tail -1`. Budzić się (np. Monitor) warto tylko na linię
-   `[headless] możliwe zacięcie`; samo zacięcie niczego nie zabija — robi to `--timeout`.
+   `[headless] możliwe zacięcie`; samo zacięcie niczego nie zabija. Zabija kontrola postępu co 30 min
+   (brak bajtów wyjścia, zmiany `HEAD`/`git status` i wzrostu CPU), a wrapper przechodzi dalej 1:1; `--timeout` zabija też.
 2. Kod wyjścia `2` = błędne wywołanie (np. wykonawca == host, spoza `clients:`, nieznana
    flaga). Pokaż komunikat wrappera użytkownikowi i zakończ.
-   Kod `75` = pauza limitu dostawcy wykonawcy, nie błąd: linia `PAUSE=rate-limit reset=<ISO|brak>`
-   w logu. Wykonawca nie skończył pracy — zgłoś pauzę z godziną resetu (nie „błąd”) i nie ponawiaj sam.
+   Kod `75` = limit u ostatniego wykonawcy łańcucha, nie błąd: linia
+   `PAUSE=rate-limit reset=<ISO|brak>` w logu; wcześniejszych zastępców wrapper już próbował.
+   Zadanie przejmuje host, z **tą samą treścią 1:1** i zasadami ze stopki (test-first, lokalne
+   commity, bez push), od stanu brancha z raportu:
+   - skill w głównym wątku → wykonaj treść sam;
+   - subagent `headless` → nie wykonuj; hand-back `przejęcie: limit <wykonawca>, reset <ISO|brak>`
+     z treścią i raportem — przejmuje główny wątek;
+   - pod `/night-run` → reguła `LIMIT` z `/night-run` (`przejmij` / `czekaj`).
 3. Po zakończeniu (także kod ≠ 0 albo `124` = timeout) przeczytaj z wyjścia raport
    końcowy wrappera (`[headless] raport końcowy`): `git status --short`, commity wykonawcy
    od startu, nowe wpisy stasha i ostatnie linie wykonawcy. Ostrzeżenie o stashu (`UWAGA`)
    przenieś do raportu dla użytkownika — tam może leżeć praca wykonawcy; sam go nie zdejmuj.
    Wyjście ucięte przez klienta — raport jest w logu:
    `sed -n '/^\[headless\] raport końcowy/,$p' <log>`.
+   Linia `SUSPECT=no-changes` w raporcie (exit 0 bez zmian i commitów) to podejrzany brak pracy: ponów zadanie na silniejszym modelu albo oznacz jako needs-human.
 
 4. Raport dla użytkownika:
 
    ```markdown
-   ## /headless <wykonawca> — <OK | błąd <kod> | timeout>
+   ## /headless <wykonawca> — <OK | błąd <kod> | timeout | przejęte przez hosta>
+   - Łańcuch: <np. `opencode → antigravity` z linii `[headless] … przekazuję zadanie` albo pomiń>
    - Zmiany: <pliki z git status, jedno zdanie co>
    - Commity wykonawcy: <z raportu końcowego albo „brak”>
    - Stash: <wpisy z ostrzeżenia `UWAGA` albo pomiń linię>
@@ -78,7 +111,7 @@ Język odpowiedzi i raportu: z MCP `get_language` (Profil), niezależnie od jęz
 ## Zakazy
 
 - Nie commituj, nie pushuj, nie poprawiaj kodu po wykonawcy (lokalne commity wykonawcy
-  zostają; push i PR po review).
+  zostają; push i PR po review). Wyjątek: przejęcie po kodzie `75` (krok 2).
 - Nie zdejmuj stasha (`git stash pop`) — tylko ostrzeżenie w raporcie.
 - Nie dopisuj nic do treści zadania i nie przekazuj innych flag CLI wykonawcy.
 - Nie wywołuj wykonawcy z pominięciem wrappera.
