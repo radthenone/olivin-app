@@ -15,6 +15,39 @@
       "storage": "Pamięć plików"
     }
   },
+  "catalog": {
+    "product": {
+      "description": "Opis",
+      "material": "Materiał",
+      "fineness": "Próba",
+      "rating": "Ocena {rating} z 5",
+      "productionTime": "Czas realizacji: {days, plural, one {# dzień} few {# dni} many {# dni} other {# dnia}}",
+      "variants": "Warianty",
+      "engravingAvailable": "Grawer dostępny — {price}",
+      "priceLoading": "Wczytywanie ceny…",
+      "notFound": {
+        "title": "Nie znaleziono produktu",
+        "description": "Ten produkt nie istnieje albo został wycofany ze sklepu."
+      },
+      "availability": {
+        "available": "Dostępny",
+        "lowStock": "Ostatnie sztuki",
+        "unavailable": "Niedostępny"
+      }
+    },
+    "material": {
+      "gold": "Złoto",
+      "silver": "Srebro",
+      "platinum": "Platyna",
+      "palladium": "Pallad"
+    },
+    "metalColor": {
+      "yellow": "Żółte złoto",
+      "white": "Białe złoto",
+      "rose": "Różowe złoto",
+      "bicolor": "Dwukolorowe"
+    }
+  },
   "auth": {
     "login": {
       "title": "Zaloguj się",

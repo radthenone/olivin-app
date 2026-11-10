@@ -15,6 +15,39 @@
       "storage": "Storage"
     }
   },
+  "catalog": {
+    "product": {
+      "description": "Description",
+      "material": "Material",
+      "fineness": "Fineness",
+      "rating": "Rated {rating} out of 5",
+      "productionTime": "Production time: {days, plural, one {# day} other {# days}}",
+      "variants": "Variants",
+      "engravingAvailable": "Engraving available — {price}",
+      "priceLoading": "Loading the price…",
+      "notFound": {
+        "title": "Product not found",
+        "description": "This product does not exist or has been withdrawn from the store."
+      },
+      "availability": {
+        "available": "Available",
+        "lowStock": "Last few items",
+        "unavailable": "Unavailable"
+      }
+    },
+    "material": {
+      "gold": "Gold",
+      "silver": "Silver",
+      "platinum": "Platinum",
+      "palladium": "Palladium"
+    },
+    "metalColor": {
+      "yellow": "Yellow gold",
+      "white": "White gold",
+      "rose": "Rose gold",
+      "bicolor": "Two-tone"
+    }
+  },
   "auth": {
     "login": {
       "title": "Sign in",
