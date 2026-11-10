@@ -33,7 +33,8 @@
         "available": "Available",
         "lowStock": "Last few items",
         "unavailable": "Unavailable"
-      }
+      },
+      "stones": "Stones"
     },
     "material": {
       "gold": "Gold",
@@ -46,6 +47,18 @@
       "white": "White gold",
       "rose": "Rose gold",
       "bicolor": "Two-tone"
+    },
+    "stone": {
+      "diamond": "Diamond",
+      "sapphire": "Sapphire",
+      "ruby": "Ruby",
+      "emerald": "Emerald",
+      "pearl": "Pearl",
+      "amber": "Amber",
+      "topaz": "Topaz",
+      "amethyst": "Amethyst",
+      "cubic_zirconia": "Cubic zirconia",
+      "moissanite": "Moissanite"
     }
   },
   "auth": {

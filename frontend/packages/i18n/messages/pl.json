@@ -33,7 +33,8 @@
         "available": "Dostępny",
         "lowStock": "Ostatnie sztuki",
         "unavailable": "Niedostępny"
-      }
+      },
+      "stones": "Kamienie"
     },
     "material": {
       "gold": "Złoto",
@@ -46,6 +47,18 @@
       "white": "Białe złoto",
       "rose": "Różowe złoto",
       "bicolor": "Dwukolorowe"
+    },
+    "stone": {
+      "diamond": "Diament",
+      "sapphire": "Szafir",
+      "ruby": "Rubin",
+      "emerald": "Szmaragd",
+      "pearl": "Perła",
+      "amber": "Bursztyn",
+      "topaz": "Topaz",
+      "amethyst": "Ametyst",
+      "cubic_zirconia": "Cyrkonia",
+      "moissanite": "Moissanit"
     }
   },
   "auth": {

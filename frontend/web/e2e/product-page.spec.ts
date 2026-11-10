@@ -31,6 +31,7 @@ test("shows the cached product card with a PLN price and every availability cate
   await expect(page.getByText(/2.?500,00.?zł/)).toBeVisible();
   await expect(page.getByText("Ostatnie sztuki", { exact: true })).toBeVisible();
   await expect(page.getByText("Niedostępny", { exact: true })).toBeVisible();
+  await expect(page.getByText("Diament", { exact: true })).toBeVisible();
   await expect(page.getByText(/Grawer dostępny/)).toBeVisible();
   await expect(page.getByText("Ocena 4,5 z 5")).toBeVisible();
 });

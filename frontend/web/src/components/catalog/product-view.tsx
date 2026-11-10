@@ -4,6 +4,8 @@ import { getTranslations } from "next-intl/server";
 
 import { Suspense } from "react";
 
+import { uniqueStones } from "@/lib/product-stones";
+
 import { ProductOffer } from "./product-offer";
 
 /**
@@ -21,6 +23,7 @@ export async function ProductView({
   locale: Locale;
 }) {
   const t = await getTranslations({ locale });
+  const stones = uniqueStones(product.variants);
 
   return (
     <article className="flex flex-col gap-8">
@@ -74,6 +77,14 @@ export async function ProductView({
         </dd>
         <dt className="text-neutral-500">{t("catalog.product.fineness")}</dt>
         <dd className="text-neutral-800">{product.fineness}</dd>
+        {stones.length > 0 && (
+          <>
+            <dt className="text-neutral-500">{t("catalog.product.stones")}</dt>
+            <dd className="text-neutral-800">
+              {stones.map((stone) => t(`catalog.stone.${stone}`)).join(", ")}
+            </dd>
+          </>
+        )}
       </dl>
 
       {product.isMadeToOrder && product.productionTimeDays !== null && (
