@@ -3,10 +3,11 @@ import { defineConfig, devices } from "@playwright/test";
 /**
  * Testy przeglądarkowe aplikacji webowej.
  *
- * Domyślnie odpowiedź backendu jest podstawiana w teście (patrz e2e/), więc
- * do przebiegu wystarczy sam Next — tak działa CI. `E2E_LIVE_BACKEND=1`
- * wyłącza podstawianie i sprawdza prawdziwy łańcuch przeglądarka → Next →
- * Django; wymaga uruchomionego backendu (`task backend:run` lub `task web:up`).
+ * Domyślnie katalog odpowiada stub API (`e2e/catalog-stub/`), uruchamiany jako
+ * dodatkowy `webServer`, więc do przebiegu wystarczy sam Next — tak działa CI
+ * bez Django. `E2E_LIVE_BACKEND=1` wyłącza stub i sprawdza prawdziwy łańcuch
+ * przeglądarka → Next → Django; wymaga uruchomionego backendu
+ * (`task backend:run` lub `task web:up`).
  */
 const port =
   Number(process.env.E2E_PORT) ||
@@ -14,6 +15,14 @@ const port =
   // (`CSRF_TRUSTED_ORIGINS`). Testy z podstawianymi odpowiedziami zostają na
   // osobnym 3100, żeby nie wchodzić w paradę `task web:run`.
   (process.env.E2E_LIVE_BACKEND === "1" ? 3000 : 3100);
+const liveBackend = process.env.E2E_LIVE_BACKEND === "1";
+const stubPort = Number(process.env.E2E_STUB_PORT) || 3200;
+const stubUrl = `http://localhost:${stubPort}`;
+// Serwerowy transport katalogu nie idzie przez ciasteczka sesji, więc jego
+// adres jest osobną zmienną od `NEXT_PUBLIC_BACKEND_URL`.
+const catalogApiUrl = liveBackend
+  ? (process.env.CATALOG_API_URL ?? "http://127.0.0.1:8020")
+  : stubUrl;
 // localhost, nie 127.0.0.1: Next w trybie deweloperskim blokuje żądania
 // o zasoby z innego originu niż ten, na którym nasłuchuje (allowedDevOrigins),
 // a bez zasobów strona nigdy się nie hydratuje.
@@ -30,14 +39,29 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  webServer: {
-    // Osobny port, żeby test nie wchodził w paradę `task web:run` na 3000.
-    command: `bun run dev --port ${port}`,
-    url: baseURL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-    // Logi Next (status żądań, błędy kompilacji) trafiają do wyjścia testu —
-    // bez tego timeout webServera w CI nie mówi, na czym utknął.
-    stdout: "pipe",
-  },
+  webServer: [
+    ...(liveBackend
+      ? []
+      : [
+          {
+            // Stub katalogu wstaje pierwszy; Next dostaje jego adres przez env.
+            command: "bun run e2e/catalog-stub/server.ts",
+            url: `${stubUrl}/health/`,
+            reuseExistingServer: !process.env.CI,
+            timeout: 30_000,
+            stdout: "pipe" as const,
+          },
+        ]),
+    {
+      // Osobny port, żeby test nie wchodził w paradę `task web:run` na 3000.
+      command: `bun run dev --port ${port}`,
+      url: baseURL,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+      env: { CATALOG_API_URL: catalogApiUrl },
+      // Logi Next (status żądań, błędy kompilacji) trafiają do wyjścia testu —
+      // bez tego timeout webServera w CI nie mówi, na czym utknął.
+      stdout: "pipe",
+    },
+  ],
 });
