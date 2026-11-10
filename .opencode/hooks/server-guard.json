@@ -59,62 +59,140 @@
     {
       "id": "uv-sync",
       "kind": "deny",
-      "pattern": "^\\s*uv\\s+(sync|add|remove|lock)(?=\\s|$)",
+      "pattern": "^\\s*uv\\s+sync(?=\\s|$)",
       "reason": "instalacja kompiluje zależności natywne — lockfile zmienia się na PC albo w CI"
+    },
+    {
+      "id": "help-launcher",
+      "kind": "allow",
+      "pattern": "^\\s*(?:npx|bunx|uvx|pnpx)(?:\\s+-\\S+)*?\\s+--(?:help|version)(?=\\s|$)",
+      "reason": "`--help` / `--version` przed nazwą narzędzia launchera — tylko pomoc, bez pobierania"
+    },
+    {
+      "id": "help-info",
+      "kind": "allow",
+      "pattern": "^\\s*(?!(?:npx|bunx|uvx|pnpx)(?=\\s|$))(?!(?:npm|pnpm|yarn|bun)\\s+(?:exec|x|dlx)(?=\\s|$))\\S+(?:\\s+(?!-)[A-Za-z][\\w:.-]*)?(?:\\s+-\\S+)*?\\s+--(?:help|version)(?=\\s|$)",
+      "reason": "`--help` / `--version` w strefie flag — pomoc, bez uruchomienia"
+    },
+    {
+      "id": "uv-add",
+      "kind": "deny",
+      "pattern": "^\\s*uv\\s+(?:add|remove)(?=\\s|$)",
+      "reason": "`uv add`/`uv remove` instaluje i kompiluje — tylko `uv add|remove <pkg> --no-sync --no-build` zmienia sam lockfile; inaczej zależności zmieniają się na PC albo w CI"
+    },
+    {
+      "id": "uv-lock",
+      "kind": "deny",
+      "pattern": "^\\s*uv\\s+lock(?=\\s|$)",
+      "reason": "`uv lock` bez `--no-build` może budować zależności i projekt — dozwolone tylko `uv lock --no-build`; inaczej lockfile zmienia się na PC albo w CI"
+    },
+    {
+      "id": "uv-add-lock-only",
+      "kind": "allow",
+      "pattern": "^\\s*uv\\s+(?:add|remove)(?=\\s|$)(?!.*[`$\\\\{])(?!.*\\s[\"']+-)(?!.*\\s-[^\\s=]*[\"'])(?!.*\"[^\"]*\\s[^\"]*\")(?!.*'[^']*\\s[^']*')(?!.*\\s--(?:sync|build)(?=[\\s=]|$))(?=(?:\\s+(?!--(?:\\s|$))(?!#)\\S+)*?\\s+--no-sync(?=\\s|$))(?=(?:\\s+(?!--(?:\\s|$))(?!#)\\S+)*?\\s+--no-build(?=\\s|$))",
+      "reason": "zmiana zależności tylko w lockfile — bez synchronizacji i bez builda"
+    },
+    {
+      "id": "uv-lock-only",
+      "kind": "allow",
+      "pattern": "^\\s*uv\\s+lock(?=\\s|$)(?!.*[`$\\\\{])(?!.*\\s[\"']+-)(?!.*\\s-[^\\s=]*[\"'])(?!.*\"[^\"]*\\s[^\"]*\")(?!.*'[^']*\\s[^']*')(?!.*\\s--(?:build)(?=[\\s=]|$))(?=(?:\\s+(?!--(?:\\s|$))(?!#)\\S+)*?\\s+--no-build(?=\\s|$))",
+      "reason": "rozwiązanie wersji tylko do lockfile — bez builda"
     },
     {
       "id": "uv-pip-install",
       "kind": "deny",
-      "pattern": "^\\s*uv\\s+pip\\s+install(?=\\s|$)",
+      "pattern": "^\\s*uv\\s+pip\\s+(?:install|sync)(?=\\s|$)",
       "reason": "instalacja kompiluje zależności natywne — lockfile zmienia się na PC albo w CI"
+    },
+    {
+      "id": "uv-tool-install",
+      "kind": "deny",
+      "pattern": "^\\s*uv\\s+tool\\s+install(?=\\s|$)",
+      "reason": "`uv tool install` pobiera paczkę z sieci — narzędzia instaluj na PC albo w CI"
     },
     {
       "id": "pip-install",
       "kind": "deny",
-      "pattern": "^\\s*pip3?\\s+install(?=\\s|$)",
+      "pattern": "^\\s*pip(?:3(?:\\.\\d+)?)?\\s+install(?=\\s|$)",
       "reason": "instalacja kompiluje zależności natywne — zależności zmieniają się na PC albo w CI"
     },
     {
       "id": "uv-run",
       "kind": "deny",
-      "pattern": "^\\s*uv\\s+run(?=\\s|$)(?!.*--no-sync)",
+      "pattern": "^\\s*uv\\s+run(?=\\s|$)(?!.*--no-sync(?=\\s|$))(?!.*--with(?:-requirements|-editable)?(?=[\\s=]|$))",
       "reason": "`uv run` bez `--no-sync` synchronizuje i kompiluje — użyj `uv run --no-sync` albo `UV_NO_SYNC=1`"
     },
     {
       "id": "uv-run-no-sync",
       "kind": "allow",
-      "pattern": "^\\s*uv\\s+run(?=\\s|$).*?--no-sync",
+      "pattern": "^\\s*uv\\s+run(?=\\s|$)(?!.*--with(?:-requirements|-editable)?(?=[\\s=]|$)).*?--no-sync(?=\\s|$)",
       "reason": "uruchomienie bez synchronizacji"
     },
     {
+      "id": "uv-run-with",
+      "kind": "deny",
+      "pattern": "^\\s*uv\\s+run(?=\\s|$).*--with(?:-requirements|-editable)?(?=[\\s=]|$)",
+      "reason": "`uv run --with` pobiera paczkę z sieci, także z `--no-sync` — zależności instaluj na PC albo w CI"
+    },
+    {
       "id": "uvx",
-      "kind": "allow",
-      "pattern": "^\\s*uvx(?=\\s|$)",
-      "reason": "jednorazowe narzędzia bez instalacji do projektu"
+      "kind": "deny",
+      "pattern": "^\\s*uvx(?=\\s|$)(?!(?:\\s+-\\S+)*\\s+--offline(?=\\s|$))",
+      "reason": "`uvx` pobiera narzędzie z sieci — użyj `uvx --offline` / `UV_OFFLINE=1` albo `uv run --no-sync python -m …`"
     },
     {
       "id": "bun-pkg",
       "kind": "deny",
-      "pattern": "^\\s*bun\\s+(install|add|remove)(?=\\s|$)",
-      "reason": "instalacja paczek na serwerze — zależności zmieniają się na PC albo w CI"
+      "pattern": "^\\s*bun\\s+(?:install|add|remove|rm|i|a|update|up|upgrade)(?=\\s|$)",
+      "reason": "instalacja paczek na serwerze — tylko `bun install --lockfile-only --ignore-scripts`, inaczej zależności zmieniają się na PC albo w CI"
+    },
+    {
+      "id": "bun-install-lock-only",
+      "kind": "allow",
+      "pattern": "^\\s*bun\\s+(?:install|i)(?=\\s|$)(?!.*[`$\\\\{])(?!.*\\s[\"']+-)(?!.*\\s-[^\\s=]*[\"'])(?!.*\"[^\"]*\\s[^\"]*\")(?!.*'[^']*\\s[^']*')(?!.*\\s--no-(?:lockfile-only|ignore-scripts)(?=[\\s=]|$))(?!.*\\s--(?:lockfile-only|ignore-scripts)=(?![\"']?true[\"']?(?=\\s|$)))(?=(?:\\s+(?!--(?:\\s|$))(?!#)\\S+)*?\\s+--lockfile-only(?=\\s|$))(?=(?:\\s+(?!--(?:\\s|$))(?!#)\\S+)*?\\s+--ignore-scripts(?:=[\"']?true[\"']?)?(?=\\s|$))",
+      "reason": "aktualizacja tylko `bun.lock` — bez instalacji i bez skryptów"
+    },
+    {
+      "id": "bun-add-lock-only",
+      "kind": "allow",
+      "pattern": "^\\s*bun\\s+(?:add|remove)(?=\\s|$)(?!.*[`$\\\\{])(?!.*\\s[\"']+-)(?!.*\\s-[^\\s=]*[\"'])(?!.*\"[^\"]*\\s[^\"]*\")(?!.*'[^']*\\s[^']*')(?!.*\\s--no-(?:lockfile-only|ignore-scripts)(?=[\\s=]|$))(?!.*\\s--(?:lockfile-only|ignore-scripts)=(?![\"']?true[\"']?(?=\\s|$)))(?=(?:\\s+(?!--(?:\\s|$))(?!#)\\S+)*?\\s+--lockfile-only(?=\\s|$))(?=(?:\\s+(?!--(?:\\s|$))(?!#)\\S+)*?\\s+--ignore-scripts(?:=[\"']?true[\"']?)?(?=\\s|$))",
+      "reason": "zmiana zależności tylko w `bun.lock` — bez instalacji i bez skryptów"
     },
     {
       "id": "npm-pkg",
       "kind": "deny",
-      "pattern": "^\\s*npm\\s+(install|i|ci)(?=\\s|$)",
-      "reason": "instalacja paczek na serwerze — zależności zmieniają się na PC albo w CI"
+      "pattern": "^\\s*npm\\s+(?:install|i|ci|cit|install-ci-test|add|it|install-test|update|up|upgrade|remove|uninstall|un|rm|r)(?=\\s|$)",
+      "reason": "instalacja paczek na serwerze — tylko `npm install --package-lock-only --ignore-scripts`, inaczej zależności zmieniają się na PC albo w CI"
+    },
+    {
+      "id": "npm-install-lock-only",
+      "kind": "allow",
+      "pattern": "^\\s*npm\\s+(?:install|i)(?=\\s|$)(?!.*[`$\\\\{])(?!.*\\s[\"']+-)(?!.*\\s-[^\\s=]*[\"'])(?!.*\"[^\"]*\\s[^\"]*\")(?!.*'[^']*\\s[^']*')(?!.*\\s--no-(?:package-lock-only|ignore-scripts)(?=[\\s=]|$))(?!.*\\s--(?:package-lock-only|ignore-scripts)=(?![\"']?true[\"']?(?=\\s|$)))(?=(?:\\s+(?!--(?:\\s|$))(?!#)\\S+)*?\\s+--package-lock-only(?=\\s|$))(?=(?:\\s+(?!--(?:\\s|$))(?!#)\\S+)*?\\s+--ignore-scripts(?:=[\"']?true[\"']?)?(?=\\s|$))",
+      "reason": "aktualizacja tylko `package-lock.json` — bez instalacji i bez skryptów"
     },
     {
       "id": "pnpm-pkg",
       "kind": "deny",
-      "pattern": "^\\s*pnpm\\s+(install|i|add)(?=\\s|$)",
-      "reason": "instalacja paczek na serwerze — zależności zmieniają się na PC albo w CI"
+      "pattern": "^\\s*pnpm\\s+(?:install|i|add|update|up|upgrade|remove|rm)(?=\\s|$)",
+      "reason": "instalacja paczek na serwerze — tylko `pnpm install --lockfile-only --ignore-scripts`, inaczej zależności zmieniają się na PC albo w CI"
+    },
+    {
+      "id": "pnpm-install-lock-only",
+      "kind": "allow",
+      "pattern": "^\\s*pnpm\\s+(?:install|i)(?=\\s|$)(?!.*[`$\\\\{])(?!.*\\s[\"']+-)(?!.*\\s-[^\\s=]*[\"'])(?!.*\"[^\"]*\\s[^\"]*\")(?!.*'[^']*\\s[^']*')(?!.*\\s--no-(?:lockfile-only|ignore-scripts)(?=[\\s=]|$))(?!.*\\s--(?:lockfile-only|ignore-scripts)=(?![\"']?true[\"']?(?=\\s|$)))(?=(?:\\s+(?!--(?:\\s|$))(?!#)\\S+)*?\\s+--lockfile-only(?=\\s|$))(?=(?:\\s+(?!--(?:\\s|$))(?!#)\\S+)*?\\s+--ignore-scripts(?:=[\"']?true[\"']?)?(?=\\s|$))",
+      "reason": "aktualizacja tylko `pnpm-lock.yaml` — bez instalacji i bez skryptów"
     },
     {
       "id": "yarn-pkg",
       "kind": "deny",
-      "pattern": "^\\s*yarn\\s+(install|add)(?=\\s|$)",
-      "reason": "instalacja paczek na serwerze — zależności zmieniają się na PC albo w CI"
+      "pattern": "^\\s*yarn\\s+(?:global\\s+add|install|add|update|up|upgrade|remove)(?=\\s|$)",
+      "reason": "instalacja paczek na serwerze — Yarn nie ma trybu „tylko lockfile” bez skryptów, więc zależności zmieniają się na PC albo w CI"
+    },
+    {
+      "id": "yarn-bare",
+      "kind": "deny",
+      "pattern": "^\\s*yarn(?=(?:\\s+(?:--cwd(?:=|\\s+)\\S+|-\\S+))*\\s*$)(?!.*\\s(?:-v|--version|-h|--help)(?=\\s|$))",
+      "reason": "goły `yarn` instaluje zależności — instalacja tylko na PC albo w CI"
     },
     {
       "id": "shadcn",
@@ -127,6 +205,30 @@
       "kind": "deny",
       "pattern": "^\\s*expo(?:@\\S+)?\\s+install(?=\\s|$)",
       "reason": "`expo install` zmienia zależności — instalacja tylko na PC albo w CI"
+    },
+    {
+      "id": "cargo-install",
+      "kind": "deny",
+      "pattern": "^\\s*cargo\\s+install(?=\\s|$)",
+      "reason": "instalacja na serwerze — zależności zmieniają się na PC albo w CI"
+    },
+    {
+      "id": "go-install",
+      "kind": "deny",
+      "pattern": "^\\s*go\\s+install(?=\\s|$)",
+      "reason": "instalacja na serwerze — zależności zmieniają się na PC albo w CI"
+    },
+    {
+      "id": "apt-install",
+      "kind": "deny",
+      "pattern": "^\\s*apt(?:-get)?(?:\\s+-\\S+)*\\s+install(?=\\s|$)",
+      "reason": "instalacja na serwerze — zależności zmieniają się na PC albo w CI"
+    },
+    {
+      "id": "corepack-enable",
+      "kind": "deny",
+      "pattern": "^\\s*corepack\\s+enable(?=\\s|$)",
+      "reason": "instalacja na serwerze — zależności zmieniają się na PC albo w CI"
     },
     {
       "id": "next-build",
@@ -153,6 +255,36 @@
       "reason": "build produkcyjny tylko w CI"
     },
     {
+      "id": "nuxt-build",
+      "kind": "deny",
+      "pattern": "^\\s*nuxt\\s+build(?=\\s|$)",
+      "reason": "build produkcyjny tylko w CI"
+    },
+    {
+      "id": "astro-build",
+      "kind": "deny",
+      "pattern": "^\\s*astro\\s+build(?=\\s|$)",
+      "reason": "build produkcyjny tylko w CI"
+    },
+    {
+      "id": "tsup",
+      "kind": "deny",
+      "pattern": "^\\s*tsup(?=\\s|$)",
+      "reason": "build produkcyjny tylko w CI — na VPS `tsc --noEmit`"
+    },
+    {
+      "id": "webpack",
+      "kind": "deny",
+      "pattern": "^\\s*webpack(?=\\s|$)",
+      "reason": "build produkcyjny tylko w CI — na VPS `tsc --noEmit`"
+    },
+    {
+      "id": "cargo-build",
+      "kind": "deny",
+      "pattern": "^\\s*cargo\\s+build(?=\\s|$)",
+      "reason": "build produkcyjny tylko w CI — na VPS `cargo check`"
+    },
+    {
       "id": "turbo-build",
       "kind": "deny",
       "pattern": "^\\s*turbo(?:\\s+run)?(?:\\s+[^-\\s]\\S*)*?\\s+build(?=\\s|$)",
@@ -163,6 +295,36 @@
       "kind": "allow",
       "pattern": "^\\s*turbo\\s+run(?:\\s+(?:lint|typecheck))+(?:\\s+-\\S+(?:\\s+[^-\\s]\\S*)?)*\\s*$",
       "reason": "lekkie bramki na VPS"
+    },
+    {
+      "id": "npx-launcher",
+      "kind": "deny",
+      "pattern": "^\\s*(?:npx|npm\\s+(?:exec|x))(?=\\s|$)",
+      "reason": "`npx` / `npm exec` pobiera paczkę z sieci — użyj `npx --no <bin>`, `bunx --no-install <bin>` albo skryptu projektu (`bun run typecheck`)"
+    },
+    {
+      "id": "npx-no",
+      "kind": "allow",
+      "pattern": "^\\s*(?:npx|npm\\s+(?:exec|x))(?=(?:\\s+-\\S+)*\\s+--no(?:-install)?(?=\\s|$))(?!(?:\\s+-\\S+)*\\s+(?:-y|--yes)(?=\\s|$))",
+      "reason": "`--no` przed nazwą: tylko pakiet już w node_modules/.bin, bez pobierania"
+    },
+    {
+      "id": "bunx-launcher",
+      "kind": "deny",
+      "pattern": "^\\s*(?:bunx|bun\\s+x)(?=\\s|$)",
+      "reason": "`bunx` pobiera paczkę z sieci — użyj `bunx --no-install <bin>` albo skryptu projektu (`bun run typecheck`)"
+    },
+    {
+      "id": "bunx-no-install",
+      "kind": "allow",
+      "pattern": "^\\s*(?:bunx|bun\\s+x)(?=(?:\\s+-\\S+)*\\s+--no-install(?=\\s|$))",
+      "reason": "`--no-install` przed nazwą: tylko pakiet już zainstalowany"
+    },
+    {
+      "id": "dlx-launcher",
+      "kind": "deny",
+      "pattern": "^\\s*(?:pnpm\\s+dlx|yarn\\s+dlx|pnpx)(?=\\s|$)",
+      "reason": "`pnpm dlx` / `yarn dlx` / `pnpx` zawsze pobiera paczkę — użyj skryptu projektu (`bun run typecheck`) albo `npx --no <bin>`"
     },
     {
       "id": "playwright",
@@ -185,7 +347,7 @@
     {
       "id": "pytest-xdist",
       "kind": "deny",
-      "pattern": "^\\s*pytest(?=\\s|$).*\\s(?:-n|--numprocesses)(?=[\\s=\\d]|$)",
+      "pattern": "^\\s*pytest(?=\\s|$).*\\s(?:-n(?:=?[a-zA-Z0-9]+)?|--numprocesses(?:=\\S+)?)(?=\\s|$)",
       "reason": "xdist mnoży procesy na słabym CPU — użyj `pytest` bez `-n`"
     }
   ],
@@ -303,6 +465,62 @@
       "reason": "build produkcyjny tylko w CI",
       "chain": "yarn run smoke → expo export --platform all --output-dir dist",
       "rule": "expo-build"
+    },
+    {
+      "id": "wrapper",
+      "kind": "deny",
+      "pattern": "^\\s*bun\\s+run\\s+doctor(?=\\s|$)",
+      "reason": "`bunx` pobiera paczkę z sieci — użyj `bunx --no-install <bin>` albo skryptu projektu (`bun run typecheck`)",
+      "chain": "bun run doctor → bunx expo-doctor@1.20.4",
+      "rule": "bunx-launcher"
+    },
+    {
+      "id": "wrapper",
+      "kind": "deny",
+      "pattern": "^\\s*npm\\s+run\\s+doctor(?=\\s|$)",
+      "reason": "`bunx` pobiera paczkę z sieci — użyj `bunx --no-install <bin>` albo skryptu projektu (`bun run typecheck`)",
+      "chain": "npm run doctor → bunx expo-doctor@1.20.4",
+      "rule": "bunx-launcher"
+    },
+    {
+      "id": "wrapper",
+      "kind": "deny",
+      "pattern": "^\\s*npm\\s+run\\-script\\s+doctor(?=\\s|$)",
+      "reason": "`bunx` pobiera paczkę z sieci — użyj `bunx --no-install <bin>` albo skryptu projektu (`bun run typecheck`)",
+      "chain": "npm run-script doctor → bunx expo-doctor@1.20.4",
+      "rule": "bunx-launcher"
+    },
+    {
+      "id": "wrapper",
+      "kind": "deny",
+      "pattern": "^\\s*pnpm\\s+doctor(?=\\s|$)",
+      "reason": "`bunx` pobiera paczkę z sieci — użyj `bunx --no-install <bin>` albo skryptu projektu (`bun run typecheck`)",
+      "chain": "pnpm doctor → bunx expo-doctor@1.20.4",
+      "rule": "bunx-launcher"
+    },
+    {
+      "id": "wrapper",
+      "kind": "deny",
+      "pattern": "^\\s*pnpm\\s+run\\s+doctor(?=\\s|$)",
+      "reason": "`bunx` pobiera paczkę z sieci — użyj `bunx --no-install <bin>` albo skryptu projektu (`bun run typecheck`)",
+      "chain": "pnpm run doctor → bunx expo-doctor@1.20.4",
+      "rule": "bunx-launcher"
+    },
+    {
+      "id": "wrapper",
+      "kind": "deny",
+      "pattern": "^\\s*yarn\\s+doctor(?=\\s|$)",
+      "reason": "`bunx` pobiera paczkę z sieci — użyj `bunx --no-install <bin>` albo skryptu projektu (`bun run typecheck`)",
+      "chain": "yarn doctor → bunx expo-doctor@1.20.4",
+      "rule": "bunx-launcher"
+    },
+    {
+      "id": "wrapper",
+      "kind": "deny",
+      "pattern": "^\\s*yarn\\s+run\\s+doctor(?=\\s|$)",
+      "reason": "`bunx` pobiera paczkę z sieci — użyj `bunx --no-install <bin>` albo skryptu projektu (`bun run typecheck`)",
+      "chain": "yarn run doctor → bunx expo-doctor@1.20.4",
+      "rule": "bunx-launcher"
     },
     {
       "id": "wrapper",
@@ -431,6 +649,14 @@
       "reason": "build produkcyjny tylko w CI",
       "chain": "turbo run smoke → expo export --platform all --output-dir dist",
       "rule": "expo-build"
+    },
+    {
+      "id": "wrapper",
+      "kind": "deny",
+      "pattern": "^\\s*turbo\\s+run\\s+(?:\\S+\\s+)*doctor(?=\\s|$)",
+      "reason": "`bunx` pobiera paczkę z sieci — użyj `bunx --no-install <bin>` albo skryptu projektu (`bun run typecheck`)",
+      "chain": "turbo run doctor → bunx expo-doctor@1.20.4",
+      "rule": "bunx-launcher"
     },
     {
       "id": "wrapper",
