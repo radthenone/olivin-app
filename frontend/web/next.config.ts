@@ -21,6 +21,15 @@ const nextConfig: NextConfig = {
 
   typedRoutes: true,
 
+  // `next build` sprawdza typy razem z wygenerowanymi trasami, a testy typuje
+  // osobno `tsc` w CI. Build produkcyjny sprawdza więc tylko kod aplikacji.
+  typescript: {
+    tsconfigPath:
+      process.env.NODE_ENV === "production"
+        ? "tsconfig.build.json"
+        : "tsconfig.json",
+  },
+
   /**
    * Allauth w trybie przeglądarkowym potrzebuje tych samych ciasteczek po
    * stronie webu: `sessionid` trzyma sesję, a `csrftoken` musi dać się odczytać
