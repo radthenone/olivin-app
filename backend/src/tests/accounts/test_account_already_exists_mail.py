@@ -11,7 +11,6 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.test import APIClient
 
-from apps.accounts.models import Profile
 from common.languages import PreferredLanguage
 from tests.factories.accounts import ProfileFactory, UserFactory
 
@@ -80,7 +79,7 @@ class TestAccountAlreadyExistsMail:
         message = mail.outbox[0]
         assert "Account Already Exists" in message.subject
         assert settings.SELLER_NAME in message.subject
-        assert f"{settings.FRONTEND_URL}/en/account/reset-password" in message.body
+        assert f"{settings.FRONTEND_URL}/en/reset-password" in message.body
 
     def test_reset_link_leads_to_web_code_reset(
         self,
@@ -94,7 +93,7 @@ class TestAccountAlreadyExistsMail:
         with django_capture_on_commit_callbacks(execute=True):
             _signup(api_client, "reset@test.com")
 
-        expected = f"{settings.FRONTEND_URL}/pl/account/reset-password"
+        expected = f"{settings.FRONTEND_URL}/pl/reset-password"
         assert expected in mail.outbox[0].body
 
     def test_language_falls_back_to_request(
@@ -104,8 +103,7 @@ class TestAccountAlreadyExistsMail:
         django_capture_on_commit_callbacks,
     ):
         """Konto bez wybranego języka bierze język żądania, nie domyślny polski."""
-        user = UserFactory(email="fallback@test.com")
-        Profile.objects.filter(user=user).update(preferred_language=None)
+        _existing_account("fallback@test.com", None)
 
         with django_capture_on_commit_callbacks(execute=True):
             _signup(api_client, "fallback@test.com", language="en-GB,en;q=0.9")
@@ -119,8 +117,7 @@ class TestAccountAlreadyExistsMail:
         django_capture_on_commit_callbacks,
     ):
         """Bez języka konta i żądania mail idzie po polsku."""
-        user = UserFactory(email="domyslny@test.com")
-        Profile.objects.filter(user=user).update(preferred_language=None)
+        _existing_account("domyslny@test.com", None)
 
         with django_capture_on_commit_callbacks(execute=True):
             _signup(api_client, "domyslny@test.com")

@@ -7,7 +7,7 @@ from allauth.account.adapter import DefaultAccountAdapter
 from allauth.core import context as allauth_context
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.mail import EmailMultiAlternatives
+from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.http import RawPostDataException
 from django.db import transaction
 from django.db.transaction import on_commit
@@ -136,7 +136,7 @@ class AsyncAccountAdapter(DefaultAccountAdapter):
             return language_from_request(request) or PreferredLanguage.PL
         return PreferredLanguage.PL
 
-    def _queue_mail(self, msg) -> None:
+    def _queue_mail(self, msg: EmailMessage) -> None:
         payload = MailService.serialize(msg)
         task = cast(Any, send_email_payloads_task)
         on_commit(lambda: task.delay([payload]))
