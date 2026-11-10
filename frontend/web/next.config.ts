@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   // ADR 0034: strony katalogu są keszowane przez `"use cache"` i rewalidowane
   // tagami, a cena jest dziurą dynamiczną streamowaną w tym samym żądaniu.
   cacheComponents: true,
+  partialPrefetching: true,
 
   // Pakiety współdzielone są konsumowane jako źródło TypeScript, bez kroku
   // budowania — patrz docs/adr/0005-pakiety-wspoldzielone-jako-zrodlo.md
