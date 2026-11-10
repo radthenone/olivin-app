@@ -7,6 +7,7 @@
   "types": "./index.ts",
   "prettier": "@olivin/config/prettier/index.json",
   "scripts": {
+    "test": "bun test ./index.test.ts",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,json}\"",
     "format:check": "prettier --check \"**/*.{ts,json}\""
