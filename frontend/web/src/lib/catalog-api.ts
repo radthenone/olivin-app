@@ -4,6 +4,8 @@ import type { Locale } from "@olivin/i18n";
 import { cacheLife, cacheTag } from "next/cache";
 import { cookies } from "next/headers";
 
+import { catalogBaseUrl } from "./catalog-url";
+
 /**
  * Publiczny transport serwerowy katalogu (ADR 0034).
  *
@@ -18,20 +20,6 @@ import { cookies } from "next/headers";
 export const currencyCookieName = "currency";
 
 export type CatalogCurrency = "PLN" | "EUR";
-
-function catalogBaseUrl(): string {
-  const configured =
-    process.env.CATALOG_API_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  if (!configured) {
-    throw new Error(
-      "Brak CATALOG_API_URL. Bez adresu backendu katalog nie ma skąd pobrać " +
-        "produktów.",
-    );
-  }
-
-  return configured.replace(/\/$/, "");
-}
 
 async function fetchProduct(
   slug: string,
