@@ -42,7 +42,8 @@ describe("@olivin/i18n", () => {
     expect(keys).toContain("catalog.product.attributes.size");
     expect(keys).toContain("catalog.product.attributes.length");
     expect(keys).toContain("catalog.product.attributes.stone");
-    expect(keys).toContain("catalog.product.combinationUnavailable");
+    expect(keys).toContain("catalog.product.attributeNone");
+    expect(keys).toContain("catalog.product.lengthValue");
   });
 
   test("exposes both locales and uses Polish as the default", () => {

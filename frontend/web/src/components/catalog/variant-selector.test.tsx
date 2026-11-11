@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import type { ProductVariant } from "@olivin/api/generated/apps/schemas";
+import type {
+  ProductVariant,
+  StoneEnum,
+} from "@olivin/api/generated/apps/schemas";
+import { messages, type Locale } from "@olivin/i18n";
+import { NextIntlClientProvider } from "next-intl";
+import type { ComponentProps } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { VariantSelector } from "./variant-selector";
@@ -29,6 +35,27 @@ function mockVariant(
   };
 }
 
+/** Selektor korzysta z `next-intl`, więc potrzebuje dostawcy komunikatów. */
+function render(
+  props: ComponentProps<typeof VariantSelector>,
+  locale: Locale = "pl",
+): string {
+  return renderToStaticMarkup(
+    <NextIntlClientProvider
+      locale={locale}
+      messages={messages[locale]}
+      timeZone="Europe/Warsaw"
+    >
+      <VariantSelector {...props} />
+    </NextIntlClientProvider>,
+  );
+}
+
+/** Znaczniki przycisków radio w kolejności występowania w markupie. */
+function radios(markup: string): string[] {
+  return markup.match(/<button[^>]*role="radio"[^>]*>/g) ?? [];
+}
+
 describe("VariantSelector", () => {
   const v1 = mockVariant("V1", {
     metalColor: "yellow",
@@ -47,58 +74,115 @@ describe("VariantSelector", () => {
   });
   const variants = [v1, v2, v3];
 
-  test("renders radiogroups for active attributes", () => {
-    const markup = renderToStaticMarkup(
-      <VariantSelector
-        locale="pl"
-        selectedAttributes={{ metalColor: "yellow", size: "16" }}
-        variants={variants}
-      />,
-    );
+  test("renders radiogroups for attributes with many values", () => {
+    const markup = render({
+      selectedAttributes: { metalColor: "yellow", size: "16" },
+      variants,
+    });
 
-    expect(markup).toContain('role="radiogroup"');
+    expect(markup.match(/role="radiogroup"/g)).toHaveLength(2);
     expect(markup).toContain('role="radio"');
     expect(markup).toContain("Żółte złoto");
     expect(markup).toContain("Białe złoto");
   });
 
+  test("shows an attribute with a single value read-only", () => {
+    const markup = render({
+      selectedAttributes: { metalColor: "yellow", size: "16" },
+      variants,
+    });
+
+    // Długość (45) i kamień (diament) są takie same we wszystkich wariantach.
+    expect(markup).toContain("Długość:");
+    expect(markup).toContain("45 cm");
+    expect(markup).toContain("Diament");
+    expect(radios(markup).join("")).not.toContain("45 cm");
+    expect(radios(markup).join("")).not.toContain("Diament");
+  });
+
   test("marks selected option with aria-checked=true", () => {
-    const markup = renderToStaticMarkup(
-      <VariantSelector
-        locale="pl"
-        selectedAttributes={{ metalColor: "yellow", size: "16" }}
-        variants={variants}
-      />,
-    );
+    const markup = render({
+      selectedAttributes: { metalColor: "yellow", size: "16" },
+      variants,
+    });
 
-    expect(markup).toContain('aria-checked="true"');
+    expect(markup.match(/aria-checked="true"/g)).toHaveLength(2);
   });
 
-  test("disables unavailable combination that does not exist in catalog", () => {
-    // Current selection is yellow, size 16. (white, 16) does not exist!
-    const markup = renderToStaticMarkup(
-      <VariantSelector
-        locale="pl"
-        selectedAttributes={{ metalColor: "yellow", size: "16" }}
-        variants={variants}
-      />,
-    );
+  test("does not disable an option whose combination does not exist", () => {
+    // Zaznaczone: żółte, 16. Kombinacja (białe, 16) nie istnieje, ale klik ma
+    // przeskoczyć do (białe, 17), więc opcja nie jest zablokowana.
+    const markup = render({
+      selectedAttributes: { metalColor: "yellow", size: "16" },
+      variants,
+    });
 
-    // White button should be disabled
-    expect(markup).toContain('disabled=""');
+    // Klasa `disabled:` Tailwinda jest w markupie zawsze, więc szukamy atrybutów.
+    expect(markup).not.toContain('disabled=""');
+    expect(markup).not.toContain("aria-disabled");
+    expect(radios(markup)).toHaveLength(4);
   });
 
-  test("marks out-of-stock variant as unavailable", () => {
-    // Current selection is yellow, size 17. (white, 17) exists but isAvailable=false.
-    const markup = renderToStaticMarkup(
-      <VariantSelector
-        locale="pl"
-        selectedAttributes={{ metalColor: "yellow", size: "17" }}
-        variants={variants}
-      />,
+  test("marks an option leading to an out-of-stock variant as unavailable", () => {
+    // Białe istnieje tylko jako (białe, 17) z isAvailable=false.
+    const markup = render({
+      selectedAttributes: { metalColor: "yellow", size: "17" },
+      variants,
+    });
+
+    expect(markup).toContain('aria-label="Białe złoto (Niedostępny)"');
+    expect(markup).toContain('aria-label="Żółte złoto"');
+  });
+
+  test("uses a roving tabindex with the selected option as the only tab stop", () => {
+    const markup = render({
+      selectedAttributes: { metalColor: "white", size: "17" },
+      variants,
+    });
+
+    const byLabel = (label: string) =>
+      radios(markup).find((tag) => tag.includes(`aria-label="${label}`)) ?? "";
+
+    expect(byLabel("Białe złoto")).toContain('tabindex="0"');
+    expect(byLabel("Żółte złoto")).toContain('tabindex="-1"');
+    expect(byLabel("17")).toContain('tabindex="0"');
+    expect(byLabel("16")).toContain('tabindex="-1"');
+  });
+
+  test("makes the first option the tab stop when nothing is selected", () => {
+    const markup = render({ selectedAttributes: {}, variants });
+
+    const tabIndexes = radios(markup).map(
+      (tag) => /tabindex="(-?\d)"/.exec(tag)?.[1],
     );
 
-    // White exists for size 17, so it's not disabled, but marked as unavailable
-    expect(markup).toContain("Niedostępny");
+    // Dwie grupy po dwie opcje: pierwsza opcja każdej grupy jest w kolejności Tab.
+    expect(tabIndexes).toEqual(["0", "-1", "0", "-1"]);
+  });
+
+  test("offers a 'none' option for an attribute present in only some variants", () => {
+    const withStone = mockVariant("A", { stone: "diamond" });
+    const withoutStone = mockVariant("B", {
+      stone: "" as unknown as StoneEnum,
+    });
+    const markup = render({
+      selectedAttributes: { metalColor: "yellow", size: "17", stone: "" },
+      variants: [withStone, withoutStone],
+    });
+
+    expect(markup).toContain('aria-label="Diament"');
+    expect(markup).toContain('aria-label="Brak"');
+  });
+
+  test("renders labels in the requested language", () => {
+    const markup = render(
+      { selectedAttributes: { metalColor: "yellow", size: "16" }, variants },
+      "en",
+    );
+
+    expect(markup).toContain("Yellow gold");
+    expect(markup).toContain("White gold");
+    expect(markup).toContain("Length:");
+    expect(markup).toContain("45 cm");
   });
 });

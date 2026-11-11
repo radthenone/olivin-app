@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { messages } from "@olivin/i18n";
+import { NextIntlClientProvider } from "next-intl";
 import { getProductsRetrieveQueryKey } from "@olivin/api/generated/apps/products/products";
 import type {
   ProductDetail,
@@ -78,11 +80,17 @@ describe("ProductVariantPicker", () => {
     );
 
     const markup = renderToStaticMarkup(
-      <QueryClientProvider client={queryClient}>
-        <ProductVariantProvider>
-          <ProductVariantPicker currency="PLN" locale="pl" slug="ring" />
-        </ProductVariantProvider>
-      </QueryClientProvider>,
+      <NextIntlClientProvider
+        locale="pl"
+        messages={messages.pl}
+        timeZone="Europe/Warsaw"
+      >
+        <QueryClientProvider client={queryClient}>
+          <ProductVariantProvider>
+            <ProductVariantPicker currency="PLN" locale="pl" slug="ring" />
+          </ProductVariantProvider>
+        </QueryClientProvider>
+      </NextIntlClientProvider>,
     );
 
     expect(markup).toContain("Warianty");

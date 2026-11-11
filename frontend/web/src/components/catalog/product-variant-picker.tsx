@@ -100,7 +100,6 @@ export function ProductVariantPicker({
 
       <CardContent className="flex flex-col gap-6 p-0">
         <VariantSelector
-          locale={locale}
           onSelect={selectAttribute}
           selectedAttributes={selectedAttributes}
           variants={product.variants}

@@ -41,7 +41,8 @@
         "length": "Length",
         "stone": "Stone"
       },
-      "combinationUnavailable": "Combination unavailable",
+      "attributeNone": "None",
+      "lengthValue": "{value} cm",
       "selectVariant": "Variant selection"
     },
     "category": {
