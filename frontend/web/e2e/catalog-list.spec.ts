@@ -54,8 +54,12 @@ test.describe("Catalog product list, category and collection pages", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "Kolczyki" }),
     ).toBeVisible();
-    await expect(page.getByText("Złote kolczyki")).toBeVisible();
-    await expect(page.getByText("Srebrne kolczyki")).toBeVisible();
+    // `cacheComponents` trzyma poprzednią trasę (listę produktów) w DOM jako
+    // ukryte `<Activity>`, więc `getByText` złapałby też jej kafelki. Rola
+    // `main` pomija ukryte drzewo i zawęża do bieżącej strony.
+    const main = page.getByRole("main");
+    await expect(main.getByText("Złote kolczyki")).toBeVisible();
+    await expect(main.getByText("Srebrne kolczyki")).toBeVisible();
   });
 
   test("navigates into a marketing collection and displays its products", async ({
