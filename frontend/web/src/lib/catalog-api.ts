@@ -152,6 +152,16 @@ export type ProductsListFilters = {
   collection?: string;
   page?: number;
   pageSize?: number;
+  material?: ProductsListParams["material"];
+  fineness?: ProductsListParams["fineness"];
+  metalColor?: ProductsListParams["metalColor"];
+  stone?: ProductsListParams["stone"];
+  size?: ProductsListParams["size"];
+  length?: ProductsListParams["length"];
+  priceMin?: number;
+  priceMax?: number;
+  search?: string;
+  ordering?: string;
 };
 
 /**
@@ -161,7 +171,7 @@ export type ProductsListFilters = {
  * żądania do API.
  *
  * Args:
- *     params: Filtry i stronicowanie (kategoria, kolekcja, strona, rozmiar).
+ *     params: Filtry, wyszukiwanie, sortowanie i stronicowanie.
  *     locale: Język treści z prefiksu adresu.
  *
  * Returns:
@@ -185,6 +195,16 @@ export async function fetchProductsList(
     ...(params.pageSize ? { pageSize: params.pageSize } : {}),
     ...(params.category ? { category: params.category } : {}),
     ...(params.collection ? { collection: params.collection } : {}),
+    ...(params.material ? { material: params.material } : {}),
+    ...(params.fineness ? { fineness: params.fineness } : {}),
+    ...(params.metalColor ? { metalColor: params.metalColor } : {}),
+    ...(params.stone ? { stone: params.stone } : {}),
+    ...(params.size ? { size: params.size } : {}),
+    ...(params.length ? { length: params.length } : {}),
+    ...(params.priceMin !== undefined ? { priceMin: params.priceMin } : {}),
+    ...(params.priceMax !== undefined ? { priceMax: params.priceMax } : {}),
+    ...(params.search ? { search: params.search } : {}),
+    ...(params.ordering ? { ordering: params.ordering } : {}),
   };
 
   // DRF zwraca 404 dla `?page=` poza zakresem: to brak strony, nie błąd katalogu.
