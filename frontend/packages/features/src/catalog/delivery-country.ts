@@ -9,9 +9,8 @@ export { DeliveryCountryEnum };
 export const DELIVERY_COUNTRY_COOKIE_NAME = "delivery_country";
 
 /** Lista wszystkich 27 państw członkowskich Unii Europejskiej. */
-export const EU_DELIVERY_COUNTRIES: readonly DeliveryCountry[] = Object.values(
-  DeliveryCountryEnum,
-);
+export const EU_DELIVERY_COUNTRIES: readonly DeliveryCountry[] =
+  Object.values(DeliveryCountryEnum);
 
 const EU_COUNTRY_SET = new Set<string>(EU_DELIVERY_COUNTRIES);
 

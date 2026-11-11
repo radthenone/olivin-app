@@ -80,7 +80,6 @@ describe("catalog server transport", () => {
     });
   });
 
-
   test("fetches product with language and currency query parameters", async () => {
     let requestedUrl = "";
     globalThis.fetch = (async (input) => {
