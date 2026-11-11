@@ -1,19 +1,21 @@
 import {
-  availabilityMessageKey,
-  getAvailabilityCategory,
-} from "@olivin/features/catalog";
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from "@tanstack/react-query";
+import { getProductsRetrieveQueryKey } from "@olivin/api/generated/apps/products/products";
 import type { Locale } from "@olivin/i18n";
-import { formatMoney } from "@olivin/money";
-import { getTranslations } from "next-intl/server";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getProductPrice, getRequestCurrency } from "@/lib/catalog-api";
 
+import { ProductVariantPicker } from "./product-variant-picker";
+
 /**
- * Dynamiczny fragment karty: cena, dostępność i cena graweru.
+ * Dynamiczny fragment karty: cena, dostępność i interaktywny wybór wariantu.
  *
- * Czyta cookie waluty, więc nigdy nie trafia do kesza (ADR 0034). Bez cookie
- * pokazuje złote — taką samą wersję widzą boty wyszukiwarek.
+ * Czyta cookie waluty, więc nigdy nie trafia do kesza (ADR 0034). Dane
+ * przekazywane są do interaktywnej wyspy klienta przez hydratację TanStack Query
+ * pod kluczami Orvala, bez osobnego pobierania po stronie przeglądarki.
  */
 export async function ProductOffer({
   slug,
@@ -31,45 +33,26 @@ export async function ProductOffer({
     return null;
   }
 
-  const t = await getTranslations({ locale });
+  const queryClient = new QueryClient();
+  const queryKey = getProductsRetrieveQueryKey(slug, {
+    lang: locale,
+    ...(currency ? { currency } : {}),
+  });
+
+  queryClient.setQueryData(queryKey, {
+    data: product,
+    status: 200,
+    headers: new Headers(),
+  });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("catalog.product.variants")}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ul className="flex flex-col gap-3">
-          {product.variants.map((variant) => {
-            const category = getAvailabilityCategory(variant);
-
-            return (
-              <li
-                className="flex flex-wrap items-baseline justify-between gap-2 border-b border-neutral-200 pb-2 last:border-b-0 last:pb-0"
-                key={variant.sku}
-              >
-                <span className="text-sm text-neutral-700">
-                  {t(`catalog.metalColor.${variant.metalColor}`)}
-                </span>
-                <span className="text-base font-semibold text-neutral-900">
-                  {formatMoney(variant.price, locale)}
-                </span>
-                <span className="text-sm text-neutral-600">
-                  {t(availabilityMessageKey[category])}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-
-        {product.isEngravable && product.engravingPrice !== null && (
-          <p className="mt-4 text-sm text-neutral-700">
-            {t("catalog.product.engravingAvailable", {
-              price: formatMoney(product.engravingPrice, locale),
-            })}
-          </p>
-        )}
-      </CardContent>
-    </Card>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <ProductVariantPicker
+        currency={currency}
+        initialProduct={product}
+        locale={locale}
+        slug={slug}
+      />
+    </HydrationBoundary>
   );
 }
