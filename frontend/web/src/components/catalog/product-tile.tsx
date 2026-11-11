@@ -6,6 +6,7 @@ import type { Locale } from "@olivin/i18n";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { isProductSlug } from "@/lib/catalog-url";
 
 import { ProductTilePrice } from "./product-tile-price";
 
@@ -32,12 +33,13 @@ export function ProductTile({
       Object.values(primaryImage.urls)[0])
     : undefined;
 
+  const productHref = isProductSlug(product.slug)
+    ? (`/${locale}/products/${product.slug}` as Route)
+    : ("#" as Route);
+
   return (
     <Card className="group overflow-hidden transition-shadow hover:shadow-md">
-      <Link
-        className="flex h-full flex-col"
-        href={`/${locale}/products/${product.slug}` as Route}
-      >
+      <Link className="flex h-full flex-col" href={productHref}>
         <div className="relative aspect-square w-full overflow-hidden bg-neutral-100">
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
