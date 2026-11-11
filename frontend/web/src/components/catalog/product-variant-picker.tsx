@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import type { ProductDetail } from "@olivin/api/generated/apps/schemas";
 import { useProductsRetrieve } from "@olivin/api/generated/apps/products/products";
 import {
   getAvailabilityCategory,
   useVariantSelection,
 } from "@olivin/features/catalog";
-import { messages, type Locale } from "@olivin/i18n";
 import { formatMoney } from "@olivin/money";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,22 +26,25 @@ import { VariantSelector } from "./variant-selector";
  */
 export function ProductVariantPicker({
   slug,
-  locale,
   currency,
   initialProduct,
 }: {
   slug: string;
-  locale: Locale;
   currency?: CatalogCurrency;
   initialProduct?: ProductDetail;
 }) {
+  const t = useTranslations("catalog");
+  const locale = useLocale();
   const query = useProductsRetrieve(
     slug,
     { lang: locale, ...(currency ? { currency } : {}) },
     {
       query: {
-        // Dane są zhydratowane po stronie serwera; wyłączamy automatyczny refetch w tle
-        staleTime: 60_000,
+        // Dane przychodzą zhydratowane z serwera, więc nic ich nie odświeża:
+        // ani upływ czasu, ani powrót do karty, ani odzyskanie sieci.
+        staleTime: Infinity,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
       },
     },
   );
@@ -65,7 +68,6 @@ export function ProductVariantPicker({
     return null;
   }
 
-  const catalog = messages[locale].catalog;
   const activeVariant = selectedVariant ?? product.variants[0];
   const availabilityCategory = activeVariant
     ? getAvailabilityCategory(activeVariant)
@@ -76,22 +78,22 @@ export function ProductVariantPicker({
       <CardHeader className="p-0">
         <div className="flex flex-wrap items-baseline justify-between gap-4">
           <CardTitle className="text-xl font-semibold text-neutral-900">
-            {catalog.product.variants}
+            {t("product.variants")}
           </CardTitle>
           {activeVariant && (
-            <div className="flex flex-col items-end gap-1">
+            <div aria-live="polite" className="flex flex-col items-end gap-1">
               <span className="text-2xl font-bold text-neutral-900">
                 {formatMoney(activeVariant.price, locale)}
               </span>
               <span
                 className={cn(
                   "text-sm font-medium",
-                  availabilityCategory === "available" && "text-emerald-700",
-                  availabilityCategory === "lowStock" && "text-amber-700",
-                  availabilityCategory === "unavailable" && "text-rose-700",
+                  availabilityCategory === "available" && "text-success-700",
+                  availabilityCategory === "lowStock" && "text-warning-700",
+                  availabilityCategory === "unavailable" && "text-danger-700",
                 )}
               >
-                {catalog.product.availability[availabilityCategory]}
+                {t(`product.availability.${availabilityCategory}`)}
               </span>
             </div>
           )}
@@ -107,10 +109,9 @@ export function ProductVariantPicker({
 
         {product.isEngravable && product.engravingPrice !== null && (
           <p className="border-t border-neutral-200 pt-4 text-sm text-neutral-700">
-            {catalog.product.engravingAvailable.replace(
-              "{price}",
-              formatMoney(product.engravingPrice, locale),
-            )}
+            {t("product.engravingAvailable", {
+              price: formatMoney(product.engravingPrice, locale),
+            })}
           </p>
         )}
       </CardContent>

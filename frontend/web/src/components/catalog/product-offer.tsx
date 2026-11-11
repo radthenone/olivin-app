@@ -50,7 +50,6 @@ export async function ProductOffer({
       <ProductVariantPicker
         currency={currency}
         initialProduct={product}
-        locale={locale}
         slug={slug}
       />
     </HydrationBoundary>
