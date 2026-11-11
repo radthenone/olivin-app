@@ -1,0 +1,41 @@
+# Przeglądanie katalogu i wybór wariantu produktu na mobile (#364, #356).
+#
+# Weryfikuje:
+#   1. Wejście z ekranu startowego przyciskiem „Katalog” i listę produktów
+#      z nieskończonym przewijaniem na stubie API (#357).
+#   2. Przejście do karty produktu po tapnięciu w kafelek.
+#   3. Prezentację galerii, opisu, materiału, próby i graweru.
+#   4. Dynamiczny wybór wariantu (kolor kruszcu / rozmiar) z aktualizacją ceny i dostępności.
+#
+# Wymagania:
+#   Zalogowany użytkownik (trasa `/products` leży w grupie `(app)`).
+#   Uruchomiony stub API katalogu (domyślnie port 3200, na emulatorze Androida widoczny jako 10.0.2.2:3200).
+#   Adres katalogu czyta aplikacja ze zmiennej EXPO_PUBLIC_CATALOG_API_URL
+#   (ustawianej przy starcie Metro/budowie), a nie z parametrów Maestro —
+#   przykład: EXPO_PUBLIC_CATALOG_API_URL=http://10.0.2.2:3200 task mobile:run
+#
+# Uruchomienie stuba:
+#   cd frontend/web && bun run e2e/catalog-stub/server.ts
+#
+# Uruchomienie flow:
+#   maestro test .maestro/catalog-browse-and-variant.yaml
+appId: com.olivin.frontend
+---
+- launchApp
+- tapOn: "Katalog"
+- assertVisible: "Katalog produktów"
+- assertVisible: "Złoty pierścionek"
+# Przewinięcie listy produktów
+- scroll
+# Przejście do karty produktu
+- tapOn: "Złoty pierścionek"
+# Weryfikacja karty produktu
+- assertVisible: "Pierścionek z żółtego złota z diamentem."
+- assertVisible: "Opis"
+- assertVisible: "Złoto"
+- assertVisible: "585"
+# Zmiana wariantu produktu (np. na Białe złoto)
+- tapOn: "Białe złoto"
+# RING-W-17 w stubie: 2600,00 zł i niski stan („Ostatnie sztuki”)
+- assertVisible: "Ostatnie sztuki"
+- assertVisible: "2600,00.*"

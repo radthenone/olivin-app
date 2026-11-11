@@ -11,6 +11,7 @@ import { queryClient } from "@core/query/query-client";
 import { AuthProvider, useAuthContext } from "@core/auth/auth.provider";
 import { SafeView } from "@ui/layout/SafeView";
 import { configureMobileApi } from "@core/api/transport";
+import { AppIntlProvider } from "@core/i18n";
 
 // Transport musi być podłączony, zanim którykolwiek ekran wykona żądanie —
 // stąd wywołanie w module, a nie w efekcie komponentu.
@@ -28,9 +29,11 @@ export default function RootLayout() {
       {/* expo-status-bar 57 nie ma backgroundColor — tło paska wynika z edge-to-edge. */}
       <StatusBar style="dark" />
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <RootNavigator />
-        </AuthProvider>
+        <AppIntlProvider>
+          <AuthProvider>
+            <RootNavigator />
+          </AuthProvider>
+        </AppIntlProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   );

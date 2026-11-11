@@ -1,7 +1,8 @@
 {
   "home": {
     "title": "Olivin",
-    "description": "Sklep jubilerski. Katalog, koszyk i kasa powstaną w kolejnych krokach."
+    "description": "Sklep jubilerski. Katalog, koszyk i kasa powstaną w kolejnych krokach.",
+    "catalogLink": "Katalog"
   },
   "health": {
     "heading": "Stan backendu",
@@ -99,6 +100,15 @@
       "amethyst": "Ametyst",
       "cubic_zirconia": "Cyrkonia",
       "moissanite": "Moissanit"
+    },
+    "error": {
+      "network": "Brak połączenia z siecią",
+      "retry": "Spróbuj ponownie",
+      "general": "Wystąpił błąd podczas ładowania danych"
+    },
+    "accessibility": {
+      "productImage": "Zdjęcie produktu {name}",
+      "galleryImage": "Zdjęcie {index} z {total} produktu {name}"
     }
   },
   "auth": {
