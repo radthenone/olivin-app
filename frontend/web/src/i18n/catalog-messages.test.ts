@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import pl from "./messages/pl.json";
-import en from "./messages/en.json";
+import pl from "@olivin/i18n/messages/pl.json";
+import en from "@olivin/i18n/messages/en.json";
 
 describe("Catalog i18n messages", () => {
   const requiredCatalogKeys = [
@@ -28,8 +28,13 @@ describe("Catalog i18n messages", () => {
     "list.clearFilters",
   ];
 
-  function getNestedKey(obj: any, path: string): unknown {
-    return path.split(".").reduce((acc, part) => acc?.[part], obj?.catalog);
+  function getNestedKey(obj: { catalog: unknown }, path: string): unknown {
+    return path
+      .split(".")
+      .reduce<unknown>(
+        (acc, part) => (acc as Record<string, unknown> | undefined)?.[part],
+        obj.catalog,
+      );
   }
 
   for (const key of requiredCatalogKeys) {
