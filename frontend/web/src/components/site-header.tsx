@@ -13,8 +13,15 @@ import { Button } from "@/components/ui/button";
  *
  * Sesja pochodzi z tego samego hooka `useSession` co reszta aplikacji, więc
  * login i logout odświeżają nagłówek przez unieważnienie klucza Orvala.
+ *
+ * Nagłówek jest komponentem klienta, więc nie czyta cookie sam. Przełącznik
+ * kraju dostawy renderuje serwer i podaje go w `countrySwitch`.
  */
-export function SiteHeader() {
+export function SiteHeader({
+  countrySwitch,
+}: {
+  countrySwitch: React.ReactNode;
+}) {
   const t = useTranslations("auth.header");
   const tCatalog = useTranslations("catalog.list");
   const locale = useLocale();
@@ -40,6 +47,7 @@ export function SiteHeader() {
         </div>
 
         <nav className="flex items-center gap-4 text-sm text-neutral-700">
+          {countrySwitch}
           {!isChecking &&
             (user ? (
               <>

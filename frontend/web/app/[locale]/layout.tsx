@@ -6,9 +6,12 @@ import {
   setRequestLocale,
 } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { routing } from "@/i18n/routing";
+import { DeliveryCountrySwitchLoader } from "@/components/delivery-country-switch-loader";
 import { SiteHeader } from "@/components/site-header";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import "../globals.css";
 import { Providers } from "./providers";
@@ -59,7 +62,13 @@ export default async function LocaleLayout({
       <body className="font-body antialiased">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
-            <SiteHeader />
+            <SiteHeader
+              countrySwitch={
+                <Suspense fallback={<Skeleton className="h-8 w-44" />}>
+                  <DeliveryCountrySwitchLoader />
+                </Suspense>
+              }
+            />
             {children}
           </Providers>
         </NextIntlClientProvider>

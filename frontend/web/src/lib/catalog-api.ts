@@ -7,8 +7,12 @@ import type {
 } from "@olivin/api/generated/apps/schemas";
 import type { Locale } from "@olivin/i18n";
 import {
+  DELIVERY_COUNTRY_COOKIE_NAME,
   createCatalogClient,
+  currencyFromDeliveryCountry,
+  isEuDeliveryCountry,
   type CatalogCurrency,
+  type DeliveryCountry,
   type ProductsListFilters,
 } from "@olivin/features/catalog/server";
 import { cacheLife, cacheTag } from "next/cache";
@@ -25,9 +29,6 @@ import { catalogBaseUrl } from "./catalog-url";
  * i bez poświadczeń przeglądarki. Ten sam adres jest szwem testowym: w CI
  * wskazuje stub, a przy `E2E_LIVE_BACKEND=1` prawdziwy backend.
  */
-
-/** Cookie waluty z kraju dostawy (ADR 0035). Brak cookie oznacza złote. */
-export const currencyCookieName = "currency";
 
 export type { CatalogCurrency, ProductsListFilters };
 
@@ -87,15 +88,31 @@ export async function getProductPrice(
 }
 
 /**
- * Waluta bieżącego żądania. Waluta nie trafia do adresu ani do kesza.
+ * Kraj dostawy bieżącego żądania.
  *
  * Returns:
- *     `EUR` tylko przy jawnym cookie euro; inaczej `PLN`.
+ *     Prawidłowy kod państwa członkowskiego Unii albo `null`.
+ */
+export async function getRequestDeliveryCountry(): Promise<DeliveryCountry | null> {
+  const store = await cookies();
+  const value = store.get(DELIVERY_COUNTRY_COOKIE_NAME)?.value;
+  if (value && isEuDeliveryCountry(value)) {
+    return value;
+  }
+  return null;
+}
+
+/**
+ * Waluta bieżącego żądania. Waluta nie trafia do adresu ani do kesza.
+ *
+ * Jedynym źródłem jest kraj dostawy z cookie `delivery_country` (ADR 0035);
+ * osobnego cookie waluty nie ma.
+ *
+ * Returns:
+ *     `EUR` dla kraju Unii innego niż Polska; inaczej `PLN` (też bez cookie).
  */
 export async function getRequestCurrency(): Promise<CatalogCurrency> {
-  const value = (await cookies()).get(currencyCookieName)?.value;
-
-  return value === "EUR" ? "EUR" : "PLN";
+  return currencyFromDeliveryCountry(await getRequestDeliveryCountry());
 }
 
 /**

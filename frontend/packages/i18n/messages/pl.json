@@ -254,5 +254,37 @@
       "mfaExpired": "Logowanie wygasło. Zaloguj się ponownie.",
       "generic": "Nie udało się zalogować. Spróbuj ponownie."
     }
+  },
+  "delivery": {
+    "shipTo": "Wysyłka do",
+    "countries": {
+      "PL": "Polska",
+      "DE": "Niemcy",
+      "FR": "Francja",
+      "IT": "Włochy",
+      "ES": "Hiszpania",
+      "AT": "Austria",
+      "BE": "Belgia",
+      "BG": "Bułgaria",
+      "HR": "Chorwacja",
+      "CY": "Cypr",
+      "CZ": "Czechy",
+      "DK": "Dania",
+      "EE": "Estonia",
+      "FI": "Finlandia",
+      "GR": "Grecja",
+      "HU": "Węgry",
+      "IE": "Irlandia",
+      "LV": "Łotwa",
+      "LT": "Litwa",
+      "LU": "Luksemburg",
+      "MT": "Malta",
+      "NL": "Holandia",
+      "PT": "Portugalia",
+      "RO": "Rumunia",
+      "SK": "Słowacja",
+      "SI": "Słowenia",
+      "SE": "Szwecja"
+    }
   }
 }
