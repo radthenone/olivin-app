@@ -16,8 +16,9 @@ const handleI18nRouting = createMiddleware(routing);
  *
  * Z Cache Components karta streamuje prerenderowaną powłokę od razu, więc
  * nieznany slug musi zostać odrzucony przed renderem (#357). Nieznany slug
- * idzie rewrite'em na statyczną stronę 404 w tym samym języku. Nagłówki
- * i ciasteczka next-intl zostają.
+ * idzie rewrite'em na statyczną stronę 404 w tym samym języku, a slug
+ * w formacie spoza katalogu (np. `a%2Fb`) dostaje to samo bez żądania do
+ * katalogu. Nagłówki i ciasteczka next-intl zostają.
  *
  * Args:
  *     request: Żądanie przed renderem strony.

@@ -16,6 +16,15 @@ import { catalogBaseUrl } from "./catalog-url";
 const PRODUCT_PATH = /^\/([^/]+)\/products\/([^/]+)$/;
 
 /**
+ * Format sluga produktu: `SlugField` Django bez `allow_unicode`
+ * (`validate_slug`, `backend/src/apps/products/models/product.py`).
+ *
+ * Sprawdzamy surowy segment adresu, więc `%2F`, `..%2F` i znaki spoza ASCII
+ * (także zakodowane procentem) nie przechodzą.
+ */
+const PRODUCT_SLUG = /^[-a-zA-Z0-9_]+$/;
+
+/**
  * Język i slug z adresu karty produktu.
  *
  * Args:
@@ -51,6 +60,10 @@ type ProductExistenceOptions = {
  * więc katalog dostaje najwyżej jedno żądanie na slug na TTL. Równoległe
  * żądania o ten sam slug czekają na jedno sprawdzenie. Po przekroczeniu
  * limitu wypada najstarszy wpis.
+ *
+ * Slug spoza formatu `PRODUCT_SLUG` (np. `a%2Fb`, `złoty`) nie istnieje
+ * w katalogu z definicji: wynik `false` zapada od razu, bez żądania i bez
+ * wpisu w keszu, więc śmieciowe adresy nie wypychają prawdziwych slugów.
  *
  * shortcut: kesz żyje w jednej instancji serwera, więc każda instancja pyta
  * katalog osobno, a zdjęty produkt dostaje 404 dopiero po TTL; przy wielu
@@ -101,6 +114,10 @@ export function createProductExistenceCheck({
     slug: string,
     locale: Locale,
   ): Promise<boolean> {
+    if (!PRODUCT_SLUG.test(slug)) {
+      return Promise.resolve(false);
+    }
+
     const cached = cache.get(slug);
 
     if (cached && cached.expiresAt > now()) {

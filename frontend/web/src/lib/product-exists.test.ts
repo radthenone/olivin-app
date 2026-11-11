@@ -122,4 +122,39 @@ describe("product existence check", () => {
     await productExists("a", "pl");
     expect(urls).toHaveLength(4);
   });
+
+  test.each(["..%2Fx", "a%2Fb", "z%C5%82oty", "złoty", "", " "])(
+    "rejects the slug %p without asking the catalog",
+    async (slug: string) => {
+      const { fetchImpl, urls } = fakeCatalog(200);
+      const productExists = createProductExistenceCheck({ fetch: fetchImpl });
+
+      expect(await productExists(slug, "pl")).toBe(false);
+      expect(urls).toEqual([]);
+    },
+  );
+
+  test("keeps rejected slugs out of the cache", async () => {
+    const { fetchImpl, urls } = fakeCatalog(200);
+    const productExists = createProductExistenceCheck({
+      fetch: fetchImpl,
+      maxEntries: 1,
+    });
+
+    await productExists("ring", "pl");
+    await productExists("a%2Fb", "pl");
+    await productExists("ring", "pl");
+
+    expect(urls).toHaveLength(1);
+  });
+
+  test("still asks the catalog for every allowed slug character", async () => {
+    const { fetchImpl, urls } = fakeCatalog(200);
+    const productExists = createProductExistenceCheck({ fetch: fetchImpl });
+
+    expect(await productExists("Gold-ring_2", "pl")).toBe(true);
+    expect(urls).toEqual([
+      "http://catalog.internal:8020/products/Gold-ring_2/?lang=pl",
+    ]);
+  });
 });

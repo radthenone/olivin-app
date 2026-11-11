@@ -9,15 +9,19 @@ import { getProductForPage } from "@/lib/catalog-api";
 /**
  * Karta produktu pod prefiksem języka.
  *
- * Slug sprawdzamy przed jakimkolwiek `<Suspense>`, żeby nieznany albo zdjęty
- * produkt dawał prawdziwy status 404 w języku strony. Treść jest keszowana
+ * Status 404 dla nieznanego albo zdjętego produktu daje `proxy.ts`: rewrite
+ * na statyczną stronę `product-not-found`, zanim ruszy render. `notFound()`
+ * w stronie pokrywa tylko okno, w którym produkt zniknął po sprawdzeniu
+ * w proxy (jego kesz trzyma wynik do 60 s); powłoka karty wychodzi wtedy
+ * od razu, więc odpowiedź to 200 z `noindex`. Treść jest keszowana
  * (`product:<slug>`), a cena i dostępność streamują się dalej jako dynamiczny
  * fragment w `ProductView` (ADR 0034).
  */
 
-// Trasa świadomie blokuje na `params` i odczycie z kesza, żeby 404 padło przed
-// streamingiem. `false` wyłącza tylko walidację natychmiastowej nawigacji
-// i pustej powłoki statycznej, nie zmienia modelu renderowania.
+// Trasa blokuje na `params` i odczycie z kesza (bez `<Suspense>`), a o statusie
+// 404 decyduje proxy, nie to blokowanie. `false` wyłącza tylko walidację
+// natychmiastowej nawigacji i pustej powłoki statycznej, nie zmienia modelu
+// renderowania.
 export const instant = false;
 
 export default async function ProductPage({
