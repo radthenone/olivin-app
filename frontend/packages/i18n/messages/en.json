@@ -34,7 +34,15 @@
         "lowStock": "Last few items",
         "unavailable": "Unavailable"
       },
-      "stones": "Stones"
+      "stones": "Stones",
+      "attributes": {
+        "metalColor": "Metal color",
+        "size": "Size",
+        "length": "Length",
+        "stone": "Stone"
+      },
+      "combinationUnavailable": "Combination unavailable",
+      "selectVariant": "Variant selection"
     },
     "category": {
       "heading": "Categories",

@@ -36,6 +36,15 @@ describe("@olivin/i18n", () => {
     expect(keys).toContain("catalog.pagination.next");
   });
 
+  test("defines variant selection and attribute keys in catalog", () => {
+    const keys = messageKeys(pl);
+    expect(keys).toContain("catalog.product.attributes.metalColor");
+    expect(keys).toContain("catalog.product.attributes.size");
+    expect(keys).toContain("catalog.product.attributes.length");
+    expect(keys).toContain("catalog.product.attributes.stone");
+    expect(keys).toContain("catalog.product.combinationUnavailable");
+  });
+
   test("exposes both locales and uses Polish as the default", () => {
     expect(locales).toEqual(["pl", "en"]);
     expect(defaultLocale).toBe("pl");
