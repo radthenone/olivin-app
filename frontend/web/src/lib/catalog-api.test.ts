@@ -64,4 +64,18 @@ describe("catalog server transport", () => {
       "Katalog odpowiedział statusem 500.",
     );
   });
+
+  test.each(["../x.y", "a/b", "złoty"])(
+    "returns null for the slug %p without calling the catalog",
+    async (slug: string) => {
+      let calls = 0;
+      globalThis.fetch = (async () => {
+        calls += 1;
+        return new Response("{}", { status: 200 });
+      }) as typeof fetch;
+
+      expect(await getProductPrice(slug, "pl", "PLN")).toBeNull();
+      expect(calls).toBe(0);
+    },
+  );
 });

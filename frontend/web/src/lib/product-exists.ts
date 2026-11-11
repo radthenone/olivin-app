@@ -1,7 +1,7 @@
 import { getProductsRetrieveUrl } from "@olivin/api/generated/apps/products/products";
 import { isLocale, type Locale } from "@olivin/i18n";
 
-import { catalogBaseUrl } from "./catalog-url";
+import { catalogBaseUrl, isProductSlug } from "./catalog-url";
 
 /**
  * Sprawdzenie, czy slug produktu istnieje, zanim strona zacznie streamować.
@@ -14,15 +14,6 @@ import { catalogBaseUrl } from "./catalog-url";
 
 /** Adres karty produktu: `/{locale}/products/{slug}`. */
 const PRODUCT_PATH = /^\/([^/]+)\/products\/([^/]+)$/;
-
-/**
- * Format sluga produktu: `SlugField` Django bez `allow_unicode`
- * (`validate_slug`, `backend/src/apps/products/models/product.py`).
- *
- * Sprawdzamy surowy segment adresu, więc `%2F`, `..%2F` i znaki spoza ASCII
- * (także zakodowane procentem) nie przechodzą.
- */
-const PRODUCT_SLUG = /^[-a-zA-Z0-9_]+$/;
 
 /**
  * Język i slug z adresu karty produktu.
@@ -61,7 +52,7 @@ type ProductExistenceOptions = {
  * żądania o ten sam slug czekają na jedno sprawdzenie. Po przekroczeniu
  * limitu wypada najstarszy wpis.
  *
- * Slug spoza formatu `PRODUCT_SLUG` (np. `a%2Fb`, `złoty`) nie istnieje
+ * Slug spoza formatu `isProductSlug` (np. `a%2Fb`, `złoty`) nie istnieje
  * w katalogu z definicji: wynik `false` zapada od razu, bez żądania i bez
  * wpisu w keszu, więc śmieciowe adresy nie wypychają prawdziwych slugów.
  *
@@ -114,7 +105,7 @@ export function createProductExistenceCheck({
     slug: string,
     locale: Locale,
   ): Promise<boolean> {
-    if (!PRODUCT_SLUG.test(slug)) {
+    if (!isProductSlug(slug)) {
       return Promise.resolve(false);
     }
 

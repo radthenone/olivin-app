@@ -4,7 +4,7 @@ import type { Locale } from "@olivin/i18n";
 import { cacheLife, cacheTag } from "next/cache";
 import { cookies } from "next/headers";
 
-import { catalogBaseUrl } from "./catalog-url";
+import { catalogBaseUrl, isProductSlug } from "./catalog-url";
 
 /**
  * Publiczny transport serwerowy katalogu (ADR 0034).
@@ -26,6 +26,12 @@ async function fetchProduct(
   locale: Locale,
   currency?: CatalogCurrency,
 ): Promise<ProductDetail | null> {
+  // Slug spoza formatu katalogu nie trafia do adresu API (zdekodowany
+  // parametr trasy `..%2Fx.y` to `../x.y`): odpowiada jak brak produktu.
+  if (!isProductSlug(slug)) {
+    return null;
+  }
+
   const url = getProductsRetrieveUrl(slug, {
     lang: locale,
     ...(currency ? { currency } : {}),
@@ -54,7 +60,8 @@ async function fetchProduct(
  *     locale: Język treści z prefiksu adresu.
  *
  * Returns:
- *     Produkt albo `null`, gdy backend zwrócił 404.
+ *     Produkt albo `null`, gdy backend zwrócił 404 albo slug ma niepoprawny
+ *     format.
  */
 export async function getProductForPage(
   slug: string,
@@ -78,7 +85,8 @@ export async function getProductForPage(
  *     currency: Waluta z cookie; `PLN`, gdy cookie nie ma albo jest inne.
  *
  * Returns:
- *     Produkt z przeliczonymi cenami albo `null` przy 404.
+ *     Produkt z przeliczonymi cenami albo `null` przy 404 lub niepoprawnym
+ *     slugu.
  */
 export async function getProductPrice(
   slug: string,

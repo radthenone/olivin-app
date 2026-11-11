@@ -21,3 +21,26 @@ export function catalogBaseUrl(): string {
 
   return configured.replace(/\/$/, "");
 }
+
+/** Format sluga produktu: `SlugField` Django bez `allow_unicode`. */
+const PRODUCT_SLUG = /^[-a-zA-Z0-9_]+$/;
+
+/**
+ * Czy slug można wstawić do adresu API katalogu.
+ *
+ * To format `validate_slug` z `backend/src/apps/products/models/product.py`.
+ * Sprawdzamy slug w surowej postaci, więc `/`, `.` i znaki spoza ASCII (także
+ * zakodowane procentem) nie przechodzą: ani `a%2Fb` z adresu w proxy, ani
+ * `../x.y` ze zdekodowanego parametru trasy nie zmienią ścieżki żądania.
+ *
+ * Moduł nie importuje `next/*`, bo korzysta z niego `proxy.ts`.
+ *
+ * Args:
+ *     slug: Slug z adresu żądania albo z parametru trasy.
+ *
+ * Returns:
+ *     `true`, gdy slug ma format sluga produktu.
+ */
+export function isProductSlug(slug: string): boolean {
+  return PRODUCT_SLUG.test(slug);
+}
