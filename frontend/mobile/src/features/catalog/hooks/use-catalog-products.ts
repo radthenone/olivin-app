@@ -1,8 +1,5 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
-import type {
-  PaginatedProductListList,
-  ProductList,
-} from "@olivin/api/generated/apps/schemas";
+import type { PaginatedProductListList } from "@olivin/api/generated/apps/schemas";
 import type { ProductsListFilters } from "@olivin/features/catalog";
 import { getActiveLocale } from "@core/i18n";
 import { mobileCatalogClient } from "../services/catalog.service";
@@ -14,7 +11,7 @@ const DEFAULT_PAGE_SIZE = 10;
  */
 export function getNextProductsPageParam(
   lastPage: { count: number; results: unknown[] } | null | undefined,
-  allPages: Array<{ count: number; results: unknown[] } | null | undefined>,
+  allPages: ({ count: number; results: unknown[] } | null | undefined)[],
 ): number | undefined {
   if (!lastPage || !lastPage.results || lastPage.results.length === 0) {
     return undefined;

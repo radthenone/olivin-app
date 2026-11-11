@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { useTranslations } from "use-intl";
 import { useRouter } from "expo-router";
+import { colors } from "@olivin/tokens";
 import type { ProductList } from "@olivin/api/generated/apps/schemas";
 import { routes } from "@core/navigation/routes";
 import { useCatalogProductsInfinite } from "../hooks/use-catalog-products";
@@ -52,9 +53,7 @@ export function ProductListScreen() {
   }
 
   if (isError && products.length === 0) {
-    return (
-      <ProductErrorView message={error?.message} onRetry={() => refetch()} />
-    );
+    return <ProductErrorView error={error} onRetry={() => refetch()} />;
   }
 
   return (
@@ -77,7 +76,7 @@ export function ProductListScreen() {
           <RefreshControl
             refreshing={isRefetching}
             onRefresh={() => refetch()}
-            tintColor="#03453d"
+            tintColor={colors.brand[600]}
           />
         }
         ListHeaderComponent={
@@ -100,7 +99,7 @@ export function ProductListScreen() {
         ListFooterComponent={
           isFetchingNextPage ? (
             <View className="py-4">
-              <ActivityIndicator color="#03453d" />
+              <ActivityIndicator color={colors.brand[600]} />
             </View>
           ) : null
         }

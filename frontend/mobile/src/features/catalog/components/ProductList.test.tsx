@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { renderToString } from "react-dom/server";
 import type { ProductList } from "@olivin/api/generated/apps/schemas";
+import { CatalogError } from "@olivin/features/catalog";
 import { AppIntlProvider } from "@core/i18n";
 import { ProductTile } from "./ProductTile";
 import { ProductErrorView } from "./ProductErrorView";
@@ -56,15 +57,37 @@ describe("ProductTile component", () => {
 });
 
 describe("ProductErrorView component", () => {
-  test("renders network error message and retry button", () => {
-    const html = renderToString(
-      <AppIntlProvider initialLocale="pl">
-        <ProductErrorView onRetry={() => {}} />
+  function renderError(error: unknown, locale: "pl" | "en" = "pl") {
+    return renderToString(
+      <AppIntlProvider initialLocale={locale}>
+        <ProductErrorView error={error} onRetry={() => {}} />
       </AppIntlProvider>,
     );
+  }
+
+  test("renders network error message and retry button", () => {
+    const html = renderError(new CatalogError(0, "Network request failed"));
 
     expect(html).toContain("Brak połączenia z siecią");
     expect(html).toContain("Spróbuj ponownie");
+    expect(html).not.toContain("Network request failed");
+  });
+
+  test("renders the general error key instead of the server message", () => {
+    const html = renderError(
+      new CatalogError(503, "Katalog odpowiedział statusem 503."),
+    );
+
+    expect(html).toContain("Wystąpił błąd podczas ładowania danych");
+    expect(html).not.toContain("Katalog odpowiedział statusem 503.");
+    expect(html).not.toContain("Brak połączenia z siecią");
+  });
+
+  test("renders the general error key in English for an unknown error", () => {
+    const html = renderError(new Error("boom"), "en");
+
+    expect(html).toContain("An error occurred while loading data");
+    expect(html).not.toContain("boom");
   });
 });
 

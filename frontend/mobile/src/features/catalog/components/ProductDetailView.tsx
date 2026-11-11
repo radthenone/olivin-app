@@ -61,10 +61,10 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
             <Text
               className={`text-sm font-semibold ${
                 availabilityCategory === "available"
-                  ? "text-emerald-700"
+                  ? "text-success-700"
                   : availabilityCategory === "lowStock"
-                    ? "text-amber-700"
-                    : "text-red-700"
+                    ? "text-warning-700"
+                    : "text-danger-700"
               }`}
             >
               {t(`product.availability.${availabilityCategory}`)}
