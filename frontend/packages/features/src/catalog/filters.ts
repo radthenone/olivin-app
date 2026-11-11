@@ -96,11 +96,45 @@ function getParamValue(
   return val ?? undefined;
 }
 
-function parseNumber(value: string | undefined): number | undefined {
-  if (!value) return undefined;
-  const num = Number(value.trim());
-  if (Number.isNaN(num) || num < 0) return undefined;
-  return num;
+/** Sufit ceny w filtrze (w głównej jednostce waluty); wyżej wartość jest odrzucana. */
+export const CATALOG_PRICE_MAX = 1_000_000;
+
+/** Maksymalna długość frazy wyszukiwania. */
+const CATALOG_SEARCH_MAX_LENGTH = 100;
+
+/**
+ * Parsuje cenę z pola tekstowego albo adresu.
+ *
+ * Args:
+ *     value: Tekst wpisany przez użytkownika albo z adresu.
+ *
+ * Returns:
+ *     Cena zaokrąglona do groszy z przedziału `0..CATALOG_PRICE_MAX`. Pusty
+ *     tekst, `NaN`, `Infinity`, wartość ujemna i powyżej sufitu dają `undefined`
+ *     (brak filtra, nie błąd).
+ */
+export function parseCatalogPrice(
+  value: string | undefined,
+): number | undefined {
+  const text = value?.trim();
+  if (!text) return undefined;
+  return normalizePrice(Number(text));
+}
+
+function normalizePrice(num: number): number | undefined {
+  if (!Number.isFinite(num) || num < 0 || num > CATALOG_PRICE_MAX) {
+    return undefined;
+  }
+  return Math.round(num * 100) / 100;
+}
+
+/** Usuwa znaki sterujące (w tym NUL), przycina i ogranicza długość frazy. */
+function normalizeSearch(value: string): string {
+  return value
+    .replace(/\p{Cc}/gu, "")
+    .trim()
+    .slice(0, CATALOG_SEARCH_MAX_LENGTH)
+    .trimEnd();
 }
 
 function parseInteger(value: string | undefined): number | undefined {
@@ -163,19 +197,19 @@ export function parseCatalogFilters(
     state.length = rawLength as ProductsListLength;
   }
 
-  const priceMin = parseNumber(getParamValue(source, "priceMin"));
+  const priceMin = parseCatalogPrice(getParamValue(source, "priceMin"));
   if (priceMin !== undefined) {
     state.priceMin = priceMin;
   }
 
-  const priceMax = parseNumber(getParamValue(source, "priceMax"));
+  const priceMax = parseCatalogPrice(getParamValue(source, "priceMax"));
   if (priceMax !== undefined) {
     state.priceMax = priceMax;
   }
 
-  const rawSearch = getParamValue(source, "search");
-  if (rawSearch && rawSearch.trim().length > 0) {
-    state.search = rawSearch.trim();
+  const search = normalizeSearch(getParamValue(source, "search") ?? "");
+  if (search) {
+    state.search = search;
   }
 
   const rawOrdering = getParamValue(source, "ordering");
@@ -263,12 +297,13 @@ export function toProductsListParams(
   if (state.size) params.size = state.size;
   if (state.length) params.length = state.length;
 
-  if (state.priceMin !== undefined) {
-    params.priceMin = Math.round(state.priceMin * 100);
-  }
-  if (state.priceMax !== undefined) {
-    params.priceMax = Math.round(state.priceMax * 100);
-  }
+  // Stan mógł powstać poza parserem: niepoprawna cena to brak filtra.
+  const priceMin =
+    state.priceMin !== undefined ? normalizePrice(state.priceMin) : undefined;
+  if (priceMin !== undefined) params.priceMin = Math.round(priceMin * 100);
+  const priceMax =
+    state.priceMax !== undefined ? normalizePrice(state.priceMax) : undefined;
+  if (priceMax !== undefined) params.priceMax = Math.round(priceMax * 100);
 
   if (state.search) params.search = state.search;
   if (state.ordering) params.ordering = state.ordering;

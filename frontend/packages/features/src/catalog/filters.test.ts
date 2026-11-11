@@ -5,12 +5,14 @@ import {
   CATALOG_MATERIALS,
   CATALOG_METAL_COLORS,
   CATALOG_ORDERING_OPTIONS,
+  CATALOG_PRICE_MAX,
   CATALOG_SIZES,
   CATALOG_STONES,
   clearCatalogFilters,
   fromProductsListParams,
   hasActiveFilters,
   parseCatalogFilters,
+  parseCatalogPrice,
   serializeCatalogFilters,
   toProductsListParams,
   withFilterChange,
@@ -260,6 +262,51 @@ describe("Catalog filters URL mapping and products_list params", () => {
 
     expect(cleared).toEqual({});
     expect(hasActiveFilters(cleared)).toBe(false);
+  });
+
+  test("ignores non-finite, negative and over-ceiling prices", () => {
+    for (const bad of ["Infinity", "-Infinity", "1e999", "1e21", "NaN", "-5"]) {
+      const state = parseCatalogFilters(
+        new URLSearchParams({ priceMin: bad, priceMax: bad }),
+      );
+      expect(state).toEqual({});
+    }
+    expect(parseCatalogPrice(String(CATALOG_PRICE_MAX + 1))).toBeUndefined();
+    expect(parseCatalogPrice("   ")).toBeUndefined();
+  });
+
+  test("accepts price at the ceiling and rounds to grosze", () => {
+    expect(parseCatalogPrice(String(CATALOG_PRICE_MAX))).toBe(
+      CATALOG_PRICE_MAX,
+    );
+    expect(parseCatalogPrice("12.3456")).toBe(12.35);
+    expect(parseCatalogPrice("0")).toBe(0);
+  });
+
+  test("drops invalid prices when mapping state to ProductsListParams", () => {
+    const params = toProductsListParams({
+      priceMin: Number.POSITIVE_INFINITY,
+      priceMax: Number.NaN,
+    });
+    expect(params).toEqual({});
+    expect(toProductsListParams({ priceMin: 1e21 })).toEqual({});
+    expect(toProductsListParams({ priceMin: -1 })).toEqual({});
+    expect(toProductsListParams({ priceMax: 12.5 }).priceMax).toBe(1250);
+  });
+
+  test("strips control characters (including NUL) from search", () => {
+    expect(parseCatalogFilters("search=%00")).toEqual({});
+    expect(parseCatalogFilters("search=ring%00%1f%0a")).toEqual({
+      search: "ring",
+    });
+    expect(parseCatalogFilters("search=a%00b").search).toBe("ab");
+  });
+
+  test("limits search to 100 characters", () => {
+    const state = parseCatalogFilters(
+      new URLSearchParams({ search: `  ${"a".repeat(150)}  ` }),
+    );
+    expect(state.search).toBe("a".repeat(100));
   });
 
   test("exports constants for catalog filters", () => {
