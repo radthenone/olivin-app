@@ -1,5 +1,22 @@
-import type { ProductDetail } from "@olivin/api/generated/apps/schemas";
-import { getProductsRetrieveUrl } from "@olivin/api/generated/apps/products/products";
+import type {
+  Category,
+  Collection,
+  PaginatedProductListList,
+  ProductDetail,
+  ProductsListParams,
+} from "@olivin/api/generated/apps/schemas";
+import {
+  getProductsListUrl,
+  getProductsRetrieveUrl,
+} from "@olivin/api/generated/apps/products/products";
+import {
+  getCategoriesListUrl,
+  getCategoriesRetrieveUrl,
+} from "@olivin/api/generated/apps/categories/categories";
+import {
+  getCollectionsListUrl,
+  getCollectionsRetrieveUrl,
+} from "@olivin/api/generated/apps/collections/collections";
 import type { Locale } from "@olivin/i18n";
 import { cacheLife, cacheTag } from "next/cache";
 import { cookies } from "next/headers";
@@ -106,4 +123,172 @@ export async function getRequestCurrency(): Promise<CatalogCurrency> {
   const value = (await cookies()).get(currencyCookieName)?.value;
 
   return value === "EUR" ? "EUR" : "PLN";
+}
+
+export type ProductsListFilters = {
+  category?: string;
+  collection?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+/**
+ * Pobiera listę produktów z API katalogu.
+ *
+ * Sprawdza poprawność slugów parametrów category i collection.
+ */
+export async function fetchProductsList(
+  params: ProductsListFilters,
+  locale: Locale,
+): Promise<PaginatedProductListList> {
+  if (params.category && !isProductSlug(params.category)) {
+    return { count: 0, results: [] };
+  }
+  if (params.collection && !isProductSlug(params.collection)) {
+    return { count: 0, results: [] };
+  }
+
+  const queryParams: ProductsListParams = {
+    lang: locale,
+    ...(params.page ? { page: params.page } : {}),
+    ...(params.pageSize ? { pageSize: params.pageSize } : {}),
+    ...(params.category ? { category: params.category } : {}),
+    ...(params.collection ? { collection: params.collection } : {}),
+  };
+
+  const url = getProductsListUrl(queryParams);
+  const response = await fetch(`${catalogBaseUrl()}${url}`, {
+    headers: { accept: "application/json" },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Katalog odpowiedział statusem ${response.status}.`);
+  }
+
+  return (await response.json()) as PaginatedProductListList;
+}
+
+/**
+ * Keszowana lista produktów dla strony.
+ */
+export async function getProductsListForPage(
+  params: ProductsListFilters,
+  locale: Locale,
+): Promise<PaginatedProductListList> {
+  "use cache";
+  cacheTag("catalog");
+  cacheLife("minutes");
+
+  return fetchProductsList(params, locale);
+}
+
+/**
+ * Pobiera całe drzewo kategorii.
+ */
+export async function fetchCategoriesTree(locale: Locale): Promise<Category[]> {
+  const url = getCategoriesListUrl({ lang: locale });
+  const response = await fetch(`${catalogBaseUrl()}${url}`, {
+    headers: { accept: "application/json" },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Katalog odpowiedział statusem ${response.status}.`);
+  }
+
+  return (await response.json()) as Category[];
+}
+
+/**
+ * Keszowane drzewo kategorii dla nawigacji.
+ */
+export async function getCategoriesTreeForPage(
+  locale: Locale,
+): Promise<Category[]> {
+  "use cache";
+  cacheTag("catalog");
+  cacheLife("minutes");
+
+  return fetchCategoriesTree(locale);
+}
+
+/**
+ * Pobiera gałąź pojedynczej kategorii po slugu.
+ */
+export async function fetchCategory(
+  slug: string,
+  locale: Locale,
+): Promise<Category | null> {
+  if (!isProductSlug(slug)) {
+    return null;
+  }
+
+  const url = getCategoriesRetrieveUrl(slug, { lang: locale });
+  const response = await fetch(`${catalogBaseUrl()}${url}`, {
+    headers: { accept: "application/json" },
+  });
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Katalog odpowiedział statusem ${response.status}.`);
+  }
+
+  return (await response.json()) as Category;
+}
+
+/**
+ * Keszowana kategoria dla strony kategorii.
+ */
+export async function getCategoryForPage(
+  slug: string,
+  locale: Locale,
+): Promise<Category | null> {
+  "use cache";
+  cacheTag("catalog");
+  cacheLife("minutes");
+
+  return fetchCategory(slug, locale);
+}
+
+/**
+ * Pobiera pojedynczą kolekcję po slugu.
+ */
+export async function fetchCollection(
+  slug: string,
+  locale: Locale,
+): Promise<Collection | null> {
+  if (!isProductSlug(slug)) {
+    return null;
+  }
+
+  const url = getCollectionsRetrieveUrl(slug, { lang: locale });
+  const response = await fetch(`${catalogBaseUrl()}${url}`, {
+    headers: { accept: "application/json" },
+  });
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Katalog odpowiedział statusem ${response.status}.`);
+  }
+
+  return (await response.json()) as Collection;
+}
+
+/**
+ * Keszowana kolekcja dla strony kolekcji.
+ */
+export async function getCollectionForPage(
+  slug: string,
+  locale: Locale,
+): Promise<Collection | null> {
+  "use cache";
+  cacheTag("catalog");
+  cacheLife("minutes");
+
+  return fetchCollection(slug, locale);
 }
