@@ -74,7 +74,9 @@ export type ProductsListFilters = {
   stone?: ProductsListParams["stone"];
   size?: ProductsListParams["size"];
   length?: ProductsListParams["length"];
+  /** Cena minimalna w groszach, jak w API (nie w PLN jak w `CatalogFilterState`). */
   priceMin?: number;
+  /** Cena maksymalna w groszach, jak w API (nie w PLN jak w `CatalogFilterState`). */
   priceMax?: number;
   search?: string;
   ordering?: string;

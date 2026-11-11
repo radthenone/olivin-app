@@ -128,12 +128,9 @@
       "stone": "Stone",
       "size": "Size",
       "length": "Length",
-      "price": "Price",
       "priceInCurrency": "Price ({currency})",
       "priceFrom": "From",
-      "priceTo": "To",
-      "openFilters": "Show filters",
-      "closeFilters": "Close filters"
+      "priceTo": "To"
     },
     "error": {
       "network": "No network connection",

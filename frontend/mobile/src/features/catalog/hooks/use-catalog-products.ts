@@ -41,19 +41,11 @@ export function useCatalogProductsInfinite(
     readonly [
       string,
       string,
-      { locale: string; category?: string; collection?: string },
+      { locale: string } & Omit<ProductsListFilters, "page">,
     ],
     number
   >({
-    queryKey: [
-      "catalog",
-      "products",
-      {
-        locale,
-        category: filters.category,
-        collection: filters.collection,
-      },
-    ] as const,
+    queryKey: ["catalog", "products", { locale, ...filters }] as const,
     initialPageParam: 1,
     queryFn: async ({ pageParam }) => {
       return mobileCatalogClient.fetchProductsList(

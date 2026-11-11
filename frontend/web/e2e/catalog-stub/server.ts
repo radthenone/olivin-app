@@ -934,7 +934,8 @@ export const server = createServer(async (request, response) => {
 
 // Uruchamiamy listen tylko gdy skrypt jest bezpośrednim punktem wejścia
 const isDirectRun =
-  process.argv[1]?.endsWith("catalog-stub/server.ts") ||
+  // Separatory z Windows (Git Bash) też muszą pasować do ścieżki.
+  process.argv[1]?.replace(/\\/g, "/").endsWith("catalog-stub/server.ts") ||
   process.env.RUN_CATALOG_STUB === "1";
 
 if (isDirectRun) {

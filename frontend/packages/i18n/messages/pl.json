@@ -128,12 +128,9 @@
       "stone": "Rodzaj kamienia",
       "size": "Rozmiar",
       "length": "Długość",
-      "price": "Cena",
       "priceInCurrency": "Cena ({currency})",
       "priceFrom": "Od",
-      "priceTo": "Do",
-      "openFilters": "Pokaż filtry",
-      "closeFilters": "Zamknij filtry"
+      "priceTo": "Do"
     },
     "error": {
       "network": "Brak połączenia z siecią",

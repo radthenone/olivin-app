@@ -39,6 +39,7 @@ export {
 } from "./filters";
 export type { CatalogFilterState, CatalogOrdering } from "./filters";
 
+export {
   DELIVERY_COUNTRY_COOKIE_NAME,
   DeliveryCountryEnum,
   EU_DELIVERY_COUNTRIES,
