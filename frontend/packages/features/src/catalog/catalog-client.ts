@@ -39,6 +39,28 @@ export function isCatalogSlug(slug: string): boolean {
   return CATALOG_SLUG.test(slug);
 }
 
+/**
+ * Błąd pobierania danych z API katalogu.
+ *
+ * Widoki mapują go na komunikat z i18n po `isNetworkError`, a `message`
+ * zostaje wyłącznie do logów i testów — nie trafia do interfejsu.
+ *
+ * Args:
+ *     status: Status HTTP odpowiedzi; `0`, gdy żądanie nie dotarło do serwera.
+ *     message: Opis techniczny błędu.
+ */
+export class CatalogError extends Error {
+  readonly status: number;
+  readonly isNetworkError: boolean;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "CatalogError";
+    this.status = status;
+    this.isNetworkError = status === 0;
+  }
+}
+
 export type CatalogCurrency = "PLN" | "EUR";
 
 export type ProductsListFilters = {
@@ -106,17 +128,32 @@ export function createCatalogClient(
       headers["accept-language"] = locale;
     }
 
-    const response = await activeFetch(url, {
-      method: "GET",
-      headers,
-    });
+    let response: Response;
+    try {
+      response = await activeFetch(url, {
+        method: "GET",
+        headers,
+        // Transport publiczny (ADR 0034): bez ciasteczek sesji.
+        credentials: "omit",
+      });
+    } catch (cause) {
+      throw new CatalogError(
+        0,
+        cause instanceof Error
+          ? cause.message
+          : "Brak połączenia z katalogiem.",
+      );
+    }
 
     if (allow404 && response.status === 404) {
       return null;
     }
 
     if (!response.ok) {
-      throw new Error(`Katalog odpowiedział statusem ${response.status}.`);
+      throw new CatalogError(
+        response.status,
+        `Katalog odpowiedział statusem ${response.status}.`,
+      );
     }
 
     return (await response.json()) as T;

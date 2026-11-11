@@ -4,7 +4,11 @@ export {
 } from "./availability";
 export type { AvailabilityCategory } from "./availability";
 
-export { createCatalogClient, isCatalogSlug } from "./catalog-client";
+export {
+  CatalogError,
+  createCatalogClient,
+  isCatalogSlug,
+} from "./catalog-client";
 export type {
   CatalogClient,
   CatalogClientOptions,

@@ -4,7 +4,11 @@ import type {
   ProductDetail,
 } from "@olivin/api/generated/apps/schemas";
 
-import { createCatalogClient, isCatalogSlug } from "./catalog-client";
+import {
+  CatalogError,
+  createCatalogClient,
+  isCatalogSlug,
+} from "./catalog-client";
 
 describe("catalog slug validation", () => {
   test("isCatalogSlug accepts valid slug characters and rejects invalid", () => {
@@ -143,5 +147,50 @@ describe("catalog client (public transport without session)", () => {
     const result = await client.fetchProductsList({ page: 1 }, "pl");
 
     expect(result).toEqual(mockList);
+  });
+
+  test("catalog requests omit credentials (public transport)", async () => {
+    let capturedInit: RequestInit | undefined;
+
+    const fetchFn = async (_input: RequestInfo | URL, init?: RequestInit) => {
+      capturedInit = init;
+      return new Response(JSON.stringify({ count: 0, results: [] }), {
+        status: 200,
+      });
+    };
+
+    const client = createCatalogClient({ baseUrl, fetch: fetchFn });
+    await client.fetchProductsList({ page: 1 }, "pl");
+
+    expect(capturedInit?.credentials).toBe("omit");
+  });
+
+  test("throws a typed CatalogError with the HTTP status on a server error", async () => {
+    const fetchFn = async () =>
+      new Response("Service Unavailable", { status: 503 });
+
+    const client = createCatalogClient({ baseUrl, fetch: fetchFn });
+    const error = await client
+      .fetchProductsList({ page: 1 }, "pl")
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(CatalogError);
+    expect((error as CatalogError).status).toBe(503);
+    expect((error as CatalogError).isNetworkError).toBe(false);
+  });
+
+  test("wraps a failed fetch in a CatalogError flagged as a network error", async () => {
+    const fetchFn = async () => {
+      throw new TypeError("Network request failed");
+    };
+
+    const client = createCatalogClient({ baseUrl, fetch: fetchFn });
+    const error = await client
+      .fetchProduct("diamond-ring", "pl")
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(CatalogError);
+    expect((error as CatalogError).status).toBe(0);
+    expect((error as CatalogError).isNetworkError).toBe(true);
   });
 });
