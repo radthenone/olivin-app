@@ -3,7 +3,7 @@ import { getCategoriesRetrieveUrl } from "@olivin/api/generated/apps/categories/
 import { getCollectionsRetrieveUrl } from "@olivin/api/generated/apps/collections/collections";
 import { isLocale, type Locale } from "@olivin/i18n";
 
-import { catalogBaseUrl, isCatalogSlug } from "./catalog-url";
+import { catalogBaseUrl, isCatalogSlug, isProductSlug } from "./catalog-url";
 
 /**
  * Sprawdzenie, czy encje katalogu (produkt, kategoria, kolekcja) istnieją,
@@ -123,7 +123,7 @@ function createExistenceCheck(
   }
 
   return function checkExists(slug: string, locale: Locale): Promise<boolean> {
-    if (!isCatalogSlug(slug)) {
+    if (!isProductSlug(slug)) {
       return Promise.resolve(false);
     }
 
