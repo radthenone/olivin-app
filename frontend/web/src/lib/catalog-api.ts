@@ -40,12 +40,6 @@ import { catalogBaseUrl, isCatalogSlug } from "./catalog-url";
  * wskazuje stub, a przy `E2E_LIVE_BACKEND=1` prawdziwy backend.
  */
 
-/** Cookie waluty z kraju dostawy (ADR 0035). Brak cookie oznacza złote. */
-export const currencyCookieName = "currency";
-
-/** Cookie wybranego kraju dostawy (ADR 0035). */
-export const deliveryCountryCookieName = DELIVERY_COUNTRY_COOKIE_NAME;
-
 export type CatalogCurrency = "PLN" | "EUR";
 
 /**
@@ -152,7 +146,7 @@ export async function getProductPrice(
  */
 export async function getRequestDeliveryCountry(): Promise<DeliveryCountry | null> {
   const store = await cookies();
-  const value = store.get(deliveryCountryCookieName)?.value;
+  const value = store.get(DELIVERY_COUNTRY_COOKIE_NAME)?.value;
   if (value && isEuDeliveryCountry(value)) {
     return value;
   }
@@ -162,21 +156,14 @@ export async function getRequestDeliveryCountry(): Promise<DeliveryCountry | nul
 /**
  * Waluta bieżącego żądania. Waluta nie trafia do adresu ani do kesza.
  *
- * O walucie decyduje kraj dostawy z cookie (ADR 0035). Dla kompatybilności
- * wstecznej sprawdzane jest też bezpośrednie ciasteczko waluty.
+ * Jedynym źródłem jest kraj dostawy z cookie `delivery_country` (ADR 0035);
+ * osobnego cookie waluty nie ma.
  *
  * Returns:
- *     `EUR` dla kraju Unii innego niż Polska (albo jawnego cookie EUR); inaczej `PLN`.
+ *     `EUR` dla kraju Unii innego niż Polska; inaczej `PLN` (też bez cookie).
  */
 export async function getRequestCurrency(): Promise<CatalogCurrency> {
-  const store = await cookies();
-  const countryValue = store.get(deliveryCountryCookieName)?.value;
-  if (countryValue) {
-    return currencyFromDeliveryCountry(countryValue);
-  }
-
-  const currencyValue = store.get(currencyCookieName)?.value;
-  return currencyValue === "EUR" ? "EUR" : "PLN";
+  return currencyFromDeliveryCountry(await getRequestDeliveryCountry());
 }
 
 export type ProductsListFilters = {

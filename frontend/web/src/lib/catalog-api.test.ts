@@ -12,8 +12,6 @@ mock.module("next/headers", () => ({
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import {
-  currencyCookieName,
-  deliveryCountryCookieName,
   getRequestCurrency,
   getRequestDeliveryCountry,
   fetchCategoriesTree,
@@ -40,14 +38,6 @@ describe("catalog server transport", () => {
     }
   });
 
-  test("defines currency cookie name", () => {
-    expect(currencyCookieName).toBe("currency");
-  });
-
-  test("defines delivery country cookie name", () => {
-    expect(deliveryCountryCookieName).toBe("delivery_country");
-  });
-
   describe("getRequestCurrency and getRequestDeliveryCountry", () => {
     test("returns EUR and country when delivery_country cookie is an EU country other than PL", async () => {
       mockCookies = { delivery_country: { value: "DE" } };
@@ -67,9 +57,9 @@ describe("catalog server transport", () => {
       expect(await getRequestDeliveryCountry()).toBeNull();
     });
 
-    test("falls back to currency cookie when delivery_country is not set", async () => {
+    test("ignores the currency cookie when delivery_country is not set", async () => {
       mockCookies = { currency: { value: "EUR" } };
-      expect(await getRequestCurrency()).toBe("EUR");
+      expect(await getRequestCurrency()).toBe("PLN");
       expect(await getRequestDeliveryCountry()).toBeNull();
     });
 
