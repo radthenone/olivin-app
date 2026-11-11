@@ -251,6 +251,7 @@
       "SK": "Słowacja",
       "SI": "Słowenia",
       "SE": "Szwecja"
-    }
+    },
+    "saveError": "Nie udało się zapisać kraju dostawy w profilu."
   }
 }

@@ -251,6 +251,7 @@
       "SK": "Slovakia",
       "SI": "Slovenia",
       "SE": "Sweden"
-    }
+    },
+    "saveError": "Failed to save delivery country to profile."
   }
 }
