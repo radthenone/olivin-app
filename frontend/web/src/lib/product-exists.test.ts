@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import {
+  createCategoryExistenceCheck,
+  createCollectionExistenceCheck,
   createProductExistenceCheck,
+  matchCategoryPath,
+  matchCollectionPath,
   matchProductPath,
 } from "./product-exists";
 
@@ -30,6 +34,41 @@ describe("product path matching", () => {
     expect(matchProductPath("/pl/login")).toBeNull();
     expect(matchProductPath("/de/products/ring")).toBeNull();
     expect(matchProductPath("/pl/products/ring/reviews")).toBeNull();
+  });
+});
+
+describe("category and collection path matching", () => {
+  test("reads locale and slug from category path", () => {
+    expect(matchCategoryPath("/pl/categories/pierscionki")).toEqual({
+      locale: "pl",
+      slug: "pierscionki",
+    });
+    expect(matchCategoryPath("/en/categories/rings")).toEqual({
+      locale: "en",
+      slug: "rings",
+    });
+  });
+
+  test("ignores non-category paths or subpaths", () => {
+    expect(matchCategoryPath("/pl/categories")).toBeNull();
+    expect(matchCategoryPath("/de/categories/pierscionki")).toBeNull();
+    expect(matchCategoryPath("/pl/categories/pierscionki/extra")).toBeNull();
+  });
+
+  test("reads locale and slug from collection path", () => {
+    expect(matchCollectionPath("/pl/collections/lato-2026")).toEqual({
+      locale: "pl",
+      slug: "lato-2026",
+    });
+    expect(matchCollectionPath("/en/collections/summer-2026")).toEqual({
+      locale: "en",
+      slug: "summer-2026",
+    });
+  });
+
+  test("ignores non-collection paths", () => {
+    expect(matchCollectionPath("/pl/collections")).toBeNull();
+    expect(matchCollectionPath("/de/collections/lato")).toBeNull();
   });
 });
 
@@ -156,5 +195,54 @@ describe("product existence check", () => {
     expect(urls).toEqual([
       "http://catalog.internal:8020/products/Gold-ring_2/?lang=pl",
     ]);
+  });
+});
+
+describe("category and collection existence check", () => {
+  beforeEach(() => {
+    process.env.CATALOG_API_URL = "http://catalog.internal:8020";
+  });
+
+  afterEach(() => {
+    if (originalEnv !== undefined) {
+      process.env.CATALOG_API_URL = originalEnv;
+    } else {
+      delete process.env.CATALOG_API_URL;
+    }
+  });
+
+  test("checks category existence against categories retrieve URL", async () => {
+    const { fetchImpl, urls } = fakeCatalog(200);
+    const categoryExists = createCategoryExistenceCheck({ fetch: fetchImpl });
+
+    expect(await categoryExists("pierscionki", "pl")).toBe(true);
+    expect(urls).toEqual([
+      "http://catalog.internal:8020/categories/pierscionki/?lang=pl",
+    ]);
+  });
+
+  test("rejects invalid category slug without network call", async () => {
+    const { fetchImpl, urls } = fakeCatalog(200);
+    const categoryExists = createCategoryExistenceCheck({ fetch: fetchImpl });
+
+    expect(await categoryExists("nie/poprawny", "pl")).toBe(false);
+    expect(urls).toHaveLength(0);
+  });
+
+  test("checks collection existence against collections retrieve URL", async () => {
+    const { fetchImpl, urls } = fakeCatalog(200);
+    const collectionExists = createCollectionExistenceCheck({ fetch: fetchImpl });
+
+    expect(await collectionExists("lato-2026", "pl")).toBe(true);
+    expect(urls).toEqual([
+      "http://catalog.internal:8020/collections/lato-2026/?lang=pl",
+    ]);
+  });
+
+  test("returns false for 404 collection", async () => {
+    const { fetchImpl } = fakeCatalog(404);
+    const collectionExists = createCollectionExistenceCheck({ fetch: fetchImpl });
+
+    expect(await collectionExists("nie-ma", "pl")).toBe(false);
   });
 });

@@ -36,6 +36,36 @@
       },
       "stones": "Kamienie"
     },
+    "category": {
+      "heading": "Kategorie",
+      "notFound": {
+        "title": "Nie znaleziono kategorii",
+        "description": "Ta kategoria nie istnieje albo została usunięta ze sklepu."
+      }
+    },
+    "collection": {
+      "heading": "Kolekcje",
+      "notFound": {
+        "title": "Nie znaleziono kolekcji",
+        "description": "Ta kolekcja nie istnieje albo została wycofana ze sklepu."
+      }
+    },
+    "list": {
+      "title": "Katalog produktów",
+      "description": "Przeglądaj biżuterię w sklepie Olivin.",
+      "productCount": "{count, plural, one {# produkt} few {# produkty} many {# produktów} other {# produktu}}",
+      "empty": "Brak produktów do wyświetlenia.",
+      "allProducts": "Wszystkie produkty"
+    },
+    "card": {
+      "fromPrice": "od {price}",
+      "viewProduct": "Zobacz produkt"
+    },
+    "pagination": {
+      "previous": "Poprzednia",
+      "next": "Następna",
+      "pageOf": "Strona {page} z {totalPages}"
+    },
     "material": {
       "gold": "Złoto",
       "silver": "Srebro",

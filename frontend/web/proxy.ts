@@ -2,7 +2,14 @@ import createMiddleware from "next-intl/middleware";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { routing } from "@/i18n/routing";
-import { matchProductPath, productExists } from "@/lib/product-exists";
+import {
+  categoryExists,
+  collectionExists,
+  matchCategoryPath,
+  matchCollectionPath,
+  matchProductPath,
+  productExists,
+} from "@/lib/product-exists";
 
 /**
  * Przekierowanie `/` na język klienta i obsługa prefiksu `/pl` albo `/en`.
@@ -12,10 +19,10 @@ import { matchProductPath, productExists } from "@/lib/product-exists";
 const handleI18nRouting = createMiddleware(routing);
 
 /**
- * Routing języka, a dla karty produktu dodatkowo prawdziwe 404.
+ * Routing języka, a dla encji katalogu (karta produktu, kategoria, kolekcja) dodatkowo prawdziwe 404.
  *
- * Z Cache Components karta streamuje prerenderowaną powłokę od razu, więc
- * nieznany slug musi zostać odrzucony przed renderem (#357). Nieznany slug
+ * Z Cache Components strona streamuje prerenderowaną powłokę od razu, więc
+ * nieznany slug musi zostać odrzucony przed renderem (#357, #359). Nieznany slug
  * idzie rewrite'em na statyczną stronę 404 w tym samym języku, a slug
  * w formacie spoza katalogu (np. `a%2Fb`) dostaje to samo bez żądania do
  * katalogu. Nagłówki i ciasteczka next-intl zostają.
@@ -24,24 +31,49 @@ const handleI18nRouting = createMiddleware(routing);
  *     request: Żądanie przed renderem strony.
  *
  * Returns:
- *     Odpowiedź next-intl albo rewrite na `/{locale}/product-not-found`.
+ *     Odpowiedź next-intl albo rewrite na stronę not-found w odpowiednim języku.
  */
 export default async function proxy(request: NextRequest) {
   const response = handleI18nRouting(request);
+
+  if (response.headers.has("location")) {
+    return response;
+  }
+
   const product = matchProductPath(request.nextUrl.pathname);
-
-  if (!product || response.headers.has("location")) {
-    return response;
+  if (product) {
+    if (await productExists(product.slug, product.locale)) {
+      return response;
+    }
+    return NextResponse.rewrite(
+      new URL(`/${product.locale}/product-not-found`, request.url),
+      { headers: response.headers },
+    );
   }
 
-  if (await productExists(product.slug, product.locale)) {
-    return response;
+  const category = matchCategoryPath(request.nextUrl.pathname);
+  if (category) {
+    if (await categoryExists(category.slug, category.locale)) {
+      return response;
+    }
+    return NextResponse.rewrite(
+      new URL(`/${category.locale}/category-not-found`, request.url),
+      { headers: response.headers },
+    );
   }
 
-  return NextResponse.rewrite(
-    new URL(`/${product.locale}/product-not-found`, request.url),
-    { headers: response.headers },
-  );
+  const collection = matchCollectionPath(request.nextUrl.pathname);
+  if (collection) {
+    if (await collectionExists(collection.slug, collection.locale)) {
+      return response;
+    }
+    return NextResponse.rewrite(
+      new URL(`/${collection.locale}/collection-not-found`, request.url),
+      { headers: response.headers },
+    );
+  }
+
+  return response;
 }
 
 /**
