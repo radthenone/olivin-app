@@ -4,6 +4,11 @@ import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
+  // ADR 0034: strony katalogu są keszowane przez `"use cache"` i rewalidowane
+  // tagami, a cena jest dziurą dynamiczną streamowaną w tym samym żądaniu.
+  cacheComponents: true,
+  partialPrefetching: true,
+
   // Pakiety współdzielone są konsumowane jako źródło TypeScript, bez kroku
   // budowania — patrz docs/adr/0005-pakiety-wspoldzielone-jako-zrodlo.md
   transpilePackages: [
@@ -15,6 +20,15 @@ const nextConfig: NextConfig = {
   ],
 
   typedRoutes: true,
+
+  // `next build` sprawdza typy razem z wygenerowanymi trasami, a testy typuje
+  // osobno `tsc` w CI. Build produkcyjny sprawdza więc tylko kod aplikacji.
+  typescript: {
+    tsconfigPath:
+      process.env.NODE_ENV === "production"
+        ? "tsconfig.build.json"
+        : "tsconfig.json",
+  },
 
   /**
    * Allauth w trybie przeglądarkowym potrzebuje tych samych ciasteczek po

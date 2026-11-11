@@ -1,13 +1,48 @@
 import createMiddleware from "next-intl/middleware";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { routing } from "@/i18n/routing";
+import { matchProductPath, productExists } from "@/lib/product-exists";
 
 /**
  * Przekierowanie `/` na język klienta i obsługa prefiksu `/pl` albo `/en`.
  *
  * Kolejność detekcji: cookie języka, `Accept-Language`, domyślnie `/pl`.
  */
-export default createMiddleware(routing);
+const handleI18nRouting = createMiddleware(routing);
+
+/**
+ * Routing języka, a dla karty produktu dodatkowo prawdziwe 404.
+ *
+ * Z Cache Components karta streamuje prerenderowaną powłokę od razu, więc
+ * nieznany slug musi zostać odrzucony przed renderem (#357). Nieznany slug
+ * idzie rewrite'em na statyczną stronę 404 w tym samym języku, a slug
+ * w formacie spoza katalogu (np. `a%2Fb`) dostaje to samo bez żądania do
+ * katalogu. Nagłówki i ciasteczka next-intl zostają.
+ *
+ * Args:
+ *     request: Żądanie przed renderem strony.
+ *
+ * Returns:
+ *     Odpowiedź next-intl albo rewrite na `/{locale}/product-not-found`.
+ */
+export default async function proxy(request: NextRequest) {
+  const response = handleI18nRouting(request);
+  const product = matchProductPath(request.nextUrl.pathname);
+
+  if (!product || response.headers.has("location")) {
+    return response;
+  }
+
+  if (await productExists(product.slug, product.locale)) {
+    return response;
+  }
+
+  return NextResponse.rewrite(
+    new URL(`/${product.locale}/product-not-found`, request.url),
+    { headers: response.headers },
+  );
+}
 
 /**
  * Poza routingiem językowym zostają adresy techniczne: `/api` i `/api/*`
