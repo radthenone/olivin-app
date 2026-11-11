@@ -3,7 +3,7 @@ import {
   hasActiveFilters,
   parseCatalogFilters,
   toProductsListParams,
-} from "@olivin/features/catalog";
+} from "@olivin/features/catalog/server";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
