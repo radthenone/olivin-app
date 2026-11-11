@@ -2,7 +2,7 @@
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import type { Route } from "next";
 import { useTranslations } from "next-intl";
 import {
@@ -10,7 +10,6 @@ import {
   CATALOG_LENGTHS,
   CATALOG_MATERIALS,
   CATALOG_METAL_COLORS,
-  CATALOG_ORDERING_OPTIONS,
   CATALOG_SIZES,
   CATALOG_STONES,
   hasActiveFilters,
@@ -156,10 +155,14 @@ export function CatalogFiltersPanel({
   const pathname = usePathname() || basePath;
 
   const [priceMinInput, setPriceMinInput] = useState<string>(
-    currentFilters.priceMin !== undefined ? String(currentFilters.priceMin) : "",
+    currentFilters.priceMin !== undefined
+      ? String(currentFilters.priceMin)
+      : "",
   );
   const [priceMaxInput, setPriceMaxInput] = useState<string>(
-    currentFilters.priceMax !== undefined ? String(currentFilters.priceMax) : "",
+    currentFilters.priceMax !== undefined
+      ? String(currentFilters.priceMax)
+      : "",
   );
 
   const active = hasActiveFilters(currentFilters);
@@ -176,8 +179,10 @@ export function CatalogFiltersPanel({
     const max = priceMaxInput.trim() ? Number(priceMaxInput.trim()) : undefined;
 
     updateFilter({
-      priceMin: min !== undefined && !Number.isNaN(min) && min >= 0 ? min : undefined,
-      priceMax: max !== undefined && !Number.isNaN(max) && max >= 0 ? max : undefined,
+      priceMin:
+        min !== undefined && !Number.isNaN(min) && min >= 0 ? min : undefined,
+      priceMax:
+        max !== undefined && !Number.isNaN(max) && max >= 0 ? max : undefined,
     });
   };
 
@@ -203,7 +208,9 @@ export function CatalogFiltersPanel({
             value={currentFilters.material ?? ""}
             onChange={(e) =>
               updateFilter({
-                material: (e.target.value as CatalogFilterState["material"]) || undefined,
+                material:
+                  (e.target.value as CatalogFilterState["material"]) ||
+                  undefined,
               })
             }
             className={selectClassName}
@@ -226,7 +233,8 @@ export function CatalogFiltersPanel({
             onChange={(e) =>
               updateFilter({
                 metalColor:
-                  (e.target.value as CatalogFilterState["metalColor"]) || undefined,
+                  (e.target.value as CatalogFilterState["metalColor"]) ||
+                  undefined,
               })
             }
             className={selectClassName}
@@ -249,7 +257,8 @@ export function CatalogFiltersPanel({
             onChange={(e) =>
               updateFilter({
                 fineness:
-                  (e.target.value as CatalogFilterState["fineness"]) || undefined,
+                  (e.target.value as CatalogFilterState["fineness"]) ||
+                  undefined,
               })
             }
             className={selectClassName}
@@ -271,7 +280,8 @@ export function CatalogFiltersPanel({
             value={currentFilters.stone ?? ""}
             onChange={(e) =>
               updateFilter({
-                stone: (e.target.value as CatalogFilterState["stone"]) || undefined,
+                stone:
+                  (e.target.value as CatalogFilterState["stone"]) || undefined,
               })
             }
             className={selectClassName}
@@ -293,7 +303,8 @@ export function CatalogFiltersPanel({
             value={currentFilters.size ?? ""}
             onChange={(e) =>
               updateFilter({
-                size: (e.target.value as CatalogFilterState["size"]) || undefined,
+                size:
+                  (e.target.value as CatalogFilterState["size"]) || undefined,
               })
             }
             className={selectClassName}
@@ -315,7 +326,8 @@ export function CatalogFiltersPanel({
             value={currentFilters.length ?? ""}
             onChange={(e) =>
               updateFilter({
-                length: (e.target.value as CatalogFilterState["length"]) || undefined,
+                length:
+                  (e.target.value as CatalogFilterState["length"]) || undefined,
               })
             }
             className={selectClassName}

@@ -23,7 +23,8 @@ export async function Pagination({
   totalPages: number;
   basePath: string;
   locale: Locale;
-  searchParams?: Record<string, string | string[] | undefined> | URLSearchParams;
+  searchParams?:
+    Record<string, string | string[] | undefined> | URLSearchParams;
 }) {
   if (totalPages <= 1) {
     return null;

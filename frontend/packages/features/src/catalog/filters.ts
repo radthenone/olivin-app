@@ -76,9 +76,7 @@ export interface CatalogFilterState {
 }
 
 type SearchParamsSource =
-  | URLSearchParams
-  | Record<string, string | string[] | undefined>
-  | string;
+  URLSearchParams | Record<string, string | string[] | undefined> | string;
 
 function getParamValue(
   source: SearchParamsSource,
@@ -328,15 +326,15 @@ export function fromProductsListParams(
 export function hasActiveFilters(state: CatalogFilterState): boolean {
   return Boolean(
     state.material ||
-      state.fineness ||
-      state.metalColor ||
-      state.stone ||
-      state.size ||
-      state.length ||
-      state.priceMin !== undefined ||
-      state.priceMax !== undefined ||
-      state.search ||
-      (state.ordering && state.ordering !== DEFAULT_CATALOG_ORDERING),
+    state.fineness ||
+    state.metalColor ||
+    state.stone ||
+    state.size ||
+    state.length ||
+    state.priceMin !== undefined ||
+    state.priceMax !== undefined ||
+    state.search ||
+    (state.ordering && state.ordering !== DEFAULT_CATALOG_ORDERING),
   );
 }
 

@@ -49,7 +49,8 @@ export function calculateTotalPages(count: number, pageSize: number): number {
 export function buildPaginationHref(
   basePath: string,
   pageNumber: number,
-  searchParams?: URLSearchParams | Record<string, string | string[] | undefined>,
+  searchParams?:
+    URLSearchParams | Record<string, string | string[] | undefined>,
 ): string {
   const params = new URLSearchParams();
 

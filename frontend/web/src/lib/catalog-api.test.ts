@@ -222,10 +222,10 @@ describe("catalog server transport", () => {
     let requestedUrl = "";
     globalThis.fetch = (async (input) => {
       requestedUrl = String(input);
-      return new Response(
-        JSON.stringify({ count: 0, results: [] }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      );
+      return new Response(JSON.stringify({ count: 0, results: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
     }) as typeof fetch;
 
     await fetchProductsList(

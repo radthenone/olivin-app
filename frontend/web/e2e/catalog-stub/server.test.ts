@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  filterAndSortFixtures,
-  initialFixtures,
-} from "./server";
+import { filterAndSortFixtures, initialFixtures } from "./server";
 
 describe("Catalog stub filter and search logic", () => {
   const fixtures = Object.values(initialFixtures());
@@ -65,7 +62,7 @@ describe("Catalog stub filter and search logic", () => {
   test("sorts products by price ascending and descending", () => {
     const ascParams = new URLSearchParams({ ordering: "price" });
     const ascResults = filterAndSortFixtures(fixtures, ascParams, "pl");
-    const getCheapest = (r: typeof fixtures[0]) =>
+    const getCheapest = (r: (typeof fixtures)[0]) =>
       Math.min(...r.product.variants.map((v) => v.price.amount));
 
     for (let i = 0; i < ascResults.length - 1; i++) {

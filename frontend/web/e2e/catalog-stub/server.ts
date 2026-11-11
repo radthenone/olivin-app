@@ -674,9 +674,13 @@ export function filterAndSortFixtures(
   } else if (ordering === "-price") {
     list.sort((a, b) => getCheapestPrice(b) - getCheapestPrice(a));
   } else if (ordering === "name") {
-    list.sort((a, b) => a.name[language].localeCompare(b.name[language], language));
+    list.sort((a, b) =>
+      a.name[language].localeCompare(b.name[language], language),
+    );
   } else if (ordering === "-name") {
-    list.sort((a, b) => b.name[language].localeCompare(a.name[language], language));
+    list.sort((a, b) =>
+      b.name[language].localeCompare(a.name[language], language),
+    );
   }
 
   return list;

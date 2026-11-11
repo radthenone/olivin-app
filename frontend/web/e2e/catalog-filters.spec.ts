@@ -23,7 +23,9 @@ test.describe("Web catalog filters, search and sorting in URL (#360)", () => {
     await searchInput.fill("złoty pierścionek");
     await page.getByRole("button", { name: "Szukaj" }).click();
 
-    await expect(page).toHaveURL(/search=z%C5%82oty\+pier%C5%9Bcionek|search=z%C5%82oty\+pier%C5%9Bcionek/);
+    await expect(page).toHaveURL(
+      /search=z%C5%82oty\+pier%C5%9Bcionek|search=z%C5%82oty\+pier%C5%9Bcionek/,
+    );
     const main = page.getByRole("main");
     await expect(main.getByText("Złoty pierścionek")).toBeVisible();
   });
