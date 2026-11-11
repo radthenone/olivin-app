@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import type { ProductDetail } from "@olivin/api/generated/apps/schemas";
 import { useProductsRetrieve } from "@olivin/api/generated/apps/products/products";
 import {
-  availabilityMessageKey,
   getAvailabilityCategory,
   useVariantSelection,
 } from "@olivin/features/catalog";
