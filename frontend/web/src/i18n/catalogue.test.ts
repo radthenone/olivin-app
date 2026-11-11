@@ -36,6 +36,13 @@ describe("@olivin/i18n", () => {
     expect(keys).toContain("catalog.pagination.next");
   });
 
+  test("defines delivery country switch keys", () => {
+    const keys = messageKeys(pl);
+    expect(keys).toContain("delivery.shipTo");
+    expect(keys).toContain("delivery.countries.PL");
+    expect(keys).toContain("delivery.countries.DE");
+  });
+
   test("defines variant selection and attribute keys in catalog", () => {
     const keys = messageKeys(pl);
     expect(keys).toContain("catalog.product.attributes.metalColor");
