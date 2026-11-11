@@ -34,7 +34,16 @@
         "lowStock": "Ostatnie sztuki",
         "unavailable": "Niedostępny"
       },
-      "stones": "Kamienie"
+      "stones": "Kamienie",
+      "attributes": {
+        "metalColor": "Kolor kruszcu",
+        "size": "Rozmiar",
+        "length": "Długość",
+        "stone": "Kamień"
+      },
+      "attributeNone": "Brak",
+      "lengthValue": "{value} cm",
+      "selectVariant": "Wybór wariantu"
     },
     "category": {
       "heading": "Kategorie",

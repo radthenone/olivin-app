@@ -104,6 +104,9 @@
         "@olivin/config": "workspace:*",
         "typescript": "~6.0.3",
       },
+      "peerDependencies": {
+        "react": "^19.2.3",
+      },
     },
     "packages/i18n": {
       "name": "@olivin/i18n",

@@ -27,7 +27,7 @@ test.describe("Catalog product list, category and collection pages", () => {
 
     // Kafelki produktów z nazwą i ceną
     await expect(page.getByText("Złoty pierścionek").first()).toBeVisible();
-    await expect(page.getByText(/od 2.?500,00.?zł/).first()).toBeVisible();
+    await expect(page.getByText(/od 2.?450,00.?zł/).first()).toBeVisible();
 
     // Paginacja
     test.skip(liveBackend, "Paginacja stubu ma z góry znaną liczbę stron.");
