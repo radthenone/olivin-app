@@ -1,0 +1,36 @@
+# Przeglądanie katalogu i wybór wariantu produktu na mobile (#364, #356).
+#
+# Weryfikuje:
+#   1. Ekran listy produktów z nieskończonym przewijaniem i stubem API (#357).
+#   2. Przejście do karty produktu po tapnięciu w kafelek.
+#   3. Prezentację galerii, opisu, materiału, próby i graweru.
+#   4. Dynamiczny wybór wariantu (kolor kruszcu / rozmiar) z aktualizacją ceny i dostępności.
+#
+# Wymagania:
+#   Uruchomiony stub API katalogu (domyślnie port 3200, na emulatorze Androida widoczny jako 10.0.2.2:3200).
+#
+# Uruchomienie stuba:
+#   cd frontend/web && bun run e2e/catalog-stub/server.ts
+#
+# Uruchomienie flow:
+#   maestro test .maestro/catalog-browse-and-variant.yaml \
+#     -e CATALOG_API_URL=http://10.0.2.2:3200
+appId: com.olivin.frontend
+env:
+  CATALOG_API_URL: http://10.0.2.2:3200
+---
+- launchApp
+- assertVisible: "Katalog produktów"
+- assertVisible: "Złoty pierścionek"
+# Przewinięcie listy produktów
+- scroll
+# Przejście do karty produktu
+- tapOn: "Złoty pierścionek"
+# Weryfikacja karty produktu
+- assertVisible: "Pierścionek z żółtego złota z diamentem."
+- assertVisible: "Opis"
+- assertVisible: "Złoto"
+- assertVisible: "585"
+# Zmiana wariantu produktu (np. na Białe złoto)
+- tapOn: "Białe złoto"
+- assertVisible: "Dostępny"
