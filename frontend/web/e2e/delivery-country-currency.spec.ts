@@ -40,12 +40,16 @@ test.describe("Delivery country switch with currency", () => {
     // 5. Zmiana języka nie zmienia waluty
     await page.goto("/en/products/ring");
     await expect(countrySelect).toHaveValue("DE");
-    await expect(page.getByText(/581.50.?€/)).toBeVisible();
+    await expect(page.getByText(/€581\.50/)).toBeVisible();
     await expect(page.getByText("Ship to")).toBeVisible();
 
     // 6. Przełączenie z powrotem na Polskę przywraca PLN
     await countrySelect.selectOption("PL");
     await expect(countrySelect).toHaveValue("PL");
-    await expect(page.getByText(/zł/)).toBeVisible();
+    // Strona /en/: złote w formacie angielskim (`PLN 2,500.00`), cena aktywnego
+    // wariantu leży w regionie aria-live (osobno od ceny grawerunku).
+    await expect(
+      page.locator('[aria-live="polite"]').getByText(/PLN\s?2,500\.00/),
+    ).toBeVisible();
   });
 });
