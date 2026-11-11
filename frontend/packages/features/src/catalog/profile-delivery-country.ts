@@ -86,6 +86,7 @@ export type SyncDeliveryCountryResult = {
  * Reguły:
  * - Jeśli profil klienta zawiera zapisany kraj dostawy, nadpisuje ciasteczko w przeglądarce.
  * - Jeśli profil jest pusty, przejmuje aktualną wartość z ciasteczka (jeśli istnieje).
+ * - Błędy komunikacji z API profilu nie przerywają logowania.
  *
  * Returns:
  *     Obiekt z ustalonym krajem dostawy i źródłem ('profile', 'cookie' lub 'none').
@@ -93,25 +94,29 @@ export type SyncDeliveryCountryResult = {
 export async function syncDeliveryCountryOnLogin(): Promise<SyncDeliveryCountryResult> {
   const currentCookie = readDeliveryCountryCookie();
 
-  const listRes = await customersProfileList();
-  const profile = listRes.data.results?.[0];
+  try {
+    const listRes = await customersProfileList();
+    const profile = listRes.data.results?.[0];
 
-  const profileCountry = profile?.deliveryCountry;
+    const profileCountry = profile?.deliveryCountry;
 
-  if (profileCountry && isEuDeliveryCountry(profileCountry)) {
-    saveDeliveryCountryCookie(profileCountry);
-    return { country: profileCountry, source: "profile" };
-  }
-
-  if (currentCookie && profile?.id) {
-    try {
-      await customersProfilePartialUpdate(profile.id, {
-        deliveryCountry: currentCookie,
-      });
-    } catch {
-      // Błąd zapisu profilu nie cofa wyboru w ciasteczku
+    if (profileCountry && isEuDeliveryCountry(profileCountry)) {
+      saveDeliveryCountryCookie(profileCountry);
+      return { country: profileCountry, source: "profile" };
     }
-    return { country: currentCookie, source: "cookie" };
+
+    if (currentCookie && profile?.id) {
+      try {
+        await customersProfilePartialUpdate(profile.id, {
+          deliveryCountry: currentCookie,
+        });
+      } catch {
+        // Błąd zapisu profilu nie cofa wyboru w ciasteczku
+      }
+      return { country: currentCookie, source: "cookie" };
+    }
+  } catch {
+    // Niepowodzenie pobrania profilu nie powinno blokować zalogowania
   }
 
   return { country: currentCookie ?? null, source: "none" };
