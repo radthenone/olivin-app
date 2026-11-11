@@ -45,16 +45,21 @@ export type CatalogCurrency = "PLN" | "EUR";
  * Args:
  *     url: Ścieżka endpointu z zapytaniem, bez adresu bazowego.
  *     allow404: Czy 404 ma oznaczać brak zasobu (`null`) zamiast błędu.
+ *     onBadRequest: Wartość zwracana przy 400 (niepoprawny filtr) zamiast błędu.
  *
  * Returns:
- *     Ciało odpowiedzi jako JSON albo `null` przy dozwolonym 404.
+ *     Ciało odpowiedzi jako JSON, `null` przy dozwolonym 404 albo
+ *     `onBadRequest` przy 400.
  *
  * Raises:
- *     Error: Gdy katalog odpowie statusem innym niż 2xx (i dozwolone 404).
+ *     Error: Gdy katalog odpowie statusem innym niż 2xx (i dozwolone 404/400).
  */
 async function catalogGet<T>(
   url: string,
-  { allow404 = false }: { allow404?: boolean } = {},
+  {
+    allow404 = false,
+    onBadRequest,
+  }: { allow404?: boolean; onBadRequest?: T } = {},
 ): Promise<T | null> {
   const response = await fetch(`${catalogBaseUrl()}${url}`, {
     headers: { accept: "application/json" },
@@ -62,6 +67,10 @@ async function catalogGet<T>(
 
   if (allow404 && response.status === 404) {
     return null;
+  }
+
+  if (onBadRequest !== undefined && response.status === 400) {
+    return onBadRequest;
   }
 
   if (!response.ok) {
@@ -175,8 +184,9 @@ export type ProductsListFilters = {
  *     locale: Język treści z prefiksu adresu.
  *
  * Returns:
- *     Strona listy produktów albo `null`, gdy katalog odpowiedział 404
- *     (numer strony poza zakresem).
+ *     Strona listy produktów, `null`, gdy katalog odpowiedział 404 (numer
+ *     strony poza zakresem), albo pusty wynik, gdy odpowiedział 400
+ *     (niepoprawny filtr). 5xx i 429 są rzucane.
  */
 export async function fetchProductsList(
   params: ProductsListFilters,
@@ -208,8 +218,10 @@ export async function fetchProductsList(
   };
 
   // DRF zwraca 404 dla `?page=` poza zakresem: to brak strony, nie błąd katalogu.
+  // 400 oznacza niepoprawny filtr: pokazujemy pusty wynik zamiast 500.
   return catalogGet<PaginatedProductListList>(getProductsListUrl(queryParams), {
     allow404: true,
+    onBadRequest: { count: 0, results: [] },
   });
 }
 

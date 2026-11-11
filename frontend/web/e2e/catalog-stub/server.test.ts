@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { filterAndSortFixtures, initialFixtures } from "./server";
+import {
+  filterAndSortFixtures,
+  findInvalidFilterParam,
+  initialFixtures,
+} from "./server";
 
 describe("Catalog stub filter and search logic", () => {
   const fixtures = Object.values(initialFixtures());
@@ -88,5 +92,32 @@ describe("Catalog stub filter and search logic", () => {
         ascResults[i].name.pl.localeCompare(ascResults[i + 1].name.pl, "pl"),
       ).toBeLessThanOrEqual(0);
     }
+  });
+
+  test("flags non-finite price and NUL in any parameter as invalid (400)", () => {
+    for (const bad of ["Infinity", "-Infinity", "NaN", "1e999", "abc"]) {
+      expect(
+        findInvalidFilterParam(new URLSearchParams({ priceMin: bad })),
+      ).toBe("priceMin");
+      expect(
+        findInvalidFilterParam(new URLSearchParams({ priceMax: bad })),
+      ).toBe("priceMax");
+    }
+    expect(findInvalidFilterParam(new URLSearchParams("search=%00"))).toBe(
+      "search",
+    );
+  });
+
+  test("accepts valid and empty filter values", () => {
+    expect(
+      findInvalidFilterParam(
+        new URLSearchParams({
+          priceMin: "10000",
+          priceMax: "",
+          search: "ring",
+        }),
+      ),
+    ).toBeNull();
+    expect(findInvalidFilterParam(new URLSearchParams())).toBeNull();
   });
 });

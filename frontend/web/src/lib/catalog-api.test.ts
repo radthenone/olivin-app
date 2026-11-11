@@ -262,4 +262,30 @@ describe("catalog server transport", () => {
     expect(url.searchParams.get("search")).toBe("rubin");
     expect(url.searchParams.get("ordering")).toBe("price");
   });
+
+  test("treats 400 from catalog as empty list, 404 as null and rethrows 5xx/429", async () => {
+    const respondWith = (status: number) => {
+      globalThis.fetch = (async () =>
+        new Response(JSON.stringify({ detail: "x" }), {
+          status,
+          headers: { "content-type": "application/json" },
+        })) as typeof fetch;
+    };
+
+    respondWith(400);
+    expect(await fetchProductsList({ priceMin: 1 }, "pl")).toEqual({
+      count: 0,
+      results: [],
+    });
+
+    respondWith(404);
+    expect(await fetchProductsList({ page: 99 }, "pl")).toBeNull();
+
+    for (const status of [429, 500, 503]) {
+      respondWith(status);
+      await expect(fetchProductsList({}, "pl")).rejects.toThrow(
+        `Katalog odpowiedział statusem ${status}.`,
+      );
+    }
+  });
 });

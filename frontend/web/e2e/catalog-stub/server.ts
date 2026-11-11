@@ -573,6 +573,35 @@ function originOf(request: IncomingMessage): string {
 }
 
 /**
+ * Zwraca nazwę pierwszego parametru z niepoprawną wartością filtra.
+ *
+ * Backend odpowiada 400 na niepoprawne filtry: cena nie jest skończoną liczbą
+ * albo któryś parametr zawiera NUL (Postgres go odrzuca).
+ *
+ * Args:
+ *     searchParams: Parametry zapytania URL.
+ *
+ * Returns:
+ *     Nazwa parametru albo `null`, gdy wszystkie wartości są poprawne.
+ */
+export function findInvalidFilterParam(
+  searchParams: URLSearchParams,
+): string | null {
+  for (const key of ["priceMin", "priceMax"]) {
+    const value = searchParams.get(key)?.trim();
+    if (value && !Number.isFinite(Number(value))) {
+      return key;
+    }
+  }
+  for (const [key, value] of searchParams) {
+    if (value.includes("\u0000")) {
+      return key;
+    }
+  }
+  return null;
+}
+
+/**
  * Filtruje i sortuje fixtures wg parametrów zapytania URL.
  */
 export function filterAndSortFixtures(
@@ -842,6 +871,12 @@ export const server = createServer(async (request, response) => {
       1,
       Number(url.searchParams.get("pageSize")) || 12,
     );
+
+    const invalidParam = findInvalidFilterParam(url.searchParams);
+    if (invalidParam) {
+      json(response, 400, { [invalidParam]: ["Niepoprawna wartość filtra."] });
+      return;
+    }
 
     const list = filterAndSortFixtures(
       Object.values(fixtures),
