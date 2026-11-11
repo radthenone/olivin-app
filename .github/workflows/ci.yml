@@ -150,6 +150,19 @@ jobs:
       - name: Web smoke test
         run: task web:e2e
 
+      # `error-context.md` i zrzuty z padniętych testów pokazują, w jakim stanie
+      # była strona. Sam log mówi tylko, na którą asercję test czekał.
+      - name: Upload Playwright results
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-results
+          path: |
+            frontend/web/test-results/
+            frontend/web/playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
   # Lint i typy przechodziły, a aplikacja mobilna się nie bundlowała (#72: Tailwind v4
   # pod NativeWindem). Ten job robi to, co Metro przy starcie aplikacji — bundel dla
   # web, android i ios — bez emulatora i bez sekretów. Uruchomienia na urządzeniu nie
