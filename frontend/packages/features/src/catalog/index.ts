@@ -11,6 +11,7 @@ export {
   getInitialSelection,
   isCombinationPossible,
   isOptionAvailable,
+  resolveSelection,
   useVariantSelection,
 } from "./variant-selection";
 export type {

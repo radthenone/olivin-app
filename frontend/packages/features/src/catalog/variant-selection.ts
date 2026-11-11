@@ -21,6 +21,17 @@ export interface AttributeDefinition {
 }
 
 /**
+ * Wartość atrybutu wariantu po normalizacji (`trim`). Brak wartości to `""` —
+ * traktujemy go jak zwykłą wartość („bez kamienia”), a nie wildcard.
+ */
+function attrValue(
+  variant: ProductVariant,
+  name: VariantAttributeName,
+): string {
+  return String(variant[name] ?? "").trim();
+}
+
+/**
  * Wyciąga aktywne atrybuty produktu (te, które mają niepuste wartości w wariantach).
  *
  * Args:
@@ -28,6 +39,7 @@ export interface AttributeDefinition {
  *
  * Returns:
  *     Lista definicji atrybutów wraz z unikalnymi wartościami występującymi w wariantach.
+ *     Gdy atrybut ma tylko część wariantów, ostatnią wartością jest `""` („brak”).
  */
 export function getAttributeDefinitions(
   variants: readonly ProductVariant[],
@@ -35,25 +47,60 @@ export function getAttributeDefinitions(
   const definitions: AttributeDefinition[] = [];
 
   for (const name of VARIANT_ATTRIBUTE_NAMES) {
-    const valuesSet = new Set<string>();
+    const values = new Set<string>();
+    let hasMissing = false;
 
     for (const v of variants) {
-      const raw = v[name];
-      const str = raw !== undefined && raw !== null ? String(raw).trim() : "";
-      if (str.length > 0) {
-        valuesSet.add(str);
+      const value = attrValue(v, name);
+      if (value.length > 0) {
+        values.add(value);
+      } else {
+        hasMissing = true;
       }
     }
 
-    if (valuesSet.size > 0) {
+    if (values.size > 0) {
       definitions.push({
         name,
-        values: Array.from(valuesSet),
+        values: hasMissing ? [...values, ""] : [...values],
       });
     }
   }
 
   return definitions;
+}
+
+/**
+ * Czy wariant zgadza się z wyborem na aktywnych atrybutach (poza `skip`).
+ * Atrybut, którego wybór nie jest ustawiony (`undefined`), nie ogranicza dopasowania;
+ * `""` ogranicza do wariantów bez tego atrybutu.
+ */
+function matchesSelection(
+  variant: ProductVariant,
+  defs: readonly AttributeDefinition[],
+  selection: VariantSelection,
+  skip?: VariantAttributeName,
+): boolean {
+  return defs.every((def) => {
+    const selected = selection[def.name];
+    return (
+      def.name === skip ||
+      selected === undefined ||
+      attrValue(variant, def.name) === selected
+    );
+  });
+}
+
+/** Wybór atrybutów odpowiadający wariantowi (z `""` dla brakujących atrybutów). */
+function selectionOf(
+  variant: ProductVariant,
+  defs: readonly AttributeDefinition[],
+): VariantSelection {
+  const selection: VariantSelection = {};
+  for (const def of defs) {
+    selection[def.name] = attrValue(variant, def.name);
+  }
+  return selection;
 }
 
 /**
@@ -72,15 +119,7 @@ export function findMatchingVariant(
 ): ProductVariant | undefined {
   const defs = getAttributeDefinitions(variants);
 
-  return variants.find((v) => {
-    return defs.every((def) => {
-      const selectedVal = selection[def.name];
-      if (!selectedVal) {
-        return true;
-      }
-      return String(v[def.name] ?? "") === selectedVal;
-    });
-  });
+  return variants.find((v) => matchesSelection(v, defs, selection));
 }
 
 /**
@@ -104,27 +143,71 @@ export function isCombinationPossible(
 ): boolean {
   const defs = getAttributeDefinitions(variants);
 
-  return variants.some((v) => {
-    if (String(v[attribute] ?? "") !== value) {
-      return false;
-    }
-
-    // Pozostałe aktywne atrybuty muszą się zgadzać z obecnym wyborem
-    return defs.every((def) => {
-      if (def.name === attribute) {
-        return true;
-      }
-      const selectedVal = currentSelection[def.name];
-      if (!selectedVal) {
-        return true;
-      }
-      return String(v[def.name] ?? "") === selectedVal;
-    });
-  });
+  return variants.some(
+    (v) =>
+      attrValue(v, attribute) === value &&
+      matchesSelection(v, defs, currentSelection, attribute),
+  );
 }
 
 /**
- * Sprawdza, czy wariant pasujący do danej opcji jest dostępny w magazynie (`isAvailable`).
+ * Wybór po kliknięciu opcji: bieżący wybór z podmienioną wartością albo, gdy takiej
+ * kombinacji nie ma, wybór najbliższego istniejącego wariantu z tą wartością.
+ *
+ * Najbliższy to ten, który zachowuje jak najwięcej wybranych atrybutów; przy remisie
+ * wygrywa wariant dostępny w magazynie, potem pierwszy w kolejności.
+ *
+ * Args:
+ *     variants: Lista wariantów produktu.
+ *     currentSelection: Aktualnie wybrane atrybuty.
+ *     attribute: Nazwa zmienianego atrybutu.
+ *     value: Wybierana wartość.
+ *
+ * Returns:
+ *     Nowy wybór albo `undefined`, gdy żaden wariant nie ma tej wartości.
+ */
+export function resolveSelection(
+  variants: readonly ProductVariant[],
+  currentSelection: VariantSelection,
+  attribute: VariantAttributeName,
+  value: string,
+): VariantSelection | undefined {
+  const next: VariantSelection = { ...currentSelection, [attribute]: value };
+  if (findMatchingVariant(variants, next)) {
+    return next;
+  }
+
+  const defs = getAttributeDefinitions(variants);
+  let best: ProductVariant | undefined;
+  let bestScore = -1;
+
+  for (const v of variants) {
+    if (attrValue(v, attribute) !== value) {
+      continue;
+    }
+
+    const score = defs.filter(
+      (def) =>
+        def.name !== attribute &&
+        attrValue(v, def.name) === currentSelection[def.name],
+    ).length;
+
+    if (
+      score > bestScore ||
+      (score === bestScore && v.isAvailable && !best?.isAvailable)
+    ) {
+      best = v;
+      bestScore = score;
+    }
+  }
+
+  return best ? selectionOf(best, defs) : undefined;
+}
+
+/**
+ * Sprawdza, czy wariant wybrany po kliknięciu danej opcji jest dostępny w magazynie
+ * (`isAvailable`). Gdy kombinacji z resztą wyboru nie ma, liczy się wariant, do którego
+ * kliknięcie przeskoczy (patrz `resolveSelection`).
  *
  * Args:
  *     variants: Lista wariantów produktu.
@@ -133,7 +216,7 @@ export function isCombinationPossible(
  *     value: Sprawdzana wartość.
  *
  * Returns:
- *     `true`, jeśli pasujący wariant ma flagę `isAvailable: true`.
+ *     `true`, jeśli ten wariant ma flagę `isAvailable: true`.
  */
 export function isOptionAvailable(
   variants: readonly ProductVariant[],
@@ -141,13 +224,16 @@ export function isOptionAvailable(
   attribute: VariantAttributeName,
   value: string,
 ): boolean {
-  const targetSelection: VariantSelection = {
-    ...currentSelection,
-    [attribute]: value,
-  };
+  const resolved = resolveSelection(
+    variants,
+    currentSelection,
+    attribute,
+    value,
+  );
 
-  const matching = findMatchingVariant(variants, targetSelection);
-  return matching ? matching.isAvailable : false;
+  return (
+    (resolved && findMatchingVariant(variants, resolved)?.isAvailable) ?? false
+  );
 }
 
 /**
@@ -174,20 +260,7 @@ export function getInitialSelection(
     target = variants.find((v) => v.isAvailable) ?? variants[0];
   }
 
-  const selection: VariantSelection = {};
-  if (!target) {
-    return selection;
-  }
-
-  for (const name of VARIANT_ATTRIBUTE_NAMES) {
-    const raw = target[name];
-    const str = raw !== undefined && raw !== null ? String(raw).trim() : "";
-    if (str.length > 0) {
-      selection[name] = str;
-    }
-  }
-
-  return selection;
+  return target ? selectionOf(target, getAttributeDefinitions(variants)) : {};
 }
 
 /**
@@ -224,24 +297,9 @@ export function useVariantSelection({
 
   const selectAttribute = useCallback(
     (name: VariantAttributeName, value: string) => {
-      setSelectedAttributes((prev) => {
-        const next: VariantSelection = { ...prev, [name]: value };
-
-        // Jeśli nowa kombinacja nie istnieje bezpośrednio, spróbuj znaleźć
-        // wariant zawierający tę wartość, dopasowując pozostałe atrybuty.
-        if (!findMatchingVariant(variants, next)) {
-          const alternative =
-            variants.find(
-              (v) => String(v[name] ?? "") === value && v.isAvailable,
-            ) ?? variants.find((v) => String(v[name] ?? "") === value);
-
-          if (alternative) {
-            return getInitialSelection(variants, alternative.id);
-          }
-        }
-
-        return next;
-      });
+      setSelectedAttributes(
+        (prev) => resolveSelection(variants, prev, name, value) ?? prev,
+      );
     },
     [variants],
   );
