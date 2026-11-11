@@ -141,16 +141,19 @@ test("shows the product card in the language from the URL prefix", async ({
   await expect(page.getByText("Last few items", { exact: true })).toBeVisible();
 });
 
-test("reads the currency from the cookie without changing the URL", async ({
+test("reads the currency from the delivery country cookie without changing the URL", async ({
   page,
 }) => {
   test.skip(liveBackend, "Waluta w stubie dotyczy wyłącznie stubu.");
 
-  await page
-    .context()
-    .addCookies([
-      { name: "currency", value: "EUR", domain: "localhost", path: "/" },
-    ]);
+  await page.context().addCookies([
+    {
+      name: "delivery_country",
+      value: "DE",
+      domain: "localhost",
+      path: "/",
+    },
+  ]);
   await page.goto("/pl/products/ring");
 
   await expect(page.getByText(/581,50.?€/)).toBeVisible();

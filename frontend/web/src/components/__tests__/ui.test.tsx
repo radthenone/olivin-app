@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 
 /**
  * Dowód, że pierwsze prymitywy istnieją i renderują to, co widzi użytkownik.
@@ -47,6 +48,21 @@ describe("ui primitives", () => {
     const html = renderToStaticMarkup(<Button disabled>Zapisz</Button>);
 
     expect(html).toContain("disabled");
+  });
+
+  test("Select renders a token-styled select control with options", () => {
+    const html = renderToStaticMarkup(
+      <Select defaultValue="PL" id="country" name="country">
+        <option value="PL">Polska</option>
+        <option value="DE">Niemcy</option>
+      </Select>,
+    );
+
+    expect(html).toContain("<select");
+    expect(html).toContain('data-slot="select"');
+    expect(html).toContain('id="country"');
+    expect(html).toContain("Polska");
+    expect(html).toContain("Niemcy");
   });
 
   test("Input renders a labelled, invalid-aware field", () => {
