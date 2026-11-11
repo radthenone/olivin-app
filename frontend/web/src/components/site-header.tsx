@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useLogout, useSession } from "@olivin/features/auth";
 
 import { Button } from "@/components/ui/button";
+import { DeliveryCountrySwitch } from "@/components/delivery-country-switch";
 
 /**
  * Nagłówek pokazujący, na jakim koncie jest zalogowany klient oraz nawigację.
@@ -40,6 +41,7 @@ export function SiteHeader() {
         </div>
 
         <nav className="flex items-center gap-4 text-sm text-neutral-700">
+          <DeliveryCountrySwitch />
           {!isChecking &&
             (user ? (
               <>
