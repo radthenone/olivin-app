@@ -3,8 +3,6 @@ import type { Route } from "next";
 import type { Locale } from "@olivin/i18n";
 import { getTranslations } from "next-intl/server";
 
-import { cn } from "@/lib/utils";
-
 /**
  * Komponent stronicowania listy produktów (#359).
  *

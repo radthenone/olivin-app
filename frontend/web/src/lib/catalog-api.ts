@@ -1,6 +1,7 @@
 import type {
   Category,
   Collection,
+  PaginatedCollectionList,
   PaginatedProductListList,
   ProductDetail,
   ProductsListParams,
@@ -250,6 +251,33 @@ export async function getCategoryForPage(
   cacheLife("minutes");
 
   return fetchCategory(slug, locale);
+}
+
+/**
+ * Pobiera listę kolekcji z API katalogu.
+ */
+export async function fetchCollectionsList(): Promise<PaginatedCollectionList> {
+  const url = getCollectionsListUrl();
+  const response = await fetch(`${catalogBaseUrl()}${url}`, {
+    headers: { accept: "application/json" },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Katalog odpowiedział statusem ${response.status}.`);
+  }
+
+  return (await response.json()) as PaginatedCollectionList;
+}
+
+/**
+ * Keszowana lista kolekcji.
+ */
+export async function getCollectionsListForPage(): Promise<PaginatedCollectionList> {
+  "use cache";
+  cacheTag("catalog");
+  cacheLife("minutes");
+
+  return fetchCollectionsList();
 }
 
 /**
