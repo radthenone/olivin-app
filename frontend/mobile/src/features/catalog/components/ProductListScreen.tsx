@@ -9,6 +9,7 @@ import {
 import { useTranslations } from "use-intl";
 import { useRouter } from "expo-router";
 import type { ProductList } from "@olivin/api/generated/apps/schemas";
+import { routes } from "@core/navigation/routes";
 import { useCatalogProductsInfinite } from "../hooks/use-catalog-products";
 import { ProductTile } from "./ProductTile";
 import { ProductErrorView } from "./ProductErrorView";
@@ -41,10 +42,7 @@ export function ProductListScreen() {
 
   const handleProductPress = useCallback(
     (product: ProductList) => {
-      router.push({
-        pathname: "/(app)/products/[slug]",
-        params: { slug: product.slug },
-      });
+      router.push(routes.productDetail(product.slug) as never);
     },
     [router],
   );

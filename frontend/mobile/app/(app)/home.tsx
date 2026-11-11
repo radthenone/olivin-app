@@ -1,40 +1,17 @@
-import { Text, View } from "react-native";
-import { useAuthContext } from "@core/auth/auth.provider";
-import { Button } from "@ui/primitives/Button";
+import { View } from "react-native";
 import { Screen } from "@ui/layout/Screen";
-import { useRouter } from "expo-router";
+import { ProductListScreen } from "@features/catalog/components/ProductListScreen";
 
 /**
- * Pierwszy ekran po zalogowaniu.
+ * Główny ekran aplikacji po zalogowaniu.
  *
- * Dlaczego istnieje:
- * służy jako minimalny test pełnego przepływu session -> protected route.
+ * Prezentuje katalog produktów z nieskończonym przewijaniem i odświeżaniem gestem.
  */
 export default function HomeRoute() {
-  const auth = useAuthContext();
-  const router = useRouter();
-
   return (
-    <Screen>
-      <View className="gap-4">
-        {/* Kolor pochodzi z @olivin/tokens przez adapter w tailwind.config.js —
-            jedyne miejsce w aplikacji, gdzie widać, że łańcuch tokenów działa. */}
-        <Text className="text-2xl font-semibold text-brand-600">Olivin</Text>
-        <Text className="text-base text-neutral-700">
-          {auth.user?.email ?? "Zalogowany użytkownik"}
-        </Text>
-        <Button
-          onPress={() => router.push("/account-settings")}
-          variant="outline"
-        >
-          Ustawienia konta
-        </Button>
-        <Button
-          disabled={auth.logout.isPending}
-          onPress={() => auth.logout.mutate()}
-        >
-          {auth.logout.isPending ? "Wylogowywanie..." : "Wyloguj"}
-        </Button>
+    <Screen className="px-0 py-0">
+      <View className="flex-1">
+        <ProductListScreen />
       </View>
     </Screen>
   );
