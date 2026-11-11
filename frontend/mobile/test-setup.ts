@@ -1,9 +1,11 @@
 import { mock } from "bun:test";
+import * as ReactNativeWeb from "react-native-web";
 
 mock.module("react-native", () => ({
+  ...ReactNativeWeb,
   Platform: {
     OS: "android",
-    select: (obj: any) => obj.android ?? obj.default,
+    select: (obj: Record<string, unknown>) => obj.android ?? obj.default,
   },
   TurboModuleRegistry: {
     get: () => null,
