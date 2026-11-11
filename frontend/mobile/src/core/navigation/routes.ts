@@ -15,4 +15,6 @@ export const routes = {
   addresses: "/addresses",
   cart: "/cart",
   settings: "/settings",
+  products: "/products",
+  productDetail: (slug: string) => `/products/${slug}` as const,
 } as const;

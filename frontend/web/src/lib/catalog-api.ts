@@ -4,25 +4,17 @@ import type {
   PaginatedCollectionList,
   PaginatedProductListList,
   ProductDetail,
-  ProductsListParams,
 } from "@olivin/api/generated/apps/schemas";
-import {
-  getProductsListUrl,
-  getProductsRetrieveUrl,
-} from "@olivin/api/generated/apps/products/products";
-import {
-  getCategoriesListUrl,
-  getCategoriesRetrieveUrl,
-} from "@olivin/api/generated/apps/categories/categories";
-import {
-  getCollectionsListUrl,
-  getCollectionsRetrieveUrl,
-} from "@olivin/api/generated/apps/collections/collections";
 import type { Locale } from "@olivin/i18n";
+import {
+  createCatalogClient,
+  type CatalogCurrency,
+  type ProductsListFilters,
+} from "@olivin/features/catalog/server";
 import { cacheLife, cacheTag } from "next/cache";
 import { cookies } from "next/headers";
 
-import { catalogBaseUrl, isCatalogSlug } from "./catalog-url";
+import { catalogBaseUrl } from "./catalog-url";
 
 /**
  * Publiczny transport serwerowy katalogu (ADR 0034).
@@ -37,68 +29,18 @@ import { catalogBaseUrl, isCatalogSlug } from "./catalog-url";
 /** Cookie waluty z kraju dostawy (ADR 0035). Brak cookie oznacza złote. */
 export const currencyCookieName = "currency";
 
-export type CatalogCurrency = "PLN" | "EUR";
+export type { CatalogCurrency, ProductsListFilters };
 
-/**
- * Wspólny GET publicznego API katalogu (bez cookies, ADR 0034).
- *
- * Args:
- *     url: Ścieżka endpointu z zapytaniem, bez adresu bazowego.
- *     allow404: Czy 404 ma oznaczać brak zasobu (`null`) zamiast błędu.
- *     onBadRequest: Wartość zwracana przy 400 (niepoprawny filtr) zamiast błędu.
- *
- * Returns:
- *     Ciało odpowiedzi jako JSON, `null` przy dozwolonym 404 albo
- *     `onBadRequest` przy 400.
- *
- * Raises:
- *     Error: Gdy katalog odpowie statusem innym niż 2xx (i dozwolone 404/400).
- */
-async function catalogGet<T>(
-  url: string,
-  {
-    allow404 = false,
-    onBadRequest,
-  }: { allow404?: boolean; onBadRequest?: T } = {},
-): Promise<T | null> {
-  const response = await fetch(`${catalogBaseUrl()}${url}`, {
-    headers: { accept: "application/json" },
-  });
+const catalogClient = createCatalogClient({
+  baseUrl: catalogBaseUrl,
+});
 
-  if (allow404 && response.status === 404) {
-    return null;
-  }
-
-  if (onBadRequest !== undefined && response.status === 400) {
-    return onBadRequest;
-  }
-
-  if (!response.ok) {
-    throw new Error(`Katalog odpowiedział statusem ${response.status}.`);
-  }
-
-  return (await response.json()) as T;
-}
-
-async function fetchProduct(
-  slug: string,
-  locale: Locale,
-  currency?: CatalogCurrency,
-): Promise<ProductDetail | null> {
-  // Slug spoza formatu katalogu nie trafia do adresu API (zdekodowany
-  // parametr trasy `..%2Fx.y` to `../x.y`): odpowiada jak brak produktu.
-  if (!isCatalogSlug(slug)) {
-    return null;
-  }
-
-  const url = getProductsRetrieveUrl(slug, {
-    lang: locale,
-    ...(currency ? { currency } : {}),
-  });
-
-  // Zdjęty albo nieistniejący produkt to 404 strony, nie błąd katalogu.
-  return catalogGet<ProductDetail>(url, { allow404: true });
-}
+export const fetchProduct = catalogClient.fetchProduct;
+export const fetchProductsList = catalogClient.fetchProductsList;
+export const fetchCategoriesTree = catalogClient.fetchCategoriesTree;
+export const fetchCategory = catalogClient.fetchCategory;
+export const fetchCollectionsList = catalogClient.fetchCollectionsList;
+export const fetchCollection = catalogClient.fetchCollection;
 
 /**
  * Produkt do keszowanej części karty.
@@ -156,75 +98,6 @@ export async function getRequestCurrency(): Promise<CatalogCurrency> {
   return value === "EUR" ? "EUR" : "PLN";
 }
 
-export type ProductsListFilters = {
-  category?: string;
-  collection?: string;
-  page?: number;
-  pageSize?: number;
-  material?: ProductsListParams["material"];
-  fineness?: ProductsListParams["fineness"];
-  metalColor?: ProductsListParams["metalColor"];
-  stone?: ProductsListParams["stone"];
-  size?: ProductsListParams["size"];
-  length?: ProductsListParams["length"];
-  priceMin?: number;
-  priceMax?: number;
-  search?: string;
-  ordering?: string;
-};
-
-/**
- * Pobiera listę produktów z API katalogu.
- *
- * Slug kategorii albo kolekcji spoza formatu katalogu daje pustą listę bez
- * żądania do API.
- *
- * Args:
- *     params: Filtry, wyszukiwanie, sortowanie i stronicowanie.
- *     locale: Język treści z prefiksu adresu.
- *
- * Returns:
- *     Strona listy produktów, `null`, gdy katalog odpowiedział 404 (numer
- *     strony poza zakresem), albo pusty wynik, gdy odpowiedział 400
- *     (niepoprawny filtr). 5xx i 429 są rzucane.
- */
-export async function fetchProductsList(
-  params: ProductsListFilters,
-  locale: Locale,
-): Promise<PaginatedProductListList | null> {
-  if (params.category && !isCatalogSlug(params.category)) {
-    return { count: 0, results: [] };
-  }
-  if (params.collection && !isCatalogSlug(params.collection)) {
-    return { count: 0, results: [] };
-  }
-
-  const queryParams: ProductsListParams = {
-    lang: locale,
-    ...(params.page ? { page: params.page } : {}),
-    ...(params.pageSize ? { pageSize: params.pageSize } : {}),
-    ...(params.category ? { category: params.category } : {}),
-    ...(params.collection ? { collection: params.collection } : {}),
-    ...(params.material ? { material: params.material } : {}),
-    ...(params.fineness ? { fineness: params.fineness } : {}),
-    ...(params.metalColor ? { metalColor: params.metalColor } : {}),
-    ...(params.stone ? { stone: params.stone } : {}),
-    ...(params.size ? { size: params.size } : {}),
-    ...(params.length ? { length: params.length } : {}),
-    ...(params.priceMin !== undefined ? { priceMin: params.priceMin } : {}),
-    ...(params.priceMax !== undefined ? { priceMax: params.priceMax } : {}),
-    ...(params.search ? { search: params.search } : {}),
-    ...(params.ordering ? { ordering: params.ordering } : {}),
-  };
-
-  // DRF zwraca 404 dla `?page=` poza zakresem: to brak strony, nie błąd katalogu.
-  // 400 oznacza niepoprawny filtr: pokazujemy pusty wynik zamiast 500.
-  return catalogGet<PaginatedProductListList>(getProductsListUrl(queryParams), {
-    allow404: true,
-    onBadRequest: { count: 0, results: [] },
-  });
-}
-
 /**
  * Keszowana lista produktów dla strony.
  *
@@ -247,21 +120,6 @@ export async function getProductsListForPage(
 }
 
 /**
- * Pobiera całe drzewo kategorii.
- *
- * Args:
- *     locale: Język treści z prefiksu adresu.
- *
- * Returns:
- *     Drzewo kategorii (bez stronicowania).
- */
-export async function fetchCategoriesTree(locale: Locale): Promise<Category[]> {
-  return (await catalogGet<Category[]>(
-    getCategoriesListUrl({ lang: locale }),
-  )) as Category[];
-}
-
-/**
  * Keszowane drzewo kategorii dla nawigacji.
  *
  * Args:
@@ -278,30 +136,6 @@ export async function getCategoriesTreeForPage(
   cacheLife("minutes");
 
   return fetchCategoriesTree(locale);
-}
-
-/**
- * Pobiera gałąź pojedynczej kategorii po slugu.
- *
- * Args:
- *     slug: Slug kategorii.
- *     locale: Język treści z prefiksu adresu.
- *
- * Returns:
- *     Kategoria albo `null`, gdy katalog zwrócił 404 lub slug ma niepoprawny
- *     format.
- */
-export async function fetchCategory(
-  slug: string,
-  locale: Locale,
-): Promise<Category | null> {
-  if (!isCatalogSlug(slug)) {
-    return null;
-  }
-
-  const url = getCategoriesRetrieveUrl(slug, { lang: locale });
-
-  return catalogGet<Category>(url, { allow404: true });
 }
 
 /**
@@ -326,18 +160,6 @@ export async function getCategoryForPage(
 }
 
 /**
- * Pobiera listę kolekcji z API katalogu.
- *
- * Returns:
- *     Lista kolekcji z co najmniej jednym opublikowanym produktem.
- */
-export async function fetchCollectionsList(): Promise<PaginatedCollectionList> {
-  return (await catalogGet<PaginatedCollectionList>(
-    getCollectionsListUrl(),
-  )) as PaginatedCollectionList;
-}
-
-/**
  * Keszowana lista kolekcji.
  *
  * Returns:
@@ -349,30 +171,6 @@ export async function getCollectionsListForPage(): Promise<PaginatedCollectionLi
   cacheLife("minutes");
 
   return fetchCollectionsList();
-}
-
-/**
- * Pobiera pojedynczą kolekcję po slugu.
- *
- * Args:
- *     slug: Slug kolekcji.
- *     locale: Język treści z prefiksu adresu.
- *
- * Returns:
- *     Kolekcja albo `null`, gdy katalog zwrócił 404 lub slug ma niepoprawny
- *     format.
- */
-export async function fetchCollection(
-  slug: string,
-  locale: Locale,
-): Promise<Collection | null> {
-  if (!isCatalogSlug(slug)) {
-    return null;
-  }
-
-  const url = getCollectionsRetrieveUrl(slug, { lang: locale });
-
-  return catalogGet<Collection>(url, { allow404: true });
 }
 
 /**
