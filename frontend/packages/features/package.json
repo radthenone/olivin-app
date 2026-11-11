@@ -8,7 +8,8 @@
   "exports": {
     ".": "./index.ts",
     "./auth": "./src/auth/index.ts",
-    "./catalog": "./src/catalog/index.ts"
+    "./catalog": "./src/catalog/index.ts",
+    "./catalog/server": "./src/catalog/server.ts"
   },
   "prettier": "@olivin/config/prettier/index.json",
   "scripts": {

@@ -1,1 +1,1 @@
-export { uniqueStones } from "@olivin/features/catalog";
+export { uniqueStones } from "@olivin/features/catalog/server";

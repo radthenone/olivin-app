@@ -4,19 +4,7 @@ export {
 } from "./availability";
 export type { AvailabilityCategory } from "./availability";
 
-export {
-  CatalogError,
-  createCatalogClient,
-  isCatalogSlug,
-} from "./catalog-client";
-export type {
-  CatalogClient,
-  CatalogClientOptions,
-  CatalogCurrency,
-  ProductsListFilters,
-} from "./catalog-client";
-
-export { uniqueStones } from "./product-stones";
+export * from "./server";
 
 export {
   VARIANT_ATTRIBUTE_NAMES,

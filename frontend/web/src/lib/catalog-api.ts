@@ -10,7 +10,7 @@ import {
   createCatalogClient,
   type CatalogCurrency,
   type ProductsListFilters,
-} from "@olivin/features/catalog";
+} from "@olivin/features/catalog/server";
 import { cacheLife, cacheTag } from "next/cache";
 import { cookies } from "next/headers";
 
