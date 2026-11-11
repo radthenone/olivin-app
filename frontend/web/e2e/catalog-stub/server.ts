@@ -12,7 +12,7 @@ import type {
   ProductList,
   ProductVariant,
 } from "@olivin/api/generated/apps/schemas";
-import { isProductSlug } from "../../src/lib/catalog-url";
+import { isCatalogSlug } from "../../src/lib/catalog-url";
 
 /**
  * Stub API katalogu dla testów przeglądarkowych (#357, #359).
@@ -519,7 +519,8 @@ function originOf(request: IncomingMessage): string {
 const server = createServer(async (request, response) => {
   const url = new URL(request.url ?? "/", originOf(request));
   const origin = originOf(request);
-  const language: Language = url.searchParams.get("lang") === "en" ? "en" : "pl";
+  const language: Language =
+    url.searchParams.get("lang") === "en" ? "en" : "pl";
   const currency: Currency =
     url.searchParams.get("currency") === "EUR" ? "EUR" : "PLN";
 
@@ -602,7 +603,7 @@ const server = createServer(async (request, response) => {
   const categoryMatch = /^\/categories\/([^/]+)\/$/.exec(url.pathname);
   if (request.method === "GET" && categoryMatch) {
     const slug = categoryMatch[1];
-    if (!isProductSlug(slug)) {
+    if (!isCatalogSlug(slug)) {
       json(response, 404, { detail: "Niepoprawny slug." });
       return;
     }
@@ -639,7 +640,7 @@ const server = createServer(async (request, response) => {
   const collectionMatch = /^\/collections\/([^/]+)\/$/.exec(url.pathname);
   if (request.method === "GET" && collectionMatch) {
     const slug = collectionMatch[1];
-    if (!isProductSlug(slug)) {
+    if (!isCatalogSlug(slug)) {
       json(response, 404, { detail: "Niepoprawny slug." });
       return;
     }
@@ -677,7 +678,7 @@ const server = createServer(async (request, response) => {
     let list = Object.values(fixtures);
 
     if (categoryParam) {
-      if (!isProductSlug(categoryParam)) {
+      if (!isCatalogSlug(categoryParam)) {
         json(response, 200, { count: 0, results: [] });
         return;
       }
@@ -689,7 +690,7 @@ const server = createServer(async (request, response) => {
     }
 
     if (collectionParam) {
-      if (!isProductSlug(collectionParam)) {
+      if (!isCatalogSlug(collectionParam)) {
         json(response, 200, { count: 0, results: [] });
         return;
       }
@@ -722,7 +723,7 @@ const server = createServer(async (request, response) => {
   const productMatch = /^\/products\/([^/]+)\/$/.exec(url.pathname);
   if (request.method === "GET" && productMatch) {
     const slug = productMatch[1];
-    if (!isProductSlug(slug)) {
+    if (!isCatalogSlug(slug)) {
       json(response, 404, { detail: "Niepoprawny slug." });
       return;
     }

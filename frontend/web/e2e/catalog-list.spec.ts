@@ -18,8 +18,12 @@ test.describe("Catalog product list, category and collection pages", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "Katalog produktów" }),
     ).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Kategorie" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Pierścionki", exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("navigation", { name: "Kategorie" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Pierścionki", exact: true }),
+    ).toBeVisible();
 
     // Kafelki produktów z nazwą i ceną
     await expect(page.getByText("Złoty pierścionek").first()).toBeVisible();
@@ -73,7 +77,9 @@ test.describe("Catalog product list, category and collection pages", () => {
   }) => {
     await page.goto("/pl/products");
 
-    const productTileLink = page.getByRole("link", { name: /Złoty pierścionek/ }).first();
+    const productTileLink = page
+      .getByRole("link", { name: /Złoty pierścionek/ })
+      .first();
     await expect(productTileLink).toBeVisible();
     await productTileLink.click();
 
@@ -86,13 +92,17 @@ test.describe("Catalog product list, category and collection pages", () => {
   test("shows 404 in the page language for unknown category or collection", async ({
     page,
   }) => {
-    const categoryResponse = await page.goto("/pl/categories/nieznana-kategoria");
+    const categoryResponse = await page.goto(
+      "/pl/categories/nieznana-kategoria",
+    );
     expect(categoryResponse?.status()).toBe(404);
     await expect(
       page.getByRole("heading", { level: 1, name: "Nie znaleziono kategorii" }),
     ).toBeVisible();
 
-    const collectionResponse = await page.goto("/pl/collections/nieznana-kolekcja");
+    const collectionResponse = await page.goto(
+      "/pl/collections/nieznana-kolekcja",
+    );
     expect(collectionResponse?.status()).toBe(404);
     await expect(
       page.getByRole("heading", { level: 1, name: "Nie znaleziono kolekcji" }),
@@ -110,6 +120,8 @@ test.describe("Catalog product list, category and collection pages", () => {
     await expect(
       page.getByRole("navigation", { name: "Categories" }),
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: "All products" })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "All products" }),
+    ).toBeVisible();
   });
 });

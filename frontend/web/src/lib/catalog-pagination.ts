@@ -19,6 +19,13 @@ export function parsePageNumber(pageParam?: string | string[]): number {
 
 /**
  * Wylicza łączną liczbę stron na podstawie liczby elementów i rozmiaru strony.
+ *
+ * Args:
+ *     count: Łączna liczba elementów.
+ *     pageSize: Rozmiar strony.
+ *
+ * Returns:
+ *     Liczba stron, co najmniej 1.
  */
 export function calculateTotalPages(count: number, pageSize: number): number {
   if (count <= 0 || pageSize <= 0) {

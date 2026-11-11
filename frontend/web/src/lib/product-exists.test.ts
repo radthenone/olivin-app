@@ -4,9 +4,7 @@ import {
   createCategoryExistenceCheck,
   createCollectionExistenceCheck,
   createProductExistenceCheck,
-  matchCategoryPath,
-  matchCollectionPath,
-  matchProductPath,
+  matchCatalogPath,
 } from "./product-exists";
 
 const originalEnv = process.env.CATALOG_API_URL;
@@ -22,53 +20,36 @@ function fakeCatalog(status: number) {
   return { fetchImpl, urls };
 }
 
-describe("product path matching", () => {
-  test("reads locale and slug from a product card path", () => {
-    expect(matchProductPath("/pl/products/ring")).toEqual({
+describe("catalog path matching", () => {
+  test("reads kind, locale and slug from a product card path", () => {
+    expect(matchCatalogPath("/pl/products/ring")).toEqual({
+      kind: "product",
       locale: "pl",
       slug: "ring",
     });
   });
 
-  test("ignores other paths and unknown locales", () => {
-    expect(matchProductPath("/pl/login")).toBeNull();
-    expect(matchProductPath("/de/products/ring")).toBeNull();
-    expect(matchProductPath("/pl/products/ring/reviews")).toBeNull();
-  });
-});
-
-describe("category and collection path matching", () => {
-  test("reads locale and slug from category path", () => {
-    expect(matchCategoryPath("/pl/categories/pierscionki")).toEqual({
+  test("reads kind, locale and slug from category and collection paths", () => {
+    expect(matchCatalogPath("/pl/categories/pierscionki")).toEqual({
+      kind: "category",
       locale: "pl",
       slug: "pierscionki",
     });
-    expect(matchCategoryPath("/en/categories/rings")).toEqual({
-      locale: "en",
-      slug: "rings",
-    });
-  });
-
-  test("ignores non-category paths or subpaths", () => {
-    expect(matchCategoryPath("/pl/categories")).toBeNull();
-    expect(matchCategoryPath("/de/categories/pierscionki")).toBeNull();
-    expect(matchCategoryPath("/pl/categories/pierscionki/extra")).toBeNull();
-  });
-
-  test("reads locale and slug from collection path", () => {
-    expect(matchCollectionPath("/pl/collections/lato-2026")).toEqual({
-      locale: "pl",
-      slug: "lato-2026",
-    });
-    expect(matchCollectionPath("/en/collections/summer-2026")).toEqual({
+    expect(matchCatalogPath("/en/collections/summer-2026")).toEqual({
+      kind: "collection",
       locale: "en",
       slug: "summer-2026",
     });
   });
 
-  test("ignores non-collection paths", () => {
-    expect(matchCollectionPath("/pl/collections")).toBeNull();
-    expect(matchCollectionPath("/de/collections/lato")).toBeNull();
+  test("ignores other paths, list pages, subpaths and unknown locales", () => {
+    expect(matchCatalogPath("/pl/login")).toBeNull();
+    expect(matchCatalogPath("/pl/products")).toBeNull();
+    expect(matchCatalogPath("/pl/categories")).toBeNull();
+    expect(matchCatalogPath("/pl/collections")).toBeNull();
+    expect(matchCatalogPath("/de/products/ring")).toBeNull();
+    expect(matchCatalogPath("/pl/products/ring/reviews")).toBeNull();
+    expect(matchCatalogPath("/pl/categories/pierscionki/extra")).toBeNull();
   });
 });
 
@@ -162,6 +143,27 @@ describe("product existence check", () => {
     expect(urls).toHaveLength(4);
   });
 
+  test("does not evict a live slug when an expired one is refreshed", async () => {
+    let clock = 0;
+    const { fetchImpl, urls } = fakeCatalog(200);
+    const productExists = createProductExistenceCheck({
+      fetch: fetchImpl,
+      now: () => clock,
+      ttlMs: 1_000,
+      maxEntries: 2,
+    });
+
+    await productExists("a", "pl");
+    clock = 500;
+    await productExists("b", "pl");
+    clock = 1_000;
+    await productExists("a", "pl");
+    expect(urls).toHaveLength(3);
+
+    await productExists("b", "pl");
+    expect(urls).toHaveLength(3);
+  });
+
   test.each(["..%2Fx", "a%2Fb", "z%C5%82oty", "złoty", "", " "])(
     "rejects the slug %p without asking the catalog",
     async (slug: string) => {
@@ -231,7 +233,9 @@ describe("category and collection existence check", () => {
 
   test("checks collection existence against collections retrieve URL", async () => {
     const { fetchImpl, urls } = fakeCatalog(200);
-    const collectionExists = createCollectionExistenceCheck({ fetch: fetchImpl });
+    const collectionExists = createCollectionExistenceCheck({
+      fetch: fetchImpl,
+    });
 
     expect(await collectionExists("lato-2026", "pl")).toBe(true);
     expect(urls).toEqual([
@@ -241,7 +245,9 @@ describe("category and collection existence check", () => {
 
   test("returns false for 404 collection", async () => {
     const { fetchImpl } = fakeCatalog(404);
-    const collectionExists = createCollectionExistenceCheck({ fetch: fetchImpl });
+    const collectionExists = createCollectionExistenceCheck({
+      fetch: fetchImpl,
+    });
 
     expect(await collectionExists("nie-ma", "pl")).toBe(false);
   });

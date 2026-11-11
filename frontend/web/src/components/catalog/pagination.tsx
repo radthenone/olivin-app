@@ -3,6 +3,8 @@ import type { Route } from "next";
 import type { Locale } from "@olivin/i18n";
 import { getTranslations } from "next-intl/server";
 
+import { Button } from "@/components/ui/button";
+
 /**
  * Komponent stronicowania listy produktów (#359).
  *
@@ -26,7 +28,9 @@ export async function Pagination({
   const t = await getTranslations({ locale });
 
   const buildPageHref = (pageNumber: number): Route => {
-    return (pageNumber === 1 ? basePath : `${basePath}?page=${pageNumber}`) as Route;
+    return (
+      pageNumber === 1 ? basePath : `${basePath}?page=${pageNumber}`
+    ) as Route;
   };
 
   const hasPrevious = currentPage > 1;
@@ -34,26 +38,20 @@ export async function Pagination({
 
   return (
     <nav
-      aria-label={t("catalog.pagination.pageOf", {
-        page: currentPage,
-        totalPages,
-      })}
+      aria-label={t("catalog.pagination.label")}
       className="mt-8 flex items-center justify-between gap-4 border-t border-neutral-200 pt-6"
     >
-      <div>
-        {hasPrevious ? (
-          <Link
-            className="inline-flex items-center justify-center rounded-lg border border-neutral-200 bg-neutral-0 px-4 py-2 text-sm font-medium text-neutral-800 transition-colors hover:bg-neutral-100 hover:text-brand-600"
-            href={buildPageHref(currentPage - 1)}
-          >
+      {hasPrevious ? (
+        <Button asChild variant="outline">
+          <Link href={buildPageHref(currentPage - 1)}>
             {t("catalog.pagination.previous")}
           </Link>
-        ) : (
-          <span className="inline-flex items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-400 cursor-not-allowed">
-            {t("catalog.pagination.previous")}
-          </span>
-        )}
-      </div>
+        </Button>
+      ) : (
+        <Button disabled type="button" variant="outline">
+          {t("catalog.pagination.previous")}
+        </Button>
+      )}
 
       <span className="text-sm text-neutral-600">
         {t("catalog.pagination.pageOf", {
@@ -62,20 +60,17 @@ export async function Pagination({
         })}
       </span>
 
-      <div>
-        {hasNext ? (
-          <Link
-            className="inline-flex items-center justify-center rounded-lg border border-neutral-200 bg-neutral-0 px-4 py-2 text-sm font-medium text-neutral-800 transition-colors hover:bg-neutral-100 hover:text-brand-600"
-            href={buildPageHref(currentPage + 1)}
-          >
+      {hasNext ? (
+        <Button asChild variant="outline">
+          <Link href={buildPageHref(currentPage + 1)}>
             {t("catalog.pagination.next")}
           </Link>
-        ) : (
-          <span className="inline-flex items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-400 cursor-not-allowed">
-            {t("catalog.pagination.next")}
-          </span>
-        )}
-      </div>
+        </Button>
+      ) : (
+        <Button disabled type="button" variant="outline">
+          {t("catalog.pagination.next")}
+        </Button>
+      )}
     </nav>
   );
 }

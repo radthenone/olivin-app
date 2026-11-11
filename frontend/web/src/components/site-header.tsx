@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
  * login i logout odświeżają nagłówek przez unieważnienie klucza Orvala.
  */
 export function SiteHeader() {
-  const tAuth = useTranslations("auth.header");
+  const t = useTranslations("auth.header");
   const tCatalog = useTranslations("catalog.list");
   const locale = useLocale();
   const { user, isChecking } = useSession();
@@ -43,7 +43,7 @@ export function SiteHeader() {
           {!isChecking &&
             (user ? (
               <>
-                <span>{tAuth("signedInAs", { name: user.display })}</span>
+                <span>{t("signedInAs", { name: user.display })}</span>
                 <Button
                   disabled={isPending}
                   onClick={() => {
@@ -55,7 +55,7 @@ export function SiteHeader() {
                   type="button"
                   variant="outline"
                 >
-                  {isPending ? tAuth("loggingOut") : tAuth("logout")}
+                  {isPending ? t("loggingOut") : t("logout")}
                 </Button>
               </>
             ) : (
@@ -63,7 +63,7 @@ export function SiteHeader() {
                 className="underline underline-offset-4"
                 href={`/${locale}/login` as Route}
               >
-                {tAuth("login")}
+                {t("login")}
               </Link>
             ))}
         </nav>

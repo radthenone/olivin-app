@@ -62,6 +62,7 @@
       "viewProduct": "Zobacz produkt"
     },
     "pagination": {
+      "label": "Stronicowanie",
       "previous": "Poprzednia",
       "next": "Następna",
       "pageOf": "Strona {page} z {totalPages}"

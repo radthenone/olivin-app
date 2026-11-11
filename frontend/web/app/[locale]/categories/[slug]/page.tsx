@@ -12,10 +12,7 @@ import {
   getCategoryForPage,
   getProductsListForPage,
 } from "@/lib/catalog-api";
-import {
-  calculateTotalPages,
-  parsePageNumber,
-} from "@/lib/catalog-pagination";
+import { calculateTotalPages, parsePageNumber } from "@/lib/catalog-pagination";
 
 export const instant = false;
 
@@ -49,6 +46,11 @@ export default async function CategoryPage({
     ),
     getCategoriesTreeForPage(locale as Locale),
   ]);
+
+  // `?page=` poza zakresem: katalog odpowiada 404, strona też.
+  if (!productsData) {
+    notFound();
+  }
 
   const t = await getTranslations({ locale });
   const totalPages = calculateTotalPages(productsData.count, PAGE_SIZE);

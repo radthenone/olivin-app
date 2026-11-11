@@ -117,6 +117,22 @@ describe("catalog server transport", () => {
     expect(list?.count).toBe(1);
   });
 
+  test("returns null for a products list page out of range (404)", async () => {
+    globalThis.fetch = (async () =>
+      new Response('{"detail":"Invalid page."}', {
+        status: 404,
+      })) as typeof fetch;
+
+    expect(await fetchProductsList({ page: 999 }, "pl")).toBeNull();
+  });
+
+  test("throws when the products list fails with a server error", async () => {
+    globalThis.fetch = (async () =>
+      new Response("{}", { status: 503 })) as typeof fetch;
+
+    await expect(fetchProductsList({ page: 1 }, "pl")).rejects.toThrow("503");
+  });
+
   test("returns empty list if category or collection has invalid slug", async () => {
     let calls = 0;
     globalThis.fetch = (async () => {

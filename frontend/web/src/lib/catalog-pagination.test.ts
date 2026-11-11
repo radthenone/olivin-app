@@ -1,9 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-  calculateTotalPages,
-  parsePageNumber,
-} from "./catalog-pagination";
+import { calculateTotalPages, parsePageNumber } from "./catalog-pagination";
 
 describe("catalog pagination helpers", () => {
   test("parsePageNumber returns 1 for undefined, null, non-numeric or values < 1", () => {

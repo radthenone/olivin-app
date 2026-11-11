@@ -5,10 +5,9 @@ import { routing } from "@/i18n/routing";
 import {
   categoryExists,
   collectionExists,
-  matchCategoryPath,
-  matchCollectionPath,
-  matchProductPath,
+  matchCatalogPath,
   productExists,
+  type CatalogKind,
 } from "@/lib/product-exists";
 
 /**
@@ -17,6 +16,16 @@ import {
  * Kolejność detekcji: cookie języka, `Accept-Language`, domyślnie `/pl`.
  */
 const handleI18nRouting = createMiddleware(routing);
+
+/** Dla każdego rodzaju encji: sprawdzenie istnienia i strona 404 do rewrite'u. */
+const CATALOG_CHECKS: Record<
+  CatalogKind,
+  { check: typeof productExists; notFoundPath: string }
+> = {
+  product: { check: productExists, notFoundPath: "product-not-found" },
+  category: { check: categoryExists, notFoundPath: "category-not-found" },
+  collection: { check: collectionExists, notFoundPath: "collection-not-found" },
+};
 
 /**
  * Routing języka, a dla encji katalogu (karta produktu, kategoria, kolekcja) dodatkowo prawdziwe 404.
@@ -40,35 +49,15 @@ export default async function proxy(request: NextRequest) {
     return response;
   }
 
-  const product = matchProductPath(request.nextUrl.pathname);
-  if (product) {
-    if (await productExists(product.slug, product.locale)) {
-      return response;
-    }
-    return NextResponse.rewrite(
-      new URL(`/${product.locale}/product-not-found`, request.url),
-      { headers: response.headers },
-    );
-  }
+  const matched = matchCatalogPath(request.nextUrl.pathname);
+  if (matched) {
+    const { check, notFoundPath } = CATALOG_CHECKS[matched.kind];
 
-  const category = matchCategoryPath(request.nextUrl.pathname);
-  if (category) {
-    if (await categoryExists(category.slug, category.locale)) {
+    if (await check(matched.slug, matched.locale)) {
       return response;
     }
     return NextResponse.rewrite(
-      new URL(`/${category.locale}/category-not-found`, request.url),
-      { headers: response.headers },
-    );
-  }
-
-  const collection = matchCollectionPath(request.nextUrl.pathname);
-  if (collection) {
-    if (await collectionExists(collection.slug, collection.locale)) {
-      return response;
-    }
-    return NextResponse.rewrite(
-      new URL(`/${collection.locale}/collection-not-found`, request.url),
+      new URL(`/${matched.locale}/${notFoundPath}`, request.url),
       { headers: response.headers },
     );
   }
