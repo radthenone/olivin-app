@@ -6,25 +6,30 @@ import { useTranslations } from "next-intl";
 import {
   DELIVERY_COUNTRY_COOKIE_NAME,
   EU_DELIVERY_COUNTRIES,
-  currencyFromDeliveryCountry,
   isEuDeliveryCountry,
   type DeliveryCountry,
 } from "@olivin/features/catalog";
-import { useSession } from "@olivin/features/auth";
-import {
-  customersProfileList,
-  customersProfilePartialUpdate,
-} from "@olivin/api/generated/apps/profiles/profiles";
 
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 
 /**
+ * Zapisuje kraj dostawy w cookie na rok (ADR 0035); `Secure` tylko po HTTPS.
+ *
+ * Args:
+ *     country: Kraj dostawy wybrany przez klienta.
+ */
+function saveDeliveryCountryCookie(country: DeliveryCountry) {
+  const secure = location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${DELIVERY_COUNTRY_COOKIE_NAME}=${country}; path=/; max-age=31536000; SameSite=Lax${secure}`;
+}
+
+/**
  * Przełącznik kraju dostawy w nagłówku strony (ADR 0035).
  *
  * Prezentuje listę wyłącznie 27 państw członkowskich Unii Europejskiej.
- * Wybór zapisuje się w ciasteczku (oraz w profilu zalogowanego użytkownika)
- * i natychmiast odświeża komponenty serwerowe (router.refresh).
+ * Wybór zapisuje się w ciasteczku `delivery_country` i natychmiast odświeża
+ * komponenty serwerowe (router.refresh). Waluta wynika wyłącznie z kraju.
  *
  * Początkowy kraj przychodzi z serwera (cookie `delivery_country` czytane
  * w `DeliveryCountrySwitchLoader`), więc stan nie wymaga efektu i po
@@ -37,7 +42,6 @@ export function DeliveryCountrySwitch({
 }) {
   const t = useTranslations("delivery");
   const router = useRouter();
-  const { isAuthenticated } = useSession();
   const [country, setCountry] = React.useState<DeliveryCountry>(initialCountry);
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -47,29 +51,7 @@ export function DeliveryCountrySwitch({
     }
 
     setCountry(value);
-    const currency = currencyFromDeliveryCountry(value);
-
-    // Zapisujemy kraj dostawy i walutę w cookie (ADR 0035)
-    document.cookie = `${DELIVERY_COUNTRY_COOKIE_NAME}=${value}; path=/; max-age=31536000; SameSite=Lax`;
-    document.cookie = `currency=${currency}; path=/; max-age=31536000; SameSite=Lax`;
-
-    // U zalogowanego klienta zapisujemy kraj również w profilu (ADR 0035)
-    if (isAuthenticated) {
-      void (async () => {
-        try {
-          const listRes = await customersProfileList();
-          const profile = listRes.data.results?.[0];
-          if (profile?.id) {
-            await customersProfilePartialUpdate(profile.id, {
-              deliveryCountry: value,
-            });
-          }
-        } catch {
-          // Błąd zapisu profilu nie cofa wyboru w cookie
-        }
-      })();
-    }
-
+    saveDeliveryCountryCookie(value);
     router.refresh();
   };
 
@@ -82,8 +64,7 @@ export function DeliveryCountrySwitch({
         {t("shipTo")}
       </Label>
       <Select
-        aria-label={t("shipTo")}
-        className="h-8 w-auto min-w-[7rem] border-neutral-300 bg-neutral-0 py-0 pl-2 pr-6 text-xs text-neutral-800"
+        className="h-8 w-auto min-w-28 border-neutral-300 bg-neutral-0 py-0 pl-2 pr-6 text-xs text-neutral-800"
         id="delivery-country-select"
         name="deliveryCountry"
         onChange={handleChange}

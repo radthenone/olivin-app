@@ -4,19 +4,14 @@ import { NextIntlClientProvider } from "next-intl";
 
 import messages from "@olivin/i18n/messages/pl.json";
 
-// Hooki routera i sesji wymagają kontekstu aplikacji, którego nie ma przy
-// renderze do statycznego HTML, więc podmieniamy tylko je (reszta modułów
-// zostaje prawdziwa, żeby mock nie wyciekał do innych testów).
+// Hook routera wymaga kontekstu aplikacji, którego nie ma przy renderze do
+// statycznego HTML, więc podmieniamy tylko jego (reszta modułu zostaje
+// prawdziwa, żeby mock nie wyciekał do innych testów).
 const actualNavigation = await import("next/navigation");
-const actualAuth = await import("@olivin/features/auth");
 
 mock.module("next/navigation", () => ({
   ...actualNavigation,
   useRouter: () => ({ refresh: () => {} }),
-}));
-mock.module("@olivin/features/auth", () => ({
-  ...actualAuth,
-  useSession: () => ({ isAuthenticated: false }),
 }));
 
 const { DeliveryCountrySwitch } = await import("./delivery-country-switch");

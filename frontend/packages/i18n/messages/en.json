@@ -213,7 +213,6 @@
   },
   "delivery": {
     "shipTo": "Ship to",
-    "selectCountry": "Select delivery country",
     "countries": {
       "PL": "Poland",
       "DE": "Germany",

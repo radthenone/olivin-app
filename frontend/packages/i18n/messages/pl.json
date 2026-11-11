@@ -213,7 +213,6 @@
   },
   "delivery": {
     "shipTo": "Wysyłka do",
-    "selectCountry": "Wybierz kraj dostawy",
     "countries": {
       "PL": "Polska",
       "DE": "Niemcy",
