@@ -36,6 +36,37 @@
       },
       "stones": "Stones"
     },
+    "category": {
+      "heading": "Categories",
+      "notFound": {
+        "title": "Category not found",
+        "description": "This category does not exist or has been removed from the store."
+      }
+    },
+    "collection": {
+      "heading": "Collections",
+      "notFound": {
+        "title": "Collection not found",
+        "description": "This collection does not exist or has been removed from the store."
+      }
+    },
+    "list": {
+      "title": "Product catalog",
+      "description": "Browse jewelry in the Olivin store.",
+      "productCount": "{count, plural, one {# product} other {# products}}",
+      "empty": "No products to display.",
+      "allProducts": "All products"
+    },
+    "card": {
+      "fromPrice": "from {price}",
+      "viewProduct": "View product"
+    },
+    "pagination": {
+      "label": "Pagination",
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {page} of {totalPages}"
+    },
     "material": {
       "gold": "Gold",
       "silver": "Silver",

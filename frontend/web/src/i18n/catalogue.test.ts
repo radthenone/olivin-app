@@ -26,6 +26,16 @@ describe("@olivin/i18n", () => {
     expect(messageKeys(en)).toEqual(messageKeys(pl));
   });
 
+  test("defines list, category, collection, card and pagination keys in catalog", () => {
+    const keys = messageKeys(pl);
+    expect(keys).toContain("catalog.category.notFound.title");
+    expect(keys).toContain("catalog.collection.notFound.title");
+    expect(keys).toContain("catalog.list.productCount");
+    expect(keys).toContain("catalog.card.fromPrice");
+    expect(keys).toContain("catalog.pagination.previous");
+    expect(keys).toContain("catalog.pagination.next");
+  });
+
   test("exposes both locales and uses Polish as the default", () => {
     expect(locales).toEqual(["pl", "en"]);
     expect(defaultLocale).toBe("pl");

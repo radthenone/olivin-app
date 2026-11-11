@@ -2,7 +2,13 @@ import createMiddleware from "next-intl/middleware";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { routing } from "@/i18n/routing";
-import { matchProductPath, productExists } from "@/lib/product-exists";
+import {
+  categoryExists,
+  collectionExists,
+  matchCatalogPath,
+  productExists,
+  type CatalogKind,
+} from "@/lib/product-exists";
 
 /**
  * Przekierowanie `/` na język klienta i obsługa prefiksu `/pl` albo `/en`.
@@ -11,11 +17,21 @@ import { matchProductPath, productExists } from "@/lib/product-exists";
  */
 const handleI18nRouting = createMiddleware(routing);
 
+/** Dla każdego rodzaju encji: sprawdzenie istnienia i strona 404 do rewrite'u. */
+const CATALOG_CHECKS: Record<
+  CatalogKind,
+  { check: typeof productExists; notFoundPath: string }
+> = {
+  product: { check: productExists, notFoundPath: "product-not-found" },
+  category: { check: categoryExists, notFoundPath: "category-not-found" },
+  collection: { check: collectionExists, notFoundPath: "collection-not-found" },
+};
+
 /**
- * Routing języka, a dla karty produktu dodatkowo prawdziwe 404.
+ * Routing języka, a dla encji katalogu (karta produktu, kategoria, kolekcja) dodatkowo prawdziwe 404.
  *
- * Z Cache Components karta streamuje prerenderowaną powłokę od razu, więc
- * nieznany slug musi zostać odrzucony przed renderem (#357). Nieznany slug
+ * Z Cache Components strona streamuje prerenderowaną powłokę od razu, więc
+ * nieznany slug musi zostać odrzucony przed renderem (#357, #359). Nieznany slug
  * idzie rewrite'em na statyczną stronę 404 w tym samym języku, a slug
  * w formacie spoza katalogu (np. `a%2Fb`) dostaje to samo bez żądania do
  * katalogu. Nagłówki i ciasteczka next-intl zostają.
@@ -24,24 +40,29 @@ const handleI18nRouting = createMiddleware(routing);
  *     request: Żądanie przed renderem strony.
  *
  * Returns:
- *     Odpowiedź next-intl albo rewrite na `/{locale}/product-not-found`.
+ *     Odpowiedź next-intl albo rewrite na stronę not-found w odpowiednim języku.
  */
 export default async function proxy(request: NextRequest) {
   const response = handleI18nRouting(request);
-  const product = matchProductPath(request.nextUrl.pathname);
 
-  if (!product || response.headers.has("location")) {
+  if (response.headers.has("location")) {
     return response;
   }
 
-  if (await productExists(product.slug, product.locale)) {
-    return response;
+  const matched = matchCatalogPath(request.nextUrl.pathname);
+  if (matched) {
+    const { check, notFoundPath } = CATALOG_CHECKS[matched.kind];
+
+    if (await check(matched.slug, matched.locale)) {
+      return response;
+    }
+    return NextResponse.rewrite(
+      new URL(`/${matched.locale}/${notFoundPath}`, request.url),
+      { headers: response.headers },
+    );
   }
 
-  return NextResponse.rewrite(
-    new URL(`/${product.locale}/product-not-found`, request.url),
-    { headers: response.headers },
-  );
+  return response;
 }
 
 /**

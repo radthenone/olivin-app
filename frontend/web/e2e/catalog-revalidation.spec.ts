@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { isProductSlug } from "../src/lib/catalog-url";
+import { isCatalogSlug } from "../src/lib/catalog-url";
 
 /**
  * Rewalidacja keszu katalogu na webie (ADR 0034, #358).
@@ -70,7 +70,7 @@ test.describe("catalog cache revalidation flow", () => {
     // Slug używany wyłącznie tutaj — product-page.spec.ts korzysta z `ring`,
     // a pliki specyfikacji biegną równolegle na wspólnym stubie.
     const slug = "necklace";
-    if (!isProductSlug(slug)) {
+    if (!isCatalogSlug(slug)) {
       throw new Error(`Niepoprawny slug produktu: ${slug}`);
     }
     const oldName = "Naszyjnik na zamówienie";
