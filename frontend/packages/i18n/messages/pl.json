@@ -64,7 +64,9 @@
       "description": "Przeglądaj biżuterię w sklepie Olivin.",
       "productCount": "{count, plural, one {# produkt} few {# produkty} many {# produktów} other {# produktu}}",
       "empty": "Brak produktów do wyświetlenia.",
-      "allProducts": "Wszystkie produkty"
+      "allProducts": "Wszystkie produkty",
+      "emptyFiltered": "Brak produktów spełniających wybrane kryteria.",
+      "clearFilters": "Wyczyść filtry"
     },
     "card": {
       "fromPrice": "od {price}",
@@ -99,6 +101,37 @@
       "amethyst": "Ametyst",
       "cubic_zirconia": "Cyrkonia",
       "moissanite": "Moissanit"
+    },
+    "search": {
+      "label": "Szukaj w katalogu",
+      "placeholder": "Szukaj biżuterii…",
+      "submit": "Szukaj",
+      "clear": "Wyczyść wyszukiwanie"
+    },
+    "sort": {
+      "label": "Sortowanie",
+      "newest": "Najnowsze",
+      "priceAsc": "Cena: od najniższej",
+      "priceDesc": "Cena: od najwyższej",
+      "nameAsc": "Nazwa: A-Z",
+      "nameDesc": "Nazwa: Z-A"
+    },
+    "filters": {
+      "heading": "Filtry",
+      "clear": "Wyczyść filtry",
+      "apply": "Zastosuj filtry",
+      "all": "Wszystkie",
+      "material": "Kruszec",
+      "fineness": "Próba kruszcu",
+      "metalColor": "Kolor kruszcu",
+      "stone": "Rodzaj kamienia",
+      "size": "Rozmiar",
+      "length": "Długość",
+      "price": "Cena",
+      "priceFrom": "Od",
+      "priceTo": "Do",
+      "openFilters": "Pokaż filtry",
+      "closeFilters": "Zamknij filtry"
     }
   },
   "auth": {
