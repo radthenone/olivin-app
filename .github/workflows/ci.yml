@@ -21,7 +21,8 @@ permissions:
 jobs:
   backend:
     name: Backend
-    runs-on: ubuntu-latest
+    # ubuntu-24.04: na ubuntu-latest (26.04) setup-python nie ma Pythona z .python-version (3.12.10).
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -201,7 +202,8 @@ jobs:
   # Hooki dotykają obu stron repo, stąd i uv, i Bun w jednym jobie.
   pre-commit:
     name: Pre-commit hooks
-    runs-on: ubuntu-latest
+    # ubuntu-24.04: na ubuntu-latest (26.04) setup-python nie ma Pythona z .python-version (3.12.10).
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v7
