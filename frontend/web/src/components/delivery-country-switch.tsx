@@ -19,56 +19,26 @@ import {
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 
-function getClientCookieCountry(): DeliveryCountry {
-  if (typeof document === "undefined") return "PL";
-  const match = document.cookie.match(
-    new RegExp(`(?:^|; )${DELIVERY_COUNTRY_COOKIE_NAME}=([^;]*)`),
-  );
-  if (match && isEuDeliveryCountry(match[1])) {
-    return match[1];
-  }
-  return "PL";
-}
-
 /**
  * Przełącznik kraju dostawy w nagłówku strony (ADR 0035).
  *
  * Prezentuje listę wyłącznie 27 państw członkowskich Unii Europejskiej.
  * Wybór zapisuje się w ciasteczku (oraz w profilu zalogowanego użytkownika)
  * i natychmiast odświeża komponenty serwerowe (router.refresh).
+ *
+ * Początkowy kraj przychodzi z serwera (cookie `delivery_country` czytane
+ * w `DeliveryCountrySwitchLoader`), więc stan nie wymaga efektu i po
+ * przeładowaniu nie ma mignięcia domyślnego kraju.
  */
 export function DeliveryCountrySwitch({
   initialCountry,
 }: {
-  initialCountry?: DeliveryCountry;
+  initialCountry: DeliveryCountry;
 }) {
   const t = useTranslations("delivery");
-  let router: ReturnType<typeof useRouter> | null = null;
-  try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    router = useRouter();
-  } catch {
-    // Brak routera w środowisku testowym
-  }
-
-  let isAuthenticated = false;
-  try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const session = useSession();
-    isAuthenticated = session.isAuthenticated;
-  } catch {
-    // Brak QueryClientProvider
-  }
-
-  const [country, setCountry] = React.useState<DeliveryCountry>(
-    initialCountry ?? "PL",
-  );
-
-  React.useEffect(() => {
-    if (!initialCountry) {
-      setCountry(getClientCookieCountry());
-    }
-  }, [initialCountry]);
+  const router = useRouter();
+  const { isAuthenticated } = useSession();
+  const [country, setCountry] = React.useState<DeliveryCountry>(initialCountry);
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
@@ -100,7 +70,7 @@ export function DeliveryCountrySwitch({
       })();
     }
 
-    router?.refresh();
+    router.refresh();
   };
 
   return (
