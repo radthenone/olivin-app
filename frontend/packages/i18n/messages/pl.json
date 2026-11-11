@@ -1,7 +1,8 @@
 {
   "home": {
     "title": "Olivin",
-    "description": "Sklep jubilerski. Katalog, koszyk i kasa powstaną w kolejnych krokach."
+    "description": "Sklep jubilerski. Katalog, koszyk i kasa powstaną w kolejnych krokach.",
+    "catalogLink": "Katalog"
   },
   "health": {
     "heading": "Stan backendu",
