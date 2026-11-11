@@ -5,6 +5,17 @@ export {
 export type { AvailabilityCategory } from "./availability";
 
 export {
+  createCatalogClient,
+  isCatalogSlug,
+} from "./catalog-client";
+export type {
+  CatalogClient,
+  CatalogClientOptions,
+  CatalogCurrency,
+  ProductsListFilters,
+} from "./catalog-client";
+
+export {
   VARIANT_ATTRIBUTE_NAMES,
   findMatchingVariant,
   getAttributeDefinitions,
