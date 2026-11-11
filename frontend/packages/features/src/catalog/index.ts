@@ -15,6 +15,8 @@ export type {
   ProductsListFilters,
 } from "./catalog-client";
 
+export { uniqueStones } from "./product-stones";
+
 export {
   VARIANT_ATTRIBUTE_NAMES,
   findMatchingVariant,
