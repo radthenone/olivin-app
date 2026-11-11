@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { Route } from "next";
+import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -12,6 +13,7 @@ import {
   useLogin,
   type LoginError,
 } from "@olivin/features/auth";
+import { syncDeliveryCountryOnLogin } from "@olivin/features/catalog";
 
 import { loginErrorsFromFailure } from "./login-errors";
 import { MfaForm } from "./mfa-form";
@@ -44,10 +46,12 @@ type LoginFormValues = {
  *
  * Sekcja domenowa: zna hooki auth i katalog tekstów, a wygląd składa wyłącznie
  * z komponentów `ui/`. Plik trasy tylko ją umieszcza na stronie.
+ * Po poprawnym zalogowaniu synchronizuje kraj dostawy z profilem (ADR 0035, #363).
  */
 export function LoginForm() {
   const t = useTranslations("auth");
   const locale = useLocale();
+  const router = useRouter();
   const { login, isPending } = useLogin();
   const [isMfaRequired, setIsMfaRequired] = useState(false);
   const form = useForm<LoginFormValues>({
@@ -75,7 +79,9 @@ export function LoginForm() {
       const response = await login(values);
 
       if (response.status === 200) {
+        await syncDeliveryCountryOnLogin();
         form.reset();
+        router.refresh();
         return;
       }
 

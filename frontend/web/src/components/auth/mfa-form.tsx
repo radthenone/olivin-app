@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { Route } from "next";
+import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -11,6 +12,7 @@ import {
   useMfaAuthenticate,
   type MfaError,
 } from "@olivin/features/auth";
+import { syncDeliveryCountryOnLogin } from "@olivin/features/catalog";
 
 import { mfaErrorsFromFailure } from "./mfa-errors";
 
@@ -44,10 +46,12 @@ type MfaFormValues = {
  * odświeża się przez wspólny hook), a zły zostaje przy polu kodu. Gdy
  * oczekujące logowanie wygaśnie, `onExpired` zgłasza to rodzicowi, który
  * wraca do formularza, z którego logowanie się zaczęło (hasło albo kod).
+ * Po udanym potwierdzeniu synchronizuje kraj dostawy z profilem (ADR 0035, #363).
  */
 export function MfaForm({ onExpired }: { onExpired: () => void }) {
   const t = useTranslations("auth");
   const locale = useLocale();
+  const router = useRouter();
   const { mutateAsync, isPending } = useMfaAuthenticate();
   const [isDone, setIsDone] = useState(false);
   const form = useForm<MfaFormValues>({ defaultValues: { code: "" } });
@@ -82,8 +86,10 @@ export function MfaForm({ onExpired }: { onExpired: () => void }) {
       const response = await mutateAsync({ code: values.code });
 
       if (response.status === 200) {
+        await syncDeliveryCountryOnLogin();
         form.reset();
         setIsDone(true);
+        router.refresh();
         return;
       }
 
