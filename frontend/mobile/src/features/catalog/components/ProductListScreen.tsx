@@ -52,7 +52,9 @@ export function ProductListScreen() {
   }
 
   if (isError && products.length === 0) {
-    return <ProductErrorView message={error?.message} onRetry={() => refetch()} />;
+    return (
+      <ProductErrorView message={error?.message} onRetry={() => refetch()} />
+    );
   }
 
   return (

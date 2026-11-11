@@ -41,7 +41,11 @@ export function useCatalogProductsInfinite(
     PaginatedProductListList | null,
     Error,
     { pages: (PaginatedProductListList | null)[]; pageParams: number[] },
-    readonly [string, string, { locale: string; category?: string; collection?: string }],
+    readonly [
+      string,
+      string,
+      { locale: string; category?: string; collection?: string },
+    ],
     number
   >({
     queryKey: [

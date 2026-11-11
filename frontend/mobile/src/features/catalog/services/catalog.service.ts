@@ -1,4 +1,7 @@
-import { createCatalogClient, type CatalogClient } from "@olivin/features/catalog";
+import {
+  createCatalogClient,
+  type CatalogClient,
+} from "@olivin/features/catalog";
 import { ENV } from "@core/config/env";
 import { getActiveLocale } from "@core/i18n";
 

@@ -29,7 +29,9 @@ export function setActiveLocale(locale: Locale): void {
 /**
  * Subskrybuje zmiany aktywnego języka.
  */
-export function subscribeLocale(listener: (locale: Locale) => void): () => void {
+export function subscribeLocale(
+  listener: (locale: Locale) => void,
+): () => void {
   listeners.add(listener);
   return () => {
     listeners.delete(listener);

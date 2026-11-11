@@ -9,7 +9,8 @@ describe("ProductDetailView component", () => {
     id: "prod-detail-1",
     slug: "pierscionek-diamentowy",
     name: "Pierścionek z brylantem i szafirem",
-    description: "Elegancki pierścionek z żółtego złota z naturalnym brylantem.",
+    description:
+      "Elegancki pierścionek z żółtego złota z naturalnym brylantem.",
     material: "gold",
     fineness: "585",
     averageRating: 4.8,

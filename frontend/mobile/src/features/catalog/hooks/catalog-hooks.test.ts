@@ -22,7 +22,9 @@ describe("catalog hooks and pagination logic", () => {
 
   test("getNextProductsPageParam returns undefined for null or empty page", () => {
     expect(getNextProductsPageParam(null, [])).toBeUndefined();
-    expect(getNextProductsPageParam({ count: 0, results: [] }, [])).toBeUndefined();
+    expect(
+      getNextProductsPageParam({ count: 0, results: [] }, []),
+    ).toBeUndefined();
   });
 
   test("slug validation prevents requests for malformed product slugs", () => {

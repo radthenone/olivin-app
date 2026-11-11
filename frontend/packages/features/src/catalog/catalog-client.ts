@@ -87,7 +87,7 @@ export function createCatalogClient(
     const raw =
       typeof options.baseUrl === "function"
         ? options.baseUrl()
-        : options.baseUrl ?? "";
+        : (options.baseUrl ?? "");
     return raw.replace(/\/$/, "");
   }
 

@@ -12,9 +12,15 @@ function TestConsumer() {
     <div>
       <span data-testid="locale">{locale}</span>
       <span data-testid="title">{t("list.title")}</span>
-      <span data-testid="plural-one">{t("list.productCount", { count: 1 })}</span>
-      <span data-testid="plural-few">{t("list.productCount", { count: 3 })}</span>
-      <span data-testid="plural-many">{t("list.productCount", { count: 5 })}</span>
+      <span data-testid="plural-one">
+        {t("list.productCount", { count: 1 })}
+      </span>
+      <span data-testid="plural-few">
+        {t("list.productCount", { count: 3 })}
+      </span>
+      <span data-testid="plural-many">
+        {t("list.productCount", { count: 5 })}
+      </span>
     </div>
   );
 }

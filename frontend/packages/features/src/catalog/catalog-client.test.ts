@@ -4,10 +4,7 @@ import type {
   ProductDetail,
 } from "@olivin/api/generated/apps/schemas";
 
-import {
-  createCatalogClient,
-  isCatalogSlug,
-} from "./catalog-client";
+import { createCatalogClient, isCatalogSlug } from "./catalog-client";
 
 describe("catalog slug validation", () => {
   test("isCatalogSlug accepts valid slug characters and rejects invalid", () => {

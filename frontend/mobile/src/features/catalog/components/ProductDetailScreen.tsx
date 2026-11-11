@@ -8,7 +8,13 @@ import { ProductErrorView } from "./ProductErrorView";
 export function ProductDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const t = useTranslations("catalog");
-  const { data: product, isLoading, isError, error, refetch } = useCatalogProduct(slug);
+  const {
+    data: product,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useCatalogProduct(slug);
 
   if (isLoading) {
     return (
@@ -19,7 +25,9 @@ export function ProductDetailScreen() {
   }
 
   if (isError) {
-    return <ProductErrorView message={error?.message} onRetry={() => refetch()} />;
+    return (
+      <ProductErrorView message={error?.message} onRetry={() => refetch()} />
+    );
   }
 
   if (!product) {

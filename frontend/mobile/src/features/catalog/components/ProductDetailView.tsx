@@ -131,7 +131,9 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
         {product.isMadeToOrder && product.productionTimeDays !== null && (
           <View className="flex-row justify-between py-1">
             <Text className="text-sm text-neutral-500">
-              {t("product.productionTime", { days: product.productionTimeDays })}
+              {t("product.productionTime", {
+                days: product.productionTimeDays,
+              })}
             </Text>
           </View>
         )}

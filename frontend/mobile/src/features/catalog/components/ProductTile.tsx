@@ -23,9 +23,9 @@ export function ProductTile({ product, onPress }: ProductTileProps) {
     product.cheapestVariant?.images?.[0];
 
   const imageUrl = primaryImage
-    ? primaryImage.urls["400"] ??
+    ? (primaryImage.urls["400"] ??
       primaryImage.urls["800"] ??
-      Object.values(primaryImage.urls)[0]
+      Object.values(primaryImage.urls)[0])
     : undefined;
 
   const imageAlt =
