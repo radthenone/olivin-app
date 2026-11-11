@@ -104,7 +104,29 @@ function ring(): Fixture {
         variant({
           sku: "RING-Y-17",
           metalColor: "yellow",
+          size: "17",
           price: { amount: 250_000, currency: "PLN" },
+          isAvailable: true,
+          isLowStock: false,
+          images: [
+            {
+              id: "image-ring",
+              position: 1,
+              isPrimary: true,
+              altText: "Złoty pierścionek z diamentem na białym tle",
+              urls: {
+                "400": "/images/ring.svg",
+                "800": "/images/ring.svg",
+                "1600": "/images/ring.svg",
+              },
+            },
+          ],
+        }),
+        variant({
+          sku: "RING-Y-16",
+          metalColor: "yellow",
+          size: "16",
+          price: { amount: 245_000, currency: "PLN" },
           isAvailable: true,
           isLowStock: false,
           images: [
@@ -124,14 +146,29 @@ function ring(): Fixture {
         variant({
           sku: "RING-W-17",
           metalColor: "white",
+          size: "17",
           price: { amount: 260_000, currency: "PLN" },
           isAvailable: true,
           isLowStock: true,
           available: 2,
+          images: [
+            {
+              id: "image-ring-white",
+              position: 1,
+              isPrimary: true,
+              altText: "Biały pierścionek z diamentem na białym tle",
+              urls: {
+                "400": "/images/ring-white.svg",
+                "800": "/images/ring-white.svg",
+                "1600": "/images/ring-white.svg",
+              },
+            },
+          ],
         }),
         variant({
           sku: "RING-R-17",
           metalColor: "rose",
+          size: "17",
           price: { amount: 270_000, currency: "PLN" },
           isAvailable: false,
           isLowStock: false,
@@ -448,6 +485,15 @@ function localise(
     })),
     variants: product.variants.map((item) => ({
       ...item,
+      images: item.images.map((image) => ({
+        ...image,
+        urls: Object.fromEntries(
+          Object.entries(image.urls).map(([width, path]) => [
+            width,
+            `${origin}${path}`,
+          ]),
+        ),
+      })),
       price: { amount: convert(item.price.amount, currency), currency },
     })),
   };
