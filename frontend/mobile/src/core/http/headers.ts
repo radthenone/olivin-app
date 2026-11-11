@@ -2,6 +2,7 @@ import { allauthClient } from "@core/config/platform";
 import { sessionTokenStorage } from "@core/auth/session-token.storage";
 import { ensureCsrfCookie, getCsrfTokenFromCookie } from "@core/auth/csrf";
 import { ENV } from "@core/config/env";
+import { getActiveLocale } from "@core/i18n/locale";
 import type { HttpRequestConfig } from "@olivin/api";
 
 const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -12,6 +13,7 @@ const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
  * Dlaczego istnieje:
  * - browser potrzebuje cookie + CSRF,
  * - app potrzebuje X-Session-Token,
+ * - Accept-Language przekazuje aktualny język interfejsu (ADR 0035),
  * - reszta aplikacji nie powinna znać tych szczegółów transportu.
  */
 export async function buildHeaders(
@@ -21,6 +23,7 @@ export async function buildHeaders(
   const headers = new Headers({
     Accept: "application/json",
     "Content-Type": "application/json",
+    "Accept-Language": getActiveLocale(),
     "X-Api-Version": ENV.APP_VERSION,
   });
 

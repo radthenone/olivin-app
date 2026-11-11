@@ -99,6 +99,15 @@
       "amethyst": "Ametyst",
       "cubic_zirconia": "Cyrkonia",
       "moissanite": "Moissanit"
+    },
+    "error": {
+      "network": "Brak połączenia z siecią",
+      "retry": "Spróbuj ponownie",
+      "general": "Wystąpił błąd podczas ładowania danych"
+    },
+    "accessibility": {
+      "productImage": "Zdjęcie produktu {name}",
+      "galleryImage": "Zdjęcie {index} z {total} produktu {name}"
     }
   },
   "auth": {
