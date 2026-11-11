@@ -3,6 +3,8 @@ import { useAuthContext } from "@core/auth/auth.provider";
 import { Button } from "@ui/primitives/Button";
 import { Screen } from "@ui/layout/Screen";
 import { useRouter } from "expo-router";
+import { useTranslations } from "use-intl";
+import { routes } from "@core/navigation/routes";
 
 /**
  * Pierwszy ekran po zalogowaniu.
@@ -13,6 +15,7 @@ import { useRouter } from "expo-router";
 export default function HomeRoute() {
   const auth = useAuthContext();
   const router = useRouter();
+  const t = useTranslations("home");
 
   return (
     <Screen>
@@ -23,6 +26,9 @@ export default function HomeRoute() {
         <Text className="text-base text-neutral-700">
           {auth.user?.email ?? "Zalogowany użytkownik"}
         </Text>
+        <Button onPress={() => router.push(routes.products)}>
+          {t("catalogLink")}
+        </Button>
         <Button
           onPress={() => router.push("/account-settings")}
           variant="outline"

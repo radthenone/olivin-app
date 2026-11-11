@@ -1,7 +1,8 @@
 {
   "home": {
     "title": "Olivin",
-    "description": "A jewellery store. The catalogue, cart and checkout will arrive in later steps."
+    "description": "A jewellery store. The catalogue, cart and checkout will arrive in later steps.",
+    "catalogLink": "Catalog"
   },
   "health": {
     "heading": "Backend status",
@@ -99,6 +100,15 @@
       "amethyst": "Amethyst",
       "cubic_zirconia": "Cubic zirconia",
       "moissanite": "Moissanite"
+    },
+    "error": {
+      "network": "No network connection",
+      "retry": "Try again",
+      "general": "An error occurred while loading data"
+    },
+    "accessibility": {
+      "productImage": "Product photo of {name}",
+      "galleryImage": "Photo {index} of {total} of {name}"
     }
   },
   "auth": {

@@ -4,6 +4,8 @@ export {
 } from "./availability";
 export type { AvailabilityCategory } from "./availability";
 
+export * from "./server";
+
 export {
   VARIANT_ATTRIBUTE_NAMES,
   findMatchingVariant,
@@ -19,12 +21,3 @@ export type {
   VariantAttributeName,
   VariantSelection,
 } from "./variant-selection";
-
-export {
-  DELIVERY_COUNTRY_COOKIE_NAME,
-  DeliveryCountryEnum,
-  EU_DELIVERY_COUNTRIES,
-  currencyFromDeliveryCountry,
-  isEuDeliveryCountry,
-} from "./delivery-country";
-export type { DeliveryCountry } from "./delivery-country";
