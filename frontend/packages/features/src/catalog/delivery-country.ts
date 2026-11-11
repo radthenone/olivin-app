@@ -44,8 +44,5 @@ export function isEuDeliveryCountry(
 export function currencyFromDeliveryCountry(
   country?: DeliveryCountry | string | null,
 ): "PLN" | "EUR" {
-  if (!country || country === "PL" || !isEuDeliveryCountry(country)) {
-    return "PLN";
-  }
-  return "EUR";
+  return isEuDeliveryCountry(country) && country !== "PL" ? "EUR" : "PLN";
 }

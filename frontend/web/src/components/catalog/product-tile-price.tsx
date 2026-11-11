@@ -39,7 +39,7 @@ export async function ProductTilePrice({
 
   let price = initialPrice;
 
-  if (currency !== price?.currency || !price) {
+  if (currency !== price?.currency) {
     const product = await getProductPrice(slug, locale, currency);
     const cheapest = findCheapestPrice(product);
     if (cheapest) {
