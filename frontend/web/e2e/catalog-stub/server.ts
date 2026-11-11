@@ -513,7 +513,11 @@ function toProductList(
     currency,
     origin,
   );
-  const cheapest = localisedDetail.variants[0] ?? null;
+  // Backend zwraca najtańszy wariant, nie pierwszy z listy.
+  const cheapest =
+    [...localisedDetail.variants].sort(
+      (a, b) => a.price.amount - b.price.amount,
+    )[0] ?? null;
 
   return {
     id: localisedDetail.id,
