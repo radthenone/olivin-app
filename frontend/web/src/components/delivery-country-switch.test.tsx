@@ -9,9 +9,6 @@ const actualAuth = await import("@olivin/features/auth");
 const actualCatalog = await import("@olivin/features/catalog");
 
 let mockIsAuthenticated = false;
-let savedCookieValue: string | null = null;
-let savedProfileValue: string | null = null;
-let profileSaveShouldThrow = false;
 
 mock.module("next/navigation", () => ({
   ...actualNavigation,
@@ -25,15 +22,8 @@ mock.module("@olivin/features/auth", () => ({
 
 mock.module("@olivin/features/catalog", () => ({
   ...actualCatalog,
-  saveDeliveryCountryCookie: (country: string) => {
-    savedCookieValue = country;
-  },
-  saveProfileDeliveryCountry: async (country: string) => {
-    if (profileSaveShouldThrow) {
-      throw new Error("API error");
-    }
-    savedProfileValue = country;
-  },
+  saveDeliveryCountryCookie: () => {},
+  saveProfileDeliveryCountry: async () => {},
 }));
 
 const { DeliveryCountrySwitch } = await import("./delivery-country-switch");
@@ -41,9 +31,6 @@ const { DeliveryCountrySwitch } = await import("./delivery-country-switch");
 describe("DeliveryCountrySwitch", () => {
   beforeEach(() => {
     mockIsAuthenticated = false;
-    savedCookieValue = null;
-    savedProfileValue = null;
-    profileSaveShouldThrow = false;
   });
 
   test("renders ship to label and select with EU countries", () => {
