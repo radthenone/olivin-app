@@ -5,21 +5,21 @@ import {
 } from "node:http";
 
 import type {
+  Category,
+  Collection,
+  PaginatedProductListList,
   ProductDetail,
+  ProductList,
   ProductVariant,
 } from "@olivin/api/generated/apps/schemas";
+import { isProductSlug } from "../../src/lib/catalog-url";
 
 /**
- * Stub API katalogu dla testów przeglądarkowych (#357).
+ * Stub API katalogu dla testów przeglądarkowych (#357, #359).
  *
- * Odpowiedzi są typowane schematami Orvala, więc rozjazd kontraktu wyłapuje
- * typecheck, a nie dopiero test. Stub udaje wyłącznie to, czego potrzebuje
- * plasterek katalogu: kartę produktu w dwóch językach i dwóch walutach.
- * Domyślnie działa na porcie 3200 i jest uruchamiany jako dodatkowy
- * `webServer` Playwrighta — CI nie potrzebuje Django.
- *
- * Punkt testowy `POST /__test__/fixture` podmienia dane (cenę lub nazwę), żeby test
- * mógł zasymulować zmianę po stronie backendu.
+ * Odpowiedzi są typowane schematami Orvala. Stub symuluje endpointy katalogu:
+ * kartę produktu, listę opublikowanych produktów ze stronicowaniem, drzewo
+ * kategorii oraz kolekcje.
  */
 
 const port = Number(process.env.E2E_STUB_PORT) || 3200;
@@ -31,6 +31,21 @@ type Currency = "PLN" | "EUR";
 
 type Fixture = {
   product: ProductDetail;
+  name: Record<Language, string>;
+  description: Record<Language, string>;
+  collections?: string[];
+};
+
+type CategoryFixture = {
+  id: string;
+  slug: string;
+  name: Record<Language, string>;
+  children?: CategoryFixture[];
+};
+
+type CollectionFixture = {
+  id: string;
+  slug: string;
   name: Record<Language, string>;
   description: Record<Language, string>;
 };
@@ -92,6 +107,19 @@ function ring(): Fixture {
           price: { amount: 250_000, currency: "PLN" },
           isAvailable: true,
           isLowStock: false,
+          images: [
+            {
+              id: "image-ring",
+              position: 1,
+              isPrimary: true,
+              altText: "Złoty pierścionek z diamentem na białym tle",
+              urls: {
+                "400": "/images/ring.svg",
+                "800": "/images/ring.svg",
+                "1600": "/images/ring.svg",
+              },
+            },
+          ],
         }),
         variant({
           sku: "RING-W-17",
@@ -118,6 +146,7 @@ function ring(): Fixture {
       pl: "Pierścionek z żółtego złota z diamentem.",
       en: "A yellow gold ring set with a diamond.",
     },
+    collections: ["lato-2026"],
   };
 }
 
@@ -158,6 +187,19 @@ function necklace(): Fixture {
           available: null,
           isAvailable: true,
           isLowStock: false,
+          images: [
+            {
+              id: "image-necklace",
+              position: 1,
+              isPrimary: true,
+              altText: "Srebrny naszyjnik na białym tle",
+              urls: {
+                "400": "/images/necklace.svg",
+                "800": "/images/necklace.svg",
+                "1600": "/images/necklace.svg",
+              },
+            },
+          ],
         }),
       ],
       averageRating: null,
@@ -171,14 +213,203 @@ function necklace(): Fixture {
   };
 }
 
-let fixtures: Record<string, Fixture> = {
-  ring: ring(),
-  necklace: necklace(),
-};
+function makeProduct(
+  slug: string,
+  plName: string,
+  enName: string,
+  category: string,
+  priceAmount: number,
+  collections: string[] = [],
+): Fixture {
+  return {
+    product: {
+      id: `id-${slug}`,
+      name: plName,
+      slug,
+      description: `Opis ${plName}.`,
+      category,
+      material: "gold",
+      fineness: "585",
+      isMadeToOrder: false,
+      productionTimeDays: null,
+      isEngravable: false,
+      engravingPrice: null,
+      images: [
+        {
+          id: `image-${slug}`,
+          position: 1,
+          isPrimary: true,
+          altText: plName,
+          urls: {
+            "400": `/images/${slug}.svg`,
+            "800": `/images/${slug}.svg`,
+            "1600": `/images/${slug}.svg`,
+          },
+        },
+      ],
+      variants: [
+        variant({
+          sku: `SKU-${slug.toUpperCase()}`,
+          metalColor: "yellow",
+          price: { amount: priceAmount, currency: "PLN" },
+          isAvailable: true,
+          isLowStock: false,
+          images: [
+            {
+              id: `image-${slug}`,
+              position: 1,
+              isPrimary: true,
+              altText: plName,
+              urls: {
+                "400": `/images/${slug}.svg`,
+                "800": `/images/${slug}.svg`,
+                "1600": `/images/${slug}.svg`,
+              },
+            },
+          ],
+        }),
+      ],
+      averageRating: 5.0,
+      isFavorite: false,
+    },
+    name: { pl: plName, en: enName },
+    description: {
+      pl: `Opis dla ${plName}.`,
+      en: `Description for ${enName}.`,
+    },
+    collections,
+  };
+}
+
+function initialFixtures(): Record<string, Fixture> {
+  const result: Record<string, Fixture> = {
+    ring: ring(),
+    necklace: necklace(),
+    "earrings-gold": makeProduct(
+      "earrings-gold",
+      "Złote kolczyki",
+      "Gold earrings",
+      "kolczyki",
+      120_000,
+      ["lato-2026"],
+    ),
+    "earrings-silver": makeProduct(
+      "earrings-silver",
+      "Srebrne kolczyki",
+      "Silver earrings",
+      "kolczyki",
+      85_000,
+    ),
+    "ring-sapphire": makeProduct(
+      "ring-sapphire",
+      "Pierścionek z szafirem",
+      "Sapphire ring",
+      "zareczynowe",
+      310_000,
+      ["lato-2026"],
+    ),
+    "ring-ruby": makeProduct(
+      "ring-ruby",
+      "Pierścionek z rubinem",
+      "Ruby ring",
+      "zareczynowe",
+      340_000,
+    ),
+  };
+
+  // Dodajemy dodatkowe produkty 1..10, aby łączna liczba wynosiła 16 (dwie strony przy pageSize 12)
+  for (let i = 1; i <= 10; i++) {
+    const slug = `product-extra-${i}`;
+    result[slug] = makeProduct(
+      slug,
+      `Produkt dodatkowy ${i}`,
+      `Extra product ${i}`,
+      "pierscionki",
+      100_000 + i * 10_000,
+    );
+  }
+
+  return result;
+}
+
+let fixtures: Record<string, Fixture> = initialFixtures();
+
+const categoryTreeFixtures: CategoryFixture[] = [
+  {
+    id: "cat-pierscionki",
+    slug: "pierscionki",
+    name: { pl: "Pierścionki", en: "Rings" },
+    children: [
+      {
+        id: "cat-zareczynowe",
+        slug: "zareczynowe",
+        name: { pl: "Pierścionki zaręczynowe", en: "Engagement rings" },
+      },
+    ],
+  },
+  {
+    id: "cat-naszyjniki",
+    slug: "naszyjniki",
+    name: { pl: "Naszyjniki", en: "Necklaces" },
+  },
+  {
+    id: "cat-kolczyki",
+    slug: "kolczyki",
+    name: { pl: "Kolczyki", en: "Earrings" },
+  },
+];
+
+const collectionFixtures: CollectionFixture[] = [
+  {
+    id: "col-lato-2026",
+    slug: "lato-2026",
+    name: { pl: "Kolekcja Letnia 2026", en: "Summer Collection 2026" },
+    description: {
+      pl: "Biżuteria na słoneczne dni.",
+      en: "Jewelry for sunny days.",
+    },
+  },
+];
+
+function findCategoryFixture(
+  slug: string,
+  tree: CategoryFixture[] = categoryTreeFixtures,
+): CategoryFixture | null {
+  for (const item of tree) {
+    if (item.slug === slug) {
+      return item;
+    }
+    if (item.children) {
+      const found = findCategoryFixture(slug, item.children);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return null;
+}
+
+function getSubtreeCategorySlugs(cat: CategoryFixture): string[] {
+  const slugs = [cat.slug];
+  if (cat.children) {
+    for (const child of cat.children) {
+      slugs.push(...getSubtreeCategorySlugs(child));
+    }
+  }
+  return slugs;
+}
+
+function mapCategory(cat: CategoryFixture, lang: Language): Category {
+  return {
+    id: cat.id,
+    name: cat.name[lang],
+    slug: cat.slug,
+    children: cat.children ? cat.children.map((c) => mapCategory(c, lang)) : [],
+  };
+}
 
 /**
- * Przelicza kwotę na walutę odpowiedzi. Stub zaokrągla w górę do 50 groszy,
- * tak jak backend przy euro (ADR 0019) — test widzi zmianę waluty.
+ * Przelicza kwotę na walutę odpowiedzi.
  */
 function convert(amount: number, currency: Currency): number {
   if (currency === "PLN") {
@@ -222,6 +453,39 @@ function localise(
   };
 }
 
+function toProductList(
+  product: ProductDetail,
+  fixture: Fixture,
+  language: Language,
+  currency: Currency,
+  origin: string,
+): ProductList {
+  const localisedDetail = localise(
+    product,
+    fixture,
+    language,
+    currency,
+    origin,
+  );
+  const cheapest = localisedDetail.variants[0] ?? null;
+
+  return {
+    id: localisedDetail.id,
+    name: localisedDetail.name,
+    slug: localisedDetail.slug,
+    category: localisedDetail.category,
+    material: localisedDetail.material,
+    fineness: localisedDetail.fineness,
+    isMadeToOrder: localisedDetail.isMadeToOrder,
+    productionTimeDays: localisedDetail.productionTimeDays,
+    isEngravable: localisedDetail.isEngravable,
+    engravingPrice: localisedDetail.engravingPrice,
+    cheapestVariant: cheapest,
+    averageRating: localisedDetail.averageRating,
+    isFavorite: localisedDetail.isFavorite,
+  };
+}
+
 function json(response: ServerResponse, status: number, body: unknown): void {
   response.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
@@ -255,6 +519,9 @@ function originOf(request: IncomingMessage): string {
 const server = createServer(async (request, response) => {
   const url = new URL(request.url ?? "/", originOf(request));
   const origin = originOf(request);
+  const language: Language = url.searchParams.get("lang") === "en" ? "en" : "pl";
+  const currency: Currency =
+    url.searchParams.get("currency") === "EUR" ? "EUR" : "PLN";
 
   if (request.method === "GET" && url.pathname === "/health/") {
     json(response, 200, { status: "ok" });
@@ -270,7 +537,6 @@ const server = createServer(async (request, response) => {
     const body = (await readBody(request)) as {
       slug?: string;
       priceAmount?: number;
-      /** Nowa polska nazwa produktu (pole keszowane na stronie produktu). */
       name?: string;
     };
 
@@ -318,22 +584,154 @@ const server = createServer(async (request, response) => {
   }
 
   if (request.method === "DELETE" && url.pathname === "/__test__/fixture") {
-    fixtures = { ring: ring(), necklace: necklace() };
+    fixtures = initialFixtures();
     json(response, 200, { status: "ok" });
     return;
   }
 
-  const match = /^\/products\/([^/]+)\/$/.exec(url.pathname);
+  // GET /categories/
+  if (request.method === "GET" && url.pathname === "/categories/") {
+    const tree: Category[] = categoryTreeFixtures.map((cat) =>
+      mapCategory(cat, language),
+    );
+    json(response, 200, tree);
+    return;
+  }
 
-  if (request.method === "GET" && match) {
-    const fixture = fixtures[match[1]];
+  // GET /categories/{slug}/
+  const categoryMatch = /^\/categories\/([^/]+)\/$/.exec(url.pathname);
+  if (request.method === "GET" && categoryMatch) {
+    const slug = categoryMatch[1];
+    if (!isProductSlug(slug)) {
+      json(response, 404, { detail: "Niepoprawny slug." });
+      return;
+    }
+
+    const found = findCategoryFixture(slug);
+    if (!found) {
+      json(response, 404, { detail: "Nie znaleziono kategorii." });
+      return;
+    }
+
+    json(response, 200, mapCategory(found, language));
+    return;
+  }
+
+  // GET /collections/
+  if (request.method === "GET" && url.pathname === "/collections/") {
+    const items: Collection[] = collectionFixtures.map((col) => {
+      const count = Object.values(fixtures).filter((f) =>
+        f.collections?.includes(col.slug),
+      ).length;
+      return {
+        id: col.id,
+        name: col.name[language],
+        slug: col.slug,
+        description: col.description[language],
+        productCount: count,
+      };
+    });
+    json(response, 200, { count: items.length, results: items });
+    return;
+  }
+
+  // GET /collections/{slug}/
+  const collectionMatch = /^\/collections\/([^/]+)\/$/.exec(url.pathname);
+  if (request.method === "GET" && collectionMatch) {
+    const slug = collectionMatch[1];
+    if (!isProductSlug(slug)) {
+      json(response, 404, { detail: "Niepoprawny slug." });
+      return;
+    }
+
+    const found = collectionFixtures.find((c) => c.slug === slug);
+    if (!found) {
+      json(response, 404, { detail: "Nie znaleziono kolekcji." });
+      return;
+    }
+
+    const count = Object.values(fixtures).filter((f) =>
+      f.collections?.includes(found.slug),
+    ).length;
+    const col: Collection = {
+      id: found.id,
+      name: found.name[language],
+      slug: found.slug,
+      description: found.description[language],
+      productCount: count,
+    };
+    json(response, 200, col);
+    return;
+  }
+
+  // GET /products/
+  if (request.method === "GET" && url.pathname === "/products/") {
+    const categoryParam = url.searchParams.get("category");
+    const collectionParam = url.searchParams.get("collection");
+    const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
+    const pageSize = Math.max(
+      1,
+      Number(url.searchParams.get("pageSize")) || 12,
+    );
+
+    let list = Object.values(fixtures);
+
+    if (categoryParam) {
+      if (!isProductSlug(categoryParam)) {
+        json(response, 200, { count: 0, results: [] });
+        return;
+      }
+      const catFixture = findCategoryFixture(categoryParam);
+      const allowedCategories = catFixture
+        ? getSubtreeCategorySlugs(catFixture)
+        : [categoryParam];
+      list = list.filter((f) => allowedCategories.includes(f.product.category));
+    }
+
+    if (collectionParam) {
+      if (!isProductSlug(collectionParam)) {
+        json(response, 200, { count: 0, results: [] });
+        return;
+      }
+      list = list.filter((f) => f.collections?.includes(collectionParam));
+    }
+
+    const totalCount = list.length;
+    const startIndex = (page - 1) * pageSize;
+    const paged = list.slice(startIndex, startIndex + pageSize);
+
+    const results: ProductList[] = paged.map((f) =>
+      toProductList(f.product, f, language, currency, origin),
+    );
+
+    const payload: PaginatedProductListList = {
+      count: totalCount,
+      next:
+        startIndex + pageSize < totalCount
+          ? `${origin}/products/?page=${page + 1}`
+          : null,
+      previous: page > 1 ? `${origin}/products/?page=${page - 1}` : null,
+      results,
+    };
+
+    json(response, 200, payload);
+    return;
+  }
+
+  // GET /products/{slug}/
+  const productMatch = /^\/products\/([^/]+)\/$/.exec(url.pathname);
+  if (request.method === "GET" && productMatch) {
+    const slug = productMatch[1];
+    if (!isProductSlug(slug)) {
+      json(response, 404, { detail: "Niepoprawny slug." });
+      return;
+    }
+
+    const fixture = fixtures[slug];
     if (!fixture) {
       json(response, 404, { detail: "Nie znaleziono." });
       return;
     }
-
-    const language = url.searchParams.get("lang") === "en" ? "en" : "pl";
-    const currency = url.searchParams.get("currency") === "EUR" ? "EUR" : "PLN";
 
     json(
       response,
