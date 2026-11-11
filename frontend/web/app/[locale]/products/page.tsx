@@ -73,7 +73,12 @@ export default async function ProductsPage({
         <p className="text-base text-neutral-600">
           {t("catalog.list.description")}
         </p>
-        <p className="text-sm text-neutral-500">
+        <p
+          aria-atomic="true"
+          aria-live="polite"
+          className="text-sm text-neutral-500"
+          role="status"
+        >
           {t("catalog.list.productCount", { count: productsData.count })}
         </p>
       </header>

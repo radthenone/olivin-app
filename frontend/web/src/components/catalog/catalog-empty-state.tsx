@@ -19,7 +19,10 @@ export function CatalogEmptyState({
   const t = useTranslations("catalog");
 
   return (
-    <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-neutral-200 bg-neutral-0 p-8 text-center text-neutral-600">
+    <div
+      role="status"
+      className="flex flex-col items-center justify-center gap-4 rounded-xl border border-neutral-200 bg-neutral-0 p-8 text-center text-neutral-600"
+    >
       <p>{hasFilters ? t("list.emptyFiltered") : t("list.empty")}</p>
       {hasFilters && (
         <Button asChild variant="outline">

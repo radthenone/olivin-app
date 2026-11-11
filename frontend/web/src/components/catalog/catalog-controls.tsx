@@ -10,9 +10,11 @@ import {
   CATALOG_LENGTHS,
   CATALOG_MATERIALS,
   CATALOG_METAL_COLORS,
+  CATALOG_PRICE_MAX,
   CATALOG_SIZES,
   CATALOG_STONES,
   hasActiveFilters,
+  parseCatalogPrice,
   serializeCatalogFilters,
   withFilterChange,
   type CatalogFilterState,
@@ -26,6 +28,25 @@ import { cn } from "@/lib/utils";
 
 const selectClassName =
   "flex h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm text-foreground";
+
+/**
+ * Pole tekstowe zsynchronizowane z wartością z adresu.
+ *
+ * Zmiana wartości z adresu (wyczyszczenie, „wstecz”) nadpisuje wpisany tekst.
+ * Stan jest korygowany w trakcie renderu, a nie przez `key`: remont zgubiłby
+ * fokus po zatwierdzeniu formularza.
+ */
+function useUrlSyncedInput(urlValue: string) {
+  const [value, setValue] = useState(urlValue);
+  const [syncedUrlValue, setSyncedUrlValue] = useState(urlValue);
+
+  if (syncedUrlValue !== urlValue) {
+    setSyncedUrlValue(urlValue);
+    setValue(urlValue);
+  }
+
+  return [value, setValue] as const;
+}
 
 /**
  * Pasek wyszukiwania w katalogu produktów (#360).
@@ -42,7 +63,7 @@ export function CatalogSearch({
   const t = useTranslations("catalog");
   const router = useRouter();
   const pathname = usePathname() || basePath;
-  const [searchTerm, setSearchTerm] = useState(initialSearch);
+  const [searchTerm, setSearchTerm] = useUrlSyncedInput(initialSearch);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -146,20 +167,23 @@ export function CatalogSort({
 export function CatalogFiltersPanel({
   currentFilters = {},
   basePath,
+  currency = "PLN",
 }: {
   currentFilters?: CatalogFilterState;
   basePath: string;
+  /** Kod waluty w etykiecie przedziału ceny; filtry cenowe API są na razie w złotych. */
+  currency?: string;
 }) {
   const t = useTranslations("catalog");
   const router = useRouter();
   const pathname = usePathname() || basePath;
 
-  const [priceMinInput, setPriceMinInput] = useState<string>(
+  const [priceMinInput, setPriceMinInput] = useUrlSyncedInput(
     currentFilters.priceMin !== undefined
       ? String(currentFilters.priceMin)
       : "",
   );
-  const [priceMaxInput, setPriceMaxInput] = useState<string>(
+  const [priceMaxInput, setPriceMaxInput] = useUrlSyncedInput(
     currentFilters.priceMax !== undefined
       ? String(currentFilters.priceMax)
       : "",
@@ -175,14 +199,9 @@ export function CatalogFiltersPanel({
 
   const handlePriceSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const min = priceMinInput.trim() ? Number(priceMinInput.trim()) : undefined;
-    const max = priceMaxInput.trim() ? Number(priceMaxInput.trim()) : undefined;
-
     updateFilter({
-      priceMin:
-        min !== undefined && !Number.isNaN(min) && min >= 0 ? min : undefined,
-      priceMax:
-        max !== undefined && !Number.isNaN(max) && max >= 0 ? max : undefined,
+      priceMin: parseCatalogPrice(priceMinInput),
+      priceMax: parseCatalogPrice(priceMaxInput),
     });
   };
 
@@ -335,50 +354,54 @@ export function CatalogFiltersPanel({
             <option value="">{t("filters.all")}</option>
             {CATALOG_LENGTHS.map((len) => (
               <option key={len} value={len}>
-                {len} cm
+                {t("product.lengthValue", { value: len })}
               </option>
             ))}
           </select>
         </div>
 
         {/* Przedział ceny */}
-        <form onSubmit={handlePriceSubmit} className="flex flex-col gap-2 pt-2">
-          <span className="font-medium text-neutral-700">
-            {t("filters.price")} (PLN)
-          </span>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label htmlFor="filter-price-min" className="sr-only">
-                {t("filters.priceFrom")}
-              </Label>
-              <Input
-                id="filter-price-min"
-                type="number"
-                min="0"
-                step="1"
-                placeholder={t("filters.priceFrom")}
-                value={priceMinInput}
-                onChange={(e) => setPriceMinInput(e.target.value)}
-              />
+        <form onSubmit={handlePriceSubmit} className="pt-2">
+          <fieldset className="flex min-w-0 flex-col gap-2">
+            <legend className="mb-2 font-medium text-neutral-700">
+              {t("filters.priceInCurrency", { currency })}
+            </legend>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label htmlFor="filter-price-min" className="sr-only">
+                  {t("filters.priceFrom")}
+                </Label>
+                <Input
+                  id="filter-price-min"
+                  type="number"
+                  min="0"
+                  max={CATALOG_PRICE_MAX}
+                  step="0.01"
+                  placeholder={t("filters.priceFrom")}
+                  value={priceMinInput}
+                  onChange={(e) => setPriceMinInput(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="filter-price-max" className="sr-only">
+                  {t("filters.priceTo")}
+                </Label>
+                <Input
+                  id="filter-price-max"
+                  type="number"
+                  min="0"
+                  max={CATALOG_PRICE_MAX}
+                  step="0.01"
+                  placeholder={t("filters.priceTo")}
+                  value={priceMaxInput}
+                  onChange={(e) => setPriceMaxInput(e.target.value)}
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="filter-price-max" className="sr-only">
-                {t("filters.priceTo")}
-              </Label>
-              <Input
-                id="filter-price-max"
-                type="number"
-                min="0"
-                step="1"
-                placeholder={t("filters.priceTo")}
-                value={priceMaxInput}
-                onChange={(e) => setPriceMaxInput(e.target.value)}
-              />
-            </div>
-          </div>
-          <Button type="submit" size="sm" variant="outline" className="mt-1">
-            {t("filters.apply")}
-          </Button>
+            <Button type="submit" size="sm" variant="outline" className="mt-1">
+              {t("filters.apply")}
+            </Button>
+          </fieldset>
         </form>
       </div>
     </div>

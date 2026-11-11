@@ -81,4 +81,27 @@ describe("CatalogControls", () => {
     expect(html).toContain('id="filter-price-min"');
     expect(html).toContain('id="filter-price-max"');
   });
+
+  test("CatalogFiltersPanel groups price fields in a labelled fieldset with currency", () => {
+    const html = renderWithIntl(
+      <CatalogFiltersPanel basePath="/pl/products" />,
+    );
+
+    expect(html).toContain("<fieldset");
+    expect(html).toContain("<legend");
+    expect(html).toContain("Cena (PLN)");
+    expect(html).toContain('step="0.01"');
+    expect(html).not.toContain('step="1"');
+
+    const en = renderWithIntl(
+      <CatalogFiltersPanel basePath="/en/products" currency="EUR" />,
+      "en",
+    );
+    expect(en).toContain("Price (EUR)");
+  });
+
+  test("CatalogFiltersPanel renders length options through i18n", () => {
+    const pl = renderWithIntl(<CatalogFiltersPanel basePath="/pl/products" />);
+    expect(pl).toContain("45 cm");
+  });
 });

@@ -125,4 +125,59 @@ test.describe("Web catalog filters, search and sorting in URL (#360)", () => {
     await expect(page).toHaveURL(/\/pl\/products$/);
     await expect(main.getByText("Złoty pierścionek")).toBeVisible();
   });
+
+  test("clearing filters and browser back reset search and price fields", async ({
+    page,
+  }) => {
+    test.skip(liveBackend, "Fixture stubu mają z góry znane nazwy produktów.");
+
+    await page.goto("/pl/products");
+
+    const searchInput = page.getByRole("searchbox", {
+      name: "Szukaj w katalogu",
+    });
+    const priceMin = page.locator("#filter-price-min");
+
+    await searchInput.fill("pierścionek");
+    await page.getByRole("button", { name: "Szukaj" }).click();
+    await expect(page).toHaveURL(/search=/);
+
+    await priceMin.fill("100");
+    await page.getByRole("button", { name: "Zastosuj filtry" }).click();
+    await expect(page).toHaveURL(/priceMin=100/);
+
+    await page
+      .locator("aside")
+      .getByRole("link", { name: "Wyczyść filtry" })
+      .click();
+    await expect(page).toHaveURL(/\/pl\/products$/);
+    await expect(searchInput).toHaveValue("");
+    await expect(priceMin).toHaveValue("");
+
+    // „Wstecz” odtwarza adres z filtrami, a pola odzwierciedlają ten adres.
+    await page.goBack();
+    await expect(page).toHaveURL(/priceMin=100/);
+    await expect(searchInput).toHaveValue("pierścionek");
+    await expect(priceMin).toHaveValue("100");
+
+    await page.goBack();
+    await expect(page).not.toHaveURL(/priceMin=/);
+    await expect(priceMin).toHaveValue("");
+
+    await page.goBack();
+    await expect(page).not.toHaveURL(/search=/);
+    await expect(searchInput).toHaveValue("");
+  });
+
+  test("ignores non-finite prices and control characters from the URL", async ({
+    page,
+  }) => {
+    test.skip(liveBackend, "Fixture stubu mają z góry znane nazwy produktów.");
+
+    await page.goto("/pl/products?priceMin=Infinity&priceMax=1e999&search=%00");
+
+    const main = page.getByRole("main");
+    await expect(main.getByText("Złoty pierścionek")).toBeVisible();
+    await expect(page.locator("#filter-price-min")).toHaveValue("");
+  });
 });

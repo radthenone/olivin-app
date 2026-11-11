@@ -22,6 +22,7 @@ describe("Catalog i18n messages", () => {
     "filters.size",
     "filters.length",
     "filters.price",
+    "filters.priceInCurrency",
     "filters.priceFrom",
     "filters.priceTo",
     "list.emptyFiltered",

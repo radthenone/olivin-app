@@ -76,7 +76,12 @@ export default async function CategoryPage({
         <h1 className="text-3xl font-semibold text-brand-600">
           {category.name}
         </h1>
-        <p className="text-sm text-neutral-500">
+        <p
+          aria-atomic="true"
+          aria-live="polite"
+          className="text-sm text-neutral-500"
+          role="status"
+        >
           {t("catalog.list.productCount", { count: productsData.count })}
         </p>
       </header>

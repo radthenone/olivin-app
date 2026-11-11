@@ -28,6 +28,10 @@ describe("CatalogEmptyState", () => {
     expect(html).not.toContain("Wyczyść filtry");
   });
 
+  test("announces the empty state to screen readers", () => {
+    expect(render(true)).toContain('role="status"');
+  });
+
   test("shows filtered empty message and clear filters action when filters are active", () => {
     const html = render(true, "/pl/categories/kolczyki");
     expect(html).toContain("Brak produktów spełniających wybrane kryteria.");
