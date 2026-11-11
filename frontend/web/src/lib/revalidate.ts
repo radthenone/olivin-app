@@ -32,6 +32,11 @@ export function verifyRevalidateSecret(
   return timingSafeEqual(providedHash, expectedHash);
 }
 
+/** Maksymalna liczba tagów w jednym żądaniu rewalidacji. */
+export const MAX_REVALIDATE_TAGS = 100;
+/** Maksymalna długość pojedynczego tagu. */
+export const MAX_REVALIDATE_TAG_LENGTH = 256;
+
 export type ParsePayloadResult =
   { ok: true; tags: string[] } | { ok: false; error: string };
 
@@ -58,7 +63,20 @@ export function parseRevalidatePayload(body: unknown): ParsePayloadResult {
     return { ok: false, error: "Tablica 'tags' nie może być pusta." };
   }
 
+  if (candidate.tags.length > MAX_REVALIDATE_TAGS) {
+    return {
+      ok: false,
+      error: `Tablica 'tags' może mieć najwyżej ${MAX_REVALIDATE_TAGS} elementów.`,
+    };
+  }
+
   for (const tag of candidate.tags) {
+    if (typeof tag === "string" && tag.length > MAX_REVALIDATE_TAG_LENGTH) {
+      return {
+        ok: false,
+        error: `Tag może mieć najwyżej ${MAX_REVALIDATE_TAG_LENGTH} znaków.`,
+      };
+    }
     if (typeof tag !== "string" || tag.trim().length === 0) {
       return {
         ok: false,
@@ -80,11 +98,12 @@ export type HandleRevalidateOptions = {
 /**
  * Domyślna funkcja unieważniająca tag w pamięci podręcznej Next.js.
  *
- * W Next.js 16 (Cache Components) revalidateTag wymaga profilu cacheLife
- * (np. "max" dla unieważnienia natychmiastowego).
+ * Wywołanie spoza Server Action (Route Handler wołany przez backend) nie może
+ * użyć `updateTag`, więc `{ expire: 0 }` wygasza wpis natychmiast
+ * (profil "max" tylko oznaczałby go jako nieświeży).
  */
 export function defaultRevalidateTag(tag: string): void {
-  revalidateTag(tag, "max");
+  revalidateTag(tag, { expire: 0 });
 }
 
 /**

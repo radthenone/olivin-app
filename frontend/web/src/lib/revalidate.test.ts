@@ -50,6 +50,16 @@ describe("parseRevalidatePayload", () => {
     expect(parseRevalidatePayload({ tags: ["valid", ""] }).ok).toBe(false);
   });
 
+  test("rejects too many tags or too long tag", () => {
+    const tooMany = Array.from({ length: 101 }, (_, i) => `t${i}`);
+    expect(parseRevalidatePayload({ tags: tooMany }).ok).toBe(false);
+    expect(parseRevalidatePayload({ tags: tooMany.slice(0, 100) }).ok).toBe(
+      true,
+    );
+    expect(parseRevalidatePayload({ tags: ["a".repeat(257)] }).ok).toBe(false);
+    expect(parseRevalidatePayload({ tags: ["a".repeat(256)] }).ok).toBe(true);
+  });
+
   test("accepts valid tags array", () => {
     const result = parseRevalidatePayload({
       tags: ["product:ring", "catalog"],

@@ -58,32 +58,43 @@ test.describe("POST /api/revalidate authorization and routing", () => {
 });
 
 test.describe("catalog cache revalidation flow", () => {
-  test("updates product card price after stub change and revalidation with product tag", async ({
+  test("shows the new product name only after revalidation with product tag", async ({
     page,
     request,
   }) => {
     test.skip(
       liveBackend,
-      "Podmiana cen w stubie dotyczy wyłącznie środowiska testowego ze stubem.",
+      "Podmiana danych w stubie dotyczy wyłącznie środowiska testowego ze stubem.",
     );
 
-    const slug = "ring";
+    // Slug używany wyłącznie tutaj — product-page.spec.ts korzysta z `ring`,
+    // a pliki specyfikacji biegną równolegle na wspólnym stubie.
+    const slug = "necklace";
     if (!isProductSlug(slug)) {
       throw new Error(`Niepoprawny slug produktu: ${slug}`);
     }
+    const oldName = "Naszyjnik na zamówienie";
+    const newName = "Naszyjnik po rewalidacji";
+    const heading = (name: string) =>
+      page.getByRole("heading", { level: 1, name });
 
-    // 1. Sprawdzenie początkowej ceny z kesza karty produktu (2 500,00 zł).
+    // 1. Nazwa początkowa trafia do kesza (cena jest dynamiczna, nazwa nie).
     await page.goto(`/pl/products/${slug}`);
-    await expect(page.getByText(/2.?500,00.?zł/)).toBeVisible();
+    await expect(heading(oldName)).toBeVisible();
 
     try {
-      // 2. Symulacja przeliczenia / zmiany ceny w katalogu (stub API).
+      // 2. Zmiana nazwy w katalogu (stub API).
       const updateResponse = await request.post(`${stubUrl}/__test__/fixture`, {
-        data: { slug, priceAmount: 320000 },
+        data: { slug, name: newName },
       });
       expect(updateResponse.ok()).toBe(true);
 
-      // 3. Wysłanie rewalidacji tagu product:<slug> do endpointu webu.
+      // 3. Kontrola negatywna: bez rewalidacji kesz nadal zwraca starą nazwę.
+      await page.goto(`/pl/products/${slug}`);
+      await expect(heading(oldName)).toBeVisible();
+      await expect(heading(newName)).toHaveCount(0);
+
+      // 4. Rewalidacja tagu product:<slug>.
       const revalidateResponse = await page.request.post("/api/revalidate", {
         maxRedirects: 0,
         headers: { "x-revalidate-secret": revalidateSecret },
@@ -99,11 +110,11 @@ test.describe("catalog cache revalidation flow", () => {
       expect(body.revalidated).toBe(true);
       expect(body.tags).toContain(`product:${slug}`);
 
-      // 4. Ponowne załadowanie karty produktu — prezentacja nowej ceny (3 200,00 zł).
+      // 5. Po rewalidacji strona pokazuje nową nazwę.
       await page.goto(`/pl/products/${slug}`);
-      await expect(page.getByText(/3.?200,00.?zł/)).toBeVisible();
+      await expect(heading(newName)).toBeVisible();
     } finally {
-      // 5. Przywrócenie stanu początkowego stubu i rewalidacja.
+      // 6. Przywrócenie stanu początkowego stubu i rewalidacja.
       await request.delete(`${stubUrl}/__test__/fixture`);
       await page.request.post("/api/revalidate", {
         headers: { "x-revalidate-secret": revalidateSecret },

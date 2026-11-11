@@ -18,7 +18,7 @@ import type {
  * Domyślnie działa na porcie 3200 i jest uruchamiany jako dodatkowy
  * `webServer` Playwrighta — CI nie potrzebuje Django.
  *
- * Punkt testowy `POST /__test__/fixture` podmienia dane (np. cenę), żeby test
+ * Punkt testowy `POST /__test__/fixture` podmienia dane (cenę lub nazwę), żeby test
  * mógł zasymulować zmianę po stronie backendu.
  */
 
@@ -270,11 +270,17 @@ const server = createServer(async (request, response) => {
     const body = (await readBody(request)) as {
       slug?: string;
       priceAmount?: number;
-      currency?: Currency;
+      /** Nowa polska nazwa produktu (pole keszowane na stronie produktu). */
+      name?: string;
     };
 
-    if (!body?.slug || typeof body.priceAmount !== "number") {
-      json(response, 400, { detail: "Wymagane slug i priceAmount." });
+    if (
+      !body?.slug ||
+      (typeof body.priceAmount !== "number" && typeof body.name !== "string")
+    ) {
+      json(response, 400, {
+        detail: "Wymagane slug oraz priceAmount lub name.",
+      });
       return;
     }
 
@@ -288,12 +294,22 @@ const server = createServer(async (request, response) => {
       ...fixtures,
       [body.slug]: {
         ...fixture,
+        name:
+          typeof body.name === "string"
+            ? { ...fixture.name, pl: body.name }
+            : fixture.name,
         product: {
           ...fixture.product,
-          variants: fixture.product.variants.map((item) => ({
-            ...item,
-            price: { amount: body.priceAmount as number, currency: "PLN" },
-          })),
+          variants:
+            typeof body.priceAmount === "number"
+              ? fixture.product.variants.map((item) => ({
+                  ...item,
+                  price: {
+                    amount: body.priceAmount as number,
+                    currency: "PLN" as const,
+                  },
+                }))
+              : fixture.product.variants,
         },
       },
     };
