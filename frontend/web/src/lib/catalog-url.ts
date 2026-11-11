@@ -45,16 +45,3 @@ const CATALOG_SLUG = /^[-a-zA-Z0-9_]+$/;
 export function isCatalogSlug(slug: string): boolean {
   return CATALOG_SLUG.test(slug);
 }
-
-/**
- * Czy slug można wstawić do adresu API katalogu dla produktu.
- *
- * Args:
- *     slug: Slug produktu z adresu żądania albo z parametru trasy.
- *
- * Returns:
- *     `true`, gdy slug ma poprawny format sluga produktu.
- */
-export function isProductSlug(slug: string): boolean {
-  return isCatalogSlug(slug);
-}

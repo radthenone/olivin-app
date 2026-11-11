@@ -22,7 +22,7 @@ import type { Locale } from "@olivin/i18n";
 import { cacheLife, cacheTag } from "next/cache";
 import { cookies } from "next/headers";
 
-import { catalogBaseUrl, isCatalogSlug, isProductSlug } from "./catalog-url";
+import { catalogBaseUrl, isCatalogSlug } from "./catalog-url";
 
 /**
  * Publiczny transport serwerowy katalogu (ADR 0034).
@@ -78,7 +78,7 @@ async function fetchProduct(
 ): Promise<ProductDetail | null> {
   // Slug spoza formatu katalogu nie trafia do adresu API (zdekodowany
   // parametr trasy `..%2Fx.y` to `../x.y`): odpowiada jak brak produktu.
-  if (!isProductSlug(slug)) {
+  if (!isCatalogSlug(slug)) {
     return null;
   }
 
