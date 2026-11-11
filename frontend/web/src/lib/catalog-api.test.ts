@@ -1,7 +1,21 @@
+import { mock } from "bun:test";
+
+let mockCookies: Record<string, { value: string }> = {};
+
+mock.module("next/headers", () => ({
+  cookies: async () => ({
+    get: (name: string) => mockCookies[name],
+  }),
+  cacheLife: () => {},
+  cacheTag: () => {},
+}));
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import {
   currencyCookieName,
+  deliveryCountryCookieName,
+  getRequestCurrency,
+  getRequestDeliveryCountry,
   fetchCategoriesTree,
   fetchCategory,
   fetchCollection,
@@ -29,6 +43,43 @@ describe("catalog server transport", () => {
   test("defines currency cookie name", () => {
     expect(currencyCookieName).toBe("currency");
   });
+
+  test("defines delivery country cookie name", () => {
+    expect(deliveryCountryCookieName).toBe("delivery_country");
+  });
+
+  describe("getRequestCurrency and getRequestDeliveryCountry", () => {
+    test("returns EUR and country when delivery_country cookie is an EU country other than PL", async () => {
+      mockCookies = { delivery_country: { value: "DE" } };
+      expect(await getRequestCurrency()).toBe("EUR");
+      expect(await getRequestDeliveryCountry()).toBe("DE");
+    });
+
+    test("returns PLN and PL when delivery_country cookie is PL", async () => {
+      mockCookies = { delivery_country: { value: "PL" } };
+      expect(await getRequestCurrency()).toBe("PLN");
+      expect(await getRequestDeliveryCountry()).toBe("PL");
+    });
+
+    test("returns PLN and null when delivery_country is not an EU country", async () => {
+      mockCookies = { delivery_country: { value: "US" } };
+      expect(await getRequestCurrency()).toBe("PLN");
+      expect(await getRequestDeliveryCountry()).toBeNull();
+    });
+
+    test("falls back to currency cookie when delivery_country is not set", async () => {
+      mockCookies = { currency: { value: "EUR" } };
+      expect(await getRequestCurrency()).toBe("EUR");
+      expect(await getRequestDeliveryCountry()).toBeNull();
+    });
+
+    test("defaults to PLN and null when neither cookie is set", async () => {
+      mockCookies = {};
+      expect(await getRequestCurrency()).toBe("PLN");
+      expect(await getRequestDeliveryCountry()).toBeNull();
+    });
+  });
+
 
   test("fetches product with language and currency query parameters", async () => {
     let requestedUrl = "";

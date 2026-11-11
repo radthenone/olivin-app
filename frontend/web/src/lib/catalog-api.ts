@@ -1,3 +1,9 @@
+import {
+  DELIVERY_COUNTRY_COOKIE_NAME,
+  currencyFromDeliveryCountry,
+  isEuDeliveryCountry,
+  type DeliveryCountry,
+} from "@olivin/features/catalog";
 import type {
   Category,
   Collection,
@@ -36,6 +42,9 @@ import { catalogBaseUrl, isCatalogSlug, isProductSlug } from "./catalog-url";
 
 /** Cookie waluty z kraju dostawy (ADR 0035). Brak cookie oznacza złote. */
 export const currencyCookieName = "currency";
+
+/** Cookie wybranego kraju dostawy (ADR 0035). */
+export const deliveryCountryCookieName = DELIVERY_COUNTRY_COOKIE_NAME;
 
 export type CatalogCurrency = "PLN" | "EUR";
 
@@ -136,15 +145,38 @@ export async function getProductPrice(
 }
 
 /**
- * Waluta bieżącego żądania. Waluta nie trafia do adresu ani do kesza.
+ * Kraj dostawy bieżącego żądania.
  *
  * Returns:
- *     `EUR` tylko przy jawnym cookie euro; inaczej `PLN`.
+ *     Prawidłowy kod państwa członkowskiego Unii albo `null`.
+ */
+export async function getRequestDeliveryCountry(): Promise<DeliveryCountry | null> {
+  const store = await cookies();
+  const value = store.get(deliveryCountryCookieName)?.value;
+  if (value && isEuDeliveryCountry(value)) {
+    return value;
+  }
+  return null;
+}
+
+/**
+ * Waluta bieżącego żądania. Waluta nie trafia do adresu ani do kesza.
+ *
+ * O walucie decyduje kraj dostawy z cookie (ADR 0035). Dla kompatybilności
+ * wstecznej sprawdzane jest też bezpośrednie ciasteczko waluty.
+ *
+ * Returns:
+ *     `EUR` dla kraju Unii innego niż Polska (albo jawnego cookie EUR); inaczej `PLN`.
  */
 export async function getRequestCurrency(): Promise<CatalogCurrency> {
-  const value = (await cookies()).get(currencyCookieName)?.value;
+  const store = await cookies();
+  const countryValue = store.get(deliveryCountryCookieName)?.value;
+  if (countryValue) {
+    return currencyFromDeliveryCountry(countryValue);
+  }
 
-  return value === "EUR" ? "EUR" : "PLN";
+  const currencyValue = store.get(currencyCookieName)?.value;
+  return currencyValue === "EUR" ? "EUR" : "PLN";
 }
 
 export type ProductsListFilters = {
