@@ -15,35 +15,35 @@ import type {
 import { isCatalogSlug } from "../../src/lib/catalog-url";
 
 /**
- * Stub API katalogu dla testów przeglądarkowych (#357, #359).
+ * Stub API katalogu dla testów przeglądarkowych (#357, #359, #360).
  *
  * Odpowiedzi są typowane schematami Orvala. Stub symuluje endpointy katalogu:
  * kartę produktu, listę opublikowanych produktów ze stronicowaniem, drzewo
- * kategorii oraz kolekcje.
+ * kategorii, kolekcje oraz filtry i wyszukiwanie.
  */
 
 const port = Number(process.env.E2E_STUB_PORT) || 3200;
 /** Kurs zastępczy: backend przelicza po kursie NBP, stub tylko symuluje kierunek. */
 const PLN_PER_EUR = 4.3;
 
-type Language = "pl" | "en";
-type Currency = "PLN" | "EUR";
+export type Language = "pl" | "en";
+export type Currency = "PLN" | "EUR";
 
-type Fixture = {
+export type Fixture = {
   product: ProductDetail;
   name: Record<Language, string>;
   description: Record<Language, string>;
   collections?: string[];
 };
 
-type CategoryFixture = {
+export type CategoryFixture = {
   id: string;
   slug: string;
   name: Record<Language, string>;
   children?: CategoryFixture[];
 };
 
-type CollectionFixture = {
+export type CollectionFixture = {
   id: string;
   slug: string;
   name: Record<Language, string>;
@@ -257,7 +257,10 @@ function makeProduct(
   category: string,
   priceAmount: number,
   collections: string[] = [],
+  materialOverride?: "gold" | "silver" | "platinum" | "palladium",
 ): Fixture {
+  const material =
+    materialOverride ?? (slug.includes("silver") ? "silver" : "gold");
   return {
     product: {
       id: `id-${slug}`,
@@ -265,8 +268,8 @@ function makeProduct(
       slug,
       description: `Opis ${plName}.`,
       category,
-      material: "gold",
-      fineness: "585",
+      material,
+      fineness: material === "silver" ? "925" : "585",
       isMadeToOrder: false,
       productionTimeDays: null,
       isEngravable: false,
@@ -318,7 +321,7 @@ function makeProduct(
   };
 }
 
-function initialFixtures(): Record<string, Fixture> {
+export function initialFixtures(): Record<string, Fixture> {
   const result: Record<string, Fixture> = {
     ring: ring(),
     necklace: necklace(),
@@ -329,6 +332,7 @@ function initialFixtures(): Record<string, Fixture> {
       "kolczyki",
       120_000,
       ["lato-2026"],
+      "gold",
     ),
     "earrings-silver": makeProduct(
       "earrings-silver",
@@ -336,6 +340,8 @@ function initialFixtures(): Record<string, Fixture> {
       "Silver earrings",
       "kolczyki",
       85_000,
+      [],
+      "silver",
     ),
     "ring-sapphire": makeProduct(
       "ring-sapphire",
@@ -371,7 +377,7 @@ function initialFixtures(): Record<string, Fixture> {
 
 let fixtures: Record<string, Fixture> = initialFixtures();
 
-const categoryTreeFixtures: CategoryFixture[] = [
+export const categoryTreeFixtures: CategoryFixture[] = [
   {
     id: "cat-pierscionki",
     slug: "pierscionki",
@@ -396,7 +402,7 @@ const categoryTreeFixtures: CategoryFixture[] = [
   },
 ];
 
-const collectionFixtures: CollectionFixture[] = [
+export const collectionFixtures: CollectionFixture[] = [
   {
     id: "col-lato-2026",
     slug: "lato-2026",
@@ -566,7 +572,150 @@ function originOf(request: IncomingMessage): string {
   return `http://${request.headers.host ?? `localhost:${port}`}`;
 }
 
-const server = createServer(async (request, response) => {
+/**
+ * Zwraca nazwę pierwszego parametru z niepoprawną wartością filtra.
+ *
+ * Backend odpowiada 400 na niepoprawne filtry: cena nie jest skończoną liczbą
+ * albo któryś parametr zawiera NUL (Postgres go odrzuca).
+ *
+ * Args:
+ *     searchParams: Parametry zapytania URL.
+ *
+ * Returns:
+ *     Nazwa parametru albo `null`, gdy wszystkie wartości są poprawne.
+ */
+export function findInvalidFilterParam(
+  searchParams: URLSearchParams,
+): string | null {
+  for (const key of ["priceMin", "priceMax"]) {
+    const value = searchParams.get(key)?.trim();
+    if (value && !Number.isFinite(Number(value))) {
+      return key;
+    }
+  }
+  for (const [key, value] of searchParams) {
+    if (value.includes("\u0000")) {
+      return key;
+    }
+  }
+  return null;
+}
+
+/**
+ * Filtruje i sortuje fixtures wg parametrów zapytania URL.
+ */
+export function filterAndSortFixtures(
+  fixturesList: Fixture[],
+  searchParams: URLSearchParams,
+  language: Language,
+): Fixture[] {
+  let list = [...fixturesList];
+
+  const categoryParam = searchParams.get("category");
+  if (categoryParam) {
+    if (!isCatalogSlug(categoryParam)) {
+      return [];
+    }
+    const catFixture = findCategoryFixture(categoryParam);
+    const allowedCategories = catFixture
+      ? getSubtreeCategorySlugs(catFixture)
+      : [categoryParam];
+    list = list.filter((f) => allowedCategories.includes(f.product.category));
+  }
+
+  const collectionParam = searchParams.get("collection");
+  if (collectionParam) {
+    if (!isCatalogSlug(collectionParam)) {
+      return [];
+    }
+    list = list.filter((f) => f.collections?.includes(collectionParam));
+  }
+
+  const search = searchParams.get("search")?.toLowerCase().trim();
+  if (search) {
+    list = list.filter((f) => {
+      const namePl = f.name.pl.toLowerCase();
+      const nameEn = f.name.en.toLowerCase();
+      const descPl = f.description.pl.toLowerCase();
+      const descEn = f.description.en.toLowerCase();
+      return (
+        namePl.includes(search) ||
+        nameEn.includes(search) ||
+        descPl.includes(search) ||
+        descEn.includes(search)
+      );
+    });
+  }
+
+  const material = searchParams.get("material");
+  if (material) {
+    list = list.filter((f) => f.product.material === material);
+  }
+
+  const fineness = searchParams.get("fineness");
+  if (fineness) {
+    list = list.filter((f) => f.product.fineness === fineness);
+  }
+
+  const metalColor = searchParams.get("metalColor");
+  if (metalColor) {
+    list = list.filter((f) =>
+      f.product.variants.some((v) => v.metalColor === metalColor),
+    );
+  }
+
+  const stone = searchParams.get("stone");
+  if (stone) {
+    list = list.filter((f) =>
+      f.product.variants.some((v) => v.stone === stone),
+    );
+  }
+
+  const size = searchParams.get("size");
+  if (size) {
+    list = list.filter((f) => f.product.variants.some((v) => v.size === size));
+  }
+
+  const length = searchParams.get("length");
+  if (length) {
+    list = list.filter((f) =>
+      f.product.variants.some((v) => v.length === length),
+    );
+  }
+
+  const getCheapestPrice = (f: Fixture): number => {
+    return Math.min(...f.product.variants.map((v) => v.price.amount));
+  };
+
+  const priceMin = Number(searchParams.get("priceMin"));
+  if (!Number.isNaN(priceMin) && priceMin > 0) {
+    list = list.filter((f) => getCheapestPrice(f) >= priceMin);
+  }
+
+  const priceMax = Number(searchParams.get("priceMax"));
+  if (!Number.isNaN(priceMax) && priceMax > 0) {
+    list = list.filter((f) => getCheapestPrice(f) <= priceMax);
+  }
+
+  const ordering = searchParams.get("ordering") ?? "newest";
+  if (ordering === "price") {
+    list.sort((a, b) => getCheapestPrice(a) - getCheapestPrice(b));
+  } else if (ordering === "-price") {
+    list.sort((a, b) => getCheapestPrice(b) - getCheapestPrice(a));
+  } else if (ordering === "name") {
+    list.sort((a, b) =>
+      a.name[language].localeCompare(b.name[language], language),
+    );
+  } else if (ordering === "-name") {
+    list.sort((a, b) =>
+      b.name[language].localeCompare(a.name[language], language),
+    );
+  }
+
+  return list;
+}
+
+export const server = createServer(async (request, response) => {
   const url = new URL(request.url ?? "/", originOf(request));
   const origin = originOf(request);
   const language: Language =
@@ -717,35 +866,23 @@ const server = createServer(async (request, response) => {
 
   // GET /products/
   if (request.method === "GET" && url.pathname === "/products/") {
-    const categoryParam = url.searchParams.get("category");
-    const collectionParam = url.searchParams.get("collection");
     const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
     const pageSize = Math.max(
       1,
       Number(url.searchParams.get("pageSize")) || 12,
     );
 
-    let list = Object.values(fixtures);
-
-    if (categoryParam) {
-      if (!isCatalogSlug(categoryParam)) {
-        json(response, 200, { count: 0, results: [] });
-        return;
-      }
-      const catFixture = findCategoryFixture(categoryParam);
-      const allowedCategories = catFixture
-        ? getSubtreeCategorySlugs(catFixture)
-        : [categoryParam];
-      list = list.filter((f) => allowedCategories.includes(f.product.category));
+    const invalidParam = findInvalidFilterParam(url.searchParams);
+    if (invalidParam) {
+      json(response, 400, { [invalidParam]: ["Niepoprawna wartość filtra."] });
+      return;
     }
 
-    if (collectionParam) {
-      if (!isCatalogSlug(collectionParam)) {
-        json(response, 200, { count: 0, results: [] });
-        return;
-      }
-      list = list.filter((f) => f.collections?.includes(collectionParam));
-    }
+    const list = filterAndSortFixtures(
+      Object.values(fixtures),
+      url.searchParams,
+      language,
+    );
 
     const totalCount = list.length;
     const startIndex = (page - 1) * pageSize;
@@ -795,6 +932,14 @@ const server = createServer(async (request, response) => {
   json(response, 404, { detail: "Nie znaleziono." });
 });
 
-server.listen(port, () => {
-  console.log(`Stub API katalogu nasłuchuje na http://localhost:${port}`);
-});
+// Uruchamiamy listen tylko gdy skrypt jest bezpośrednim punktem wejścia
+const isDirectRun =
+  // Separatory z Windows (Git Bash) też muszą pasować do ścieżki.
+  process.argv[1]?.replace(/\\/g, "/").endsWith("catalog-stub/server.ts") ||
+  process.env.RUN_CATALOG_STUB === "1";
+
+if (isDirectRun) {
+  server.listen(port, () => {
+    console.log(`Stub API katalogu nasłuchuje na http://localhost:${port}`);
+  });
+}

@@ -68,6 +68,18 @@ export type ProductsListFilters = {
   collection?: string;
   page?: number;
   pageSize?: number;
+  material?: ProductsListParams["material"];
+  fineness?: ProductsListParams["fineness"];
+  metalColor?: ProductsListParams["metalColor"];
+  stone?: ProductsListParams["stone"];
+  size?: ProductsListParams["size"];
+  length?: ProductsListParams["length"];
+  /** Cena minimalna w groszach, jak w API (nie w PLN jak w `CatalogFilterState`). */
+  priceMin?: number;
+  /** Cena maksymalna w groszach, jak w API (nie w PLN jak w `CatalogFilterState`). */
+  priceMax?: number;
+  search?: string;
+  ordering?: string;
 };
 
 export type CatalogClientOptions = {
@@ -116,7 +128,10 @@ export function createCatalogClient(
   async function catalogGet<T>(
     path: string,
     locale?: Locale,
-    { allow404 = false }: { allow404?: boolean } = {},
+    {
+      allow404 = false,
+      onBadRequest,
+    }: { allow404?: boolean; onBadRequest?: T } = {},
   ): Promise<T | null> {
     const activeFetch = options.fetch ?? globalThis.fetch;
     const base = resolveBaseUrl();
@@ -147,6 +162,10 @@ export function createCatalogClient(
 
     if (allow404 && response.status === 404) {
       return null;
+    }
+
+    if (onBadRequest !== undefined && response.status === 400) {
+      return onBadRequest;
     }
 
     if (!response.ok) {
@@ -194,12 +213,26 @@ export function createCatalogClient(
         ...(params.pageSize ? { pageSize: params.pageSize } : {}),
         ...(params.category ? { category: params.category } : {}),
         ...(params.collection ? { collection: params.collection } : {}),
+        ...(params.material ? { material: params.material } : {}),
+        ...(params.fineness ? { fineness: params.fineness } : {}),
+        ...(params.metalColor ? { metalColor: params.metalColor } : {}),
+        ...(params.stone ? { stone: params.stone } : {}),
+        ...(params.size ? { size: params.size } : {}),
+        ...(params.length ? { length: params.length } : {}),
+        ...(params.priceMin !== undefined ? { priceMin: params.priceMin } : {}),
+        ...(params.priceMax !== undefined ? { priceMax: params.priceMax } : {}),
+        ...(params.search ? { search: params.search } : {}),
+        ...(params.ordering ? { ordering: params.ordering } : {}),
       };
 
+      // 400 oznacza niepoprawny filtr: pusty wynik zamiast błędu strony.
       return catalogGet<PaginatedProductListList>(
         getProductsListUrl(queryParams),
         locale,
-        { allow404: true },
+        {
+          allow404: true,
+          onBadRequest: { count: 0, results: [] },
+        },
       );
     },
 
