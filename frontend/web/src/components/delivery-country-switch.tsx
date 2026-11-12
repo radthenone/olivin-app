@@ -40,6 +40,16 @@ export function DeliveryCountrySwitch({
   const { isAuthenticated } = useSession();
   const [country, setCountry] = React.useState<DeliveryCountry>(initialCountry);
   const [error, setError] = React.useState<string | null>(null);
+  const [syncedInitial, setSyncedInitial] =
+    React.useState<DeliveryCountry>(initialCountry);
+
+  // Kraj z serwera zmienia się bez remontażu (np. po zalogowaniu profil
+  // nadpisuje cookie i router.refresh dostarcza nowy props). Stan z props
+  // synchronizujemy w trakcie renderu, nie kasując komunikatu błędu.
+  if (syncedInitial !== initialCountry) {
+    setSyncedInitial(initialCountry);
+    setCountry(initialCountry);
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
