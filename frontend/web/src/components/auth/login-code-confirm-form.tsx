@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { loginCodeErrorCode, useConfirmLoginCode } from "@olivin/features/auth";
+import { syncDeliveryCountryOnLogin } from "@olivin/features/catalog";
 import {
   confirmLoginCodeFormSchema,
   toConfirmLoginCodeBody,
@@ -30,6 +31,7 @@ import { MfaForm } from "./mfa-form";
  * Kod potwierdza allauth; po sukcesie sesja jest już zalogowana, więc
  * przechodzimy do sklepu, a nagłówek pokazuje nazwę użytkownika. Gdy konto ma
  * MFA, poprawny kod dopiero otwiera drugi składnik (#409).
+ * Po udanym zalogowaniu synchronizuje kraj dostawy z profilem (ADR 0035, #363).
  */
 export function LoginCodeConfirmForm() {
   const t = useTranslations("auth");
@@ -62,8 +64,10 @@ export function LoginCodeConfirmForm() {
       );
 
       if (state.status === "authenticated") {
+        await syncDeliveryCountryOnLogin();
         form.reset();
         router.push(authRoutes.home(locale));
+        router.refresh();
         return;
       }
 

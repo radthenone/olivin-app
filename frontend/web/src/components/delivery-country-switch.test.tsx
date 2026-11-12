@@ -1,22 +1,38 @@
-import { describe, expect, mock, test } from "bun:test";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import { NextIntlClientProvider } from "next-intl";
 
 import messages from "@olivin/i18n/messages/pl.json";
 
-// Hook routera wymaga kontekstu aplikacji, którego nie ma przy renderze do
-// statycznego HTML, więc podmieniamy tylko jego (reszta modułu zostaje
-// prawdziwa, żeby mock nie wyciekał do innych testów).
 const actualNavigation = await import("next/navigation");
+const actualAuth = await import("@olivin/features/auth");
+const actualCatalog = await import("@olivin/features/catalog");
+
+let mockIsAuthenticated = false;
 
 mock.module("next/navigation", () => ({
   ...actualNavigation,
   useRouter: () => ({ refresh: () => {} }),
 }));
 
+mock.module("@olivin/features/auth", () => ({
+  ...actualAuth,
+  useSession: () => ({ isAuthenticated: mockIsAuthenticated }),
+}));
+
+mock.module("@olivin/features/catalog", () => ({
+  ...actualCatalog,
+  saveDeliveryCountryCookie: () => {},
+  saveProfileDeliveryCountry: async () => {},
+}));
+
 const { DeliveryCountrySwitch } = await import("./delivery-country-switch");
 
 describe("DeliveryCountrySwitch", () => {
+  beforeEach(() => {
+    mockIsAuthenticated = false;
+  });
+
   test("renders ship to label and select with EU countries", () => {
     const html = renderToStaticMarkup(
       <NextIntlClientProvider

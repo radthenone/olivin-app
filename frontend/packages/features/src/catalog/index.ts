@@ -7,6 +7,14 @@ export type { AvailabilityCategory } from "./availability";
 export * from "./server";
 
 export {
+  readDeliveryCountryCookie,
+  saveDeliveryCountryCookie,
+  saveProfileDeliveryCountry,
+  syncDeliveryCountryOnLogin,
+} from "./profile-delivery-country";
+export type { SyncDeliveryCountryResult } from "./profile-delivery-country";
+
+export {
   VARIANT_ATTRIBUTE_NAMES,
   findMatchingVariant,
   getAttributeDefinitions,
