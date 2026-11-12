@@ -10,5 +10,14 @@ import { getRequestDeliveryCountry } from "@/lib/catalog-api";
 export async function DeliveryCountrySwitchLoader() {
   const country = await getRequestDeliveryCountry();
 
-  return <DeliveryCountrySwitch initialCountry={country ?? "PL"} />;
+  const initialCountry = country ?? "PL";
+
+  // `key` remontuje przełącznik po zmianie kraju z serwera (np. po zalogowaniu,
+  // gdy profil nadpisuje cookie), bo stan wewnątrz ignoruje nowy props.
+  return (
+    <DeliveryCountrySwitch
+      key={initialCountry}
+      initialCountry={initialCountry}
+    />
+  );
 }

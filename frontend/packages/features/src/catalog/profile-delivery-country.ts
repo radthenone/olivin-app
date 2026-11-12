@@ -50,6 +50,17 @@ export function readDeliveryCountryCookie(): DeliveryCountry | null {
 }
 
 /**
+ * Pobiera profil zalogowanego klienta (pierwszy wynik listy).
+ *
+ * Returns:
+ *     Profil klienta albo `undefined`, gdy odpowiedź nie zawiera wyników.
+ */
+async function fetchOwnProfile() {
+  const listRes = await customersProfileList();
+  return listRes.data.results?.[0];
+}
+
+/**
  * Zapisuje kraj dostawy w profilu zalogowanego klienta (ADR 0035, #363).
  *
  * Pobiera profil użytkownika i aktualizuje pole `deliveryCountry`.
@@ -63,8 +74,7 @@ export function readDeliveryCountryCookie(): DeliveryCountry | null {
 export async function saveProfileDeliveryCountry(
   country: DeliveryCountry,
 ): Promise<void> {
-  const listRes = await customersProfileList();
-  const profile = listRes.data.results?.[0];
+  const profile = await fetchOwnProfile();
 
   if (!profile?.id) {
     throw new Error("Nie znaleziono profilu klienta.");
@@ -95,8 +105,7 @@ export async function syncDeliveryCountryOnLogin(): Promise<SyncDeliveryCountryR
   const currentCookie = readDeliveryCountryCookie();
 
   try {
-    const listRes = await customersProfileList();
-    const profile = listRes.data.results?.[0];
+    const profile = await fetchOwnProfile();
 
     const profileCountry = profile?.deliveryCountry;
 

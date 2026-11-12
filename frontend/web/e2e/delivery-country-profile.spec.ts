@@ -95,6 +95,54 @@ test.describe("Delivery country saved in customer profile (#363)", () => {
     await expect.poll(() => patchedCountry).toBe("DE");
   });
 
+  test("błąd zapisu profilu pokazuje komunikat i nie cofa wyboru", async ({
+    page,
+  }) => {
+    test.skip(liveBackend, "Podstawianie odpowiedzi dotyczy trybu stub.");
+
+    await page.route("**/_allauth/browser/v1/auth/session", async (route) => {
+      await route.fulfill({
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+          "set-cookie": "csrftoken=csrf-test; Path=/; SameSite=Lax",
+        },
+        body: JSON.stringify(authenticatedBody()),
+      });
+    });
+
+    await page.route("**/customers/profile/**", async (route) => {
+      if (route.request().method() === "PATCH") {
+        await route.fulfill({ status: 500, body: "{}" });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          count: 1,
+          next: null,
+          previous: null,
+          results: [{ id: "prof-1", deliveryCountry: "PL" }],
+        }),
+      });
+    });
+
+    await page.goto("/pl/products");
+
+    const countrySelect = page.locator("#delivery-country-select");
+    await countrySelect.selectOption("DE");
+
+    await expect(
+      page.getByRole("alert").filter({ hasText: /\S/ }),
+    ).toBeVisible();
+    await expect(countrySelect).toHaveValue("DE");
+    const cookies = await page.context().cookies();
+    expect(cookies.find((c) => c.name === "delivery_country")?.value).toBe(
+      "DE",
+    );
+  });
+
   test("logowanie z innym krajem w profilu przełącza walutę", async ({
     page,
   }) => {
