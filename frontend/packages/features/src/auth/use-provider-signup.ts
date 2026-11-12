@@ -8,6 +8,7 @@ import type { SignupConsents } from "./use-register";
 
 export type ProviderSignupInput = {
   email: string;
+  username?: string;
 } & SignupConsents;
 
 /**

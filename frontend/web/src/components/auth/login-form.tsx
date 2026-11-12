@@ -17,6 +17,7 @@ import { syncDeliveryCountryOnLogin } from "@olivin/features/catalog";
 
 import { loginErrorsFromFailure } from "./login-errors";
 import { MfaForm } from "./mfa-form";
+import { ProviderButtons } from "./provider-buttons";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -212,6 +213,10 @@ export function LoginForm() {
             </Link>
           </form>
         </Form>
+
+        <div className="mt-6">
+          <ProviderButtons />
+        </div>
       </CardContent>
     </Card>
   );
