@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import pytest
+from allauth.core.exceptions import ImmediateHttpResponse
+from allauth.headless.socialaccount.internal import on_authentication_error
 from django.conf import settings
+from django.test import RequestFactory
 
 from apps.notifications import newsletter
 from apps.notifications.models import NewsletterSubscription
@@ -38,4 +41,23 @@ class TestFrontendLinks:
         assert set(settings.HEADLESS_FRONTEND_URLS) == {
             "account_reset_password",
             "account_signup",
+            "socialaccount_login_error",
         }
+
+    def test_provider_error_redirects_to_frontend_callback_with_error_code(self):
+        """Błąd po stronie providera wraca na callback webu z kodem błędu."""
+        request = RequestFactory().get("/")
+        state = {"headless": True, "next": None, "process": "login"}
+
+        with pytest.raises(ImmediateHttpResponse) as excinfo:
+            on_authentication_error(
+                request,
+                provider=None,
+                error="access_denied",
+                extra_context={"state": state},
+            )
+
+        assert excinfo.value.response["Location"] == (
+            f"{settings.FRONTEND_URL}/pl/auth/provider/callback"
+            "?error=access_denied&error_process=login"
+        )
