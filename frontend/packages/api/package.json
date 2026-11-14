@@ -21,7 +21,7 @@
   "devDependencies": {
     "@olivin/config": "workspace:*",
     "dotenv": "^18.0.10",
-    "orval": "^8.45.0",
+    "orval": "^8.47.0",
     "typescript": "~6.0.3"
   }
 }
