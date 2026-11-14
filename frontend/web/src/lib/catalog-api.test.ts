@@ -257,4 +257,75 @@ describe("catalog server transport", () => {
 
     expect(await fetchCollection("../invalid", "pl")).toBeNull();
   });
+
+  test("passes all filter, search and sort parameters in products list query", async () => {
+    let requestedUrl = "";
+    globalThis.fetch = (async (input) => {
+      requestedUrl = String(input);
+      return new Response(JSON.stringify({ count: 0, results: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }) as typeof fetch;
+
+    await fetchProductsList(
+      {
+        page: 1,
+        pageSize: 12,
+        category: "pierscionki",
+        collection: "lato-2026",
+        material: "gold",
+        fineness: "585",
+        metalColor: "rose",
+        stone: "ruby",
+        size: "16",
+        length: "45",
+        priceMin: 10000,
+        priceMax: 50000,
+        search: "rubin",
+        ordering: "price",
+      },
+      "pl",
+    );
+
+    const url = new URL(requestedUrl);
+    expect(url.searchParams.get("category")).toBe("pierscionki");
+    expect(url.searchParams.get("collection")).toBe("lato-2026");
+    expect(url.searchParams.get("material")).toBe("gold");
+    expect(url.searchParams.get("fineness")).toBe("585");
+    expect(url.searchParams.get("metalColor")).toBe("rose");
+    expect(url.searchParams.get("stone")).toBe("ruby");
+    expect(url.searchParams.get("size")).toBe("16");
+    expect(url.searchParams.get("length")).toBe("45");
+    expect(url.searchParams.get("priceMin")).toBe("10000");
+    expect(url.searchParams.get("priceMax")).toBe("50000");
+    expect(url.searchParams.get("search")).toBe("rubin");
+    expect(url.searchParams.get("ordering")).toBe("price");
+  });
+
+  test("treats 400 from catalog as empty list, 404 as null and rethrows 5xx/429", async () => {
+    const respondWith = (status: number) => {
+      globalThis.fetch = (async () =>
+        new Response(JSON.stringify({ detail: "x" }), {
+          status,
+          headers: { "content-type": "application/json" },
+        })) as typeof fetch;
+    };
+
+    respondWith(400);
+    expect(await fetchProductsList({ priceMin: 1 }, "pl")).toEqual({
+      count: 0,
+      results: [],
+    });
+
+    respondWith(404);
+    expect(await fetchProductsList({ page: 99 }, "pl")).toBeNull();
+
+    for (const status of [429, 500, 503]) {
+      respondWith(status);
+      await expect(fetchProductsList({}, "pl")).rejects.toThrow(
+        `Katalog odpowiedział statusem ${status}.`,
+      );
+    }
+  });
 });

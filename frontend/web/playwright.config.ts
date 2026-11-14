@@ -51,6 +51,8 @@ const devFileEnv = prodServer
 
 export default defineConfig({
   testDir: "./e2e",
+  // Testy jednostkowe stuba (`bun:test`) nie są specami Playwright.
+  testIgnore: ["**/catalog-stub/**"],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

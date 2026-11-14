@@ -65,7 +65,9 @@
       "description": "Browse jewelry in the Olivin store.",
       "productCount": "{count, plural, one {# product} other {# products}}",
       "empty": "No products to display.",
-      "allProducts": "All products"
+      "allProducts": "All products",
+      "emptyFiltered": "No products match the selected criteria.",
+      "clearFilters": "Clear filters"
     },
     "card": {
       "fromPrice": "from {price}",
@@ -100,6 +102,35 @@
       "amethyst": "Amethyst",
       "cubic_zirconia": "Cubic zirconia",
       "moissanite": "Moissanite"
+    },
+    "search": {
+      "label": "Search catalog",
+      "placeholder": "Search jewelry…",
+      "submit": "Search",
+      "clear": "Clear search"
+    },
+    "sort": {
+      "label": "Sort by",
+      "newest": "Newest",
+      "priceAsc": "Price: low to high",
+      "priceDesc": "Price: high to low",
+      "nameAsc": "Name: A-Z",
+      "nameDesc": "Name: Z-A"
+    },
+    "filters": {
+      "heading": "Filters",
+      "clear": "Clear filters",
+      "apply": "Apply filters",
+      "all": "All",
+      "material": "Material",
+      "fineness": "Fineness",
+      "metalColor": "Metal color",
+      "stone": "Stone",
+      "size": "Size",
+      "length": "Length",
+      "priceInCurrency": "Price ({currency})",
+      "priceFrom": "From",
+      "priceTo": "To"
     },
     "error": {
       "network": "No network connection",

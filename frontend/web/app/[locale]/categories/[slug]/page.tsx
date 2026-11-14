@@ -1,8 +1,19 @@
 import type { Locale } from "@olivin/i18n";
+import {
+  hasActiveFilters,
+  parseCatalogFilters,
+  toProductsListParams,
+} from "@olivin/features/catalog/server";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 
+import {
+  CatalogFiltersPanel,
+  CatalogSearch,
+  CatalogSort,
+} from "@/components/catalog/catalog-controls";
+import { CatalogEmptyState } from "@/components/catalog/catalog-empty-state";
 import { CategoryNav } from "@/components/catalog/category-nav";
 import { Pagination } from "@/components/catalog/pagination";
 import { ProductTile } from "@/components/catalog/product-tile";
@@ -23,7 +34,7 @@ export default async function CategoryPage({
   searchParams,
 }: {
   params: Promise<{ locale: string; slug: string }>;
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { locale, slug } = await params;
 
@@ -36,14 +47,17 @@ export default async function CategoryPage({
     notFound();
   }
 
-  const { page: rawPage } = await searchParams;
-  const currentPage = parsePageNumber(rawPage);
+  const rawSearchParams = await searchParams;
+  const filters = parseCatalogFilters(rawSearchParams);
+  const currentPage = filters.page ?? parsePageNumber(rawSearchParams.page);
+
+  const queryParams = toProductsListParams(
+    { ...filters, page: currentPage },
+    { category: slug, pageSize: PAGE_SIZE },
+  );
 
   const [productsData, categories] = await Promise.all([
-    getProductsListForPage(
-      { category: slug, page: currentPage, pageSize: PAGE_SIZE },
-      locale as Locale,
-    ),
+    getProductsListForPage(queryParams, locale as Locale),
     getCategoriesTreeForPage(locale as Locale),
   ]);
 
@@ -54,6 +68,7 @@ export default async function CategoryPage({
 
   const t = await getTranslations({ locale });
   const totalPages = calculateTotalPages(productsData.count, PAGE_SIZE);
+  const basePath = `/${locale}/categories/${slug}`;
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-8">
@@ -61,25 +76,45 @@ export default async function CategoryPage({
         <h1 className="text-3xl font-semibold text-brand-600">
           {category.name}
         </h1>
-        <p className="text-sm text-neutral-500">
+        <p
+          aria-atomic="true"
+          aria-live="polite"
+          className="text-sm text-neutral-500"
+          role="status"
+        >
           {t("catalog.list.productCount", { count: productsData.count })}
         </p>
       </header>
 
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <CatalogSearch
+          basePath={basePath}
+          currentFilters={filters}
+          initialSearch={filters.search}
+        />
+        <CatalogSort
+          basePath={basePath}
+          currentFilters={filters}
+          currentOrdering={filters.ordering}
+        />
+      </div>
+
       <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
-        <aside className="md:col-span-1">
+        <aside className="flex flex-col gap-6 md:col-span-1">
           <CategoryNav
             categories={categories}
             currentSlug={slug}
             locale={locale as Locale}
           />
+          <CatalogFiltersPanel basePath={basePath} currentFilters={filters} />
         </aside>
 
         <section className="md:col-span-3">
           {productsData.results.length === 0 ? (
-            <div className="rounded-xl border border-neutral-200 bg-neutral-0 p-8 text-center text-neutral-600">
-              {t("catalog.list.empty")}
-            </div>
+            <CatalogEmptyState
+              basePath={basePath}
+              hasFilters={hasActiveFilters(filters)}
+            />
           ) : (
             <>
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -93,9 +128,10 @@ export default async function CategoryPage({
               </div>
 
               <Pagination
-                basePath={`/${locale}/categories/${slug}`}
+                basePath={basePath}
                 currentPage={currentPage}
                 locale={locale as Locale}
+                searchParams={rawSearchParams}
                 totalPages={totalPages}
               />
             </>
