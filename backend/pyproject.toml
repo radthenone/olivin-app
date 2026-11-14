@@ -33,7 +33,7 @@ dependencies = [
     "pack-logger[django]",
     "django-countries>=9.1.0",
     "django-phonenumber-field>=8.4.0",
-    "phonenumbers>=9.0.42",
+    "phonenumbers>=9.0.43",
     "fido2>=2.1.1",
     "google-auth",
     "requests>=2.32.3",
@@ -49,8 +49,8 @@ dev = [
     "django-stubs>=6.1.2,<7",
     "drf-spectacular>=0.29.0",
     "ipython>=9.11.0",
-    "pyrefly>=1.4.0",
-    "ruff>=0.17.3",
+    "pyrefly>=1.4.1",
+    "ruff>=0.17.4",
 ]
 test = [
     "factory-boy>=3.3.3",
