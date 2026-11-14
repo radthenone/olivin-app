@@ -53,6 +53,7 @@ export { useMfaAuthenticate } from "./use-mfa-authenticate";
 export type { MfaInput } from "./use-mfa-authenticate";
 export { useProviderSignup } from "./use-provider-signup";
 export type { ProviderSignupInput } from "./use-provider-signup";
+export { useProviderSignupInfo } from "./use-provider-signup-info";
 export { useProviderTokenLogin } from "./use-provider-token-login";
 export type { ProviderTokenLoginInput } from "./use-provider-token-login";
 export { useRegister } from "./use-register";
